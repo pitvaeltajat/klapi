@@ -5,8 +5,12 @@
         "build": "next build"
     },
     "dependencies": {
+        "@chakra-ui/react": "^1.8.8",
+        "@emotion/react": "11",
+        "@emotion/styled": "11",
         "@prisma/client": "^3.12.0",
         "babel-plugin-superjson-next": "^0.4.3",
+        "framer-motion": "6",
         "next": "latest",
         "next-auth": "latest",
         "react": "^17.0.2",
