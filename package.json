@@ -1,7 +1,7 @@
 {
     "private": true,
     "scripts": {
-        "dev": "next dev && docker-compose up",
+        "dev": "next dev",
         "build": "next build"
     },
     "dependencies": {
