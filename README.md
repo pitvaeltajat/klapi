@@ -16,6 +16,12 @@ docker-compose up -d
 yarn dev
 ```
 
+### Database schema
+
+New schema diagram is generated every time when generating new Prisma Client.
+
+![Database schema](./prisma/ERD.png)
+
 ### Prisma
 
 Kaho uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`. After making changes to the schema, remember to run `yarn prisma migrate dev`.
