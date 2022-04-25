@@ -4,7 +4,7 @@ generator client {
 
 generator erd {
   provider = "prisma-erd-generator"
-  output = "ERD.png"
+  output   = "ERD.png"
 }
 
 datasource db {
@@ -12,20 +12,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -46,7 +45,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  group         Group @default(USER)
+  group         Group     @default(USER)
   accounts      Account[]
   sessions      Session[]
   loans         Loan[]
@@ -66,12 +65,21 @@ model VerificationToken {
 }
 
 model Item {
-  id          String  @id @default(cuid())
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  image        String?
+  amount       Int
+  categories   Category[]
+  reservations Reservation[]
+  location     Location      @relation(fields: [id], references: [locationId], onDelete: Cascade)
+}
+
+model Location {
+  locationId  String  @id @default(cuid())
   name        String
   description String?
-  image       String?
-  categories  Category[]
-  loans       Loan[]
+  items       Item[]
 }
 
 model Category {
@@ -81,13 +89,20 @@ model Category {
   items       Item[]
 }
 
+model Reservation {
+  id     String @id @default(cuid())
+  item   Item   @relation(fields: [id], references: [id], onDelete: Cascade, map: "itemId")
+  amount Int
+  loan   Loan   @relation(fields: [id], references: [id], onDelete: Cascade, map: "loanId")
+}
+
 model Loan {
-  id          String  @id @default(cuid())
-  status      LoanStatus @default(PENDING)
-  items       Item[]
-  startTime   DateTime
-  endTime     DateTime
-  userId      User    @relation(fields: [id], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  status       LoanStatus    @default(PENDING)
+  reservations Reservation[]
+  startTime    DateTime
+  endTime      DateTime
+  userId       User          @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 enum LoanStatus {
