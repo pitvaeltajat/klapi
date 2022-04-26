@@ -72,12 +72,12 @@ model Item {
   amount       Int
   categories   Category[]
   reservations Reservation[]
-  location     Location?      @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  locationId   String?
+  location     Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId   String
 }
 
 model Location {
-  id          String  @id @default(cuid())
+  id  String  @id @default(cuid())
   name        String
   description String?
   items       Item[]
@@ -92,9 +92,11 @@ model Category {
 
 model Reservation {
   id     String @id @default(cuid())
-  item   Item   @relation(fields: [id], references: [id], onDelete: Cascade, map: "itemId")
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
   amount Int
-  loan   Loan   @relation(fields: [id], references: [id], onDelete: Cascade, map: "loanId")
+  loan   Loan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  itemId String
+  loanId String
 }
 
 model Loan {
@@ -103,7 +105,8 @@ model Loan {
   reservations Reservation[]
   startTime    DateTime
   endTime      DateTime
-  userId       User          @relation(fields: [id], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
 }
 
 enum LoanStatus {
