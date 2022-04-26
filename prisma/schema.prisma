@@ -72,11 +72,12 @@ model Item {
   amount       Int
   categories   Category[]
   reservations Reservation[]
-  location     Location      @relation(fields: [id], references: [locationId], onDelete: Cascade)
+  location     Location?      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId   String?
 }
 
 model Location {
-  locationId  String  @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
   items       Item[]

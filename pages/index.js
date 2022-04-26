@@ -1,25 +1,29 @@
 import React from 'react';
-import { PrismaClient } from '@prisma/client';
+import { Container, Heading } from '@chakra-ui/react';
 import Auth from './auth';
+import NewItem from './newitem';
+import { PrismaClient } from '@prisma/client';
 
-export async function getStaticProps() {
-    const prisma = new PrismaClient();
-    const users = await prisma.user.findMany();
+const prisma = new PrismaClient();
+
+export async function getServerSideProps(context) {
+    const items = await prisma.item.findMany();
     return {
-        props: { users },
+        props: { items },
     };
 }
 
-const Index = ({ users }) => {
+export default function Index({ items }) {
     return (
-        <div>
+        <Container>
             <Auth />
-            <h1>Hello World</h1>
-            {users.map((user) => (
-                <p key={user.id}>{user.name}</p>
-            ))}
-        </div>
+            <Heading>Kalusto App nimi pitäisi keksiä</Heading>
+            <NewItem />
+            <ul>
+                {items.map((item) => (
+                    <li key={items.id}>{items.name}</li>
+                ))}
+            </ul>
+        </Container>
     );
-};
-
-export default Index;
+}
