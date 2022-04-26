@@ -13,10 +13,32 @@ import {
     NumberInputStepper,
     Textarea,
 } from '@chakra-ui/react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { Formik, Form, Field } from 'formik';
 import { CreatableSelect } from 'chakra-react-select';
+import { PrismaClient } from '@prisma/client';
 
-export default function NewItem() {
+const prisma = new PrismaClient();
+
+export async function getServerSideProps(context) {
+    const locations = await prisma.location.findMany();
+    const categories = await prisma.category.findMany();
+    locations.map((location) => {
+        location.label = location.name;
+        location.value = location.id;
+    });
+    categories.map((category) => {
+        category.label = category.name;
+        category.value = category.id;
+    });
+    return {
+        props: {
+            locations,
+            categories,
+        },
+    };
+}
+
+export default function NewItem({ locations, categories }) {
     return (
         <>
             <Heading>Luo uusi kama</Heading>
@@ -118,10 +140,25 @@ export default function NewItem() {
                                     </FormLabel>
                                     <CreatableSelect
                                         id='categories'
-                                        isMulti
-                                        options={props.categories}
-                                        {...field}
-                                        placeholder='Kamaa käytetään... (kategoria1, kategoria2, kategoria3)'
+                                        options={categories}
+                                        name={field.name}
+                                        placeholder='Retkikeittimet'
+                                        value={
+                                            categories
+                                                ? categories.find(
+                                                      (category) =>
+                                                          category.value ===
+                                                          field.value
+                                                  )
+                                                : ''
+                                        }
+                                        onChange={(option) =>
+                                            form.setFieldValue(
+                                                field.name,
+                                                option.value
+                                            )
+                                        }
+                                        onBlur={field.onBlur}
                                     />
                                     <FormErrorMessage>
                                         {form.errors.categories}
@@ -141,11 +178,26 @@ export default function NewItem() {
                                         Sijainnit
                                     </FormLabel>
                                     <CreatableSelect
-                                        isMulti
-                                        options={props.locations}
+                                        options={locations}
                                         id='locations'
-                                        {...field}
-                                        placeholder='Sijainti (paikka1, paikka2, paikka3)'
+                                        name={field.name}
+                                        placeholder='Kolon vessa'
+                                        value={
+                                            locations
+                                                ? locations.find(
+                                                      (location) =>
+                                                          location.value ===
+                                                          field.value
+                                                  )
+                                                : ''
+                                        }
+                                        onChange={(option) =>
+                                            form.setFieldValue(
+                                                field.name,
+                                                option.value
+                                            )
+                                        }
+                                        onBlur={field.onBlur}
                                     />
                                     <FormErrorMessage>
                                         {form.errors.locations}
