@@ -1,6 +1,8 @@
 import React from 'react';
 import { PrismaClient } from '@prisma/client';
 import Auth from './auth';
+import { Button } from '@chakra-ui/react';
+import NextLink from 'next/link'
 
 export async function getStaticProps() {
     const prisma = new PrismaClient();
@@ -18,6 +20,9 @@ const Index = ({ users }) => {
             {users.map((user) => (
                 <p key={user.id}>{user.name}</p>
             ))}
+            <NextLink href='/new_reservation'>
+                <Button colorScheme='blue' >Lisää uusi varaus</Button>
+            </NextLink>
         </div>
     );
 };
