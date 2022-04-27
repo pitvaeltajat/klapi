@@ -38,6 +38,31 @@ export async function getServerSideProps(context) {
     };
 }
 
+const handleSubmit = async (
+    values,
+    { setSubmitting, setErrors, resetForm }
+) => {
+    try {
+        console.log('values', values);
+        // call createItem api route
+        const res = await fetch('/api/createItem', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(values),
+        });
+        const item = await res.json();
+        console.log(item);
+        // does not reset form. Should have input fields hardcoded?
+        resetForm();
+        return item;
+    } catch (error) {
+        setErrors({ submit: error.message });
+        setSubmitting(false);
+    }
+};
+
 export default function NewItem({ locations, categories }) {
     return (
         <>
@@ -45,14 +70,11 @@ export default function NewItem({ locations, categories }) {
             <Formik
                 initialValues={{ amount: 1 }}
                 onSubmit={(values, actions) => {
-                    setTimeout(() => {
-                        alert(JSON.stringify(values, null, 2));
-                        actions.setSubmitting(false);
-                    }, 1000);
+                    handleSubmit(values, actions);
                 }}
             >
                 {(props) => (
-                    <Form>
+                    <Form onSubmit={props.handleSubmit}>
                         <Field name='name'>
                             {({ field, form }) => (
                                 <FormControl
@@ -90,7 +112,10 @@ export default function NewItem({ locations, categories }) {
                                         {...field}
                                         min={1}
                                         onChange={(val) =>
-                                            form.setFieldValue(field.name, val)
+                                            form.setFieldValue(
+                                                field.name,
+                                                Number(val)
+                                            )
                                         }
                                     >
                                         <NumberInputField />
@@ -118,7 +143,6 @@ export default function NewItem({ locations, categories }) {
                                     </FormLabel>
                                     <Textarea
                                         id='description'
-                                        {...field}
                                         placeholder='Kamaa käytetään...'
                                     />
                                     <FormErrorMessage>
@@ -166,20 +190,20 @@ export default function NewItem({ locations, categories }) {
                                 </FormControl>
                             )}
                         </Field>
-                        <Field name='locations'>
+                        <Field name='locationId'>
                             {({ field, form }) => (
                                 <FormControl
                                     isInvalid={
-                                        form.errors.locations &&
-                                        form.touched.locations
+                                        form.errors.locationId &&
+                                        form.touched.locationId
                                     }
                                 >
-                                    <FormLabel htmlFor='locations'>
-                                        Sijainnit
+                                    <FormLabel htmlFor='locationId'>
+                                        Sijainti
                                     </FormLabel>
                                     <CreatableSelect
                                         options={locations}
-                                        id='locations'
+                                        id='locationId'
                                         name={field.name}
                                         placeholder='Kolon vessa'
                                         value={
