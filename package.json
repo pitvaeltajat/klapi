@@ -5,17 +5,20 @@
         "build": "next build"
     },
     "dependencies": {
+        "@chakra-ui/icons": "^1.1.7",
         "@chakra-ui/react": "^1.8.8",
         "@emotion/react": "11",
         "@emotion/styled": "11",
         "@next-auth/prisma-adapter": "^1.0.3",
         "@prisma/client": "^3.12.0",
+        "@reduxjs/toolkit": "^1.8.1",
         "babel-plugin-superjson-next": "^0.4.3",
         "framer-motion": "6",
         "next": "latest",
         "next-auth": "latest",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
+        "react-redux": "^8.0.1",
         "superjson": "^1.8.2"
     },
     "devDependencies": {

@@ -20,7 +20,7 @@ const Index = ({ users }) => {
             {users.map((user) => (
                 <p key={user.id}>{user.name}</p>
             ))}
-            <NextLink href='/new_reservation'>
+            <NextLink href='/productlist'>
                 <Button colorScheme='blue' >Lisää uusi varaus</Button>
             </NextLink>
         </div>
