@@ -12,6 +12,7 @@ import {
     NumberDecrementStepper,
     NumberInputStepper,
     Textarea,
+    useToast,
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import { CreatableSelect } from 'chakra-react-select';
@@ -38,39 +39,57 @@ export async function getServerSideProps(context) {
     };
 }
 
-const handleSubmit = async (
-    values,
-    { setSubmitting, setErrors, resetForm }
-) => {
-    try {
-        console.log('values', values);
-        // call createItem api route
-        const res = await fetch('/api/createItem', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(values),
-        });
-        const item = await res.json();
-        console.log(item);
-        // does not reset form. Should have input fields hardcoded?
-        resetForm();
-        return item;
-    } catch (error) {
-        setErrors({ submit: error.message });
-        setSubmitting(false);
-    }
-};
-
 export default function NewItem({ locations, categories }) {
+    const toast = useToast();
+    const handleSubmit = async (
+        values,
+        { setSubmitting, setErrors, resetForm }
+    ) => {
+        try {
+            console.log('values', values);
+            // call createItem api route
+            const res = await fetch('/api/createItem', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(values),
+            });
+            const item = await res.json();
+            console.log(item);
+            // does not reset form. Should have input fields hardcoded?
+            resetForm();
+            console.log('reseted');
+            toast({
+                title: 'Item created',
+                description: 'Item created successfully',
+                status: 'success',
+                duration: 5000,
+                isClosable: true,
+            });
+            return item;
+        } catch (error) {
+            setErrors({ submit: error.message });
+            toast({
+                title: 'Error',
+                description: error.message,
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+            });
+            setSubmitting(false);
+        }
+    };
+
     return (
         <>
             <Heading>Luo uusi kama</Heading>
+
             <Formik
                 initialValues={{ amount: 1 }}
                 onSubmit={(values, actions) => {
                     handleSubmit(values, actions);
+                    actions.resetForm();
                 }}
             >
                 {(props) => (

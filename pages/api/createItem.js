@@ -12,7 +12,7 @@ export default async function handle(req, res) {
     const item = await prisma.item.create({
         data: {
             ...rest,
-            location: {
+            location: locationIdOrNewName && {
                 connectOrCreate: {
                     where: {
                         id: locationIdOrNewName,
@@ -23,7 +23,7 @@ export default async function handle(req, res) {
                 },
             },
             // for each category, check if it exists and connect, if not, create it
-            categories: categoriesList.map((categoryIdOrName) => ({
+            categories: categoriesList?.map((categoryIdOrName) => ({
                 connectOrCreate: {
                     where: {
                         id: categoryIdOrName,
