@@ -46,7 +46,6 @@ export default function NewItem({ locations, categories }) {
         { setSubmitting, setErrors, resetForm }
     ) => {
         try {
-            console.log('values', values);
             // call createItem api route
             const res = await fetch('/api/createItem', {
                 method: 'POST',
@@ -55,11 +54,9 @@ export default function NewItem({ locations, categories }) {
                 },
                 body: JSON.stringify(values),
             });
-            const item = await res.json();
-            console.log(item);
             // does not reset form. Should have input fields hardcoded?
-            resetForm();
-            console.log('reseted');
+            const item = await res.json();
+
             toast({
                 title: 'Item created',
                 description: 'Item created successfully',
@@ -67,7 +64,8 @@ export default function NewItem({ locations, categories }) {
                 duration: 5000,
                 isClosable: true,
             });
-            return item;
+            setSubmitting(false);
+            resetForm();
         } catch (error) {
             setErrors({ submit: error.message });
             toast({
@@ -78,6 +76,7 @@ export default function NewItem({ locations, categories }) {
                 isClosable: true,
             });
             setSubmitting(false);
+            resetForm();
         }
     };
 
@@ -86,10 +85,16 @@ export default function NewItem({ locations, categories }) {
             <Heading>Luo uusi kama</Heading>
 
             <Formik
-                initialValues={{ amount: 1 }}
-                onSubmit={(values, actions) => {
-                    handleSubmit(values, actions);
-                    actions.resetForm();
+                initialValues={{
+                    name: '',
+                    amount: 1,
+                    description: '',
+                    locationId: undefined,
+                    categories: [],
+                }}
+                onSubmit={async (values, actions) => {
+                    await handleSubmit(values, actions);
+                    alert(JSON.stringify(values, null, 2));
                 }}
             >
                 {(props) => (
@@ -107,6 +112,7 @@ export default function NewItem({ locations, categories }) {
                                         {...field}
                                         id='name'
                                         placeholder='PJ-teltta'
+                                        value={form.values.name}
                                     />
                                     <FormErrorMessage>
                                         {form.errors.name}
@@ -130,6 +136,7 @@ export default function NewItem({ locations, categories }) {
                                         id='amount'
                                         {...field}
                                         min={1}
+                                        value={form.values.amount}
                                         onChange={(val) =>
                                             form.setFieldValue(
                                                 field.name,
@@ -162,6 +169,14 @@ export default function NewItem({ locations, categories }) {
                                     </FormLabel>
                                     <Textarea
                                         id='description'
+                                        {...field}
+                                        value={form.values.description}
+                                        onChange={(e) =>
+                                            form.setFieldValue(
+                                                field.name,
+                                                e.target.value
+                                            )
+                                        }
                                         placeholder='Kamaa käytetään...'
                                     />
                                     <FormErrorMessage>
@@ -183,24 +198,19 @@ export default function NewItem({ locations, categories }) {
                                     </FormLabel>
                                     <CreatableSelect
                                         id='categories'
+                                        isMulti
                                         options={categories}
                                         name={field.name}
                                         placeholder='Retkikeittimet'
-                                        value={
-                                            categories
-                                                ? categories.find(
-                                                      (category) =>
-                                                          category.value ===
-                                                          field.value
-                                                  )
-                                                : ''
-                                        }
+                                        value={form.values.categories}
                                         onChange={(option) =>
                                             form.setFieldValue(
                                                 field.name,
-                                                option.value
+                                                option
                                             )
                                         }
+                                        isClearable
+                                        backspaceRemovesValue
                                         onBlur={field.onBlur}
                                     />
                                     <FormErrorMessage>
@@ -225,25 +235,18 @@ export default function NewItem({ locations, categories }) {
                                         id='locationId'
                                         name={field.name}
                                         placeholder='Kolon vessa'
-                                        value={
-                                            locations
-                                                ? locations.find(
-                                                      (location) =>
-                                                          location.value ===
-                                                          field.value
-                                                  )
-                                                : ''
-                                        }
+                                        value={form.values.locationId}
                                         onChange={(option) =>
                                             form.setFieldValue(
                                                 field.name,
-                                                option.value
+                                                option
                                             )
                                         }
                                         onBlur={field.onBlur}
+                                        isClearable
                                     />
                                     <FormErrorMessage>
-                                        {form.errors.locations}
+                                        {form.errors.locationId}
                                     </FormErrorMessage>
                                 </FormControl>
                             )}
