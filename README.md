@@ -1,6 +1,6 @@
-# Kaho
+# KLAPI
 
-Kaho is a web-based application to manage simple equipment reserve/loan/return transactions.
+KLAPI is a web-based application to manage simple equipment reserve/loan/return transactions.
 
 ## Development
 
@@ -24,7 +24,7 @@ New schema diagram is generated every time when generating new Prisma Client.
 
 ### Prisma
 
-Kaho uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`. After making changes to the schema, remember to run `yarn prisma migrate dev`.
+KLAPI uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`. After making changes to the schema, remember to run `yarn prisma migrate dev`.
 
 To generate dummy data, run `yarn prisma db seed`. The data is defined in `prisma/seed.ts`.
 
