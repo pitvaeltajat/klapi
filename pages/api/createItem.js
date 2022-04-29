@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 export default async function handle(req, res) {
     // destruct location and categories from the body to be used in connect queries
     const {
-        ['locationId']: locationIdOrNewName,
+        ['locationId']: locationObject,
         ['categories']: categoriesList,
         ...rest
     } = req.body;
@@ -17,17 +17,16 @@ export default async function handle(req, res) {
             name: categoryObject.value,
         },
     }));
-    console.log(categoryJSON);
     const item = await prisma.item.create({
         data: {
             ...rest,
-            location: locationIdOrNewName && {
+            location: locationObject && {
                 connectOrCreate: {
                     where: {
-                        id: locationIdOrNewName,
+                        id: locationObject.value,
                     },
                     create: {
-                        name: locationIdOrNewName,
+                        name: locationObject.value,
                     },
                 },
             },

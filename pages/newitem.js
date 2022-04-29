@@ -16,13 +16,20 @@ import {
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import { CreatableSelect } from 'chakra-react-select';
-import { PrismaClient } from '@prisma/client';
+import useSWR from 'swr';
 
-const prisma = new PrismaClient();
+export default function NewItem() {
+    const toast = useToast();
 
-export async function getServerSideProps(context) {
-    const locations = await prisma.location.findMany();
-    const categories = await prisma.category.findMany();
+    const { data: locations, error: locationsError } =
+        useSWR('/api/getLocations');
+    const { data: categories, error: categoriesError } =
+        useSWR('/api/getCategories');
+
+    if (locationsError || categoriesError) return <div>failed to load</div>;
+
+    // to prevent "loading", there should be a initial state initialized during SSR
+    if (!categories || !locations) return <div>loading...</div>;
     locations.map((location) => {
         location.label = location.name;
         location.value = location.id;
@@ -31,16 +38,7 @@ export async function getServerSideProps(context) {
         category.label = category.name;
         category.value = category.id;
     });
-    return {
-        props: {
-            locations,
-            categories,
-        },
-    };
-}
 
-export default function NewItem({ locations, categories }) {
-    const toast = useToast();
     const handleSubmit = async (
         values,
         { setSubmitting, setErrors, resetForm }
