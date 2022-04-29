@@ -30,6 +30,7 @@ export default function NewItem() {
 
     // to prevent "loading", there should be a initial state initialized during SSR
     if (!categories || !locations) return <div>loading...</div>;
+    // map locations and categories to be suitable for chakra-react-select
     locations.map((location) => {
         location.label = location.name;
         location.value = location.id;
