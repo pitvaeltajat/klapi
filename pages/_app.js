@@ -1,10 +1,28 @@
 import '../styles/globals.css';
 import { SessionProvider } from 'next-auth/react';
-import { ChakraProvider } from '@chakra-ui/react';
+import {
+    ChakraProvider,
+    Container,
+    Box,
+    Link,
+    Heading,
+} from '@chakra-ui/react';
 import { SWRConfig } from 'swr';
 import { useToast } from '@chakra-ui/react';
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
+
+const TopBar = () => {
+    return (
+        <>
+            <Box bgColor='blue.500'>
+                <Link href='/'>
+                    <Heading>KLAPI</Heading>
+                </Link>
+            </Box>
+        </>
+    );
+};
 
 export default function App({
     Component,
@@ -31,7 +49,10 @@ export default function App({
                         },
                     }}
                 >
-                    <Component {...pageProps} />
+                    <TopBar />
+                    <Container>
+                        <Component {...pageProps} />
+                    </Container>
                 </SWRConfig>
             </SessionProvider>
         </ChakraProvider>

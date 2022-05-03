@@ -17,9 +17,8 @@ export async function getServerSideProps() {
 
 export default function Index({ items }) {
     return (
-        <Container>
+        <>
             <Auth />
-            <Heading>KLAPI</Heading>
             <Link href='/newitem'>
                 <a>Luo uusi kama</a>
             </Link>
@@ -32,6 +31,6 @@ export default function Index({ items }) {
                     <br />
                 </>
             ))}
-        </Container>
+        </>
     );
 }
