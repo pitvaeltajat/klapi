@@ -20,12 +20,21 @@ import {
     useToast,
 } from '@chakra-ui/react';
 
+import ReservationTable from '../../components/ReservationTable';
+
 export async function getServerSideProps(req, res) {
     const prisma = new PrismaClient();
 
     const item = await prisma.item.findUnique({
         where: {
             id: req.params.id,
+        },
+        include: {
+            reservations: {
+                include: {
+                    loan: true,
+                },
+            },
         },
     });
     if (!item) {
@@ -113,6 +122,7 @@ export default function ItemView({ item }) {
                 </ModalContent>
             </Modal>
             <Heading>Varaustilanne</Heading>
+            <ReservationTable reservations={item.reservations} />
         </>
     );
 }

@@ -21,9 +21,7 @@ export default function Index({ items }) {
     return (
         <>
             <Auth />
-            <Link href='/newitem'>
-                <a>Luo uusi kama</a>
-            </Link>
+
             <br />
             {items.map((item) => (
                 <>
@@ -36,6 +34,9 @@ export default function Index({ items }) {
             <NextLink href='/productlist'>
                 <Button colorScheme='blue'>Lisää uusi varaus</Button>
             </NextLink>
+            <Link href='/newitem'>
+                <Button>Luo uusi kama</Button>
+            </Link>
         </>
     );
 }
