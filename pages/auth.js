@@ -7,14 +7,18 @@ export default function Auth() {
         return (
             <>
                 Signed in as {session.user.email} <br />
-                <Button colorScheme='blue' onClick={() => signOut()}>Sign out</Button>
+                <Button colorScheme='blue' onClick={() => signOut()}>
+                    Sign out
+                </Button>
             </>
         );
     }
     return (
         <>
             Not signed in <br />
-            <Button colorScheme='blue' onClick={() => signIn()}>Sign in</Button>
+            <Button colorScheme='blue' onClick={() => signIn()}>
+                Sign in
+            </Button>
         </>
     );
 }
