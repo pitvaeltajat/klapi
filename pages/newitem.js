@@ -46,25 +46,24 @@ export default function NewItem() {
     ) => {
         try {
             // call createItem api route
-            const res = await fetch('/api/createItem', {
+            await fetch('/api/createItem', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(values),
-            });
-            // does not reset form. Should have input fields hardcoded?
-            const item = await res.json();
-
-            toast({
-                title: 'Item created',
-                description: 'Item created successfully',
-                status: 'success',
-                duration: 5000,
-                isClosable: true,
-            });
+            }).then(
+                toast({
+                    title: 'Item created',
+                    description: 'Item created successfully',
+                    status: 'success',
+                    duration: 5000,
+                    isClosable: true,
+                })
+            );
             setSubmitting(false);
             resetForm();
+            // does not reset form. Should have input fields hardcoded?
         } catch (error) {
             setErrors({ submit: error.message });
             toast({
@@ -93,7 +92,6 @@ export default function NewItem() {
                 }}
                 onSubmit={async (values, actions) => {
                     await handleSubmit(values, actions);
-                    alert(JSON.stringify(values, null, 2));
                 }}
             >
                 {(props) => (
@@ -225,10 +223,12 @@ export default function NewItem() {
                                         form.errors.locationId &&
                                         form.touched.locationId
                                     }
+                                    isRequired
                                 >
                                     <FormLabel htmlFor='locationId'>
                                         Sijainti
                                     </FormLabel>
+                                    {/* TODO: field does not reset on form submission */}
                                     <CreatableSelect
                                         options={locations}
                                         id='locationId'
