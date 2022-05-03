@@ -3,6 +3,8 @@ import { Container, Heading } from '@chakra-ui/react';
 import Auth from './auth';
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
+import { Button } from '@chakra-ui/react';
+import NextLink from 'next/link';
 
 const prisma = new PrismaClient();
 
@@ -31,6 +33,9 @@ export default function Index({ items }) {
                     <br />
                 </>
             ))}
+            <NextLink href='/productlist'>
+                <Button colorScheme='blue'>Lisää uusi varaus</Button>
+            </NextLink>
         </>
     );
 }

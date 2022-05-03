@@ -23,6 +23,9 @@ const TopBar = () => {
         </>
     );
 };
+import { ChakraProvider } from '@chakra-ui/react';
+import store from '../redux/store';
+import { Provider } from 'react-redux';
 
 export default function App({
     Component,
@@ -31,30 +34,35 @@ export default function App({
     const toast = useToast();
 
     return (
-        <ChakraProvider>
-            <SessionProvider session={session}>
-                <SWRConfig
-                    value={{
-                        fetcher,
-                        onError: (error, key) => {
-                            if (error.status !== 403 && error.status !== 404) {
-                                toast({
-                                    title: 'Error',
-                                    description: error.message,
-                                    status: 'error',
-                                    duration: 5000,
-                                    isClosable: true,
-                                });
-                            }
-                        },
-                    }}
-                >
-                    <TopBar />
-                    <Container>
-                        <Component {...pageProps} />
-                    </Container>
-                </SWRConfig>
-            </SessionProvider>
-        </ChakraProvider>
+        <SessionProvider session={session}>
+            <Provider store={store}>
+                <ChakraProvider>
+                    <SWRConfig
+                        value={{
+                            fetcher,
+                            onError: (error, key) => {
+                                if (
+                                    error.status !== 403 &&
+                                    error.status !== 404
+                                ) {
+                                    toast({
+                                        title: 'Error',
+                                        description: error.message,
+                                        status: 'error',
+                                        duration: 5000,
+                                        isClosable: true,
+                                    });
+                                }
+                            },
+                        }}
+                    >
+                        <TopBar />
+                        <Container>
+                            <Component {...pageProps} />
+                        </Container>
+                    </SWRConfig>
+                </ChakraProvider>
+            </Provider>
+        </SessionProvider>
     );
 }
