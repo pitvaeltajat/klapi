@@ -1,9 +1,8 @@
 import React from 'react';
 import { Select, Checkbox, Stack, List, ListItem, OrderedList, UnorderedList, Button} from '@chakra-ui/react';
 import { PrismaClient } from '@prisma/client';
-import { useDispatch } from 'react-redux';
-import { addToCart } from '../redux/cart.slice';
 import NextLink from 'next/link'
+import ItemCard from '../components/itemcard';
 
 export async function getStaticProps(){
     const prisma = new PrismaClient()
@@ -14,28 +13,22 @@ export async function getStaticProps(){
     return {props: {items, categories}}
 }
 
-async function Reload(){
-    const items = await prisma.Item.findMany({})
-    return {props: items}
-}
-
-export default function newReservation({items, categories}){
-    
-    const dispatch = useDispatch()
+export default function AllItems({items, categories}){
 
     return(
     <div>
-        <Stack direction='column'>
+        <h1>Kaikki kamat</h1>
+        <Stack direction='row' padding='4px'>
             {categories.map(category=>(
-                <Checkbox>{category.name}</Checkbox>
+                <NextLink href={`/category/${category.name}`}>
+                    <Button>{category.name}</Button>
+                </NextLink>
             ))}
         </Stack>
-
-        <UnorderedList>
-            {items.map(item=>(
-                <ListItem key={item.id}>{item.name} <Button onClick={() => dispatch(addToCart(item))}>Lisää koriin</Button></ListItem>
-            ))}
-        </UnorderedList>
+        
+        {items.map(item=>(
+            <ItemCard key={item.id} Item={item}/>
+        ))}
 
         <NextLink href='/cart'>
             <Button colorScheme='blue'>Ostoskoriin</Button>
