@@ -1,13 +1,15 @@
 import React from 'react';
-import { Container, Heading } from '@chakra-ui/react';
+import { SimpleGrid } from '@chakra-ui/react';
 import Auth from './auth';
-import NewItem from './newitem';
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
+import { Button } from '@chakra-ui/react';
+import NextLink from 'next/link';
+import ItemCard from '../components/ItemCard';
 
 const prisma = new PrismaClient();
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps() {
     const items = await prisma.item.findMany();
     return {
         props: {
@@ -18,17 +20,22 @@ export async function getServerSideProps(context) {
 
 export default function Index({ items }) {
     return (
-        <Container>
+        <>
             <Auth />
-            <Heading>Kalusto App nimi pitäisi keksiä</Heading>
-            <Link href='/newitem'>
-                <a>Luo uusi kama</a>
-            </Link>
-            <ul>
+
+            <br />
+            <SimpleGrid columns={3} spacing={10}>
                 {items.map((item) => (
-                    <li key={item.id}>{item.name}</li>
+                    <ItemCard key={item.id} item={item} />
                 ))}
-            </ul>
-        </Container>
+            </SimpleGrid>
+
+            <NextLink href='/productlist'>
+                <Button colorScheme='blue'>Lisää uusi varaus</Button>
+            </NextLink>
+            <Link href='/newitem'>
+                <Button>Luo uusi kama</Button>
+            </Link>
+        </>
     );
 }

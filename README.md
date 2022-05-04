@@ -6,12 +6,12 @@ KLAPI is a web-based application to manage simple equipment reserve/loan/return 
 
 Kaho consists of the following components:
 
-    * [Next.js](https://nextjs.org)
-    * [Prisma](https://www.prisma.io)
-    * [NextAuth.js](https://next-auth.js.org/)
-    * [Docker](https://www.docker.com)
-    * [PostgreSQL](https://www.postgresql.org)
-    * [Chakra UI](https://chakra-ui.com)
+-   [Next.js](https://nextjs.org)
+-   [Prisma](https://www.prisma.io)
+-   [NextAuth.js](https://next-auth.js.org/)
+-   [Docker](https://www.docker.com)
+-   [PostgreSQL](https://www.postgresql.org)
+-   [Chakra UI](https://chakra-ui.com)
 
 ## Development
 
