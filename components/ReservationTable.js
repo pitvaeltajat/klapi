@@ -39,7 +39,7 @@ export default function ReservationTable({ reservations }) {
                                 <Td>{DateTimeToString(loan.endTime)}</Td>
                                 <Td>{reservation.amount}</Td>
                                 <Td>
-                                    <Link href={'/loan/' + loan.id}>
+                                    <Link href={'/loans/' + loan.id}>
                                         <Button>Muokkaa</Button>
                                     </Link>
                                 </Td>

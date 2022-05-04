@@ -1,6 +1,7 @@
 // single loan view
 import React from 'react';
 import { PrismaClient } from '@prisma/client';
+import { Stack, Button } from '@chakra-ui/react';
 
 export async function getServerSideProps(req, res) {
     const prisma = new PrismaClient();
@@ -28,5 +29,11 @@ export async function getServerSideProps(req, res) {
 export default function LoanView({ loan }) {
     console.log(loan);
     // list reservations and show loan basic information and user information
-    return <>loan basic view</>;
+    return (
+        <Stack direction={'row'}>
+            <Button colorScheme={'red'}>Hylkää</Button>
+            <Button colorScheme={'yellow'}>Muokkaa</Button>
+            <Button colorScheme={'green'}>Hyväksy</Button>
+        </Stack>
+    );
 }
