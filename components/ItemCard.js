@@ -3,12 +3,10 @@ import {
     Box,
     Image,
     useColorModeValue,
-    Icon,
-    chakra,
-    Tooltip,
+    IconButton,
 } from '@chakra-ui/react';
 
-import { FiShoppingCart } from 'react-icons/fi';
+import { FiShoppingCart } from '@chakra-ui/icons';
 
 export default function ItemCard({ item }) {
     return (
@@ -47,22 +45,17 @@ export default function ItemCard({ item }) {
                         >
                             {item.name}
                         </Box>
-                        <Tooltip
-                            label='Add to cart'
-                            bg='white'
-                            placement={'top'}
-                            color={'gray.800'}
-                            fontSize={'1.2em'}
-                        >
-                            <chakra.a href={'#'} display={'flex'}>
-                                <Icon
-                                    as={FiShoppingCart}
-                                    h={7}
-                                    w={7}
-                                    alignSelf={'center'}
-                                />
-                            </chakra.a>
-                        </Tooltip>
+
+                        <IconButton
+                            icon={FiShoppingCart}
+                            variant='transparent'
+                            onClick={() => {
+                                alert('Added to cart!');
+                            }}
+                            h={7}
+                            w={7}
+                            alignSelf={'center'}
+                        />
                     </Flex>
                 </Box>
             </Box>
