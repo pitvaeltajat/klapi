@@ -1,14 +1,15 @@
-import {
-    Flex,
-    Box,
-    Image,
-    useColorModeValue,
-    IconButton,
-} from '@chakra-ui/react';
+import { Flex, Box, Image, useColorModeValue, Button } from '@chakra-ui/react';
 
 import { FiShoppingCart } from '@chakra-ui/icons';
 
+import { useDispatch, useSelector } from 'react-redux';
+
+import { addToCart } from '../redux/cart.slice';
+
 export default function ItemCard({ item }) {
+    const dispatch = useDispatch();
+
+    const cart = useSelector((state) => state.cart);
     return (
         <Flex w='full' alignItems='center' justifyContent='center'>
             <Box
@@ -46,16 +47,18 @@ export default function ItemCard({ item }) {
                             {item.name}
                         </Box>
 
-                        <IconButton
-                            icon={FiShoppingCart}
-                            variant='transparent'
-                            onClick={() => {
-                                alert('Added to cart!');
-                            }}
+                        <Button
+                            variantColor='blue'
+                            onClick={() => dispatch(addToCart(item))}
                             h={7}
                             w={7}
                             alignSelf={'center'}
-                        />
+                        >
+                            Lisää
+                        </Button>
+                        {cart
+                            .filter((cartItem) => cartItem.id === item.id)
+                            .map((cartItem) => cartItem.amount)}
                     </Flex>
                 </Box>
             </Box>
