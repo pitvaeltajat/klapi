@@ -1,7 +1,23 @@
 // single loan view
 import React from 'react';
 import { PrismaClient } from '@prisma/client';
-import { Stack, Button } from '@chakra-ui/react';
+import {
+    Stack,
+    Button,
+    Heading,
+    Box,
+    useToast,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+    useDisclosure,
+} from '@chakra-ui/react';
+
+import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 
 export async function getServerSideProps(req, res) {
     const prisma = new PrismaClient();
@@ -12,7 +28,11 @@ export async function getServerSideProps(req, res) {
         },
         include: {
             user: true,
-            reservations: true,
+            reservations: {
+                include: {
+                    item: true,
+                },
+            },
         },
     });
     if (!loan) {
@@ -20,6 +40,7 @@ export async function getServerSideProps(req, res) {
             notFound: true,
         };
     }
+    console.log(loan);
     return {
         props: {
             loan,
@@ -27,13 +48,117 @@ export async function getServerSideProps(req, res) {
     };
 }
 export default function LoanView({ loan }) {
-    console.log(loan);
+    const toast = useToast();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const approveLoan = async () => {
+        await fetch('/api/approveLoan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: loan.id }),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                toast({
+                    title: 'Loan approved',
+                    description: 'Loan has been approved',
+                    status: 'success',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            })
+            .catch((err) => {
+                toast({
+                    title: 'Error',
+                    description: err.message,
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    const rejectLoan = async () => {
+        await fetch('/api/rejectLoan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(loan.id),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                toast({
+                    title: 'Loan rejected',
+                    description: 'Loan has been rejected',
+                    status: 'success',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            })
+            .catch((err) => {
+                toast({
+                    title: 'Error',
+                    description: err.message,
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    // first, double-check that the user really wants to reject the loan with a modal
+
     // list reservations and show loan basic information and user information
     return (
-        <Stack direction={'row'}>
-            <Button colorScheme={'red'}>Hylkää</Button>
-            <Button colorScheme={'yellow'}>Muokkaa</Button>
-            <Button colorScheme={'green'}>Hyväksy</Button>
-        </Stack>
+        <>
+            <Heading as='h1'>Varaus {loan.id}</Heading>
+            <Heading as='h2' size='lg'>
+                Perustiedot
+            </Heading>
+            <Stack direction='column' spacing={4}>
+                <Box>
+                    <p>Aloitusaika: {loan.startTime.toLocaleString('fi-FI')}</p>
+                    <p>Lopetusaika: {loan.endTime.toLocaleString('fi-FI')}</p>
+                    <p>Varaaja: {loan.user.name}</p>
+                </Box>
+            </Stack>
+            <Heading as='h2' size='lg'>
+                Kamat
+            </Heading>
+            <ReservationTableLoanView loan={loan} />
+
+            <Stack direction={'row'}>
+                <Button colorScheme={'red'} onClick={onOpen}>
+                    Hylkää
+                </Button>
+                <Button colorScheme={'yellow'}>Muokkaa</Button>
+                <Button colorScheme={'green'} onClick={approveLoan}>
+                    Hyväksy
+                </Button>
+                <Modal isOpen={isOpen} onClose={onClose}>
+                    <ModalOverlay />
+                    <ModalContent>
+                        <ModalHeader>Poistetaanko varaus?</ModalHeader>
+                        <ModalCloseButton />
+                        <ModalBody>Varaus poistetaan. Oletko varma?</ModalBody>
+
+                        <ModalFooter>
+                            <Button
+                                colorScheme='blue'
+                                mr={3}
+                                onClick={rejectLoan}
+                            >
+                                Poista
+                            </Button>
+                            <Button colorScheme='gray' onClick={onClose}>
+                                Peruuta
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+            </Stack>
+        </>
     );
 }
