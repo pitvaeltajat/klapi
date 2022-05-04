@@ -1,10 +1,11 @@
 import React from 'react';
-import { Container, Heading } from '@chakra-ui/react';
+import { SimpleGrid } from '@chakra-ui/react';
 import Auth from './auth';
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import { Button } from '@chakra-ui/react';
 import NextLink from 'next/link';
+import ItemCard from '../components/ItemCard';
 
 const prisma = new PrismaClient();
 
@@ -23,14 +24,12 @@ export default function Index({ items }) {
             <Auth />
 
             <br />
-            {items.map((item) => (
-                <>
-                    <Link href={`/item/${item.id}`}>
-                        <a>{item.name}</a>
-                    </Link>
-                    <br />
-                </>
-            ))}
+            <SimpleGrid columns={3} spacing={10}>
+                {items.map((item) => (
+                    <ItemCard key={item.id} item={item} />
+                ))}
+            </SimpleGrid>
+
             <NextLink href='/productlist'>
                 <Button colorScheme='blue'>Lisää uusi varaus</Button>
             </NextLink>
