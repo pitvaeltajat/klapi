@@ -23,12 +23,17 @@ const ItemCard = ({Item}) => {
     
     const availableAmount = Item.amount-reservedAmount
     
+    
+    if(availableAmount-(cart.filter((item) => item.id === Item.id).map((item) => (item.quantity))) <= 0){
+        var buttonDisabled = true
+    } else {buttonDisabled = false}
+
     if(availableAmount >= 1){
         return(
             <Box borderWidth='4px' borderRadius='10px' backgroundColor='gray.400' width='200px' padding='8px'>
                 <Box padding='4px'> <h2>{Item.name}</h2> </Box>
                 <Flex direction='row' alignContent='center'>
-                    <Button colorScheme='blue' onClick={() => dispatch(addToCart(Item))}>Lisää koriin</Button>
+                    <Button isDisabled={buttonDisabled} colorScheme='blue' onClick={() => dispatch(addToCart(Item))}>Lisää koriin</Button>
                     <Box verticalAlign='center' p='2' borderRadius='full' backgroundColor='blue.500'>{cart.filter((item) => item.id === Item.id).map((item) => (item.quantity))}</Box>
                 </Flex>
                 <Box>Varattavissa: {availableAmount}</Box>
