@@ -8,7 +8,7 @@ export async function getServerSideProps(){
     const prisma = new PrismaClient()
 
     const items = await prisma.Item.findMany({
-        include: {categories: true},
+        include: {categories: true, reservations: true},
         orderBy: {name: 'asc'}
     })
     const categories = await prisma.Category.findMany({orderBy:{name:'asc'}})

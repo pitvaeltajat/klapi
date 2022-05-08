@@ -26,15 +26,13 @@ import { PrismaClient } from "@prisma/client"
 export default function CartPage(){
     
     const cart = useSelector((state) => state.cart)
+    const dates = useSelector((state) => state.dates)
     const dispatch = useDispatch()
      
     const {data: session, status} = useSession()
 
-    const [startDate, setStartDate] = useState(new Date())
-    const [endDate, setEndDate] = useState(new Date())
-
-    const startTime = startDate
-    const endTime = endDate
+    const startTime = dates.startDate
+    const endTime = dates.endDate
 
     const userName = session.user.name
 
@@ -85,16 +83,6 @@ export default function CartPage(){
                 </Table>
             </TableContainer>
 
-            <h2>Aloitus</h2>
-            <Box padding={'4px'}>
-                <DatePicker selected={startDate} onChange={(date) => setStartDate(date)}/>
-            </Box>
-
-            <h2>Lopetus</h2>
-            <Box padding={'4px'}>
-                <DatePicker selected={endDate} onChange={(date) => setEndDate(date)}/>
-            </Box>
-            
             <Box>
                 <Button onClick={()=>submitLoan()}>Lähetä varaus</Button>
             </Box> 
@@ -103,3 +91,16 @@ export default function CartPage(){
    
     ) 
 }
+
+/*
+<h2>Aloitus</h2>
+            <Box padding={'4px'}>
+                <DatePicker selected={startDate} onChange={(date) => setStartDate(date)}/>
+            </Box>
+
+            <h2>Lopetus</h2>
+            <Box padding={'4px'}>
+                <DatePicker selected={endDate} onChange={(date) => setEndDate(date)}/>
+            </Box>
+           
+*/
