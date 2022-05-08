@@ -8,7 +8,7 @@ import NextLink from 'next/link'
 export default function selectDate(){
 
     const days = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su']
-    const months = ['Tammi']
+    const months = ['Tammi', 'Helmi', 'Maalis', 'Huhti', 'Touko', 'Kesä', 'Heinä','Elo', 'Syys', 'Loka', 'Marras', 'Joulu'] 
 
     const startDate = new Date()
     const endDate = new Date()

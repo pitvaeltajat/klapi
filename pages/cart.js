@@ -50,7 +50,7 @@ export default function CartPage(){
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(body)
-        })
+        })  
     }
 
     return(

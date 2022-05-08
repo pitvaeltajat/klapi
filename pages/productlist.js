@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 
 export async function getStaticProps(){
     const prisma = new PrismaClient()
-    const items = await prisma.Item.findMany({include: {categories: true, reservations: true}, orderBy:{name: 'asc'}})
+    const items = await prisma.Item.findMany({include: {categories: true, reservations: {include: {loan: true}}}, orderBy:{name: 'asc'}})
     const categories = await prisma.Category.findMany({orderBy:{name:'asc'}})
 
     console.log(items)

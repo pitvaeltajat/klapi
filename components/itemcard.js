@@ -8,11 +8,14 @@ const ItemCard = ({Item}) => {
 
     const cart = useSelector(state => state.cart)
     const dates = useSelector(state => state.dates)
-    console.log(Item)
-
+    
+    
     if(Item.reservations != undefined){
         const effectiveReservations = Item.reservations.filter(
-            reservation => dates.startDate < reservation.startDate && reservation.startDate < dates.endDate || dates.startDate < reservation.endDate && reservation.endDate < dates.endDate)
+            reservation => !(
+                reservation.loan.startTime > dates.endDate ||
+                reservation.loan.endTime < dates.startDate
+        ))
         var reservedAmount = 0
         effectiveReservations.map((reservation) => 
             reservedAmount += reservation.amount)    
