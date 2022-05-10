@@ -22,6 +22,16 @@ export default function Index({ items }) {
     return (
         <>
             <Auth />
+            <h1>Hello World</h1>
+            {users.map((user) => (
+                <p key={user.id}>{user.name}</p>
+            ))}
+            <NextLink href='/selectdate'>
+                <Button colorScheme='blue' >Lisää uusi varaus</Button>
+            </NextLink>
+        </div>
+    );
+};
 
             <br />
             <SimpleGrid columns={3} spacing={10}>
