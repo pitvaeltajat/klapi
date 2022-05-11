@@ -6,18 +6,18 @@ export default function Auth() {
     if (session) {
         return (
             <>
-                Signed in as {session.user.email} <br />
+                Kirjautunut sisään sähköpostiosoitteella {session.user.email} <br />
                 <Button colorScheme='blue' onClick={() => signOut()}>
-                    Sign out
+                    Kirjaudu ulos
                 </Button>
             </>
         );
     }
     return (
         <>
-            Not signed in <br />
+            Ei kirjautunut sisään <br />
             <Button colorScheme='blue' onClick={() => signIn()}>
-                Sign in
+                Kirjaudu sisään
             </Button>
         </>
     );

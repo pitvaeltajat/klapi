@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { Button } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import ItemCard from '../components/ItemCard';
+import { useSession } from 'next-auth/react'
 
 const prisma = new PrismaClient();
 
 export async function getServerSideProps() {
     const items = await prisma.item.findMany();
+    
     return {
         props: {
             items,
@@ -19,28 +21,15 @@ export async function getServerSideProps() {
 }
 
 export default function Index({ items }) {
+    
+    const { data: session, status } = useSession()
+
     return (
         <>
             <Auth />
-            <h1>Hello World</h1>
-            {users.map((user) => (
-                <p key={user.id}>{user.name}</p>
-            ))}
-            <NextLink href='/selectdate'>
-                <Button colorScheme='blue' >Lisää uusi varaus</Button>
-            </NextLink>
-        </div>
-    );
-};
-
             <br />
-            <SimpleGrid columns={3} spacing={10}>
-                {items.map((item) => (
-                    <ItemCard key={item.id} item={item} />
-                ))}
-            </SimpleGrid>
 
-            <NextLink href='/productlist'>
+            <NextLink href='/selectdate'>
                 <Button colorScheme='blue'>Lisää uusi varaus</Button>
             </NextLink>
             <Link href='/newitem'>
