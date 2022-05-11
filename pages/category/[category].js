@@ -1,14 +1,15 @@
 import { useRouter } from "next/router";
 import { PrismaClient } from "@prisma/client";
-import { Stack, Button } from "@chakra-ui/react";
+import { Stack, Button, SimpleGrid } from "@chakra-ui/react";
 import NextLink from 'next/link'
 import ItemCard from "../../components/itemcard";
+import { useSelector } from "react-redux";
 
 export async function getServerSideProps(){
     const prisma = new PrismaClient()
 
     const items = await prisma.Item.findMany({
-        include: {categories: true},
+        include: {categories: true, reservations: {include: {loan: true}}},
         orderBy: {name: 'asc'}
     })
     const categories = await prisma.Category.findMany({orderBy:{name:'asc'}})
@@ -21,6 +22,8 @@ const CategoryPage = ({items, categories}) =>{
 
     items = items.filter((item) => item.categories.map((category)=>category.name).includes(router.query.category))
     categories = categories.filter((cat) => cat.name !== router.query.category) 
+
+    const dates = useSelector((state) => state.dates)
 
     return(
         <div>
@@ -38,14 +41,29 @@ const CategoryPage = ({items, categories}) =>{
             ))}
         </Stack><br></br>
         
+        
+        <h2>Päivämäärät:</h2>
+            <p>{dates.startDate.toLocaleString('fi', {
+                day: 'numeric',
+                year: 'numeric',
+                month: 'long',
+                hour: 'numeric',
+                minute: '2-digit'
+            })}</p>
+            <p>{dates.endDate.toLocaleString('fi', {
+                day: 'numeric',
+                year: 'numeric',
+                month: 'long',
+                hour: 'numeric',
+                minute: '2-digit'
+            })}</p>
+        
         <h2>Tuotteet:</h2>
-        {items.map(item=>(
-            <ItemCard key={item.id} Item={item}/>
-        ))}
-
-        <NextLink href='/cart'>
-            <Button colorScheme='blue'>Ostoskoriin</Button>
-        </NextLink>
+            <SimpleGrid columns={3} spacing={10}>
+                {items.map((item) => (
+                    <ItemCard key={item.id} item={item} />
+                ))}
+            </SimpleGrid>
 
     </div>
     )
