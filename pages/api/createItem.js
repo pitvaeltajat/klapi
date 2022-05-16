@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '/utils/prisma';
 
-export default async function handle(req, res) {
+export default async function handler(req, res) {
     // destruct location and categories from the body to be used in connect queries
     const {
         ['locationId']: locationObject,

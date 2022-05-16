@@ -4,7 +4,7 @@ KLAPI is a web-based application to manage simple equipment reserve/loan/return 
 
 ## Stack
 
-Kaho consists of the following components:
+Klapi consists of the following components:
 
 -   [Next.js](https://nextjs.org)
 -   [Prisma](https://www.prisma.io)
@@ -45,9 +45,9 @@ More information about Prisma can be found [here](https://www.prisma.io/docs/con
 
 ### Authentication
 
-Kaho uses NextAuth.js for authentication. Currently only authentication with Google is supported. New authentication providers can be added in NextAuth.js API route. If needed, Google authentication provider can be configured to only allow users from specific domains (own organization).
+KLAPI uses NextAuth.js for authentication. Currently only authentication with Google is supported. New authentication providers can be added in NextAuth.js API route. If needed, Google authentication provider can be configured to only allow users from specific domains (own organization).
 
-Kaho has 2 user roles: admin and user. Any person with Google account can become Kaho user. Users can browse equipment and send reservation requests, as well as see their reservation history. Admins can edit equipment catalog, manage users and approve/reject reservation requests.
+KLAPI has 2 user roles: admin and user. Any person with Google account can become Kaho user. Users can browse equipment and send reservation requests, as well as see their reservation history. Admins can edit equipment catalog, manage users and approve/reject reservation requests.
 
 ## Deployment
 

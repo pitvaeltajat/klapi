@@ -102,6 +102,7 @@ model Reservation {
 model Loan {
   id           String        @id @default(cuid())
   status       LoanStatus    @default(PENDING)
+  description  String? @db.VarChar(100)
   reservations Reservation[]
   startTime    DateTime
   endTime      DateTime
