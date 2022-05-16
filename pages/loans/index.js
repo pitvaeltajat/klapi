@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
-import { Box, Stack, Button, Link } from '@chakra-ui/react';
+import { Stack, Box, Button, Heading } from '@chakra-ui/react';
+import Link from '../../components/Link';
 
 export async function getServerSideProps() {
     const prisma = new PrismaClient();
@@ -10,19 +11,29 @@ export async function getServerSideProps() {
         },
     });
 
-    console.log(loans);
     return { props: { loans } };
 }
 
 const LoanCard = ({ loan }) => {
     return (
-        <Box key={loan.id}>
-            <p>{loan.startTime.toLocaleString('fi-FI')}</p>
-            <p>{loan.endTime.toLocaleString('fi-FI')}</p>
-            <p>{loan.user.name}</p>
-            <Link href={`/loans/${loan.id}`}>
-                <Button>Tarkastele</Button>
-            </Link>
+        <Box width='100%' key={loan.id}>
+            <Heading as='h3' size='md'>
+                {loan.id}
+            </Heading>
+            <Box
+                display='flex'
+                flexDirection='row'
+                justifyContent='space-between'
+            >
+                <Stack spacing='5px'>
+                    <p>Alkaa: {loan.startTime.toLocaleString('fi-FI')}</p>
+                    <p>Loppuu: {loan.endTime.toLocaleString('fi-FI')}</p>
+                    <p>Varaaja: {loan.user.name}</p>
+                </Stack>
+                <Link href={`/loans/${loan.id}`}>
+                    <Button>Tarkastele</Button>
+                </Link>
+            </Box>
         </Box>
     );
 };

@@ -1,22 +1,12 @@
-import '../styles/globals.css';
 import { SessionProvider } from 'next-auth/react';
-import {
-    ChakraProvider,
-    Container,
-    Box,
-    Link,
-    Heading,
-    useDisclosure,
-    Button,
-    propNames,
-} from '@chakra-ui/react';
+import { ChakraProvider } from '@chakra-ui/react';
 import { SWRConfig } from 'swr';
 import { useToast } from '@chakra-ui/react';
 import store from '../redux/store';
 import { Provider } from 'react-redux';
-import CartButton from '../components/CartButton';
-import CartDrawer from '../components/CartDrawer';
-import TopBar from '../components/TopBar';
+import Layout from '../components/Layout';
+
+import theme from '../styles/theme';
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -25,41 +15,35 @@ export default function App({
     pageProps: { session, ...pageProps },
 }) {
     const toast = useToast();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const getLayout = Component.getLayout || ((page) => page);
 
     return (
         <SessionProvider session={session}>
-            <Provider store={store}>
-                <ChakraProvider>
-                    <SWRConfig
-                        value={{
-                            fetcher,
-                            onError: (error, key) => {
-                                if (
-                                    error.status !== 403 &&
-                                    error.status !== 404
-                                ) {
-                                    toast({
-                                        title: 'Error',
-                                        description: error.message,
-                                        status: 'error',
-                                        duration: 5000,
-                                        isClosable: true,
-                                    });
-                                }
-                            },
-                        }}
-                    >
-                        <TopBar>
-                            <CartButton onOpen={onOpen} />
-                        </TopBar>
-                        <CartDrawer isOpen={isOpen} onClose={onClose} />
-                        <Container>
+            <SWRConfig
+                value={{
+                    fetcher,
+                    onError: (error, key) => {
+                        if (error.status !== 403 && error.status !== 404) {
+                            toast({
+                                title: 'Error',
+                                description: error.message,
+                                status: 'error',
+                                duration: 5000,
+                                isClosable: true,
+                            });
+                        }
+                    },
+                }}
+            >
+                <Provider store={store}>
+                    <ChakraProvider theme={theme}>
+                        {/* TODO: for some reason the theme is not applied to the layout */}
+                        <Layout>
                             <Component {...pageProps} />
-                        </Container>
-                    </SWRConfig>
-                </ChakraProvider>
-            </Provider>
+                        </Layout>
+                    </ChakraProvider>
+                </Provider>
+            </SWRConfig>
         </SessionProvider>
     );
 }

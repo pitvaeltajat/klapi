@@ -1,4 +1,4 @@
-import { Box, Link, Heading, Flex } from '@chakra-ui/react';
+import { Link, Heading, Flex } from '@chakra-ui/react';
 
 export default function TopBar({ children }) {
     return (

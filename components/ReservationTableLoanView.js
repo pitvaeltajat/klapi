@@ -8,8 +8,9 @@ import {
     Th,
     Td,
     TableContainer,
-    Link,
 } from '@chakra-ui/react';
+
+import Link from './Link';
 
 const DateTimeToString = (date) => {
     return date.toLocaleString('fi-FI');
@@ -17,8 +18,8 @@ const DateTimeToString = (date) => {
 
 export default function ReservationTableLoanView({ loan }) {
     return (
-        <Table>
-            <TableContainer>
+        <TableContainer>
+            <Table>
                 <Thead>
                     <Tr>
                         <Th>Nimi</Th>
@@ -31,7 +32,7 @@ export default function ReservationTableLoanView({ loan }) {
                 <Tbody>
                     {loan.reservations.map((reservation) => {
                         return (
-                            <Tr>
+                            <Tr key={reservation.id}>
                                 <Td>
                                     <Link
                                         href={`/items/${reservation.item.id}`}
@@ -46,7 +47,7 @@ export default function ReservationTableLoanView({ loan }) {
                         );
                     })}
                 </Tbody>
-            </TableContainer>
-        </Table>
+            </Table>
+        </TableContainer>
     );
 }

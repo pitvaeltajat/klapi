@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const result = await prisma.Loan.update({
         where: { id: id },
         data: {
-            status: LoanStatus.ACCEPTED,
+            status: LoanStatus.REJECTED,
         },
     });
     res.status(200).json(result);

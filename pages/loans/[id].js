@@ -16,6 +16,7 @@ import {
     ModalCloseButton,
     useDisclosure,
 } from '@chakra-ui/react';
+import { useRouter } from 'next/router';
 
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 
@@ -40,23 +41,27 @@ export async function getServerSideProps(req, res) {
             notFound: true,
         };
     }
-    console.log(loan);
+
     return {
         props: {
             loan,
         },
     };
 }
+
 export default function LoanView({ loan }) {
+    const router = useRouter();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
+
     const approveLoan = async () => {
+        const body = { id: loan.id };
         await fetch('/api/approveLoan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ id: loan.id }),
+            body: JSON.stringify(body),
         })
             .then((res) => res.json())
             .then((data) => {
@@ -67,6 +72,7 @@ export default function LoanView({ loan }) {
                     duration: 5000,
                     isClosable: true,
                 });
+                router.push('/loans');
             })
             .catch((err) => {
                 toast({
@@ -77,15 +83,17 @@ export default function LoanView({ loan }) {
                     isClosable: true,
                 });
             });
+        // navigate to all loans view
     };
 
     const rejectLoan = async () => {
+        const body = { id: loan.id };
         await fetch('/api/rejectLoan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(loan.id),
+            body: JSON.stringify(body),
         })
             .then((res) => res.json())
             .then((data) => {
@@ -96,6 +104,7 @@ export default function LoanView({ loan }) {
                     duration: 5000,
                     isClosable: true,
                 });
+                router.push('/loans');
             })
             .catch((err) => {
                 toast({
@@ -122,6 +131,7 @@ export default function LoanView({ loan }) {
                     <p>Aloitusaika: {loan.startTime.toLocaleString('fi-FI')}</p>
                     <p>Lopetusaika: {loan.endTime.toLocaleString('fi-FI')}</p>
                     <p>Varaaja: {loan.user.name}</p>
+                    <p>Status: {loan.status} </p>
                 </Box>
             </Stack>
             <Heading as='h2' size='lg'>
@@ -140,9 +150,11 @@ export default function LoanView({ loan }) {
                 <Modal isOpen={isOpen} onClose={onClose}>
                     <ModalOverlay />
                     <ModalContent>
-                        <ModalHeader>Poistetaanko varaus?</ModalHeader>
+                        <ModalHeader>Hylätäänkö varaus?</ModalHeader>
                         <ModalCloseButton />
-                        <ModalBody>Varaus poistetaan. Oletko varma?</ModalBody>
+                        <ModalBody>
+                            Varaushakemus hylätään. Oletko varma?
+                        </ModalBody>
 
                         <ModalFooter>
                             <Button
@@ -150,7 +162,7 @@ export default function LoanView({ loan }) {
                                 mr={3}
                                 onClick={rejectLoan}
                             >
-                                Poista
+                                Hylkää
                             </Button>
                             <Button colorScheme='gray' onClick={onClose}>
                                 Peruuta

@@ -1,5 +1,5 @@
-import { useSelector, useDispatch } from "react-redux"
-import { incrementQuantity, decrementQuantity} from "../redux/cart.slice"
+import { useSelector, useDispatch } from 'react-redux';
+import { incrementQuantity, decrementQuantity } from '../redux/cart.slice';
 import {
     Table,
     Thead,
@@ -13,47 +13,45 @@ import {
     Button,
     IconButton,
     Input,
-    Box
-  } from '@chakra-ui/react'
-import NextLink from 'next/link'
-import { AddIcon, MinusIcon } from "@chakra-ui/icons"
-import DatePicker from 'react-datepicker'
-import { useState } from "react"
-import "react-datepicker/dist/react-datepicker.css"
-import { useSession } from "next-auth/react"
-import { PrismaClient } from "@prisma/client"
+    Box,
+} from '@chakra-ui/react';
+import NextLink from 'next/link';
+import { AddIcon, MinusIcon } from '@chakra-ui/icons';
+import DatePicker from 'react-datepicker';
+import { useState } from 'react';
+import 'react-datepicker/dist/react-datepicker.css';
+import { useSession } from 'next-auth/react';
+import { PrismaClient } from '@prisma/client';
 
-export default function CartPage(){
-    
-    const cart = useSelector((state) => state.cart)
-    const dates = useSelector((state) => state.dates)
-    const dispatch = useDispatch()
-     
-    const {data: session, status} = useSession()
+export default function CartPage() {
+    const cart = useSelector((state) => state.cart);
+    const dates = useSelector((state) => state.dates);
+    const dispatch = useDispatch();
 
-    const startTime = dates.startDate
-    const endTime = dates.endDate
+    const { data: session, status } = useSession();
 
-    const userName = session.user.name
+    const startTime = dates.startDate;
+    const endTime = dates.endDate;
+
+    const userName = session.user.name;
 
     const reservations = cart.map((cartitem) => ({
-        item: {connect: {id: cartitem.id}},
+        item: { connect: { id: cartitem.id } },
         amount: cartitem.quantity,
-    }))
+    }));
 
-    async function submitLoan(){
-        const body = {reservations, startTime, endTime, userName}
-        console.log(body)
+    async function submitLoan() {
+        const body = { reservations, startTime, endTime, userName };
         await fetch('api/submitLoan', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(body)
-        })  
+            body: JSON.stringify(body),
+        });
     }
 
-    return(
+    return (
         <div>
             <NextLink href='/productlist'>
                 <Button>Takaisin listaan</Button>
@@ -74,22 +72,30 @@ export default function CartPage(){
                                 <Td>{item.name}</Td>
                                 <Td>{item.quantity}</Td>
                                 <Td>
-                                    <IconButton icon={<MinusIcon />} onClick={() => dispatch(decrementQuantity(item.id))}></IconButton>
-                                    <IconButton icon={<AddIcon />} onClick={() => dispatch(incrementQuantity(item.id))}></IconButton>
+                                    <IconButton
+                                        icon={<MinusIcon />}
+                                        onClick={() =>
+                                            dispatch(decrementQuantity(item.id))
+                                        }
+                                    ></IconButton>
+                                    <IconButton
+                                        icon={<AddIcon />}
+                                        onClick={() =>
+                                            dispatch(incrementQuantity(item.id))
+                                        }
+                                    ></IconButton>
                                 </Td>
                             </Tr>
-                            ))}
+                        ))}
                     </Tbody>
                 </Table>
             </TableContainer>
 
             <Box>
-                <Button onClick={()=>submitLoan()}>Lähetä varaus</Button>
-            </Box> 
-            
-        </div>    
-   
-    ) 
+                <Button onClick={() => submitLoan()}>Lähetä varaus</Button>
+            </Box>
+        </div>
+    );
 }
 
 /*
