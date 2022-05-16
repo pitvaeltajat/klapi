@@ -1,12 +1,9 @@
 import React from 'react';
 import Auth from './auth';
-import { PrismaClient } from '@prisma/client';
-import Link from 'next/link';
+import prisma from '/utils/prisma';
 import { Button } from '@chakra-ui/react';
-import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
-
-const prisma = new PrismaClient();
+import Link from '../components/Link';
 
 export async function getServerSideProps() {
     const items = await prisma.item.findMany();
@@ -24,9 +21,9 @@ export default function Index({ items }) {
         <>
             <Auth />
             <br />
-            <NextLink href='/selectdate'>
+            <Link href='/selectdate'>
                 <Button colorScheme='blue'>Lisää uusi varaus</Button>
-            </NextLink>
+            </Link>
             <Link href='/newitem'>
                 <Button>Luo uusi kama</Button>
             </Link>

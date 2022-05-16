@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '/utils/prisma';
 
 export default async function handler(req, res) {
-    const { reservations, startTime, endTime, userName } = req.body;
+    const { reservations, startTime, endTime, userName, description } =
+        req.body;
     try {
         const user_id = await prisma.user.findMany({
             where: { name: { contains: userName } },
@@ -18,6 +17,7 @@ export default async function handler(req, res) {
                 startTime: startTime,
                 endTime: endTime,
                 user: { connect: { id: userId } },
+                description,
             },
         });
         res.status(200).json(result);

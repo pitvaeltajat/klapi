@@ -1,30 +1,24 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { incrementQuantity, decrementQuantity } from '../redux/cart.slice';
+import { incrementAmount, decrementAmount } from '../redux/cart.slice';
 import {
     Table,
     Thead,
     Tbody,
-    Tfoot,
     Tr,
     Th,
     Td,
-    TableCaption,
     TableContainer,
     Button,
     IconButton,
-    Input,
     Box,
 } from '@chakra-ui/react';
-import NextLink from 'next/link';
+import Link from './components/Link';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
-import DatePicker from 'react-datepicker';
-import { useState } from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useSession } from 'next-auth/react';
-import { PrismaClient } from '@prisma/client';
 
 export default function CartPage() {
-    const cart = useSelector((state) => state.cart);
+    const items = useSelector((state) => state.cart.items);
     const dates = useSelector((state) => state.dates);
     const dispatch = useDispatch();
 
@@ -35,9 +29,9 @@ export default function CartPage() {
 
     const userName = session.user.name;
 
-    const reservations = cart.map((cartitem) => ({
+    const reservations = items.map((cartitem) => ({
         item: { connect: { id: cartitem.id } },
-        amount: cartitem.quantity,
+        amount: cartitem.amount,
     }));
 
     async function submitLoan() {
@@ -53,9 +47,9 @@ export default function CartPage() {
 
     return (
         <div>
-            <NextLink href='/productlist'>
+            <Link href='/productlist'>
                 <Button>Takaisin listaan</Button>
-            </NextLink>
+            </Link>
 
             <TableContainer>
                 <Table>
@@ -67,21 +61,21 @@ export default function CartPage() {
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {cart.map((item) => (
+                        {items.map((item) => (
                             <Tr>
                                 <Td>{item.name}</Td>
-                                <Td>{item.quantity}</Td>
+                                <Td>{item.amount}</Td>
                                 <Td>
                                     <IconButton
                                         icon={<MinusIcon />}
                                         onClick={() =>
-                                            dispatch(decrementQuantity(item.id))
+                                            dispatch(decrementAmount(item.id))
                                         }
                                     ></IconButton>
                                     <IconButton
                                         icon={<AddIcon />}
                                         onClick={() =>
-                                            dispatch(incrementQuantity(item.id))
+                                            dispatch(incrementAmount(item.id))
                                         }
                                     ></IconButton>
                                 </Td>

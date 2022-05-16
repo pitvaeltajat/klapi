@@ -16,7 +16,7 @@ const DateTimeToString = (date) => {
     return date.toLocaleString('fi-FI');
 };
 
-export default function ReservationTableLoanView({ loan }) {
+export default function ReservationTable({ reservations }) {
     return (
         <TableContainer>
             <Table>
@@ -26,20 +26,26 @@ export default function ReservationTableLoanView({ loan }) {
                         <Th>Alku</Th>
                         <Th>Loppu</Th>
                         <Th>Määrä</Th>
-                        <Th></Th>
                     </Tr>
                 </Thead>
                 <Tbody>
-                    {loan.reservations.map((reservation) => {
+                    {reservations.map((reservation) => {
                         return (
                             <Tr key={reservation.id}>
                                 <Td>
-                                    <Link href={`/item/${reservation.item.id}`}>
-                                        {reservation.item.name}
+                                    <Link href={`/loan/${reservation.loan.id}`}>
+                                        {reservation.description ||
+                                            'Nimetön varaus'}
                                     </Link>
                                 </Td>
-                                <Td>{DateTimeToString(loan.startTime)}</Td>
-                                <Td>{DateTimeToString(loan.endTime)}</Td>
+                                <Td>
+                                    {DateTimeToString(
+                                        reservation.loan.startTime
+                                    )}
+                                </Td>
+                                <Td>
+                                    {DateTimeToString(reservation.loan.endTime)}
+                                </Td>
                                 <Td>{reservation.amount}</Td>
                             </Tr>
                         );

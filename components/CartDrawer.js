@@ -19,7 +19,7 @@ import {
 import { useRef } from 'react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { incrementQuantity, decrementQuantity } from '../redux/cart.slice';
+import { incrementAmount, decrementAmount } from '../redux/cart.slice';
 import { useSession } from 'next-auth/react';
 
 export default function CartDrawer({ isOpen, onClose }) {
@@ -35,13 +35,21 @@ export default function CartDrawer({ isOpen, onClose }) {
 
     const userName = session?.user?.name;
 
-    const reservations = cart.map((cartitem) => ({
+    const reservations = cart.items.map((cartitem) => ({
         item: { connect: { id: cartitem.id } },
-        amount: cartitem.quantity,
+        amount: cartitem.amount,
     }));
 
+    const description = cart.description;
+
     async function submitLoan() {
-        const body = { reservations, startTime, endTime, userName };
+        const body = {
+            reservations,
+            startTime,
+            endTime,
+            userName,
+            description,
+        };
         await fetch('api/submitLoan', {
             method: 'POST',
             headers: {
@@ -65,7 +73,7 @@ export default function CartDrawer({ isOpen, onClose }) {
 
                 <DrawerBody>
                     <Stack spacing='24px'>
-                        {cart.map(
+                        {cart.items.map(
                             (item) =>
                                 item.amount > 0 && (
                                     <Box key={item.id}>
@@ -79,7 +87,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                     aria-label='decrement'
                                                     onClick={() =>
                                                         dispatch(
-                                                            decrementQuantity(
+                                                            decrementAmount(
                                                                 item.id
                                                             )
                                                         )
@@ -96,7 +104,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                     aria-label='increment'
                                                     onClick={() =>
                                                         dispatch(
-                                                            incrementQuantity(
+                                                            incrementAmount(
                                                                 item.id
                                                             )
                                                         )

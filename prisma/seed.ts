@@ -1,7 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
 // create base data for the app based on schema.prisma
 
 async function main() {

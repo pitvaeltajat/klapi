@@ -1,6 +1,6 @@
 // single loan view
 import React from 'react';
-import { PrismaClient } from '@prisma/client';
+import prisma from '/utils/prisma';
 import {
     Stack,
     Button,
@@ -21,8 +21,6 @@ import { useRouter } from 'next/router';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 
 export async function getServerSideProps(req, res) {
-    const prisma = new PrismaClient();
-
     const loan = await prisma.loan.findUnique({
         where: {
             id: req.params.id,
@@ -72,7 +70,7 @@ export default function LoanView({ loan }) {
                     duration: 5000,
                     isClosable: true,
                 });
-                router.push('/loans');
+                router.push('/loan');
             })
             .catch((err) => {
                 toast({
@@ -104,7 +102,7 @@ export default function LoanView({ loan }) {
                     duration: 5000,
                     isClosable: true,
                 });
-                router.push('/loans');
+                router.push('/loan');
             })
             .catch((err) => {
                 toast({
@@ -122,7 +120,9 @@ export default function LoanView({ loan }) {
     // list reservations and show loan basic information and user information
     return (
         <>
-            <Heading as='h1'>Varaus {loan.id}</Heading>
+            <Heading as='h1'>
+                Varaus: {loan.description || 'Ei kuvausta'}
+            </Heading>
             <Heading as='h2' size='lg'>
                 Perustiedot
             </Heading>

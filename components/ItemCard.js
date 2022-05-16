@@ -6,31 +6,41 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { addToCart } from '../redux/cart.slice';
 
-export default function ItemCard({item}) {
+export default function ItemCard({ item }) {
     const dispatch = useDispatch();
 
-    const cart = useSelector((state) => state.cart);
-    const dates = useSelector(state => state.dates)
+    const items = useSelector((state) => state.cart.items);
+    const dates = useSelector((state) => state.dates);
 
-
-    if(item.reservations != undefined){
+    if (item.reservations != undefined) {
         const effectiveReservations = item.reservations.filter(
-            reservation => !(
-                reservation.loan.startTime > dates.endDate ||
-                reservation.loan.endTime < dates.startDate
-        ))
-        var reservedAmount = 0
-        effectiveReservations.map((reservation) => 
-            reservedAmount += reservation.amount)    
+            (reservation) =>
+                !(
+                    reservation.loan.startTime > dates.endDate ||
+                    reservation.loan.endTime < dates.startDate
+                )
+        );
+        var reservedAmount = 0;
+        effectiveReservations.map(
+            (reservation) => (reservedAmount += reservation.amount)
+        );
     }
 
-    const availableAmount = item.amount-reservedAmount
+    const availableAmount = item.amount - reservedAmount;
 
-    if(availableAmount-(cart.filter((item) => item.id === item.id).map((item) => (item.quantity))) <= 0){
-        var buttonDisabled = true
-    } else {buttonDisabled = false}
+    if (
+        availableAmount -
+            items
+                .filter((item) => item.id === item.id)
+                .map((item) => item.amount) <=
+        0
+    ) {
+        var buttonDisabled = true;
+    } else {
+        buttonDisabled = false;
+    }
 
-    if(availableAmount >= 1){
+    if (availableAmount >= 1) {
         return (
             <Flex w='full' alignItems='center' justifyContent='center'>
                 <Box
@@ -51,7 +61,7 @@ export default function ItemCard({item}) {
                         h='full'
                         fallbackSrc='https://via.placeholder.com/300'
                     />
-                    
+
                     <Box p='6'>
                         <Flex
                             mt='1'
@@ -65,11 +75,12 @@ export default function ItemCard({item}) {
                                 lineHeight='tight'
                                 isTruncated
                             >
-                                {item.name}{availableAmount}
+                                {item.name}
+                                {availableAmount}
                             </Box>
 
                             <Button
-                                variantColor='blue'
+                                variant={buttonDisabled ? 'outline' : 'solid'}
                                 onClick={() => dispatch(addToCart(item))}
                                 h={7}
                                 w={7}
@@ -77,17 +88,17 @@ export default function ItemCard({item}) {
                             >
                                 Lisää
                             </Button>
-                            {cart
+                            {items
                                 .filter((cartItem) => cartItem.id === item.id)
                                 .map((cartItem) => cartItem.amount)}
-                            
                         </Flex>
                     </Box>
                 </Box>
             </Flex>
-        );} else{
-            return(
-                <Flex w='full' alignItems='center' justifyContent='center'>
+        );
+    } else {
+        return (
+            <Flex w='full' alignItems='center' justifyContent='center'>
                 <Box
                     bg={useColorModeValue('white', 'gray.800')}
                     maxW='sm'
@@ -130,12 +141,13 @@ export default function ItemCard({item}) {
                                 lineHeight='tight'
                                 isTruncated
                             >
-                                Tätä tuotetta ei ole varattavissa valitsemallasi ajanjaksolla
+                                Tätä tuotetta ei ole varattavissa valitsemallasi
+                                ajanjaksolla
                             </Box>
                         </Flex>
                     </Box>
                 </Box>
             </Flex>
-            )
-        }
+        );
+    }
 }

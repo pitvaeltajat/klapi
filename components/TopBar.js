@@ -1,4 +1,5 @@
-import { Link, Heading, Flex } from '@chakra-ui/react';
+import { Heading, Flex } from '@chakra-ui/react';
+import Link from './Link';
 
 export default function TopBar({ children }) {
     return (
@@ -12,8 +13,8 @@ export default function TopBar({ children }) {
                 <Link href='/'>
                     <Heading>KLAPI</Heading>
                 </Link>
-                <Link href='/loans'>Varaukset</Link>
-                <Link>Hallinta</Link>
+                <Link href='/loan'>Varaukset</Link>
+                <Link href='/'>Hallinta</Link>
                 {children}
             </Flex>
         </>
