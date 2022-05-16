@@ -19,37 +19,44 @@ import {
 import { useRef } from 'react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { incrementQuantity, decrementQuantity } from '../redux/cart.slice';
-import {useSession} from 'next-auth/react'
+import { incrementAmount, decrementAmount } from '../redux/cart.slice';
+import { useSession } from 'next-auth/react';
 
 export default function CartDrawer({ isOpen, onClose }) {
     const firstField = useRef();
     const dispatch = useDispatch();
-    const cart = useSelector((state) => state.cart)
-    const dates = useSelector((state) => state.dates)
-    
-    const {data: session, status} = useSession()
+    const cart = useSelector((state) => state.cart);
+    const dates = useSelector((state) => state.dates);
 
-    const startTime = dates.startDate
-    const endTime = dates.endDate
+    const { data: session, status } = useSession();
 
-    const userName = session.user.name
+    const startTime = dates.startDate;
+    const endTime = dates.endDate;
 
-    const reservations = cart.map((cartitem) => ({
-        item: {connect: {id: cartitem.id}},
-        amount: cartitem.quantity,
-    }))
+    const userName = session?.user?.name;
 
-    async function submitLoan(){
-        const body = {reservations, startTime, endTime, userName}
-        console.log(body)
+    const reservations = cart.items.map((cartitem) => ({
+        item: { connect: { id: cartitem.id } },
+        amount: cartitem.amount,
+    }));
+
+    const description = cart.description;
+
+    async function submitLoan() {
+        const body = {
+            reservations,
+            startTime,
+            endTime,
+            userName,
+            description,
+        };
         await fetch('api/submitLoan', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(body)
-        })  
+            body: JSON.stringify(body),
+        });
     }
 
     return (
@@ -66,7 +73,7 @@ export default function CartDrawer({ isOpen, onClose }) {
 
                 <DrawerBody>
                     <Stack spacing='24px'>
-                        {cart.map(
+                        {cart.items.map(
                             (item) =>
                                 item.amount > 0 && (
                                     <Box key={item.id}>
@@ -80,7 +87,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                     aria-label='decrement'
                                                     onClick={() =>
                                                         dispatch(
-                                                            decrementQuantity(
+                                                            decrementAmount(
                                                                 item.id
                                                             )
                                                         )
@@ -97,7 +104,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                     aria-label='increment'
                                                     onClick={() =>
                                                         dispatch(
-                                                            incrementQuantity(
+                                                            incrementAmount(
                                                                 item.id
                                                             )
                                                         )
@@ -115,7 +122,9 @@ export default function CartDrawer({ isOpen, onClose }) {
                     <Button variant='outline' mr={3} onClick={onClose}>
                         Sulje
                     </Button>
-                    <Button colorScheme='blue' onClick={()=>submitLoan()}>Varaa</Button>
+                    <Button colorScheme='blue' onClick={() => submitLoan()}>
+                        Varaa
+                    </Button>
                 </DrawerFooter>
             </DrawerContent>
         </Drawer>

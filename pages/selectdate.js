@@ -1,47 +1,63 @@
-import { useDispatch, useSelector } from "react-redux"
-import DatePicker from 'react-datepicker'
-import { Box, Button } from "@chakra-ui/react"
-import "react-datepicker/dist/react-datepicker.css"
-import { setStartDate, setEndDate } from "../redux/dates.slice"
-import NextLink from 'next/link'
+import { useDispatch, useSelector } from 'react-redux';
+import DatePicker from 'react-datepicker';
+import { Box, Button, Heading, Textarea } from '@chakra-ui/react';
+import 'react-datepicker/dist/react-datepicker.css';
+import { setStartDate, setEndDate } from '../redux/dates.slice';
+import { setDescription } from '../redux/cart.slice';
+import Link from '../components/Link';
 
-export default function selectDate(){
+export default function selectDate() {
+    const days = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
+    const months = [
+        'Tammi',
+        'Helmi',
+        'Maalis',
+        'Huhti',
+        'Touko',
+        'Kesä',
+        'Heinä',
+        'Elo',
+        'Syys',
+        'Loka',
+        'Marras',
+        'Joulu',
+    ];
 
-    const days = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su']
-    const months = ['Tammi', 'Helmi', 'Maalis', 'Huhti', 'Touko', 'Kesä', 'Heinä','Elo', 'Syys', 'Loka', 'Marras', 'Joulu'] 
+    const startDate = new Date();
+    const endDate = new Date();
 
-    const startDate = new Date()
-    const endDate = new Date()
+    const dates = useSelector((state) => state.dates);
+    const description = useSelector((state) => state.cart.description);
+    const dispatch = useDispatch();
 
-    const dates = useSelector((state) => state.dates)
-    const dispatch = useDispatch() 
-    
-    return(
+    return (
         <div>
-            <h2>Aloitetaan valitsemalla päivämäärät</h2>
+            <Heading>Varauksen perustiedot</Heading>
 
-            <h2>Aloitus</h2>
+            <Heading size={'md'}>Aloitus</Heading>
             <Box padding={'4px'}>
                 <DatePicker
                     selected={dates.startDate}
                     onChange={(date) => dispatch(setStartDate(date))}
-                    dateFormat="d.M.yyyy"
-                    />
+                    dateFormat='d.M.yyyy'
+                />
             </Box>
 
-            <h2>Lopetus</h2>
+            <Heading size={'md'}>Lopetus</Heading>
             <Box padding={'4px'}>
                 <DatePicker
                     selected={dates.endDate}
                     onChange={(date) => dispatch(setEndDate(date))}
-                    dateFormat="d.M.yyyy"
+                    dateFormat='d.M.yyyy'
                 />
             </Box>
-
-            <NextLink href='/productlist'>
+            <Heading size={'md'}>Kuvaus</Heading>
+            <Textarea
+                onChange={(e) => dispatch(setDescription(e.target.value))}
+            />
+            <Link href='/productlist'>
                 <Button>Siirry valitsemaan tavarat</Button>
-            </NextLink>
-
+            </Link>
         </div>
-    )
+    );
 }

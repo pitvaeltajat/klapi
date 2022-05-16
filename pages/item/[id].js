@@ -1,5 +1,5 @@
 // get item by id and return it
-import { PrismaClient } from '@prisma/client';
+import prisma from '/utils/prisma';
 import React from 'react';
 import { useRouter } from 'next/router';
 import {
@@ -23,8 +23,6 @@ import {
 import ReservationTable from '../../components/ReservationTable';
 
 export async function getServerSideProps(req, res) {
-    const prisma = new PrismaClient();
-
     const item = await prisma.item.findUnique({
         where: {
             id: req.params.id,
