@@ -15,12 +15,14 @@ import {
     InputLeftAddon,
     InputRightAddon,
     IconButton,
+    Heading,
 } from '@chakra-ui/react';
 import { useRef } from 'react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { incrementAmount, decrementAmount } from '../redux/cart.slice';
 import { useSession } from 'next-auth/react';
+import { setDescription } from '../redux/cart.slice';
 
 export default function CartDrawer({ isOpen, onClose }) {
     const firstField = useRef();
@@ -63,6 +65,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         <Drawer
             isOpen={isOpen}
             placement='right'
+            size='full'
             initialFocusRef={firstField}
             onClose={onClose}
         >
@@ -72,7 +75,34 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <DrawerHeader borderBottomWidth='1px'>Ostoskori</DrawerHeader>
 
                 <DrawerBody>
+                    <Stack spacing={4}>
+                        <Box>
+                            <FormLabel htmlFor='description'>Kuvaus</FormLabel>
+                            <Input
+                                ref={firstField}
+                                id='description'
+                                name='description'
+                                placeholder='Kuvaus'
+                                value={description}
+                                onChange={(e) => {
+                                    dispatch(setDescription(e.target.value));
+                                }}
+                            />
+                        </Box>
+                        <Box>
+                            <FormLabel htmlFor='startTime'>Alku</FormLabel>
+                            <Input id='startTime' value={startTime} readOnly />
+                        </Box>
+                        <Box>
+                            <FormLabel htmlFor='endTime'>Loppu</FormLabel>
+                            <Input id='endTime' value={endTime} readOnly />
+                        </Box>
+                    </Stack>
+
                     <Stack spacing='24px'>
+                        <Heading as='h3' size='md'>
+                            Valitut kamat
+                        </Heading>
                         {cart.items.map(
                             (item) =>
                                 item.amount > 0 && (

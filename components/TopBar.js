@@ -14,7 +14,8 @@ export default function TopBar({ children }) {
                     <Heading>KLAPI</Heading>
                 </Link>
                 <Link href='/loan'>Varaukset</Link>
-                <Link href='/'>Hallinta</Link>
+                <Link href='/admin'>Hallinta</Link>
+                <Link href='/account'>Oma tili</Link>
                 {children}
             </Flex>
         </>

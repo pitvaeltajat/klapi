@@ -1,23 +1,8 @@
 import React from 'react';
 import { Stack, Button, SimpleGrid } from '@chakra-ui/react';
-import prisma from '/utils/prisma';
-import ItemCard from '../components/itemcard';
+import ItemCard from '../components/ItemCard';
 import { useSelector } from 'react-redux';
 import Link from '../components/Link';
-
-export async function getStaticProps() {
-    const items = await prisma.Item.findMany({
-        include: {
-            categories: true,
-            reservations: { include: { loan: true } },
-        },
-        orderBy: { name: 'asc' },
-    });
-    const categories = await prisma.Category.findMany({
-        orderBy: { name: 'asc' },
-    });
-    return { props: { items, categories } };
-}
 
 export default function AllItems({ items, categories }) {
     const dates = useSelector((state) => state.dates);

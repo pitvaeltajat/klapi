@@ -18,7 +18,7 @@ import { Formik, Form, Field } from 'formik';
 import { CreatableSelect } from 'chakra-react-select';
 import useSWR from 'swr';
 
-export default function NewItem() {
+export default function CreateItem() {
     const toast = useToast();
 
     const { data: locations, error: locationsError } =
