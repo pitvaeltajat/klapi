@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import prisma from '/utils/prisma';
 import { Stack, Button, SimpleGrid } from '@chakra-ui/react';
 import Link from '../../components/Link';
-import ItemCard from '../../components/itemcard';
+import ItemCard from '../../components/ItemCard';
 import { useSelector } from 'react-redux';
 
 export async function getServerSideProps() {

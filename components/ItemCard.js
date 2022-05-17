@@ -1,6 +1,11 @@
-import { Flex, Box, Image, useColorModeValue, Button } from '@chakra-ui/react';
-
-import { FiShoppingCart } from '@chakra-ui/icons';
+import {
+    Flex,
+    Box,
+    Image,
+    useColorModeValue,
+    Button,
+    useToast,
+} from '@chakra-ui/react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -8,6 +13,18 @@ import { addToCart } from '../redux/cart.slice';
 
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
+
+    const toast = useToast();
+    const addItemToCart = (item) => {
+        dispatch(addToCart(item));
+        toast({
+            title: 'Lisättiin kama',
+            description: `${item.name} lisätty ostoskoriin`,
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+        });
+    };
 
     const items = useSelector((state) => state.cart.items);
     const dates = useSelector((state) => state.dates);
@@ -28,126 +45,73 @@ export default function ItemCard({ item }) {
 
     const availableAmount = item.amount - reservedAmount;
 
+    let itemDisabled = true;
+
     if (
         availableAmount -
             items
-                .filter((item) => item.id === item.id)
+                .filter((filterItem) => filterItem.id === item.id)
                 .map((item) => item.amount) <=
         0
     ) {
-        var buttonDisabled = true;
+        itemDisabled = true;
     } else {
-        buttonDisabled = false;
+        itemDisabled = false;
     }
 
-    if (availableAmount >= 1) {
-        return (
-            <Flex w='full' alignItems='center' justifyContent='center'>
-                <Box
-                    bg={useColorModeValue('white', 'gray.800')}
-                    maxW='sm'
-                    borderWidth='1px'
-                    rounded='lg'
-                    shadow='lg'
-                    position='relative'
-                >
-                    <Image
-                        src={item.imgURL}
-                        alt={`Picture of ${item.name}`}
-                        roundedTop='lg'
-                        objectFit='cover'
-                        objectPosition='center'
-                        w='full'
-                        h='full'
-                        fallbackSrc='https://via.placeholder.com/300'
-                    />
+    return (
+        <Flex w='full' alignItems='center' justifyContent='center'>
+            <Box
+                bg={useColorModeValue('white', 'gray.800')}
+                maxW='sm'
+                borderWidth='1px'
+                rounded='lg'
+                shadow='lg'
+                position='relative'
+            >
+                <Image
+                    src={item.imgURL}
+                    alt={`Picture of ${item.name}`}
+                    roundedTop='lg'
+                    objectFit='cover'
+                    objectPosition='center'
+                    w='full'
+                    h='full'
+                    fallbackSrc='https://via.placeholder.com/300'
+                />
 
-                    <Box p='6'>
-                        <Flex
-                            mt='1'
-                            justifyContent='space-between'
-                            alignContent='center'
+                <Box p='6' bgColor={itemDisabled && 'gray.300'}>
+                    <Flex
+                        mt='1'
+                        justifyContent='space-between'
+                        alignContent='center'
+                    >
+                        <Box
+                            fontSize='2xl'
+                            fontWeight='semibold'
+                            as='h4'
+                            lineHeight='tight'
+                            isTruncated
                         >
-                            <Box
-                                fontSize='2xl'
-                                fontWeight='semibold'
-                                as='h4'
-                                lineHeight='tight'
-                                isTruncated
-                            >
-                                {item.name}
-                                {availableAmount}
-                            </Box>
-
+                            {item.name}
+                            {availableAmount}
+                        </Box>
+                        {!itemDisabled ? (
                             <Button
-                                variant={buttonDisabled ? 'outline' : 'solid'}
-                                onClick={() => dispatch(addToCart(item))}
+                                onClick={() => addItemToCart(item)}
                                 h={7}
                                 w={7}
                                 alignSelf={'center'}
                             >
                                 Lisää
                             </Button>
-                            {items
-                                .filter((cartItem) => cartItem.id === item.id)
-                                .map((cartItem) => cartItem.amount)}
-                        </Flex>
-                    </Box>
+                        ) : null}
+                        {items
+                            .filter((cartItem) => cartItem.id === item.id)
+                            .map((cartItem) => cartItem.amount)}
+                    </Flex>
                 </Box>
-            </Flex>
-        );
-    } else {
-        return (
-            <Flex w='full' alignItems='center' justifyContent='center'>
-                <Box
-                    bg={useColorModeValue('white', 'gray.800')}
-                    maxW='sm'
-                    borderWidth='1px'
-                    rounded='lg'
-                    shadow='lg'
-                    position='relative'
-                >
-                    <Image
-                        src={'https://via.placeholder.com/300'}
-                        alt={`Picture of ${item.name}`}
-                        roundedTop='lg'
-                        objectFit='cover'
-                        objectPosition='center'
-                        w='full'
-                        h='full'
-                        fallbackSrc='https://via.placeholder.com/300'
-                    />
-
-                    <Box p='6'>
-                        <Flex
-                            mt='1'
-                            justifyContent='space-between'
-                            alignContent='center'
-                        >
-                            <Box
-                                fontSize='2xl'
-                                fontWeight='semibold'
-                                as='h4'
-                                lineHeight='tight'
-                                isTruncated
-                            >
-                                {item.name}
-                            </Box>
-
-                            <Box
-                                fontSize='2xl'
-                                fontWeight='semibold'
-                                as='h4'
-                                lineHeight='tight'
-                                isTruncated
-                            >
-                                Tätä tuotetta ei ole varattavissa valitsemallasi
-                                ajanjaksolla
-                            </Box>
-                        </Flex>
-                    </Box>
-                </Box>
-            </Flex>
-        );
-    }
+            </Box>
+        </Flex>
+    );
 }

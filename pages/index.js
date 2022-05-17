@@ -1,32 +1,29 @@
 import React from 'react';
-import Auth from './auth';
 import prisma from '/utils/prisma';
-import { Button } from '@chakra-ui/react';
-import { useSession } from 'next-auth/react';
-import Link from '../components/Link';
+import DateSelector from '../components/DateSelector';
+import { Heading } from '@chakra-ui/react';
+import AllItems from './productlist';
 
 export async function getServerSideProps() {
-    const items = await prisma.item.findMany();
-    return {
-        props: {
-            items,
+    const items = await prisma.Item.findMany({
+        include: {
+            categories: true,
+            reservations: { include: { loan: true } },
         },
-    };
+        orderBy: { name: 'asc' },
+    });
+    const categories = await prisma.Category.findMany({
+        orderBy: { name: 'asc' },
+    });
+    return { props: { items, categories } };
 }
 
-export default function Index({ items }) {
-    const { data: session, status } = useSession();
-
+export default function Index({ items, categories }) {
     return (
         <>
-            <Auth />
-            <br />
-            <Link href='/selectdate'>
-                <Button colorScheme='blue'>Lisää uusi varaus</Button>
-            </Link>
-            <Link href='/newitem'>
-                <Button>Luo uusi kama</Button>
-            </Link>
+            <DateSelector />
+            <Heading>Haku</Heading>
+            <AllItems items={items} categories={categories} />
         </>
     );
 }
