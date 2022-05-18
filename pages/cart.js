@@ -12,7 +12,7 @@ import {
     IconButton,
     Box,
 } from '@chakra-ui/react';
-import Link from './components/Link';
+import Link from 'next/link';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useSession } from 'next-auth/react';
@@ -27,7 +27,7 @@ export default function CartPage() {
     const startTime = dates.startDate;
     const endTime = dates.endDate;
 
-    const userName = session.user.name;
+    const userName = session?.user?.name;
 
     const reservations = items.map((cartitem) => ({
         item: { connect: { id: cartitem.id } },

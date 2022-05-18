@@ -17,7 +17,9 @@ export default function DateSelector() {
                 <DatePicker
                     selected={dates.startDate}
                     onChange={(date) => dispatch(setStartDate(date))}
-                    dateFormat='d.M.yyyy'
+                    showTimeSelect
+                    dateFormat='d.M.yyyy H:mm'
+                    timeFormat='H:mm'
                 />
             </Box>
 
@@ -26,7 +28,9 @@ export default function DateSelector() {
                 <DatePicker
                     selected={dates.endDate}
                     onChange={(date) => dispatch(setEndDate(date))}
-                    dateFormat='d.M.yyyy'
+                    showTimeSelect
+                    dateFormat='d.M.yyyy H:mm'
+                    timeFormat='H:mm'
                 />
             </Box>
         </div>
