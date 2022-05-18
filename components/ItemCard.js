@@ -8,8 +8,8 @@ import {
 } from '@chakra-ui/react';
 
 import { useDispatch, useSelector } from 'react-redux';
-
 import { addToCart } from '../redux/cart.slice';
+import useSWR from 'swr';
 
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
@@ -29,6 +29,7 @@ export default function ItemCard({ item }) {
     const items = useSelector((state) => state.cart.items);
     const dates = useSelector((state) => state.dates);
 
+    /*
     if (item.reservations != undefined) {
         const effectiveReservations = item.reservations.filter(
             (reservation) =>
@@ -42,8 +43,16 @@ export default function ItemCard({ item }) {
             (reservation) => (reservedAmount += reservation.amount)
         );
     }
+    */
 
-    const availableAmount = item.amount - reservedAmount;
+    let availableAmount = fetch('api/getAvailability', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(item),
+    })
+    console.log(availableAmount)
 
     let itemDisabled = true;
 
