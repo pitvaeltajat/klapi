@@ -23,8 +23,8 @@ export default async function handler(req, res) {
         res.status(200).json(result);
     } catch (err) {
         console.log(err);
-        res.status(403).json({
-            err: 'An error occured while submitting a loan',
+        res.json({
+            err: err.message,
         });
     }
 }

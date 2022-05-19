@@ -29,31 +29,14 @@ export default function ItemCard({ item }) {
     const items = useSelector((state) => state.cart.items);
     const dates = useSelector((state) => state.dates);
 
-    /*
-    if (item.reservations != undefined) {
-        const effectiveReservations = item.reservations.filter(
-            (reservation) =>
-                !(
-                    reservation.loan.startTime > dates.endDate ||
-                    reservation.loan.endTime < dates.startDate
-                )
-        );
-        var reservedAmount = 0;
-        effectiveReservations.map(
-            (reservation) => (reservedAmount += reservation.amount)
-        );
-    }
-    */
+    const {data: availability, error: availabilityError} = 
+        useSWR('api/getAvailability')
+    if(!availabilityError){
+        console.log(availability)
+    }else{console.log('Error: '+ availabilityError)}
 
-    let availableAmount = fetch('api/getAvailability', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(item),
-    })
-    console.log(availableAmount)
-
+    //const availableAmount = availability.filter((itemData) => itemData.id === item.id)[0]['availableAmount']
+    const availableAmount = 99
     let itemDisabled = true;
 
     if (
