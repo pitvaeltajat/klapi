@@ -10,9 +10,34 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/cart.slice';
 import useSWR from 'swr';
+import { useEffect, useState } from 'react';
 
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
+
+    const [availabilityData, setAvailabilityData] = useState(null)
+    const [isLoading, setLoading] = useState(false)
+
+    useEffect(() => {
+        setLoading(true)
+        const startDate = dates.startDate
+        const endDate = dates.endDate
+        const body = {startDate, endDate, item}
+        fetch('api/getAvailability', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+            })
+
+            .then(response => response.json())
+            .then(data => {
+                setAvailabilityData(data)
+                setLoading(false)
+                //calculateAvailability()
+            }) 
+    }, [])
 
     const toast = useToast();
     const addItemToCart = (item) => {
@@ -29,27 +54,52 @@ export default function ItemCard({ item }) {
     const items = useSelector((state) => state.cart.items);
     const dates = useSelector((state) => state.dates);
 
-    const {data: availability, error: availabilityError} = 
-        useSWR('api/getAvailability')
-    if(!availabilityError){
-        console.log(availability)
-    }else{console.log('Error: '+ availabilityError)}
+    /*
+    async function getAvailability(){
+        const startDate = dates.startDate
+        const endDate = dates.endDate
+        const body = {startDate, endDate, item}
+        const res = await fetch('api/getAvailability', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+            })
+            
+            .then(response => response.json())
+            .then(data => {
+                var availableAmount = data.availableAmount
+            })
+            
+        var data = await res.json()
+        console.log(data)
+        if(res){
+            calculateAvailability(data)
+        }
+            
 
-    //const availableAmount = availability.filter((itemData) => itemData.id === item.id)[0]['availableAmount']
-    const availableAmount = 99
-    let itemDisabled = true;
-
-    if (
-        availableAmount -
-            items
-                .filter((filterItem) => filterItem.id === item.id)
-                .map((item) => item.amount) <=
-        0
-    ) {
-        itemDisabled = true;
-    } else {
-        itemDisabled = false;
     }
+    */
+
+    if (isLoading) return <p>Ladataan...</p>
+    if (!availabilityData) return <p>Error</p>
+    
+    let itemDisabled = false;
+    /*
+    function calculateAvailability(){
+        if (
+            availabilityData.availableAmount -
+                items
+                    .filter((filterItem) => filterItem.id === item.id)
+                    .map((item) => item.amount) <= 0
+        ) {
+            itemDisabled = true;
+        } else {
+            itemDisabled = false;
+        }
+    }
+    */
 
     return (
         <Flex w='full' alignItems='center' justifyContent='center'>
@@ -86,7 +136,7 @@ export default function ItemCard({ item }) {
                             isTruncated
                         >
                             {item.name}
-                            {availableAmount}
+                            {availabilityData.availableAmount}
                         </Box>
                         {!itemDisabled ? (
                             <Button
@@ -106,4 +156,5 @@ export default function ItemCard({ item }) {
             </Box>
         </Flex>
     );
+    
 }
