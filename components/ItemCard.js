@@ -15,9 +15,12 @@ import { useEffect, useState } from 'react';
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
 
+
+    /*
     const [availabilityData, setAvailabilityData] = useState(null)
     const [isLoading, setLoading] = useState(false)
 
+    
     useEffect(() => {
         setLoading(true)
         const startDate = dates.startDate
@@ -37,6 +40,40 @@ export default function ItemCard({ item }) {
                 setLoading(false)
             }) 
     }, [])
+    */
+
+    function getAvailability(item){
+        const startDate = dates.startDate
+        const endDate = dates.endDate
+
+        function getReservedAmount(item){
+
+            if (item.reservations != undefined) {
+                const effectiveReservations = item.reservations.filter(
+                    (reservation) =>
+                        !(
+                            reservation.loan.startTime > endDate ||
+                            reservation.loan.endTime < startDate
+                        )
+                );
+                var reservedAmount = 0;
+                effectiveReservations.map(
+                    (reservation) => (reservedAmount += reservation.amount)
+                );
+            }
+            return(reservedAmount)
+        }
+
+        const amountInCart = (cartItems.find(cartItem => cartItem.id == item.id) != undefined ? cartItems.find(cartItem => cartItem.id == item.id).amount : 0)
+
+        const availabilities = {
+            name: item.name,
+            id: item.id,
+            reservedAmount: getReservedAmount(item),
+            availableAmount: item.amount - getReservedAmount(item) - amountInCart,  
+        }
+        return(availabilities)
+    }
 
     const toast = useToast();
     const addItemToCart = (item) => {
@@ -50,12 +87,11 @@ export default function ItemCard({ item }) {
         });
     };
 
-    const items = useSelector((state) => state.cart.items);
+    const cartItems = useSelector((state) => state.cart.items);
+    const cart = useSelector((state) => state.cart)
+    console.log(cart)
     const dates = useSelector((state) => state.dates);
 
-    if (isLoading) return <p>Ladataan...</p>
-    if (!availabilityData) return <p>Error</p>
-    
     let itemDisabled = false;
 
     return (
@@ -93,11 +129,9 @@ export default function ItemCard({ item }) {
                             isTruncated
                         >
                             {item.name}
-                            {availabilityData.availableAmount}
+                            {item.amount - getAvailability(item).reservedAmount}
                         </Box>
-                        {availabilityData.availableAmount - 
-                        items.filter((filterItem) => filterItem.id === item.id)
-                        .map((item) => item.amount) > 0
+                        {getAvailability(item).availableAmount > 0
                             ? (
                                 <Button
                                     onClick={() => addItemToCart(item)}
@@ -108,7 +142,7 @@ export default function ItemCard({ item }) {
                                     Lisää
                                 </Button>
                             ) : null}
-                        {items
+                        {cartItems
                             .filter((cartItem) => cartItem.id === item.id)
                             .map((cartItem) => cartItem.amount)}
                     </Flex>

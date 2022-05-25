@@ -23,6 +23,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { incrementAmount, decrementAmount } from '../redux/cart.slice';
 import { useSession } from 'next-auth/react';
 import { setDescription } from '../redux/cart.slice';
+import useSWR from 'swr';
 
 export default function CartDrawer({ isOpen, onClose }) {
     const firstField = useRef();
@@ -59,6 +60,44 @@ export default function CartDrawer({ isOpen, onClose }) {
             },
             body: JSON.stringify(body),
         });
+    }
+
+    const {data: items, error: itemsError} =
+        useSWR('/api/getItems')
+
+    function getAvailability(cartItem){
+        const startDate = dates.startDate
+        const endDate = dates.endDate
+        const item = items.find(item => item.id == cartItem.id)
+        const cartItems = cart.items
+
+        function getReservedAmount(item){
+
+            if (item.reservations != undefined) {
+                const effectiveReservations = item.reservations.filter(
+                    (reservation) =>
+                        !(
+                            reservation.loan.startTime > endDate ||
+                            reservation.loan.endTime < startDate
+                        )
+                );
+                var reservedAmount = 0;
+                effectiveReservations.map(
+                    (reservation) => (reservedAmount += reservation.amount)
+                );
+            }
+            return(reservedAmount)
+        }
+
+        const amountInCart = (cartItems.find(cartItem => cartItem.id == item.id) != undefined ? cartItems.find(cartItem => cartItem.id == item.id).amount : 0)
+
+        const availabilities = {
+            name: item.name,
+            id: item.id,
+            reservedAmount: getReservedAmount(item),
+            availableAmount: item.amount - getReservedAmount(item) - amountInCart,  
+        }
+        return(availabilities)
     }
 
     return (
@@ -139,6 +178,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                             )
                                                         )
                                                     }
+                                                    isDisabled={getAvailability(item).availableAmount <= 0}
                                                 />
                                             </InputRightAddon>
                                         </InputGroup>
