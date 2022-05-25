@@ -15,33 +15,6 @@ import { useEffect, useState } from 'react';
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
 
-
-    /*
-    const [availabilityData, setAvailabilityData] = useState(null)
-    const [isLoading, setLoading] = useState(false)
-
-    
-    useEffect(() => {
-        setLoading(true)
-        const startDate = dates.startDate
-        const endDate = dates.endDate
-        const body = {startDate, endDate, item}
-        fetch('api/getAvailability', {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-            })
-
-            .then(response => response.json())
-            .then(data => {
-                setAvailabilityData(data)
-                setLoading(false)
-            }) 
-    }, [])
-    */
-
     function getAvailability(item){
         const startDate = dates.startDate
         const endDate = dates.endDate
@@ -72,6 +45,7 @@ export default function ItemCard({ item }) {
             reservedAmount: getReservedAmount(item),
             availableAmount: item.amount - getReservedAmount(item) - amountInCart,  
         }
+        console.log(availabilities)
         return(availabilities)
     }
 
@@ -89,7 +63,6 @@ export default function ItemCard({ item }) {
 
     const cartItems = useSelector((state) => state.cart.items);
     const cart = useSelector((state) => state.cart)
-    console.log(cart)
     const dates = useSelector((state) => state.dates);
 
     let itemDisabled = false;
@@ -129,23 +102,29 @@ export default function ItemCard({ item }) {
                             isTruncated
                         >
                             {item.name}
-                            {item.amount - getAvailability(item).reservedAmount}
                         </Box>
-                        {getAvailability(item).availableAmount > 0
-                            ? (
                                 <Button
                                     onClick={() => addItemToCart(item)}
                                     h={7}
                                     w={7}
                                     alignSelf={'center'}
+                                    isDisabled={getAvailability(item).availableAmount <= 0}
                                 >
                                     Lisää
                                 </Button>
-                            ) : null}
                         {cartItems
                             .filter((cartItem) => cartItem.id === item.id)
                             .map((cartItem) => cartItem.amount)}
                     </Flex>
+                    <Box
+                            fontSize='medium'
+                            fontWeight='semibold'
+                            as='h4'
+                            lineHeight='tight'
+                            isTruncated
+                        >
+                            Saatavilla: {item.amount - getAvailability(item).reservedAmount}
+                    </Box>
                 </Box>
             </Box>
         </Flex>

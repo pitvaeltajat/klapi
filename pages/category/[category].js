@@ -39,7 +39,7 @@ const CategoryPage = ({ items, categories }) => {
 
             <h2>Muut kategoriat:</h2>
             <Stack direction='row' padding='4px'>
-                <Link href='/productlist'>
+                <Link href='/'>
                     <Button>Kaikki tuotteet</Button>
                 </Link>
                 {categories.map((category) => (
