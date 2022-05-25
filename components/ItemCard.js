@@ -13,6 +13,40 @@ import { addToCart } from '../redux/cart.slice';
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
 
+    function getAvailability(item){
+        const startDate = dates.startDate
+        const endDate = dates.endDate
+
+        function getReservedAmount(item){
+
+            if (item.reservations != undefined) {
+                const effectiveReservations = item.reservations.filter(
+                    (reservation) =>
+                        !(
+                            reservation.loan.startTime > endDate ||
+                            reservation.loan.endTime < startDate
+                        )
+                );
+                var reservedAmount = 0;
+                effectiveReservations.map(
+                    (reservation) => (reservedAmount += reservation.amount)
+                );
+            }
+            return(reservedAmount)
+        }
+
+        const amountInCart = (cartItems.find(cartItem => cartItem.id == item.id) != undefined ? cartItems.find(cartItem => cartItem.id == item.id).amount : 0)
+
+        const availabilities = {
+            name: item.name,
+            id: item.id,
+            reservedAmount: getReservedAmount(item),
+            availableAmount: item.amount - getReservedAmount(item) - amountInCart,  
+        }
+        console.log(availabilities)
+        return(availabilities)
+    }
+
     const toast = useToast();
     const addItemToCart = (item) => {
         dispatch(addToCart(item));
@@ -25,8 +59,12 @@ export default function ItemCard({ item }) {
         });
     };
 
-    const items = useSelector((state) => state.cart.items);
+    const cartItems = useSelector((state) => state.cart.items);
+    const cart = useSelector((state) => state.cart)
     const dates = useSelector((state) => state.dates);
+
+
+    let itemDisabled = false;
 
     
     if (item.reservations != undefined) {
@@ -60,6 +98,7 @@ export default function ItemCard({ item }) {
     } else {
         itemDisabled = false;
     }
+
 
     return (
         <Flex w='full' alignItems='center' justifyContent='center'>
@@ -96,24 +135,32 @@ export default function ItemCard({ item }) {
                             isTruncated
                         >
                             {item.name}
-                            {availableAmount}
                         </Box>
-                        {!itemDisabled ? (
-                            <Button
-                                onClick={() => addItemToCart(item)}
-                                h={7}
-                                w={7}
-                                alignSelf={'center'}
-                            >
-                                Lisää
-                            </Button>
-                        ) : null}
-                        {items
+                                <Button
+                                    onClick={() => addItemToCart(item)}
+                                    h={7}
+                                    w={7}
+                                    alignSelf={'center'}
+                                    isDisabled={getAvailability(item).availableAmount <= 0}
+                                >
+                                    Lisää
+                                </Button>
+                        {cartItems
                             .filter((cartItem) => cartItem.id === item.id)
                             .map((cartItem) => cartItem.amount)}
                     </Flex>
+                    <Box
+                            fontSize='medium'
+                            fontWeight='semibold'
+                            as='h4'
+                            lineHeight='tight'
+                            isTruncated
+                        >
+                            Saatavilla: {item.amount - getAvailability(item).reservedAmount}
+                    </Box>
                 </Box>
             </Box>
         </Flex>
     );
+    
 }
