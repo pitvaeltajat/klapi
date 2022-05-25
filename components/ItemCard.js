@@ -63,43 +63,6 @@ export default function ItemCard({ item }) {
     const cart = useSelector((state) => state.cart)
     const dates = useSelector((state) => state.dates);
 
-
-    let itemDisabled = false;
-
-    
-    if (item.reservations != undefined) {
-        const effectiveReservations = item.reservations.filter(
-            (reservation) =>
-                !(
-                    reservation.loan.startTime > dates.endDate ||
-                    reservation.loan.endTime < dates.startDate
-                )
-        );
-        var reservedAmount = 0;
-        effectiveReservations.map(
-            (reservation) => (reservedAmount += reservation.amount)
-        );
-    }
-    
-    const availableAmount = item.amount - reservedAmount
-
-    console.log(availableAmount)
-
-    let itemDisabled = true;
-
-    if (
-        availableAmount -
-            items
-                .filter((filterItem) => filterItem.id === item.id)
-                .map((item) => item.amount) <=
-        0
-    ) {
-        itemDisabled = true;
-    } else {
-        itemDisabled = false;
-    }
-
-
     return (
         <Flex w='full' alignItems='center' justifyContent='center'>
             <Box
@@ -121,7 +84,7 @@ export default function ItemCard({ item }) {
                     fallbackSrc='https://via.placeholder.com/300'
                 />
 
-                <Box p='6' bgColor={itemDisabled && 'gray.300'}>
+                <Box p='6'>
                     <Flex
                         mt='1'
                         justifyContent='space-between'
