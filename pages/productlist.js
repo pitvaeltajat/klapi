@@ -18,7 +18,7 @@ export default function AllItems({ items, categories }) {
                     </Link>
                 ))}
             </Stack>
-            <h2>Päivämäärät:</h2>
+            <h2>Valitut päivämäärät:</h2>
             <p>
                 {dates.startDate.toLocaleString('fi', {
                     day: 'numeric',
