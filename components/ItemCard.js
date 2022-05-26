@@ -54,7 +54,7 @@ export default function ItemCard({ item }) {
             title: 'Lisättiin kama',
             description: `${item.name} lisätty ostoskoriin`,
             status: 'success',
-            duration: 5000,
+            duration: 1500,
             isClosable: true,
         });
     };

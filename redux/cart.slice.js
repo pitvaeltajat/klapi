@@ -43,6 +43,10 @@ const cartSlice = createSlice({
         setDescription: (state, action) => {
             state.description = action.payload;
         },
+
+        clearCart: state => {
+
+        }
     },
 });
 
@@ -54,4 +58,5 @@ export const {
     decrementAmount,
     setDescription,
     removeFromCart,
+    clearCart,
 } = cartSlice.actions;

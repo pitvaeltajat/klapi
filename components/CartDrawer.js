@@ -16,6 +16,7 @@ import {
     InputRightAddon,
     IconButton,
     Heading,
+    useDisclosure
 } from '@chakra-ui/react';
 import { useRef } from 'react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
@@ -24,6 +25,8 @@ import { incrementAmount, decrementAmount } from '../redux/cart.slice';
 import { useSession } from 'next-auth/react';
 import { setDescription } from '../redux/cart.slice';
 import useSWR from 'swr';
+import SubmitConfirmation from './SubmitConfirmation';
+ 
 
 export default function CartDrawer({ isOpen, onClose }) {
     const firstField = useRef();
@@ -31,36 +34,12 @@ export default function CartDrawer({ isOpen, onClose }) {
     const cart = useSelector((state) => state.cart);
     const dates = useSelector((state) => state.dates);
 
-    const { data: session, status } = useSession();
-
+    const ConfirmationDialog = useDisclosure()
+    
     const startTime = dates.startDate;
     const endTime = dates.endDate;
 
-    const userName = session?.user?.name;
-
-    const reservations = cart.items.map((cartitem) => ({
-        item: { connect: { id: cartitem.id } },
-        amount: cartitem.amount,
-    }));
-
     const description = cart.description;
-
-    async function submitLoan() {
-        const body = {
-            reservations,
-            startTime,
-            endTime,
-            userName,
-            description,
-        };
-        await fetch('api/submitLoan', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-    }
 
     const {data: items, error: itemsError} =
         useSWR('/api/getItems')
@@ -100,6 +79,11 @@ export default function CartDrawer({ isOpen, onClose }) {
         return(availabilities)
     }
 
+    if(cart.items.length == 0){
+        console.log(cart.items.length)
+        onClose()
+    }
+
     return (
         <Drawer
             isOpen={isOpen}
@@ -114,6 +98,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <DrawerHeader borderBottomWidth='1px'>Ostoskori</DrawerHeader>
 
                 <DrawerBody>
+                    <SubmitConfirmation isOpen={ConfirmationDialog.isOpen} onClose={ConfirmationDialog.onClose}/>
                     <Stack spacing={4}>
                         <Box>
                             <FormLabel htmlFor='description'>Kuvaus</FormLabel>
@@ -192,7 +177,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                     <Button variant='outline' mr={3} onClick={onClose}>
                         Sulje
                     </Button>
-                    <Button colorScheme='blue' onClick={() => submitLoan()}>
+                    <Button colorScheme='blue' onClick={ConfirmationDialog.onOpen}>
                         Varaa
                     </Button>
                 </DrawerFooter>
