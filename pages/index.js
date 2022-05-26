@@ -3,6 +3,7 @@ import prisma from '/utils/prisma';
 import DateSelector from '../components/DateSelector';
 import { Heading } from '@chakra-ui/react';
 import AllItems from './productlist';
+import { useSelector } from 'react-redux';
 
 export async function getServerSideProps() {
     const items = await prisma.Item.findMany({
@@ -19,11 +20,15 @@ export async function getServerSideProps() {
 }
 
 export default function Index({ items, categories }) {
+    const datesSet = useSelector(state => state.dates.datesSet)
+
     return (
         <>
             <DateSelector />
-            <Heading>Haku</Heading>
-            <AllItems items={items} categories={categories} />
+            {datesSet ? (
+                <><Heading>Haku</Heading><AllItems items={items} categories={categories} /></>
+            ) : null}
+            
         </>
     );
 }
