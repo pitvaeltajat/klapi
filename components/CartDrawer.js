@@ -16,7 +16,7 @@ import {
     InputRightAddon,
     IconButton,
     Heading,
-    useDisclosure
+    useDisclosure,
 } from '@chakra-ui/react';
 import { useRef } from 'react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
@@ -26,7 +26,6 @@ import { useSession } from 'next-auth/react';
 import { setDescription } from '../redux/cart.slice';
 import useSWR from 'swr';
 import SubmitConfirmation from './SubmitConfirmation';
- 
 
 export default function CartDrawer({ isOpen, onClose }) {
     const firstField = useRef();
@@ -34,24 +33,22 @@ export default function CartDrawer({ isOpen, onClose }) {
     const cart = useSelector((state) => state.cart);
     const dates = useSelector((state) => state.dates);
 
-    const ConfirmationDialog = useDisclosure()
-    
+    const ConfirmationDialog = useDisclosure();
+
     const startTime = dates.startDate;
     const endTime = dates.endDate;
 
     const description = cart.description;
 
-    const {data: items, error: itemsError} =
-        useSWR('/api/getItems')
+    const { data: items, error: itemsError } = useSWR('/api/item/getItems');
 
-    function getAvailability(cartItem){
-        const startDate = dates.startDate
-        const endDate = dates.endDate
-        const item = items.find(item => item.id == cartItem.id)
-        const cartItems = cart.items
+    function getAvailability(cartItem) {
+        const startDate = dates.startDate;
+        const endDate = dates.endDate;
+        const item = items.find((item) => item.id == cartItem.id);
+        const cartItems = cart.items;
 
-        function getReservedAmount(item){
-
+        function getReservedAmount(item) {
             if (item.reservations != undefined) {
                 const effectiveReservations = item.reservations.filter(
                     (reservation) =>
@@ -65,23 +62,27 @@ export default function CartDrawer({ isOpen, onClose }) {
                     (reservation) => (reservedAmount += reservation.amount)
                 );
             }
-            return(reservedAmount)
+            return reservedAmount;
         }
 
-        const amountInCart = (cartItems.find(cartItem => cartItem.id == item.id) != undefined ? cartItems.find(cartItem => cartItem.id == item.id).amount : 0)
+        const amountInCart =
+            cartItems.find((cartItem) => cartItem.id == item.id) != undefined
+                ? cartItems.find((cartItem) => cartItem.id == item.id).amount
+                : 0;
 
         const availabilities = {
             name: item.name,
             id: item.id,
             reservedAmount: getReservedAmount(item),
-            availableAmount: item.amount - getReservedAmount(item) - amountInCart,  
-        }
-        return(availabilities)
+            availableAmount:
+                item.amount - getReservedAmount(item) - amountInCart,
+        };
+        return availabilities;
     }
 
-    if(cart.items.length == 0){
-        console.log(cart.items.length)
-        onClose()
+    if (cart.items.length == 0) {
+        console.log(cart.items.length);
+        onClose();
     }
 
     return (
@@ -98,7 +99,10 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <DrawerHeader borderBottomWidth='1px'>Ostoskori</DrawerHeader>
 
                 <DrawerBody>
-                    <SubmitConfirmation isOpen={ConfirmationDialog.isOpen} onClose={ConfirmationDialog.onClose}/>
+                    <SubmitConfirmation
+                        isOpen={ConfirmationDialog.isOpen}
+                        onClose={ConfirmationDialog.onClose}
+                    />
                     <Stack spacing={4}>
                         <Box>
                             <FormLabel htmlFor='description'>Kuvaus</FormLabel>
@@ -163,7 +167,11 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                             )
                                                         )
                                                     }
-                                                    isDisabled={getAvailability(item).availableAmount <= 0}
+                                                    isDisabled={
+                                                        getAvailability(item)
+                                                            .availableAmount <=
+                                                        0
+                                                    }
                                                 />
                                             </InputRightAddon>
                                         </InputGroup>
@@ -177,7 +185,10 @@ export default function CartDrawer({ isOpen, onClose }) {
                     <Button variant='outline' mr={3} onClick={onClose}>
                         Sulje
                     </Button>
-                    <Button colorScheme='blue' onClick={ConfirmationDialog.onOpen}>
+                    <Button
+                        colorScheme='blue'
+                        onClick={ConfirmationDialog.onOpen}
+                    >
                         Varaa
                     </Button>
                 </DrawerFooter>

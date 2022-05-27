@@ -54,7 +54,7 @@ export default function LoanView({ loan }) {
 
     const approveLoan = async () => {
         const body = { id: loan.id };
-        await fetch('/api/approveLoan', {
+        await fetch('/api/loan/approveLoan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ export default function LoanView({ loan }) {
 
     const rejectLoan = async () => {
         const body = { id: loan.id };
-        await fetch('/api/rejectLoan', {
+        await fetch('/loan/rejectLoan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

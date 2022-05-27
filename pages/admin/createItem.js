@@ -21,10 +21,12 @@ import useSWR from 'swr';
 export default function CreateItem() {
     const toast = useToast();
 
-    const { data: locations, error: locationsError } =
-        useSWR('/api/getLocations');
-    const { data: categories, error: categoriesError } =
-        useSWR('/api/getCategories');
+    const { data: locations, error: locationsError } = useSWR(
+        '/api/location/getLocations'
+    );
+    const { data: categories, error: categoriesError } = useSWR(
+        '/api/category/getCategories'
+    );
 
     if (locationsError || categoriesError) return <div>failed to load</div>;
 

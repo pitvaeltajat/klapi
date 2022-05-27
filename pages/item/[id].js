@@ -57,7 +57,7 @@ export default function ItemView({ item }) {
 
     const deleteItem = async () => {
         // use api route to delete item
-        await fetch('/api/deleteItem', {
+        await fetch('/api/item/deleteItem', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
