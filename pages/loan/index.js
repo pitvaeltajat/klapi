@@ -24,8 +24,6 @@ const LoanCard = ({ loan }) => {
         }
     };
 
-    console.log(loan);
-
     return (
         <Link href={`/loan/${loan.id}`}>
             <Box width='100%' key={loan.id}>
@@ -58,6 +56,17 @@ const LoanCard = ({ loan }) => {
 };
 
 export default function Loans({ loans }) {
+    if (loans.length === 0) {
+        return (
+            <Box>
+                <Heading>Ei varauksia</Heading>
+                <Link href='/'>
+                    <Button>Luo varaus etusivulla</Button>
+                </Link>
+            </Box>
+        );
+    }
+
     return (
         <Stack spacing={5}>
             {loans.map((loan) => (

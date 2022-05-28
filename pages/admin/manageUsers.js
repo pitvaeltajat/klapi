@@ -11,6 +11,9 @@ import {
     Switch,
 } from '@chakra-ui/react';
 
+import { useSession } from 'next-auth/react';
+import NotAuthenticated from '../../components/NotAuthenticated';
+
 function RoleSwitch({ user }) {
     const { mutate } = useSWRConfig();
 
@@ -49,7 +52,12 @@ function RoleSwitch({ user }) {
 }
 
 export default function ManageUsers() {
+    const { data: session } = useSession();
     const { data: users, error } = useSWR('/api/user/getUsers');
+
+    if (session?.user?.group !== 'ADMIN') {
+        return <NotAuthenticated />;
+    }
 
     if (error) {
         return <div>Failed to load users</div>;
@@ -72,7 +80,7 @@ export default function ManageUsers() {
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {users.map((user) => {
+                        {users?.map((user) => {
                             return (
                                 <Tr key={user.id}>
                                     <Td>{user.name}</Td>

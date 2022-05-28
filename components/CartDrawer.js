@@ -81,7 +81,6 @@ export default function CartDrawer({ isOpen, onClose }) {
     }
 
     if (cart.items.length == 0) {
-        console.log(cart.items.length);
         onClose();
     }
 

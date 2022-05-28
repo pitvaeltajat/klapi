@@ -12,9 +12,10 @@ export default NextAuth({
         }),
     ],
     callbacks: {
-        async session(session, user) {
-            console.log(session);
-            return session;
+        async session({ session, user }) {
+            let newSession = session;
+            newSession.user.group = user.group;
+            return newSession;
         },
     },
 });
