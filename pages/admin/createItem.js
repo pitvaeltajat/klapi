@@ -17,16 +17,23 @@ import {
 import { Formik, Form, Field } from 'formik';
 import { CreatableSelect } from 'chakra-react-select';
 import useSWR from 'swr';
+import { useSession } from 'next-auth/react';
+import NotAuthenticated from '../../components/NotAuthenticated';
 
 export default function CreateItem() {
-    const toast = useToast();
+    const { data: session } = useSession();
 
+    const toast = useToast();
     const { data: locations, error: locationsError } = useSWR(
         '/api/location/getLocations'
     );
     const { data: categories, error: categoriesError } = useSWR(
         '/api/category/getCategories'
     );
+
+    if (session?.user?.group !== 'ADMIN') {
+        return <NotAuthenticated />;
+    }
 
     if (locationsError || categoriesError) return <div>failed to load</div>;
 
