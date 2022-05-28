@@ -14,33 +14,33 @@ import {
     Td,
     TableContainer,
     useToast,
-} from '@chakra-ui/react'
-import React from 'react'
-import {clearCart} from '/redux/cart.slice'
-import { useDispatch, useSelector } from 'react-redux'
-import { useSession } from 'next-auth/react'
+} from '@chakra-ui/react';
+import React from 'react';
+import { clearCart } from '/redux/cart.slice';
+import { useDispatch, useSelector } from 'react-redux';
+import { useSession } from 'next-auth/react';
 
-export default function SubmitConfirmation({isOpen, onClose}){
-    const dates = useSelector(state => state.dates) 
-    const cart = useSelector(state => state.cart)
-    const cancelRef = React.useRef()
-    const dispatch = useDispatch()
+export default function SubmitConfirmation({ isOpen, onClose }) {
+    const dates = useSelector((state) => state.dates);
+    const cart = useSelector((state) => state.cart);
+    const cancelRef = React.useRef();
+    const dispatch = useDispatch();
 
     const { data: session, status } = useSession();
 
-    const toast = useToast()
-    function successToast(){
+    const toast = useToast();
+    function successToast() {
         toast({
             title: 'Varaus lähetetty',
-            description: "Varaus rekisteröitiin onnistuneesti. Voit tarkastella omia varauksiasi Oma tili -valikon takaa.",
+            description:
+                'Varaus rekisteröitiin onnistuneesti. Voit tarkastella omia varauksiasi Oma tili -valikon takaa.',
             status: 'success',
             duration: 9000,
             isClosable: true,
-        })
+        });
     }
 
     async function submitLoan() {
-
         const startTime = dates.startDate;
         const endTime = dates.endDate;
 
@@ -60,89 +60,91 @@ export default function SubmitConfirmation({isOpen, onClose}){
             userName,
             description,
         };
-        await fetch('api/submitLoan', {
+        await fetch('api/loan/submitLoan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),
         })
-        .then(response => console.log(response))
-        .then(() => dispatch(clearCart()))
-        .then(successToast())
-        .then(onClose)
-        
+            .then((response) => console.log(response))
+            .then(() => dispatch(clearCart()))
+            .then(successToast())
+            .then(onClose);
     }
 
-
-    return(
+    return (
         <AlertDialog
-        isOpen={isOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={onClose}
+            isOpen={isOpen}
+            leastDestructiveRef={cancelRef}
+            onClose={onClose}
         >
-        
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize='lg' fontWeight='bold'>
-                Tarkista varauksen tiedot:
-            </AlertDialogHeader>
+            <AlertDialogOverlay>
+                <AlertDialogContent>
+                    <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+                        Tarkista varauksen tiedot:
+                    </AlertDialogHeader>
 
-            <AlertDialogBody>
-                <p><b>Kamojen nouto: </b>{dates.startDate.toLocaleString('fi', {
-                    day: 'numeric',
-                    year: 'numeric',
-                    month: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                })}<br/>
-            
-                <b>Kamojen palautus: </b>{dates.endDate.toLocaleString('fi', {
-                    day: 'numeric',
-                    year: 'numeric',
-                    month: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                })}</p><br/>
-                
-                
-                <p>Varattavat kamat:</p><br/>
+                    <AlertDialogBody>
+                        <p>
+                            <b>Kamojen nouto: </b>
+                            {dates.startDate.toLocaleString('fi', {
+                                day: 'numeric',
+                                year: 'numeric',
+                                month: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                            })}
+                            <br />
 
-                <TableContainer>
-                    <Table variant='simple' size={'sm'}>
-                        
-                        <Thead>
-                        <Tr>
-                            <Th>Kama</Th>
-                            <Th isNumeric>Määrä</Th>
-                        </Tr>
-                        </Thead>
-                        <Tbody>
-                        {cart.items.map(cartItem =>
-                            <Tr>
-                                <Td>{cartItem.name}</Td>
-                                <Td isNumeric>{cartItem.amount}</Td>
-                            </Tr>
-                        )}
-                        </Tbody>
-                    </Table>
-                    </TableContainer>
-                
+                            <b>Kamojen palautus: </b>
+                            {dates.endDate.toLocaleString('fi', {
+                                day: 'numeric',
+                                year: 'numeric',
+                                month: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                            })}
+                        </p>
+                        <br />
 
+                        <p>Varattavat kamat:</p>
+                        <br />
 
-            </AlertDialogBody>
+                        <TableContainer>
+                            <Table variant='simple' size={'sm'}>
+                                <Thead>
+                                    <Tr>
+                                        <Th>Kama</Th>
+                                        <Th isNumeric>Määrä</Th>
+                                    </Tr>
+                                </Thead>
+                                <Tbody>
+                                    {cart.items.map((cartItem) => (
+                                        <Tr>
+                                            <Td>{cartItem.name}</Td>
+                                            <Td isNumeric>{cartItem.amount}</Td>
+                                        </Tr>
+                                    ))}
+                                </Tbody>
+                            </Table>
+                        </TableContainer>
+                    </AlertDialogBody>
 
-            <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose}>
-                Peruuta
-              </Button>
-              <Button colorScheme='green' onClick={() => submitLoan()} ml={3}>
-                Vahvista varaus
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    )
-
+                    <AlertDialogFooter>
+                        <Button ref={cancelRef} onClick={onClose}>
+                            Peruuta
+                        </Button>
+                        <Button
+                            colorScheme='green'
+                            onClick={() => submitLoan()}
+                            ml={3}
+                        >
+                            Vahvista varaus
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialogOverlay>
+        </AlertDialog>
+    );
 }

@@ -36,7 +36,7 @@ export default function CartPage() {
 
     async function submitLoan() {
         const body = { reservations, startTime, endTime, userName };
-        await fetch('api/submitLoan', {
+        await fetch('api/loan/submitLoan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

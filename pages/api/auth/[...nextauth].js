@@ -11,4 +11,11 @@ export default NextAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         }),
     ],
+    callbacks: {
+        async session({ session, user }) {
+            let newSession = session;
+            newSession.user.group = user.group;
+            return newSession;
+        },
+    },
 });

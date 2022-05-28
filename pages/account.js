@@ -27,6 +27,7 @@ export default function Account({ loans }) {
             <>
                 <Heading>{session?.user?.name}</Heading>
                 <Heading>{session?.user?.email}</Heading>
+                <Heading>Rooli: {session?.user?.group}</Heading>
                 <Heading size='md'>Omat varaukset</Heading>
                 {loans.map((loan) => (
                     <>

@@ -13,12 +13,11 @@ import { addToCart } from '../redux/cart.slice';
 export default function ItemCard({ item }) {
     const dispatch = useDispatch();
 
-    function getAvailability(item){
-        const startDate = dates.startDate
-        const endDate = dates.endDate
+    function getAvailability(item) {
+        const startDate = dates.startDate;
+        const endDate = dates.endDate;
 
-        function getReservedAmount(item){
-
+        function getReservedAmount(item) {
             if (item.reservations != undefined) {
                 const effectiveReservations = item.reservations.filter(
                     (reservation) =>
@@ -32,19 +31,22 @@ export default function ItemCard({ item }) {
                     (reservation) => (reservedAmount += reservation.amount)
                 );
             }
-            return(reservedAmount)
+            return reservedAmount;
         }
 
-        const amountInCart = (cartItems.find(cartItem => cartItem.id == item.id) != undefined ? cartItems.find(cartItem => cartItem.id == item.id).amount : 0)
+        const amountInCart =
+            cartItems.find((cartItem) => cartItem.id == item.id) != undefined
+                ? cartItems.find((cartItem) => cartItem.id == item.id).amount
+                : 0;
 
         const availabilities = {
             name: item.name,
             id: item.id,
             reservedAmount: getReservedAmount(item),
-            availableAmount: item.amount - getReservedAmount(item) - amountInCart,  
-        }
-        console.log(availabilities)
-        return(availabilities)
+            availableAmount:
+                item.amount - getReservedAmount(item) - amountInCart,
+        };
+        return availabilities;
     }
 
     const toast = useToast();
@@ -60,7 +62,7 @@ export default function ItemCard({ item }) {
     };
 
     const cartItems = useSelector((state) => state.cart.items);
-    const cart = useSelector((state) => state.cart)
+    const cart = useSelector((state) => state.cart);
     const dates = useSelector((state) => state.dates);
 
     return (
@@ -99,31 +101,33 @@ export default function ItemCard({ item }) {
                         >
                             {item.name}
                         </Box>
-                                <Button
-                                    onClick={() => addItemToCart(item)}
-                                    h={7}
-                                    w={7}
-                                    alignSelf={'center'}
-                                    isDisabled={getAvailability(item).availableAmount <= 0}
-                                >
-                                    Lisää
-                                </Button>
+                        <Button
+                            onClick={() => addItemToCart(item)}
+                            h={7}
+                            w={7}
+                            alignSelf={'center'}
+                            isDisabled={
+                                getAvailability(item).availableAmount <= 0
+                            }
+                        >
+                            Lisää
+                        </Button>
                         {cartItems
                             .filter((cartItem) => cartItem.id === item.id)
                             .map((cartItem) => cartItem.amount)}
                     </Flex>
                     <Box
-                            fontSize='medium'
-                            fontWeight='semibold'
-                            as='h4'
-                            lineHeight='tight'
-                            isTruncated
-                        >
-                            Saatavilla: {item.amount - getAvailability(item).reservedAmount}
+                        fontSize='medium'
+                        fontWeight='semibold'
+                        as='h4'
+                        lineHeight='tight'
+                        isTruncated
+                    >
+                        Saatavilla:{' '}
+                        {item.amount - getAvailability(item).reservedAmount}
                     </Box>
                 </Box>
             </Box>
         </Flex>
     );
-    
 }
