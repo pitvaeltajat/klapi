@@ -2,6 +2,8 @@ import prisma from '/utils/prisma';
 
 import { Stack, Box, Button, Heading } from '@chakra-ui/react';
 import Link from '../../components/Link';
+import { useSession } from 'next-auth/react';
+import NotAuthenticated from '../../components/NotAuthenticated';
 
 export async function getServerSideProps() {
     const loans = await prisma.loan.findMany({
@@ -13,7 +15,8 @@ export async function getServerSideProps() {
     return { props: { loans } };
 }
 
-const LoanCard = ({ loan }) => {
+export const LoanCard = ({ loan }) => {
+
     const getColor = (status) => {
         if (status === 'PENDING') {
             return 'yellow.300';
@@ -56,6 +59,12 @@ const LoanCard = ({ loan }) => {
 };
 
 export default function Loans({ loans }) {
+    const {data: session} = useSession()
+
+    if(session?.user?.group !== 'ADMIN'){
+        return <NotAuthenticated />
+    }
+
     if (loans.length === 0) {
         return (
             <Box>

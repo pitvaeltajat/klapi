@@ -17,8 +17,11 @@ import {
     useDisclosure,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
+import NotAuthenticated from '../../components/NotAuthenticated';
 
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
+import { useSession } from 'next-auth/react';
+import { loadavg } from 'os';
 
 export async function getServerSideProps(req, res) {
     const loan = await prisma.loan.findUnique({
@@ -51,6 +54,7 @@ export default function LoanView({ loan }) {
     const router = useRouter();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const {data: session } = useSession()
 
     const approveLoan = async () => {
         const body = { id: loan.id };
@@ -115,6 +119,15 @@ export default function LoanView({ loan }) {
             });
     };
 
+    //Check if user is allowed to see information about this loan
+    if(!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id)) {
+        return(
+            <>
+                <NotAuthenticated />
+            </>
+        )
+    }
+    
     // first, double-check that the user really wants to reject the loan with a modal
 
     // list reservations and show loan basic information and user information
@@ -140,13 +153,25 @@ export default function LoanView({ loan }) {
             <ReservationTableLoanView loan={loan} />
 
             <Stack direction={'row'}>
-                <Button colorScheme={'red'} onClick={onOpen}>
-                    Hylkää
-                </Button>
-                <Button colorScheme={'yellow'}>Muokkaa</Button>
-                <Button colorScheme={'green'} onClick={approveLoan}>
-                    Hyväksy
-                </Button>
+                {session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id ?
+                (
+                    <Button colorScheme={'red'} onClick={onOpen}>
+                        Hylkää
+                    </Button>
+                )
+                : null}
+                {session?.user?.group === 'ADMIN' ? 
+                (
+                    <>
+                    <Button colorScheme={'yellow'}>Muokkaa</Button>
+                    <Button colorScheme={'green'} onClick={approveLoan}>
+                        Hyväksy
+                    </Button>
+                    </>
+                )
+                 : null}
+
+
                 <Modal isOpen={isOpen} onClose={onClose}>
                     <ModalOverlay />
                     <ModalContent>
@@ -158,7 +183,7 @@ export default function LoanView({ loan }) {
 
                         <ModalFooter>
                             <Button
-                                colorScheme='blue'
+                                colorScheme='red'
                                 mr={3}
                                 onClick={rejectLoan}
                             >

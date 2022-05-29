@@ -48,9 +48,9 @@ export default function DateSelector() {
         <>
             <Heading>Aloitus</Heading>
 
-            Tehdäksesi varauksen sinun täytyy valita kamojen nouto- ja palautusajankohdat.<br/>
+            Aloita valitsemalla kamojen nouto- ja palautusajankohdat. <br/>
             <Button onClick={onOpen}>
-                {dates.datesSet ? 'Muokkaa päivämääriä' : 'Aseta päivämäärät'}
+                {dates.datesSet ? 'Muokkaa ajankohtia' : 'Aseta ajankohdat'}
             </Button>
         
 
@@ -70,7 +70,7 @@ export default function DateSelector() {
                             <Box padding={'4px'} flexDirection='row' display='flex'>
                                 <DatePicker
                                     selected={startDateModified ? startDate : false}
-                                    placeholderText='Kamojen noutoaika'
+                                    placeholderText='🗓️ Kamojen noutoaika'
                                     onChange={(date) => {setLocalStartDate(date); setStartDateModified(true)}}
                                     showTimeSelect
                                     dateFormat='d.M.yyyy H:mm'
@@ -82,7 +82,7 @@ export default function DateSelector() {
                             <Box padding={'4px'}>
                                 <DatePicker
                                     selected={endDateModified ? endDate : false}
-                                    placeholderText='Kamojen palautusaika'
+                                    placeholderText='🗓️ Kamojen palautusaika'
                                     onChange={(date) => {setLocalEndDate(date); setEndDateModified(true)}}
                                     showTimeSelect
                                     dateFormat='d.M.yyyy H:mm'
@@ -96,8 +96,8 @@ export default function DateSelector() {
                         <Button ref={Ref} onClick={onClose} ml={3}>
                             Peruuta
                         </Button>
-                        <Button colorScheme='blue' onClick={() => setDates()} ml={3}>
-                            Valitse ajankohdat
+                        <Button colorScheme='blue' isDisabled={!startDateModified || !endDateModified} onClick={() => setDates()} ml={3}>
+                            Vahvista
                         </Button>
                         </AlertDialogFooter>
                     </AlertDialogContent>
