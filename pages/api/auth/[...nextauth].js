@@ -14,6 +14,7 @@ export default NextAuth({
     callbacks: {
         async session({ session, user }) {
             let newSession = session;
+            newSession.user.id = user.id
             newSession.user.group = user.group;
             return newSession;
         },
