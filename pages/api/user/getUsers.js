@@ -9,6 +9,7 @@ export default async function handler(req, res) {
             message: 'Sinulla ei ole oikeutta tähän toimintoon',
         });
     }
+    
     const users = await prisma.user.findMany();
     res.json(users);
 }
