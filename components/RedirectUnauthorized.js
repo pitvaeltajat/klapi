@@ -10,8 +10,9 @@ const RedirectUnauthorized = ({router, children}) => {
         router.push('/login')
     }
 
-    if(session === undefined){return(<>Ladataan...</>)}
-    else{return(children)}
+    if(session || router.pathname == '/login'){return(children)}
+    else{return(<>Ladataan...</>)}
+    
 
 } 
 
