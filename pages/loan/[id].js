@@ -67,7 +67,7 @@ export default function LoanView({ loan }) {
             body: JSON.stringify(body),
         })
             .then((res) => res.json())
-            .then((data) => {
+            .then(async (data) => {
                 toast({
                     title: 'Loan approved',
                     description: 'Loan has been approved',
@@ -76,7 +76,7 @@ export default function LoanView({ loan }) {
                     isClosable: true,
                 });
                 router.push('/loan');
-                sendApproveEmail(loan.user.email, loan);
+                sendApproveEmail(loan.user.email, loan.id);
             })
             .catch((err) => {
                 toast({

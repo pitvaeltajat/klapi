@@ -1,14 +1,17 @@
-var AWS = require('aws-sdk');
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 
-new AWS.Config({
+const config = {
     region: 'eu-north-1',
-});
+    signatureVersion: 'v4',
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+};
 
-const AWS_SES = new AWS.SES({
-    region: 'eu-north-1',
-});
+const SESClient = new SESv2Client(config);
 
-let sendEmail = (recipientEmail, subject, html) => {
+let sendEmail = async (recipientEmail, subject, html) => {
     let params = {
         Source: 'klapi-noreply@pitkajarvenvaeltajat.fi',
         Destination: {
@@ -19,27 +22,38 @@ let sendEmail = (recipientEmail, subject, html) => {
             Body: {
                 Html: {
                     Charset: 'UTF-8',
-                    Data: html,
+                    Data: JSON.stringify(html),
+                },
+                Text: {
+                    Charset: 'UTF-8',
+                    Data: 'Text version of email',
                 },
             },
             Subject: {
                 Charset: 'UTF-8',
-                Data: subject,
+                Data: JSON.stringify(subject),
             },
         },
     };
-    return AWS_SES.sendEmail(params).promise();
+    try {
+        const response = await SESClient.send(new SendEmailCommand(params));
+        console.log('aws response', response);
+        return response;
+    } catch (error) {
+        console.log('aws error', error);
+        throw error;
+    }
 };
 
-async function sendApproveEmail(recipientEmail, loan) {
+async function sendApproveEmail(recipientEmail, id) {
     const html = `
-    <h1>Laina ${loan.id} on hyväksytty</h1>
+    <h1>Laina ${id} on hyväksytty</h1>
     <p>
        Lainasi on hyväksytty. 
     </p>
     `;
 
-    const subject = `Laina hyväksytty ${loan.id}`;
+    const subject = `Laina hyväksytty ${id}`;
     await sendEmail(recipientEmail, subject, html);
 }
 
