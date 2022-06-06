@@ -55,7 +55,7 @@ export default function CreateItem() {
     ) => {
         try {
             // call createItem api route
-            await fetch('/api/createItem', {
+            await fetch('/api/item/createItem', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

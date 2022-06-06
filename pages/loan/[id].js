@@ -21,7 +21,6 @@ import NotAuthenticated from '../../components/NotAuthenticated';
 
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import { useSession } from 'next-auth/react';
-import { loadavg } from 'os';
 
 export async function getServerSideProps(req, res) {
     const loan = await prisma.loan.findUnique({
@@ -54,7 +53,7 @@ export default function LoanView({ loan }) {
     const router = useRouter();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const {data: session } = useSession()
+    const { data: session } = useSession();
 
     const approveLoan = async () => {
         const body = { id: loan.id };
@@ -66,7 +65,7 @@ export default function LoanView({ loan }) {
             body: JSON.stringify(body),
         })
             .then((res) => res.json())
-            .then((data) => {
+            .then(async (data) => {
                 toast({
                     title: 'Loan approved',
                     description: 'Loan has been approved',
@@ -75,6 +74,16 @@ export default function LoanView({ loan }) {
                     isClosable: true,
                 });
                 router.push('/loan');
+                await fetch('/api/email/sendApprove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: loan.user.email,
+                        id: loan.id,
+                    }),
+                });
             })
             .catch((err) => {
                 toast({
@@ -120,14 +129,19 @@ export default function LoanView({ loan }) {
     };
 
     //Check if user is allowed to see information about this loan
-    if(!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id)) {
-        return(
+    if (
+        !(
+            session?.user?.group === 'ADMIN' ||
+            session?.user?.id === loan.user.id
+        )
+    ) {
+        return (
             <>
                 <NotAuthenticated />
             </>
-        )
+        );
     }
-    
+
     // first, double-check that the user really wants to reject the loan with a modal
 
     // list reservations and show loan basic information and user information
@@ -153,24 +167,20 @@ export default function LoanView({ loan }) {
             <ReservationTableLoanView loan={loan} />
 
             <Stack direction={'row'}>
-                {session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id ?
-                (
+                {session?.user?.group === 'ADMIN' ||
+                session?.user?.id === loan.user.id ? (
                     <Button colorScheme={'red'} onClick={onOpen}>
                         Hylkää
                     </Button>
-                )
-                : null}
-                {session?.user?.group === 'ADMIN' ? 
-                (
+                ) : null}
+                {session?.user?.group === 'ADMIN' ? (
                     <>
-                    <Button colorScheme={'yellow'}>Muokkaa</Button>
-                    <Button colorScheme={'green'} onClick={approveLoan}>
-                        Hyväksy
-                    </Button>
+                        <Button colorScheme={'yellow'}>Muokkaa</Button>
+                        <Button colorScheme={'green'} onClick={approveLoan}>
+                            Hyväksy
+                        </Button>
                     </>
-                )
-                 : null}
-
+                ) : null}
 
                 <Modal isOpen={isOpen} onClose={onClose}>
                     <ModalOverlay />
