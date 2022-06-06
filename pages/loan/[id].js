@@ -22,8 +22,6 @@ import NotAuthenticated from '../../components/NotAuthenticated';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import { useSession } from 'next-auth/react';
 
-import { sendApproveEmail } from '../../utils/email/';
-
 export async function getServerSideProps(req, res) {
     const loan = await prisma.loan.findUnique({
         where: {
@@ -76,7 +74,16 @@ export default function LoanView({ loan }) {
                     isClosable: true,
                 });
                 router.push('/loan');
-                sendApproveEmail(loan.user.email, loan.id);
+                await fetch('/api/email/sendApprove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: loan.user.email,
+                        id: loan.id,
+                    }),
+                });
             })
             .catch((err) => {
                 toast({
