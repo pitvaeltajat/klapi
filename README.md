@@ -1,6 +1,6 @@
-# KLAPI
+# Klapi
 
-KLAPI is a web-based application to manage simple equipment reserve/loan/return transactions.
+Klapi is a web-based application to manage simple equipment reserve/loan/return transactions.
 
 ## Stack
 
@@ -37,7 +37,7 @@ New schema diagram is generated every time when generating new Prisma Client.
 
 ### Prisma
 
-KLAPI uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`. After making changes to the schema, remember to run `yarn prisma migrate dev`.
+Klapi uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`. After making changes to the schema, remember to run `yarn prisma migrate dev`.
 
 To generate dummy data, run `yarn prisma db seed`. The data is defined in `prisma/seed.ts`.
 
@@ -45,9 +45,9 @@ More information about Prisma can be found [here](https://www.prisma.io/docs/con
 
 ### Authentication
 
-KLAPI uses NextAuth.js for authentication. Currently only authentication with Google is supported. New authentication providers can be added in NextAuth.js API route. If needed, Google authentication provider can be configured to only allow users from specific domains (own organization).
+Klapi uses NextAuth.js for authentication. Currently only authentication with Google is supported. New authentication providers can be added in NextAuth.js API route. If needed, Google authentication provider can be configured to only allow users from specific domains (own organization).
 
-KLAPI has 2 user roles: admin and user. Any person with Google account can become Kaho user. Users can browse equipment and send reservation requests, as well as see their reservation history. Admins can edit equipment catalog, manage users and approve/reject reservation requests.
+Klapi has 2 user roles: admin and user. Any person with Google account can become an user. Users can browse equipment and send reservation requests, as well as see their reservation history. Admins can edit equipment catalog, manage users and approve/reject reservation requests.
 
 ## Deployment
 
