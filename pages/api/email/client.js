@@ -1,8 +1,8 @@
 var ses = require('node-ses');
 
 const client = ses.createClient({
-    key: process.env.AWS_ACCESS_KEY_ID,
-    secret: process.env.AWS_SECRET_ACCESS_KEY,
+    key: process.env.KLAPI_AWS_ACCESS_KEY_ID,
+    secret: process.env.KLAPI_AWS_SECRET_ACCESS_KEY,
     amazon: 'https://email.eu-north-1.amazonaws.com',
 });
 

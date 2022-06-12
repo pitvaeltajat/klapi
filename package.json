@@ -5,6 +5,7 @@
         "build": "next build",
         "start": "next start",
         "cypress": "cypress open",
+        "cypress-headless": "cypress run",
         "lint": "next lint"
     },
     "dependencies": {

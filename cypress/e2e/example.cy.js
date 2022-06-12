@@ -1,6 +1,6 @@
 describe('example', () => {
     it('should work', () => {
         cy.visit('/');
-        cy.contains('h1', 'Hello World!');
+        cy.contains('h2', 'Kirjaudu sisään');
     });
 });
