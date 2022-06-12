@@ -9,8 +9,8 @@ export async function getServerSideProps() {
 
     const loans = await prisma.loan.findMany({
         include: {
-            user: true
-        }
+            user: true,
+        },
     });
     return {
         props: {
@@ -21,7 +21,7 @@ export async function getServerSideProps() {
 
 export default function Account({ loans }) {
     const { data: session, status } = useSession();
-    loans = loans.filter(loan => (loan.user.id === session?.user?.id))
+    loans = loans.filter((loan) => loan.user.id === session?.user?.id);
 
     if (session) {
         return (
@@ -33,10 +33,9 @@ export default function Account({ loans }) {
                 <Heading size='md'>Omat varaukset:</Heading>
                 <Stack spacing={5}>
                     {loans.map((loan) => (
-                        <LoanCard loan={loan} />
+                        <LoanCard key={loan.id} loan={loan} />
                     ))}
                 </Stack>
-                
             </>
         );
     } else {
