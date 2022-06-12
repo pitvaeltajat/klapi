@@ -121,7 +121,7 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
                                 </Thead>
                                 <Tbody>
                                     {cart.items.map((cartItem) => (
-                                        <Tr key={item.id}>
+                                        <Tr key={cartItem.id}>
                                             <Td>{cartItem.name}</Td>
                                             <Td isNumeric>{cartItem.amount}</Td>
                                         </Tr>
