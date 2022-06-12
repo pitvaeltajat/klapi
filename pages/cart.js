@@ -62,7 +62,7 @@ export default function CartPage() {
                     </Thead>
                     <Tbody>
                         {items.map((item) => (
-                            <Tr>
+                            <Tr key={item.id}>
                                 <Td>{item.name}</Td>
                                 <Td>{item.amount}</Td>
                                 <Td>

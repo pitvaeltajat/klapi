@@ -16,7 +16,6 @@ export async function getServerSideProps() {
 }
 
 export const LoanCard = ({ loan }) => {
-
     const getColor = (status) => {
         if (status === 'PENDING') {
             return 'yellow.300';
@@ -59,10 +58,10 @@ export const LoanCard = ({ loan }) => {
 };
 
 export default function Loans({ loans }) {
-    const {data: session} = useSession()
+    const { data: session } = useSession();
 
-    if(session?.user?.group !== 'ADMIN'){
-        return <NotAuthenticated />
+    if (session?.user?.group !== 'ADMIN') {
+        return <NotAuthenticated />;
     }
 
     if (loans.length === 0) {
@@ -79,7 +78,7 @@ export default function Loans({ loans }) {
     return (
         <Stack spacing={5}>
             {loans.map((loan) => (
-                <LoanCard loan={loan} />
+                <LoanCard key={loan.id} loan={loan} />
             ))}
         </Stack>
     );

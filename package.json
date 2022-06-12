@@ -4,7 +4,8 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "cypress": "cypress open"
+        "cypress": "cypress open",
+        "lint": "next lint"
     },
     "dependencies": {
         "@chakra-ui/icons": "^2.0.0",
@@ -33,6 +34,8 @@
     "devDependencies": {
         "@mermaid-js/mermaid-cli": "^9.0.2",
         "cypress": "^10.1.0",
+        "eslint": "8.17.0",
+        "eslint-config-next": "12.1.6",
         "prisma": "^3.12.0",
         "prisma-erd-generator": "^0.11.0"
     },

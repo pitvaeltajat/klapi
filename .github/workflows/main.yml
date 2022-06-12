@@ -35,6 +35,8 @@ jobs:
                       ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
             - name: Install
               run: yarn install
+            - name: Lint
+              run: yarn lint
             - name: Migrate Prisma
               run: yarn prisma db push
             - name: Cypress run

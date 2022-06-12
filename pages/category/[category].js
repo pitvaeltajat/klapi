@@ -43,7 +43,7 @@ const CategoryPage = ({ items, categories }) => {
                     <Button>Kaikki tuotteet</Button>
                 </Link>
                 {categories.map((category) => (
-                    <Link href={`/category/${category.name}`}>
+                    <Link key={category.id} href={`/category/${category.name}`}>
                         <Button>{category.name}</Button>
                     </Link>
                 ))}
