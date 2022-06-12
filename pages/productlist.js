@@ -6,7 +6,6 @@ import Link from '../components/Link';
 
 export default function AllItems({ items, categories }) {
     const dates = useSelector((state) => state.dates);
-    const desc = useSelector((state) => state.cart.description);
 
     return (
         <>
@@ -37,8 +36,7 @@ export default function AllItems({ items, categories }) {
                     minute: '2-digit',
                 })}
             </p>
-            <p>Kuvaus: {desc}</p>
-            <SimpleGrid columns={3} spacing={10}>
+            <SimpleGrid columns={[null, 1, 2, 3, 4]} spacing={10}>
                 {items.map((item) => (
                     <ItemCard key={item.id} item={item} />
                 ))}

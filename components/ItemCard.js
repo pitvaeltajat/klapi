@@ -5,6 +5,7 @@ import {
     useColorModeValue,
     Button,
     useToast,
+    Circle,
 } from '@chakra-ui/react';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -66,7 +67,7 @@ export default function ItemCard({ item }) {
     const dates = useSelector((state) => state.dates);
 
     return (
-        <Flex w='full' alignItems='center' justifyContent='center'>
+        <Box w='full' alignItems='center' justifyContent='center'>
             <Box
                 bg={useColorModeValue('white', 'gray.800')}
                 maxW='sm'
@@ -83,7 +84,7 @@ export default function ItemCard({ item }) {
                     objectPosition='center'
                     w='full'
                     h='full'
-                    fallbackSrc='https://via.placeholder.com/300'
+                    fallbackSrc='https://via.placeholder.com/500x300'
                 />
 
                 <Box p='6'>
@@ -98,24 +99,44 @@ export default function ItemCard({ item }) {
                             as='h4'
                             lineHeight='tight'
                             isTruncated
+                            overflow='hidden'
+                            noOfLines='1'
+                            title={item.name}
                         >
                             {item.name}
                         </Box>
+                        
+                    </Flex>
+                    <Box>
                         <Button
                             onClick={() => addItemToCart(item)}
-                            h={7}
-                            w={7}
+                            size='sm'
                             alignSelf={'center'}
+                            colorScheme='blue'
                             isDisabled={
                                 getAvailability(item).availableAmount <= 0
                             }
                         >
-                            Lisää
+                            Lisää koriin
+                            <Circle
+                                position='absolute'
+                                right='-7px'
+                                top='-7px'   
+                                size='20px'
+                                bg='red'
+                                color='white'
+                                display={cartItems
+                                            .filter((cartItem) => cartItem.id === item.id)
+                                            .map((cartItem) => cartItem.amount)
+                                            >0 ? 'block' : 'none'}
+                                        
+                            >
+                                {cartItems
+                                .filter((cartItem) => cartItem.id === item.id)
+                                .map((cartItem) => cartItem.amount)}
+                            </Circle>
                         </Button>
-                        {cartItems
-                            .filter((cartItem) => cartItem.id === item.id)
-                            .map((cartItem) => cartItem.amount)}
-                    </Flex>
+                    </Box>
                     <Box
                         fontSize='medium'
                         fontWeight='semibold'
@@ -128,6 +149,6 @@ export default function ItemCard({ item }) {
                     </Box>
                 </Box>
             </Box>
-        </Flex>
+        </Box>
     );
 }

@@ -1,5 +1,6 @@
 import { useSelector } from 'react-redux';
-import { Button } from '@chakra-ui/react';
+import { Box, Button, Circle, HStack } from '@chakra-ui/react';
+import {BsFillBasket2Fill} from 'react-icons/bs'
 
 export default function CartButton({ onOpen }) {
     const amount = useSelector((state) =>
@@ -7,14 +8,38 @@ export default function CartButton({ onOpen }) {
     );
 
     return (
-        <Button
-            variant='transparent'
-            size='sm'
-            aria-label='cart'
-            isDisabled={amount === 0}
+        <>
+        <Box
             onClick={onOpen}
+            as='button'
+            margin='1em'
         >
-            {amount}
-        </Button>
+            <HStack>
+                <Box
+                    position='relative'
+                >
+                    <BsFillBasket2Fill size={22}/>
+                    <Circle
+                        position='absolute'
+                        right='-12px'
+                        top='-15px'   
+                        size='20px'
+                        bg='red'
+                        color='white'
+                        display={amount>0 ? 'block' : 'none'}
+                                                
+                    >
+                        {amount}
+                    </Circle>
+                </Box>
+                <Box>
+                    Ostoskori
+                </Box>
+            </HStack>
+            
+        </Box>
+        
+        
+        </>
     );
 }
