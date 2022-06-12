@@ -2,32 +2,44 @@ name: klapi
 on: push
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres
+    test:
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klapi
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install
-        run: yarn install
-      - name: Migrate Prisma
-        run: yarn prisma db push
-      - name: Cypress run
-        uses: cypress-io/github-action@v4
-        with:
-          build: yarn run build
-          start: yarn start
+            DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klapi
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Get cache path
+              id: yarn-cache-dir-path
+              run: echo "::set-output name=dir::$(yarn cache dir)"
+            - name: Load cache
+              uses: actions/cache@v3
+              id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+              with:
+                  path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+            - name: Install
+              run: yarn install
+            - name: Migrate Prisma
+              run: yarn prisma db push
+            - name: Cypress run
+              uses: cypress-io/github-action@v4
+              with:
+                  install: false # dependencies are already installed
+                  build: yarn run build
+                  start: yarn start
