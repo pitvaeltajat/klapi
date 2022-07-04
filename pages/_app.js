@@ -1,5 +1,5 @@
 import { SessionProvider, useSession } from 'next-auth/react';
-import { ChakraProvider } from '@chakra-ui/react';
+import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { SWRConfig } from 'swr';
 import { useToast } from '@chakra-ui/react';
 import store from '../redux/store';
@@ -7,8 +7,8 @@ import { Provider } from 'react-redux';
 import Layout from '../components/Layout';
 import useRouter from 'next/router';
 import RedirectUnauthorized from '../components/RedirectUnauthorized';
-
 import theme from '../styles/theme';
+
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 

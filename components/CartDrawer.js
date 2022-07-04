@@ -80,10 +80,6 @@ export default function CartDrawer({ isOpen, onClose }) {
         return availabilities;
     }
 
-    if (cart.items.length == 0) {
-        onClose();
-    }
-
     return (
         <Drawer
             isOpen={isOpen}
@@ -93,7 +89,7 @@ export default function CartDrawer({ isOpen, onClose }) {
             onClose={onClose}
         >
             <DrawerOverlay />
-            <DrawerContent>
+            <DrawerContent height='100%'>
                 <DrawerCloseButton />
                 <DrawerHeader borderBottomWidth='1px'>Ostoskori</DrawerHeader>
 
@@ -125,8 +121,10 @@ export default function CartDrawer({ isOpen, onClose }) {
                             <Input id='endTime' value={endTime} readOnly />
                         </Box>
                     </Stack>
-
+                    
+                    {cart.items.length > 0 ?
                     <Stack spacing='24px'>
+                        
                         <Heading as='h3' size='md'>
                             Valitut kamat
                         </Heading>
@@ -178,6 +176,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                                 )
                         )}
                     </Stack>
+                    : <Heading as='h3' size='md'>Ostoskori on tyhjä</Heading>}
                 </DrawerBody>
 
                 <DrawerFooter borderTopWidth='1px'>
@@ -187,6 +186,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                     <Button
                         colorScheme='blue'
                         onClick={ConfirmationDialog.onOpen}
+                        isDisabled={cart.items.length==0}
                     >
                         Varaa
                     </Button>

@@ -6,13 +6,16 @@ export default function TopBar({ children }) {
         <>
             <Flex
                 color='white'
-                bgColor='blue.500'
+                backgroundBlendMode='overlay'
+                background='rgba(66,131,209,0.9)'
                 justify='space-between'
                 align='center'
                 position='fixed'
                 top='0'
                 width='100%'
                 zIndex='9999'
+                backdropFilter='auto'
+                backdropBlur='4px'
             >   
                 <Box
                     marginInlineStart='2em'

@@ -10,5 +10,8 @@ export const styles = {
                 textDecoration: 'none',
             },
         },
+        main: {
+            'padding-top': '100px',
+        }
     },
 };
