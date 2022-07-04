@@ -13,7 +13,7 @@ export default function Layout(props) {
                 <CartButton onOpen={onOpen} />
             </TopBar>
             <CartDrawer isOpen={isOpen} onClose={onClose} />
-            <Box as='main' padding={10} margin='auto'>
+            <Box as='main' padding={10} paddingTop={20} margin='auto'>
                 {children}
             </Box>
         </>

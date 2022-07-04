@@ -21,8 +21,8 @@ export default function CartButton({ onOpen }) {
                     <BsFillBasket2Fill size={22}/>
                     <Circle
                         position='absolute'
-                        right='-12px'
-                        top='-15px'   
+                        right='-7px'
+                        top='-7px'   
                         size='20px'
                         bg='red'
                         color='white'
