@@ -26,13 +26,14 @@ export default function CartButton({ onOpen }) {
                         size='20px'
                         bg='red'
                         color='white'
-                        display={amount>0 ? 'block' : 'none'}
+                        display={amount > 0 ? 'block' : 'none'}
                                                 
                     >
                         {amount}
                     </Circle>
                 </Box>
-                <Box>
+
+                <Box display={['none', 'none', 'block', 'block', 'block']}>
                     Ostoskori
                 </Box>
             </HStack>
