@@ -1,4 +1,4 @@
-module.exports = {
+const nextConfig = {
     webpackDevMiddleware: (config) => {
         config.watchOptions = {
             poll: 1000,
@@ -6,7 +6,7 @@ module.exports = {
         };
         return config;
     },
-    experimental: {
-        outputStandalone: true,
-    },
+    output: 'standalone',
 };
+
+module.exports = nextConfig;

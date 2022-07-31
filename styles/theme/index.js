@@ -8,4 +8,4 @@ const theme = extendTheme({
     styles,
 });
 
-export default theme
+export default theme;
