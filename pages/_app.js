@@ -9,17 +9,15 @@ import useRouter from 'next/router';
 import RedirectUnauthorized from '../components/RedirectUnauthorized';
 import theme from '../styles/theme';
 
-
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function App({
     Component,
     pageProps: { session, ...pageProps },
-    router
+    router,
 }) {
     const toast = useToast();
     const getLayout = Component.getLayout || ((page) => page);
-
 
     return (
         <SessionProvider session={session}>

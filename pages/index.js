@@ -20,15 +20,17 @@ export async function getServerSideProps() {
 }
 
 export default function Index({ items, categories }) {
-    const datesSet = useSelector(state => state.dates.datesSet)
+    const datesSet = useSelector((state) => state.dates.datesSet);
 
     return (
         <>
             <DateSelector />
             {datesSet ? (
-                <><Heading>Haku</Heading><AllItems items={items} categories={categories} /></>
+                <>
+                    <Heading>Haku</Heading>
+                    <AllItems items={items} categories={categories} />
+                </>
             ) : null}
-            
         </>
     );
 }
