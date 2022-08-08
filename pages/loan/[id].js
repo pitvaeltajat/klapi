@@ -21,6 +21,7 @@ import NotAuthenticated from '../../components/NotAuthenticated';
 
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import { useSession } from 'next-auth/react';
+import { LoanStatus } from '@prisma/client';
 
 export async function getServerSideProps(req, res) {
     const loan = await prisma.loan.findUnique({
@@ -67,8 +68,8 @@ export default function LoanView({ loan }) {
             .then((res) => res.json())
             .then(async (data) => {
                 toast({
-                    title: 'Loan approved',
-                    description: 'Loan has been approved',
+                    title: 'Laina hyväksytty',
+                    description: 'Laina hyväksytty onnistuneesti',
                     status: 'success',
                     duration: 5000,
                     isClosable: true,
@@ -109,8 +110,70 @@ export default function LoanView({ loan }) {
             .then((res) => res.json())
             .then((data) => {
                 toast({
-                    title: 'Loan rejected',
-                    description: 'Loan has been rejected',
+                    title: 'Laina hylätty',
+                    description: 'Laina hylätty onnituneesti',
+                    status: 'success',
+                    duration: 5000,
+                    isClosable: true,
+                });
+                router.push('/loan');
+            })
+            .catch((err) => {
+                toast({
+                    title: 'Error',
+                    description: err.message,
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    const loanToUse = async () => {
+        const body = { id: loan.id};
+        await fetch('/api/loan/loanToUse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                toast({
+                    title: 'Lainan status päivitetty onnistuneesti',
+                    description: 'Kamat ovat maailmalla',
+                    status: 'success',
+                    duration: 5000,
+                    isClosable: true,
+                });
+                router.push('/loan');
+            })
+            .catch((err) => {
+                toast({
+                    title: 'Error',
+                    description: err.message,
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    const loanReturned = async () => {
+        const body = { id: loan.id};
+        await fetch('/api/loan/loanReturned', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                toast({
+                    title: 'Kamat palautettu',
+                    description: 'Lainaus saatettu päätökseen',
                     status: 'success',
                     duration: 5000,
                     isClosable: true,
@@ -166,17 +229,17 @@ export default function LoanView({ loan }) {
             </Heading>
             <ReservationTableLoanView loan={loan} />
 
-            <Stack direction={'row'}>
+            <Stack direction={'row'} padding='0.5em' display={loan.status === 'INUSE' || loan.status === 'RETURNED' ? 'none' : 'block'}>
                 {session?.user?.group === 'ADMIN' ||
                 session?.user?.id === loan.user.id ? (
-                    <Button colorScheme={'red'} onClick={onOpen}>
+                    <Button colorScheme={'red'} onClick={onOpen} isDisabled={loan.status === 'REJECTED'}>
                         Hylkää
                     </Button>
                 ) : null}
                 {session?.user?.group === 'ADMIN' ? (
                     <>
                         <Button colorScheme={'yellow'}>Muokkaa</Button>
-                        <Button colorScheme={'green'} onClick={approveLoan}>
+                        <Button colorScheme={'green'} onClick={approveLoan} isDisabled={loan.status === 'ACCEPTED'}>
                             Hyväksy
                         </Button>
                     </>
@@ -206,6 +269,18 @@ export default function LoanView({ loan }) {
                     </ModalContent>
                 </Modal>
             </Stack>
+            <Stack direction='row' padding='0.5em' display={loan.status === 'ACCEPTED' || loan.status === 'INUSE' ? 'block' : 'none'}>
+                <Button isDisabled={loan.status === 'INUSE'} onClick={loanToUse}>
+                    Merkitse kamat annetuksi
+                </Button>
+                <Button isDisabled={loan.status !== 'INUSE'} onClick={loanReturned}>
+                    Merkitse kamat palautetuksi
+                </Button>
+            </Stack>
+
+            <Heading as='h2' size='lg' display={loan.status === 'RETURNED' ? 'block' : 'none'}>
+                Lainaustapahtuma suoritettu loppuun 
+            </Heading>      
         </>
     );
 }
