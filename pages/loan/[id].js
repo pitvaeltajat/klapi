@@ -269,7 +269,7 @@ export default function LoanView({ loan }) {
                     </ModalContent>
                 </Modal>
             </Stack>
-            <Stack direction='row' padding='0.5em' display={loan.status === 'ACCEPTED' || loan.status === 'INUSE' ? 'block' : 'none'}>
+            <Stack direction='row' padding='0.5em' display={(loan.status === 'ACCEPTED' || loan.status === 'INUSE') && session?.user?.group === 'ADMIN' ? 'block' : 'none'}>
                 <Button isDisabled={loan.status === 'INUSE'} onClick={loanToUse}>
                     Merkitse kamat annetuksi
                 </Button>
