@@ -11,6 +11,18 @@ export default async function handler(req, res) {
     }
 
     const { id } = req.body;
+    const Loan = await prisma.loan.findMany({
+        where: { id: id },
+        include: {
+            user: true,
+            reservations: {
+                include: {
+                    item: true,
+                },
+            },
+        },
+    });
+
     const result = await prisma.Loan.update({
         where: { id: id },
         data: {

@@ -7,7 +7,10 @@ const RedirectUnauthorized = ({router, children}) => {
     const isBrowser = () => typeof window !== "undefined"
     
     if(!session && isBrowser() && router.pathname !== '/login'){
-        router.push('/login')
+        router.push({
+            pathname: '/login',
+            query: {from: router.asPath}
+        })
     }
 
     if(session || router.pathname == '/login'){return(children)}

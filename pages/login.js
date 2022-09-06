@@ -7,7 +7,7 @@ export default function Login() {
     const { data: session } = useSession();
 
     if (session) {
-        Router.push('/');
+        Router.push(Router.query.from && decodeURIComponent(Router.query.from) || '/');
     }
 
     return (
