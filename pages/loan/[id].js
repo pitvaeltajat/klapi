@@ -75,7 +75,7 @@ export default function LoanView({ loan }) {
                     isClosable: true,
                 });
                 router.push('/loan');
-                await fetch('/api/email/sendApprove', {
+                await fetch('/api/email/sendApproved', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

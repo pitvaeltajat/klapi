@@ -1,5 +1,7 @@
 var ses = require('node-ses');
 
+require('dotenv').config();
+
 const client = ses.createClient({
     key: process.env.KLAPI_AWS_ACCESS_KEY_ID,
     secret: process.env.KLAPI_AWS_SECRET_ACCESS_KEY,

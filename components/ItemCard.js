@@ -26,6 +26,8 @@ export default function ItemCard({ item }) {
                             reservation.loan.startTime > endDate ||
                             reservation.loan.endTime < startDate
                         )
+                        &&
+                        reservation.loan.status !== 'REJECTED'
                 );
                 var reservedAmount = 0;
                 effectiveReservations.map(
@@ -145,7 +147,7 @@ export default function ItemCard({ item }) {
                         isTruncated
                     >
                         Saatavilla:{' '}
-                        {item.amount - getAvailability(item).reservedAmount}
+                        {getAvailability(item).availableAmount}
                     </Box>
                 </Box>
             </Box>
