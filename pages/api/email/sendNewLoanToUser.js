@@ -12,14 +12,7 @@ async function sendCreatedEmail(recipientEmail, id) {
       
       Saat sähköpostitse tiedon, kun hakemus on käsitelty.<br /><br />
 
-      Varaukseen liittyvissä kysymyksissä voit ottaa yhteyttä kalustonhoitajaan:<br /><br />
-
-      <b>Justus Jutila<br />
-      <a href="mailto:justus.jutila@pitkajarvenvaeltajat.fi">justus.jutila@pitkajarvenvaeltajat.fi</a><br />
-      +358 44 9714003</b>
-      <br /><br />
-
-      Tämä on automaattinen viesti. Älä vastaa tähän viestiin.
+      <i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i>
     </p>
     `;
 
