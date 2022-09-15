@@ -22,13 +22,18 @@ export async function getServerSideProps() {
 export default function Account({ loans }) {
     const { data: session, status } = useSession();
     loans = loans.filter((loan) => loan.user.id === session?.user?.id);
+    loans = loans.sort((a, b) => {
+        let dateA = new Date(a.startTime);
+        let dateB = new Date(b.startTime);
+        return dateB - dateA;
+    });
 
     if (session) {
         return (
             <>
                 <Heading>{session?.user?.name}</Heading>
                 <Heading>{session?.user?.email}</Heading>
-                <Heading>Rooli: {session?.user?.group}</Heading>
+                <Heading>Rooli: {session?.user?.group === 'USER' ? 'Käyttäjä' : 'Admin'}</Heading>
                 <Auth />
                 <Heading size='md'>Omat varaukset:</Heading>
                 <Stack spacing={5}>
