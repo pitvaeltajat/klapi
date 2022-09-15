@@ -28,6 +28,8 @@ export default function ItemCard({ item }) {
                         )
                         &&
                         reservation.loan.status !== 'REJECTED'
+                        &&
+                        reservation.loan.status !== 'RETURNED'
                 );
                 var reservedAmount = 0;
                 effectiveReservations.map(

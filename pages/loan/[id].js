@@ -15,6 +15,7 @@ import {
     ModalBody,
     ModalCloseButton,
     useDisclosure,
+    Tooltip,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
@@ -74,7 +75,7 @@ export default function LoanView({ loan }) {
                     duration: 5000,
                     isClosable: true,
                 });
-                router.push('/loan');
+                
                 await fetch('/api/email/sendApproved', {
                     method: 'POST',
                     headers: {
@@ -85,6 +86,7 @@ export default function LoanView({ loan }) {
                         id: loan.id,
                     }),
                 });
+                router.push('/loan');
             })
             .catch((err) => {
                 toast({
@@ -221,7 +223,13 @@ export default function LoanView({ loan }) {
                     <p>Aloitusaika: {loan.startTime.toLocaleString('fi-FI')}</p>
                     <p>Lopetusaika: {loan.endTime.toLocaleString('fi-FI')}</p>
                     <p>Varaaja: {loan.user.name}</p>
-                    <p>Status: {loan.status} </p>
+                    <p>Status: {
+                        loan.status === 'APPROVED' ? 'Hyväksytty' :
+                        loan.status === 'REJECTED' ? 'Hylätty' :
+                        loan.status === 'INUSE' ? 'Käytössä' :
+                        loan.status === 'RETURNED' ? 'Palautettu' :
+                        'Odottaa käsittelyä'} 
+                    </p>
                 </Box>
             </Stack>
             <Heading as='h2' size='lg'>
@@ -238,7 +246,8 @@ export default function LoanView({ loan }) {
                 ) : null}
                 {session?.user?.group === 'ADMIN' ? (
                     <>
-                        <Button colorScheme={'yellow'}>Muokkaa</Button>
+                        
+                        <Button colorScheme={'yellow'} isDisabled title='ei käytössä'>Muokkaa</Button>
                         <Button colorScheme={'green'} onClick={approveLoan} isDisabled={loan.status === 'ACCEPTED'}>
                             Hyväksy
                         </Button>
