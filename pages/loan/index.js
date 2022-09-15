@@ -1,9 +1,10 @@
 import prisma from '/utils/prisma';
 
-import { Stack, Box, Button, Heading } from '@chakra-ui/react';
+import { Stack, Box, Button, Heading, ButtonGroup } from '@chakra-ui/react';
 import Link from '../../components/Link';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import { useState } from 'react';
 
 export async function getServerSideProps() {
     const loans = await prisma.loan.findMany({
@@ -19,10 +20,14 @@ export const LoanCard = ({ loan }) => {
     const getColor = (status) => {
         if (status === 'PENDING') {
             return 'yellow.300';
-        } else if (status === 'APPROVED') {
-            return 'green.400';
+        } else if (status === 'ACCEPTED') {
+            return 'green.300';
         } else if (status === 'REJECTED') {
-            return 'pink.300';
+            return 'red.300';
+        } else if (status === 'INUSE')    {
+            return 'teal.300';
+        } else if (status === 'RETURNED') {
+            return 'purple.300';
         }
     };
 
@@ -37,7 +42,13 @@ export const LoanCard = ({ loan }) => {
                     <Heading as='h3' size='md'>
                         {loan.description || loan.user.name}
                     </Heading>
-                    <p>{loan.status}</p>
+                    <p>{
+                        loan.status === 'APPROVED' ? 'Hyväksytty' :
+                        loan.status === 'REJECTED' ? 'Hylätty' :
+                        loan.status === 'INUSE' ? 'Käytössä' :
+                        loan.status === 'RETURNED' ? 'Palautettu' :
+                        'Odottaa käsittelyä'}
+                    </p>
                 </Box>
                 <Box
                     padding={2}
@@ -60,6 +71,10 @@ export const LoanCard = ({ loan }) => {
 export default function Loans({ loans }) {
     const { data: session } = useSession();
 
+    const [LoanCategory, setLoanCategory] = useState('ALL');
+
+    loans.sort((a, b) => {let dateA = new Date(a.startTime), dateB = new Date(b.startTime); return dateB - dateA;});
+
     if (session?.user?.group !== 'ADMIN') {
         return <NotAuthenticated />;
     }
@@ -77,7 +92,18 @@ export default function Loans({ loans }) {
 
     return (
         <Stack spacing={5}>
-            {loans.map((loan) => (
+            <ButtonGroup>
+                <Button onClick={() => setLoanCategory('ALL')}>Kaikki</Button>
+                <Button colorScheme={'yellow'} onClick={() => setLoanCategory('PENDING')} >Odottaa käsittelyä</Button>
+                <Button colorScheme={'green'} onClick={() => setLoanCategory('ACCEPTED')} >Hyväksytyt</Button>
+                <Button colorScheme={'red'} onClick={() => setLoanCategory('REJECTED')} >Hylätyt</Button>
+                <Button colorScheme={'teal'} onClick={() => setLoanCategory('INUSE')} >Käytössä</Button>
+                <Button colorScheme={'purple'} onClick={() => setLoanCategory('RETURNED')} >Palauteut</Button>
+            </ButtonGroup>
+            
+            {LoanCategory === 'ALL' ? loans.map((loan) => (
+                <LoanCard key={loan.id} loan={loan} />
+            )) : loans.filter(loan => loan.status === LoanCategory).map((loan) => (
                 <LoanCard key={loan.id} loan={loan} />
             ))}
         </Stack>
