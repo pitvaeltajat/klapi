@@ -1,10 +1,9 @@
-import { sendEmail } from './client';
+import { sendEmail } from './ses-client';
 import prisma from '/utils/prisma';;
 
 require('dotenv').config();
 
 async function sendNewLoanEmail(loanCreator, id) {
-
 
     const adminUsers = await prisma.user.findMany({
         where: { group: 'ADMIN' },

@@ -1,6 +1,6 @@
 import prisma from '/utils/prisma';
 
-import { Stack, Box, Button, Heading, ButtonGroup } from '@chakra-ui/react';
+import { Stack, Box, Button, Heading, ButtonGroup, HStack, Wrap, WrapItem } from '@chakra-ui/react';
 import Link from '../../components/Link';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
@@ -43,7 +43,7 @@ export const LoanCard = ({ loan }) => {
                         {loan.description || loan.user.name}
                     </Heading>
                     <p>{
-                        loan.status === 'APPROVED' ? 'Hyväksytty' :
+                        loan.status === 'ACCEPTED' ? 'Hyväksytty' :
                         loan.status === 'REJECTED' ? 'Hylätty' :
                         loan.status === 'INUSE' ? 'Käytössä' :
                         loan.status === 'RETURNED' ? 'Palautettu' :
@@ -92,14 +92,26 @@ export default function Loans({ loans }) {
 
     return (
         <Stack spacing={5}>
-            <ButtonGroup>
-                <Button onClick={() => setLoanCategory('ALL')}>Kaikki</Button>
-                <Button colorScheme={'yellow'} onClick={() => setLoanCategory('PENDING')} >Odottaa käsittelyä</Button>
-                <Button colorScheme={'green'} onClick={() => setLoanCategory('ACCEPTED')} >Hyväksytyt</Button>
-                <Button colorScheme={'red'} onClick={() => setLoanCategory('REJECTED')} >Hylätyt</Button>
-                <Button colorScheme={'teal'} onClick={() => setLoanCategory('INUSE')} >Käytössä</Button>
-                <Button colorScheme={'purple'} onClick={() => setLoanCategory('RETURNED')} >Palauteut</Button>
-            </ButtonGroup>
+            <Wrap spacing={2}>
+                <WrapItem>
+                    <Button onClick={() => setLoanCategory('ALL')}>Kaikki</Button>
+                </WrapItem>
+                <WrapItem>
+                    <Button colorScheme={'yellow'} onClick={() => setLoanCategory('PENDING')} >Odottaa käsittelyä</Button>
+                </WrapItem>
+                <WrapItem>
+                    <Button colorScheme={'green'} onClick={() => setLoanCategory('ACCEPTED')} >Hyväksytyt</Button>
+                </WrapItem>
+                <WrapItem>
+                    <Button colorScheme={'red'} onClick={() => setLoanCategory('REJECTED')} >Hylätyt</Button>
+                </WrapItem>
+                <WrapItem>
+                    <Button colorScheme={'teal'} onClick={() => setLoanCategory('INUSE')} >Käytössä</Button>
+                </WrapItem>
+                <WrapItem>
+                    <Button colorScheme={'purple'} onClick={() => setLoanCategory('RETURNED')} >Palauteut</Button>
+                </WrapItem>
+            </Wrap>
             
             {LoanCategory === 'ALL' ? loans.map((loan) => (
                 <LoanCard key={loan.id} loan={loan} />

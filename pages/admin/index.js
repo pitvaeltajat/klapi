@@ -9,7 +9,7 @@ export default function Admin() {
     if (session?.user?.group !== 'ADMIN') {
         return <NotAuthenticated />;
     }
-
+    
     return (
         <>
             <Heading>Super upea admin näkymä</Heading>
