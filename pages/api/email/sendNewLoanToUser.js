@@ -1,4 +1,4 @@
-import { sendEmail } from './client';
+import { sendEmail } from './ses-client';
 
 async function sendCreatedEmail(recipientEmail, id) {
     const html = `
@@ -17,7 +17,7 @@ async function sendCreatedEmail(recipientEmail, id) {
     `;
 
     const subject = `Varaushakemus ${id} luotu`;
-    await sendEmail(recipientEmail, subject, html);
+    await sendEmail([recipientEmail], subject, html);
 }
 
 export default async function handler(req, res) {
