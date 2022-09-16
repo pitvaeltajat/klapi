@@ -9,47 +9,7 @@ export default function Admin() {
     if (session?.user?.group !== 'ADMIN') {
         return <NotAuthenticated />;
     }
-
-    async function userEmail() {
-        fetch('/api/email/sendNewLoanToUser', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email: session?.user?.email,
-                id: '69',
-            }),
-        });
-    }
-    async function adminEmail() {
-        fetch('/api/email/sendNewLoanToAdmin', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                id: '69',
-                loanCreator: session?.user?.name,
-            }),
-        });
-    }
-
-    async function acceptedEmail() {
-        fetch('/api/email/sendApproved', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                id: '69',
-                email: session?.user?.email,
-            }),
-        });
-    }
-
-
-
+    
     return (
         <>
             <Heading>Super upea admin näkymä</Heading>
@@ -59,9 +19,6 @@ export default function Admin() {
             <Link href='/admin/manageUsers'>
                 <Button>Hallitse käyttäjiä</Button>
             </Link>
-            <Button onClick={() => userEmail()}>Usermail</Button>
-            <Button onClick={() => adminEmail()}>Adminmail</Button>
-            <Button onClick={() => acceptedEmail()}>Acceptedmail</Button>
         </>
     );
 }
