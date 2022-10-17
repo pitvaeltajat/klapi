@@ -14,13 +14,14 @@ import {
     Td,
     TableContainer,
     useToast,
+    useDisclosure,
 } from '@chakra-ui/react';
 import React from 'react';
 import { clearCart } from '/redux/cart.slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSession } from 'next-auth/react';
 
-export default function SubmitConfirmation({ isOpen, onClose }) {
+export default function SubmitConfirmation({ isOpen, onClose, closeDrawer }) {
     const dates = useSelector((state) => state.dates);
     const cart = useSelector((state) => state.cart);
     const cancelRef = React.useRef();
@@ -28,12 +29,13 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
 
     const { data: session, status } = useSession();
 
+    const cartDrawer = useDisclosure();
+
     const toast = useToast();
     function successToast() {
         toast({
             title: 'Varaus lähetetty',
-            description:
-                'Varaus rekisteröitiin onnistuneesti. Voit tarkastella omia varauksiasi Oma tili -valikon takaa.',
+            description: 'Varaus rekisteröitiin onnistuneesti. Voit tarkastella omia varauksiasi Oma tili -valikon takaa.',
             status: 'success',
             duration: 9000,
             isClosable: true,
@@ -70,21 +72,17 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
             .then((response) => console.log(response))
             .then(() => dispatch(clearCart()))
             .then(onClose)
-            .then(successToast());
+            .then(successToast())
+            .then(closeDrawer);
     }
 
     return (
-        <AlertDialog
-            isOpen={isOpen}
-            leastDestructiveRef={cancelRef}
-            onClose={onClose}
-        >
+        <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
             <AlertDialogOverlay>
                 <AlertDialogContent>
                     <AlertDialogHeader fontSize='lg' fontWeight='bold'>
                         Tarkista varauksen tiedot:
                     </AlertDialogHeader>
-
                     <AlertDialogBody>
                         <p>
                             <b>Kamojen nouto: </b>
@@ -135,11 +133,7 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
                         <Button ref={cancelRef} onClick={onClose}>
                             Peruuta
                         </Button>
-                        <Button
-                            colorScheme='green'
-                            onClick={() => submitLoan()}
-                            ml={3}
-                        >
+                        <Button colorScheme='green' onClick={() => submitLoan()} ml={3}>
                             Vahvista varaus
                         </Button>
                     </AlertDialogFooter>

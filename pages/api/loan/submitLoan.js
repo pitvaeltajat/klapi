@@ -4,18 +4,11 @@ require('dotenv').config();
 
 export default async function handler(req, res) {
     try {
-        const { reservations, startTime, endTime, userId, description } =
-            req.body;
-
-        const userName = await prisma.user.findUnique({
+        const { reservations, startTime, endTime, userId, description } = req.body;
+        const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { name: true },
-        }).name;
-
-        const userEmail = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { email: true },
-        }).email;
+            select: { name: true, email: true },
+        });
 
         const result = await prisma.Loan.create({
             data: {
@@ -27,33 +20,27 @@ export default async function handler(req, res) {
             },
         });
 
-        await fetch(
-            `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendNewLoanToUser`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: result.id,
-                    email: userEmail,
-                }),
-            }
-        );
+        await fetch(`${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendNewLoanToUser`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id: result.id,
+                email: user.email,
+            }),
+        });
 
-        await fetch(
-            `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendNewLoanToAdmin`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: result.id,
-                    loanCreator: userName,
-                }),
-            }
-        );
+        await fetch(`${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendNewLoanToAdmin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id: result.id,
+                loanCreator: user.name,
+            }),
+        });
 
         res.status(200).json(result);
     } catch (err) {

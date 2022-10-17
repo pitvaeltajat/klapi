@@ -51,16 +51,10 @@ export default function CartDrawer({ isOpen, onClose }) {
         function getReservedAmount(item) {
             if (item.reservations != undefined) {
                 const effectiveReservations = item.reservations.filter(
-                    (reservation) =>
-                        !(
-                            reservation.loan.startTime > endDate ||
-                            reservation.loan.endTime < startDate
-                        )
+                    (reservation) => !(reservation.loan.startTime > endDate || reservation.loan.endTime < startDate)
                 );
                 var reservedAmount = 0;
-                effectiveReservations.map(
-                    (reservation) => (reservedAmount += reservation.amount)
-                );
+                effectiveReservations.map((reservation) => (reservedAmount += reservation.amount));
             }
             return reservedAmount;
         }
@@ -74,20 +68,13 @@ export default function CartDrawer({ isOpen, onClose }) {
             name: item.name,
             id: item.id,
             reservedAmount: getReservedAmount(item),
-            availableAmount:
-                item.amount - getReservedAmount(item) - amountInCart,
+            availableAmount: item.amount - getReservedAmount(item) - amountInCart,
         };
         return availabilities;
     }
 
     return (
-        <Drawer
-            isOpen={isOpen}
-            placement='right'
-            size='full'
-            initialFocusRef={firstField}
-            onClose={onClose}
-        >
+        <Drawer isOpen={isOpen} placement='right' size='full' initialFocusRef={firstField} onClose={onClose}>
             <DrawerOverlay />
             <DrawerContent height='100%'>
                 <DrawerCloseButton />
@@ -97,6 +84,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                     <SubmitConfirmation
                         isOpen={ConfirmationDialog.isOpen}
                         onClose={ConfirmationDialog.onClose}
+                        closeDrawer={onClose}
                     />
                     <Stack spacing={4}>
                         <Box>
@@ -121,73 +109,51 @@ export default function CartDrawer({ isOpen, onClose }) {
                             <Input id='endTime' value={endTime} readOnly />
                         </Box>
                     </Stack>
-                    
-                    {cart.items.length > 0 ?
-                    <Stack spacing='24px'>
-                        
+
+                    {cart.items.length > 0 ? (
+                        <Stack spacing='24px'>
+                            <Heading as='h3' size='md'>
+                                Valitut kamat
+                            </Heading>
+                            {cart.items.map(
+                                (item) =>
+                                    item.amount > 0 && (
+                                        <Box key={item.id}>
+                                            <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
+                                            <InputGroup>
+                                                <InputLeftAddon>
+                                                    <IconButton
+                                                        icon={<MinusIcon />}
+                                                        aria-label='decrement'
+                                                        onClick={() => dispatch(decrementAmount(item.id))}
+                                                    />
+                                                </InputLeftAddon>
+                                                <Input id={`item-${item.id}`} value={item.amount} />
+                                                <InputRightAddon>
+                                                    <IconButton
+                                                        icon={<AddIcon />}
+                                                        aria-label='increment'
+                                                        onClick={() => dispatch(incrementAmount(item.id))}
+                                                        isDisabled={getAvailability(item).availableAmount <= 0}
+                                                    />
+                                                </InputRightAddon>
+                                            </InputGroup>
+                                        </Box>
+                                    )
+                            )}
+                        </Stack>
+                    ) : (
                         <Heading as='h3' size='md'>
-                            Valitut kamat
+                            Ostoskori on tyhjä
                         </Heading>
-                        {cart.items.map(
-                            (item) =>
-                                item.amount > 0 && (
-                                    <Box key={item.id}>
-                                        <FormLabel htmlFor={`item-${item.id}`}>
-                                            {item.name}
-                                        </FormLabel>
-                                        <InputGroup>
-                                            <InputLeftAddon>
-                                                <IconButton
-                                                    icon={<MinusIcon />}
-                                                    aria-label='decrement'
-                                                    onClick={() =>
-                                                        dispatch(
-                                                            decrementAmount(
-                                                                item.id
-                                                            )
-                                                        )
-                                                    }
-                                                />
-                                            </InputLeftAddon>
-                                            <Input
-                                                id={`item-${item.id}`}
-                                                value={item.amount}
-                                            />
-                                            <InputRightAddon>
-                                                <IconButton
-                                                    icon={<AddIcon />}
-                                                    aria-label='increment'
-                                                    onClick={() =>
-                                                        dispatch(
-                                                            incrementAmount(
-                                                                item.id
-                                                            )
-                                                        )
-                                                    }
-                                                    isDisabled={
-                                                        getAvailability(item)
-                                                            .availableAmount <=
-                                                        0
-                                                    }
-                                                />
-                                            </InputRightAddon>
-                                        </InputGroup>
-                                    </Box>
-                                )
-                        )}
-                    </Stack>
-                    : <Heading as='h3' size='md'>Ostoskori on tyhjä</Heading>}
+                    )}
                 </DrawerBody>
 
                 <DrawerFooter borderTopWidth='1px'>
                     <Button variant='outline' mr={3} onClick={onClose}>
                         Sulje
                     </Button>
-                    <Button
-                        colorScheme='blue'
-                        onClick={ConfirmationDialog.onOpen}
-                        isDisabled={cart.items.length==0}
-                    >
+                    <Button colorScheme='blue' onClick={ConfirmationDialog.onOpen} isDisabled={cart.items.length == 0}>
                         Varaa
                     </Button>
                 </DrawerFooter>
