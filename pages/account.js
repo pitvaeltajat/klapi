@@ -8,10 +8,12 @@ export async function getServerSideProps() {
     const session = await getSession();
 
     const loans = await prisma.loan.findMany({
+        where: { user: { id: session?.user?.id } },
         include: {
             user: true,
         },
     });
+
     return {
         props: {
             loans,
@@ -21,7 +23,6 @@ export async function getServerSideProps() {
 
 export default function Account({ loans }) {
     const { data: session, status } = useSession();
-    loans = loans.filter((loan) => loan.user.id === session?.user?.id);
     loans = loans.sort((a, b) => {
         let dateA = new Date(a.startTime);
         let dateB = new Date(b.startTime);
