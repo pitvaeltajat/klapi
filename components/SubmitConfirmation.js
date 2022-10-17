@@ -44,7 +44,7 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
         const startTime = dates.startDate;
         const endTime = dates.endDate;
 
-        const userName = session?.user?.name;
+        const userId = session?.user?.id;
 
         const reservations = cart.items.map((cartitem) => ({
             item: { connect: { id: cartitem.id } },
@@ -57,7 +57,7 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
             reservations,
             startTime,
             endTime,
-            userName,
+            userId,
             description,
         };
         await fetch('api/loan/submitLoan', {
@@ -69,8 +69,8 @@ export default function SubmitConfirmation({ isOpen, onClose }) {
         })
             .then((response) => console.log(response))
             .then(() => dispatch(clearCart()))
-            .then(successToast())
-            .then(onClose);
+            .then(onClose)
+            .then(successToast());
     }
 
     return (
