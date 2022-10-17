@@ -40,9 +40,9 @@ export default function CartDrawer({ isOpen, onClose }) {
 
     const description = cart.description;
     const { data: session, status } = useSession();
+    const { data: items, error: itemsError } = useSWR('/api/item/getItems');
 
     function getAvailability(cartItem) {
-        const { data: items, error: itemsError } = useSWR('/api/item/getItems');
         const startDate = dates.startDate;
         const endDate = dates.endDate;
         const item = items.find((item) => item.id == cartItem.id);
