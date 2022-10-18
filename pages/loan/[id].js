@@ -247,7 +247,7 @@ export default function LoanView({ loan }) {
                 ) : null}
                 {session?.user?.group === 'ADMIN' ? (
                     <>
-                        <Link href={`/admin/editLoan/${loan.id}`}>
+                        <Link href={`/admin/editloan/${loan.id}`}>
                             <Button colorScheme={'yellow'}>Muokkaa</Button>
                         </Link>
                         <Button colorScheme={'green'} onClick={approveLoan} isDisabled={loan.status === 'ACCEPTED'}>
