@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
-
+import { Link } from '@chakra-ui/react';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
@@ -247,10 +247,7 @@ export default function LoanView({ loan }) {
                 ) : null}
                 {session?.user?.group === 'ADMIN' ? (
                     <>
-                        <Button
-                            colorScheme={'yellow'}
-                            onClick={() => router.push({ pathname: '/admin/editLoan/[id]', query: { id: loan.id } })}
-                        >
+                        <Button colorScheme={'yellow'} as={Link} href={`/admin/editLoan/${loan.id}`}>
                             Muokkaa
                         </Button>
                         <Button colorScheme={'green'} onClick={approveLoan} isDisabled={loan.status === 'ACCEPTED'}>
