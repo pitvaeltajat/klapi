@@ -38,7 +38,7 @@ import { MinusIcon, AddIcon, DeleteIcon, RepeatClockIcon } from '@chakra-ui/icon
 import { useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../../components/NotAuthenticated';
-import prisma from 'utils/prisma';
+import prisma from '/utils/prisma';
 
 export async function getServerSideProps(req, res) {
     const loan = await prisma.loan.findUnique({
