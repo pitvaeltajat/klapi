@@ -40,7 +40,9 @@ export default function Index({ items, categories }) {
                     <Box padding='4px'>
                         <InputGroup width={'fit-content'}>
                             <Input placeholder='Hae kamoja' marginBottom={'1em'} value={search} onChange={handleChange} />
-                            <InputRightElement children={<Search2Icon />} />
+                            <InputRightElement>
+                                <Search2Icon />
+                            </InputRightElement>
                         </InputGroup>
                     </Box>
                     {filteredItems.length > 0 ? (
