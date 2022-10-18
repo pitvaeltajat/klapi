@@ -247,7 +247,10 @@ export default function LoanView({ loan }) {
                 ) : null}
                 {session?.user?.group === 'ADMIN' ? (
                     <>
-                        <Button colorScheme={'yellow'} onClick={() => router.push('/admin/editLoan/' + loan.id)}>
+                        <Button
+                            colorScheme={'yellow'}
+                            onClick={() => router.push({ pathname: '/admin/editLoan/[id]', query: { id: loan.id } })}
+                        >
                             Muokkaa
                         </Button>
                         <Button colorScheme={'green'} onClick={approveLoan} isDisabled={loan.status === 'ACCEPTED'}>
