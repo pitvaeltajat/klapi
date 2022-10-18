@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
-import { Link } from '@chakra-ui/react';
+import { Link } from '../../components/Link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
