@@ -1,14 +1,6 @@
 import React from 'react';
 
-import {
-    Table,
-    Thead,
-    Tbody,
-    Tr,
-    Th,
-    Td,
-    TableContainer,
-} from '@chakra-ui/react';
+import { Table, Thead, Tbody, Tr, Th, Td, TableContainer } from '@chakra-ui/react';
 
 import Link from './Link';
 
@@ -22,7 +14,6 @@ export default function ReservationTable({ reservations }) {
             <Table>
                 <Thead>
                     <Tr>
-                        <Th>Nimi</Th>
                         <Th>Alku</Th>
                         <Th>Loppu</Th>
                         <Th>Määrä</Th>
@@ -32,20 +23,8 @@ export default function ReservationTable({ reservations }) {
                     {reservations.map((reservation) => {
                         return (
                             <Tr key={reservation.id}>
-                                <Td>
-                                    <Link href={`/loan/${reservation.loan.id}`}>
-                                        {reservation.description ||
-                                            'Nimetön varaus'}
-                                    </Link>
-                                </Td>
-                                <Td>
-                                    {DateTimeToString(
-                                        reservation.loan.startTime
-                                    )}
-                                </Td>
-                                <Td>
-                                    {DateTimeToString(reservation.loan.endTime)}
-                                </Td>
+                                <Td>{DateTimeToString(reservation.loan.startTime)}</Td>
+                                <Td>{DateTimeToString(reservation.loan.endTime)}</Td>
                                 <Td>{reservation.amount}</Td>
                             </Tr>
                         );

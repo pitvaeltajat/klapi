@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
-
+import Link from '../../components/Link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
@@ -75,7 +75,7 @@ export default function LoanView({ loan }) {
                     duration: 5000,
                     isClosable: true,
                 });
-                
+
                 await fetch('/api/email/sendApproved', {
                     method: 'POST',
                     headers: {
@@ -132,7 +132,7 @@ export default function LoanView({ loan }) {
     };
 
     const loanToUse = async () => {
-        const body = { id: loan.id};
+        const body = { id: loan.id };
         await fetch('/api/loan/loanToUse', {
             method: 'POST',
             headers: {
@@ -163,7 +163,7 @@ export default function LoanView({ loan }) {
     };
 
     const loanReturned = async () => {
-        const body = { id: loan.id};
+        const body = { id: loan.id };
         await fetch('/api/loan/loanReturned', {
             method: 'POST',
             headers: {
@@ -194,12 +194,7 @@ export default function LoanView({ loan }) {
     };
 
     //Check if user is allowed to see information about this loan
-    if (
-        !(
-            session?.user?.group === 'ADMIN' ||
-            session?.user?.id === loan.user.id
-        )
-    ) {
+    if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id)) {
         return (
             <>
                 <NotAuthenticated />
@@ -212,9 +207,7 @@ export default function LoanView({ loan }) {
     // list reservations and show loan basic information and user information
     return (
         <>
-            <Heading as='h1'>
-                Varaus: {loan.description || 'Ei kuvausta'}
-            </Heading>
+            <Heading as='h1'>Varaus: {loan.description || 'Ei kuvausta'}</Heading>
             <Heading as='h2' size='lg'>
                 Perustiedot
             </Heading>
@@ -223,12 +216,17 @@ export default function LoanView({ loan }) {
                     <p>Aloitusaika: {loan.startTime.toLocaleString('fi-FI')}</p>
                     <p>Lopetusaika: {loan.endTime.toLocaleString('fi-FI')}</p>
                     <p>Varaaja: {loan.user.name}</p>
-                    <p>Status: {
-                        loan.status === 'APPROVED' ? 'Hyväksytty' :
-                        loan.status === 'REJECTED' ? 'Hylätty' :
-                        loan.status === 'INUSE' ? 'Käytössä' :
-                        loan.status === 'RETURNED' ? 'Palautettu' :
-                        'Odottaa käsittelyä'} 
+                    <p>
+                        Status:{' '}
+                        {loan.status === 'APPROVED'
+                            ? 'Hyväksytty'
+                            : loan.status === 'REJECTED'
+                            ? 'Hylätty'
+                            : loan.status === 'INUSE'
+                            ? 'Käytössä'
+                            : loan.status === 'RETURNED'
+                            ? 'Palautettu'
+                            : 'Odottaa käsittelyä'}
                     </p>
                 </Box>
             </Stack>
@@ -237,17 +235,21 @@ export default function LoanView({ loan }) {
             </Heading>
             <ReservationTableLoanView loan={loan} />
 
-            <Stack direction={'row'} padding='0.5em' display={loan.status === 'INUSE' || loan.status === 'RETURNED' ? 'none' : 'block'}>
-                {session?.user?.group === 'ADMIN' ||
-                session?.user?.id === loan.user.id ? (
+            <Stack
+                direction={'row'}
+                padding='0.5em'
+                display={loan.status === 'INUSE' || loan.status === 'RETURNED' ? 'none' : 'block'}
+            >
+                {session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id ? (
                     <Button colorScheme={'red'} onClick={onOpen} isDisabled={loan.status === 'REJECTED'}>
                         Hylkää
                     </Button>
                 ) : null}
                 {session?.user?.group === 'ADMIN' ? (
                     <>
-                        
-                        <Button colorScheme={'yellow'} isDisabled title='ei käytössä'>Muokkaa</Button>
+                        <Link href={`/admin/editloan/${loan.id}`}>
+                            <Button colorScheme={'yellow'}>Muokkaa</Button>
+                        </Link>
                         <Button colorScheme={'green'} onClick={approveLoan} isDisabled={loan.status === 'ACCEPTED'}>
                             Hyväksy
                         </Button>
@@ -259,16 +261,10 @@ export default function LoanView({ loan }) {
                     <ModalContent>
                         <ModalHeader>Hylätäänkö varaus?</ModalHeader>
                         <ModalCloseButton />
-                        <ModalBody>
-                            Varaushakemus hylätään. Oletko varma?
-                        </ModalBody>
+                        <ModalBody>Varaushakemus hylätään. Oletko varma?</ModalBody>
 
                         <ModalFooter>
-                            <Button
-                                colorScheme='red'
-                                mr={3}
-                                onClick={rejectLoan}
-                            >
+                            <Button colorScheme='red' mr={3} onClick={rejectLoan}>
                                 Hylkää
                             </Button>
                             <Button colorScheme='gray' onClick={onClose}>
@@ -278,7 +274,15 @@ export default function LoanView({ loan }) {
                     </ModalContent>
                 </Modal>
             </Stack>
-            <Stack direction='row' padding='0.5em' display={(loan.status === 'ACCEPTED' || loan.status === 'INUSE') && session?.user?.group === 'ADMIN' ? 'block' : 'none'}>
+            <Stack
+                direction='row'
+                padding='0.5em'
+                display={
+                    (loan.status === 'ACCEPTED' || loan.status === 'INUSE') && session?.user?.group === 'ADMIN'
+                        ? 'block'
+                        : 'none'
+                }
+            >
                 <Button isDisabled={loan.status === 'INUSE'} onClick={loanToUse}>
                     Merkitse kamat annetuksi
                 </Button>
@@ -288,8 +292,8 @@ export default function LoanView({ loan }) {
             </Stack>
 
             <Heading as='h2' size='lg' display={loan.status === 'RETURNED' ? 'block' : 'none'}>
-                Lainaustapahtuma suoritettu loppuun 
-            </Heading>      
+                Lainaustapahtuma suoritettu loppuun
+            </Heading>
         </>
     );
 }

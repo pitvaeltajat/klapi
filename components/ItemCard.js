@@ -1,58 +1,10 @@
-import {
-    Flex,
-    Box,
-    Image,
-    useColorModeValue,
-    Button,
-    useToast,
-    Circle,
-} from '@chakra-ui/react';
-
+import { Flex, Box, Image, useColorModeValue, Button, useToast, Circle } from '@chakra-ui/react';
+import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/cart.slice';
 
-export default function ItemCard({ item }) {
+export default function ItemCard({ item, availableAmount }) {
     const dispatch = useDispatch();
-
-    function getAvailability(item) {
-        const startDate = dates.startDate;
-        const endDate = dates.endDate;
-
-        function getReservedAmount(item) {
-            if (item.reservations != undefined) {
-                const effectiveReservations = item.reservations.filter(
-                    (reservation) =>
-                        !(
-                            reservation.loan.startTime > endDate ||
-                            reservation.loan.endTime < startDate
-                        )
-                        &&
-                        reservation.loan.status !== 'REJECTED'
-                        &&
-                        reservation.loan.status !== 'RETURNED'
-                );
-                var reservedAmount = 0;
-                effectiveReservations.map(
-                    (reservation) => (reservedAmount += reservation.amount)
-                );
-            }
-            return reservedAmount;
-        }
-
-        const amountInCart =
-            cartItems.find((cartItem) => cartItem.id == item.id) != undefined
-                ? cartItems.find((cartItem) => cartItem.id == item.id).amount
-                : 0;
-
-        const availabilities = {
-            name: item.name,
-            id: item.id,
-            reservedAmount: getReservedAmount(item),
-            availableAmount:
-                item.amount - getReservedAmount(item) - amountInCart,
-        };
-        return availabilities;
-    }
 
     const toast = useToast();
     const addItemToCart = (item) => {
@@ -70,6 +22,11 @@ export default function ItemCard({ item }) {
     const cart = useSelector((state) => state.cart);
     const dates = useSelector((state) => state.dates);
 
+    const amountInCart =
+        cartItems.find((cartItem) => cartItem.id == item.id) != undefined
+            ? cartItems.find((cartItem) => cartItem.id == item.id).amount
+            : 0;
+
     return (
         <Box w='full' alignItems='center' justifyContent='center'>
             <Box
@@ -79,6 +36,7 @@ export default function ItemCard({ item }) {
                 rounded='lg'
                 shadow='lg'
                 position='relative'
+                _hover={{ shadow: '2xl', transform: 'scale(1.01)', transition: 'all 0.2s', zIndex: 1 }}
             >
                 <Image
                     src={item.imgURL}
@@ -92,11 +50,7 @@ export default function ItemCard({ item }) {
                 />
 
                 <Box p='6'>
-                    <Flex
-                        mt='1'
-                        justifyContent='space-between'
-                        alignContent='center'
-                    >
+                    <Flex mt='1' justifyContent='space-between' alignContent='center'>
                         <Box
                             fontSize='2xl'
                             fontWeight='semibold'
@@ -106,10 +60,10 @@ export default function ItemCard({ item }) {
                             overflow='hidden'
                             noOfLines='1'
                             title={item.name}
+                            _hover={{ textDecoration: 'underline' }}
                         >
-                            {item.name}
+                            <Link href={'/item/' + item.id}>{item.name}</Link>
                         </Box>
-                        
                     </Flex>
                     <Box>
                         <Button
@@ -117,39 +71,29 @@ export default function ItemCard({ item }) {
                             size='sm'
                             alignSelf={'center'}
                             colorScheme='blue'
-                            isDisabled={
-                                getAvailability(item).availableAmount <= 0
-                            }
+                            isDisabled={availableAmount - amountInCart <= 0}
                         >
                             Lisää koriin
                             <Circle
                                 position='absolute'
                                 right='-7px'
-                                top='-7px'   
+                                top='-7px'
                                 size='20px'
                                 bg='red'
                                 color='white'
-                                display={cartItems
-                                            .filter((cartItem) => cartItem.id === item.id)
-                                            .map((cartItem) => cartItem.amount)
-                                            >0 ? 'block' : 'none'}
-                                        
+                                display={
+                                    cartItems.filter((cartItem) => cartItem.id === item.id).map((cartItem) => cartItem.amount) >
+                                    0
+                                        ? 'block'
+                                        : 'none'
+                                }
                             >
-                                {cartItems
-                                .filter((cartItem) => cartItem.id === item.id)
-                                .map((cartItem) => cartItem.amount)}
+                                {cartItems.filter((cartItem) => cartItem.id === item.id).map((cartItem) => cartItem.amount)}
                             </Circle>
                         </Button>
                     </Box>
-                    <Box
-                        fontSize='medium'
-                        fontWeight='semibold'
-                        as='h4'
-                        lineHeight='tight'
-                        isTruncated
-                    >
-                        Saatavilla:{' '}
-                        {getAvailability(item).availableAmount}
+                    <Box fontSize='medium' fontWeight='semibold' as='h4' lineHeight='tight' isTruncated>
+                        Saatavilla: {availableAmount - amountInCart}
                     </Box>
                 </Box>
             </Box>

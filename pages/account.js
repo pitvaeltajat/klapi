@@ -8,10 +8,12 @@ export async function getServerSideProps() {
     const session = await getSession();
 
     const loans = await prisma.loan.findMany({
+        where: { user: { id: session?.user?.id } },
         include: {
             user: true,
         },
     });
+
     return {
         props: {
             loans,

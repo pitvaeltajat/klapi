@@ -19,8 +19,8 @@ import {
     useDisclosure,
     useToast,
 } from '@chakra-ui/react';
-
 import ReservationTable from '../../components/ReservationTable';
+import { useSession } from 'next-auth/react';
 
 export async function getServerSideProps(req, res) {
     const item = await prisma.item.findUnique({
@@ -50,6 +50,8 @@ export async function getServerSideProps(req, res) {
 export default function ItemView({ item }) {
     const router = useRouter();
     const toast = useToast();
+
+    const { data: session, status } = useSession();
 
     const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -98,8 +100,13 @@ export default function ItemView({ item }) {
                 <EditablePreview />
                 <EditableTextarea />
             </Editable>
-            <Button onClick={() => setIsEditing(true)}>Muokkaa</Button>
-            <Button onClick={onOpen}>Poista</Button>
+            {session?.user?.group === 'ADMIN' ? (
+                <>
+                    <Button onClick={() => setIsEditing(true)}>Muokkaa</Button>
+                    <Button onClick={onOpen}>Poista</Button>
+                </>
+            ) : null}
+
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
                 <ModalContent>
