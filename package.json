@@ -45,6 +45,6 @@
         "prisma-erd-generator": "^0.11.0"
     },
     "prisma": {
-        "seed": "ts-node prisma/seed.ts"
+        "seed": "node prisma/seed.js"
     }
 }
