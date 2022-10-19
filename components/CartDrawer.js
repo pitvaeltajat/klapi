@@ -26,11 +26,14 @@ import { useSession } from 'next-auth/react';
 import { setDescription } from '../redux/cart.slice';
 import useSWR from 'swr';
 import SubmitConfirmation from './SubmitConfirmation';
+import { useState } from 'react';
+import { useEffect } from 'react';
 
 export default function CartDrawer({ isOpen, onClose }) {
     const firstField = useRef();
     const dispatch = useDispatch();
     const cart = useSelector((state) => state.cart);
+    const cartItems = cart.items;
     const dates = useSelector((state) => state.dates);
 
     const ConfirmationDialog = useDisclosure();
@@ -42,35 +45,41 @@ export default function CartDrawer({ isOpen, onClose }) {
     const { data: session, status } = useSession();
     const { data: items, error: itemsError } = useSWR('/api/item/getItems');
 
-    function getAvailability(cartItem) {
-        const startDate = dates.startDate;
-        const endDate = dates.endDate;
-        const item = items.find((item) => item.id == cartItem.id);
-        const cartItems = cart.items;
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-        function getReservedAmount(item) {
-            if (item.reservations != undefined) {
-                const effectiveReservations = item.reservations.filter(
-                    (reservation) => !(reservation.loan.startTime > endDate || reservation.loan.endTime < startDate)
-                );
-                var reservedAmount = 0;
-                effectiveReservations.map((reservation) => (reservedAmount += reservation.amount));
-            }
-            return reservedAmount;
-        }
+    const StartDate = dates.startDate;
+    const EndDate = dates.endDate;
 
+    useEffect(() => {
+        setLoading(true);
+        fetch('/api/availability/getAvailabilities', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ StartDate, EndDate }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                setData(data);
+                setLoading(false);
+            })
+            .catch((error) => console.log(error));
+    }, []);
+
+    function getCartAmount(id) {
         const amountInCart =
-            cartItems.find((cartItem) => cartItem.id == item.id) != undefined
-                ? cartItems.find((cartItem) => cartItem.id == item.id).amount
+            cartItems.find((cartItem) => cartItem.id == id) != undefined
+                ? cartItems.find((cartItem) => cartItem.id == id).amount
                 : 0;
+        return amountInCart;
+    }
 
-        const availabilities = {
-            name: item.name,
-            id: item.id,
-            reservedAmount: getReservedAmount(item),
-            availableAmount: item.amount - getReservedAmount(item) - amountInCart,
-        };
-        return availabilities;
+    const availabilities = data?.availabilities;
+
+    if (loading) {
+        return <div>Ladataan...</div>;
     }
 
     return (
@@ -134,7 +143,9 @@ export default function CartDrawer({ isOpen, onClose }) {
                                                         icon={<AddIcon />}
                                                         aria-label='increment'
                                                         onClick={() => dispatch(incrementAmount(item.id))}
-                                                        isDisabled={getAvailability(item).availableAmount <= 0}
+                                                        isDisabled={
+                                                            availabilities[item.id].available - getCartAmount(item.id) < 1
+                                                        }
                                                     />
                                                 </InputRightAddon>
                                             </InputGroup>

@@ -6,38 +6,6 @@ import { addToCart } from '../redux/cart.slice';
 export default function ItemCard({ item, availableAmount }) {
     const dispatch = useDispatch();
 
-    function getAvailability(item) {
-        const startDate = dates.startDate;
-        const endDate = dates.endDate;
-
-        function getReservedAmount(item) {
-            if (item.reservations != undefined) {
-                const effectiveReservations = item.reservations.filter(
-                    (reservation) =>
-                        !(reservation.loan.startTime > endDate || reservation.loan.endTime < startDate) &&
-                        reservation.loan.status !== 'REJECTED' &&
-                        reservation.loan.status !== 'RETURNED'
-                );
-                var reservedAmount = 0;
-                effectiveReservations.map((reservation) => (reservedAmount += reservation.amount));
-            }
-            return reservedAmount;
-        }
-
-        const amountInCart =
-            cartItems.find((cartItem) => cartItem.id == item.id) != undefined
-                ? cartItems.find((cartItem) => cartItem.id == item.id).amount
-                : 0;
-
-        const availabilities = {
-            name: item.name,
-            id: item.id,
-            reservedAmount: getReservedAmount(item),
-            availableAmount: item.amount - getReservedAmount(item) - amountInCart,
-        };
-        return availabilities;
-    }
-
     const toast = useToast();
     const addItemToCart = (item) => {
         dispatch(addToCart(item));

@@ -39,6 +39,7 @@ import { useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../../components/NotAuthenticated';
 import prisma from '/utils/prisma';
+import { useRouter } from 'next/router';
 
 export async function getServerSideProps(req, res) {
     const loan = await prisma.loan.findUnique({
@@ -89,6 +90,8 @@ export default function LoanEditView({ loan, items }) {
 
     const { data: session } = useSession();
 
+    const router = useRouter();
+
     if (session?.user?.group !== 'ADMIN') {
         return <NotAuthenticated />;
     }
@@ -122,6 +125,9 @@ export default function LoanEditView({ loan, items }) {
                 });
             })
             .then(onClose)
+            .then(() => {
+                router.push('/loan');
+            })
             .catch((err) => {
                 console.log(err);
                 toast({
