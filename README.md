@@ -6,12 +6,12 @@ Klapi is a web-based application to manage simple equipment reserve/loan/return 
 
 Klapi consists of the following components:
 
--   [Next.js](https://nextjs.org)
--   [Prisma](https://www.prisma.io)
--   [NextAuth.js](https://next-auth.js.org/)
--   [Docker](https://www.docker.com)
--   [PostgreSQL](https://www.postgresql.org)
--   [Chakra UI](https://chakra-ui.com)
+- [Next.js](https://nextjs.org)
+- [Prisma](https://www.prisma.io)
+- [NextAuth.js](https://next-auth.js.org/)
+- [Docker](https://www.docker.com)
+- [PostgreSQL](https://www.postgresql.org)
+- [Chakra UI](https://chakra-ui.com)
 
 ## Development
 
@@ -48,7 +48,3 @@ More information about Prisma can be found [here](https://www.prisma.io/docs/con
 Klapi uses NextAuth.js for authentication. Currently only authentication with Google is supported. New authentication providers can be added in NextAuth.js API route. If needed, Google authentication provider can be configured to only allow users from specific domains (own organization).
 
 Klapi has 2 user roles: admin and user. Any person with Google account can become an user. Users can browse equipment and send reservation requests, as well as see their reservation history. Admins can edit equipment catalog, manage users and approve/reject reservation requests.
-
-## Deployment
-
-There will be a production-ready docker-compose file. ":D"
