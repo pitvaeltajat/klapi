@@ -4,7 +4,7 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"afterbuild": "prisma generate",
+		"postinstall": "prisma generate",
 		"cypress": "cypress open",
 		"cypress-headless": "cypress run",
 		"lint": "next lint"
