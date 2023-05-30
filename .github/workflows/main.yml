@@ -37,5 +37,3 @@ jobs:
               run: yarn install
             - name: Lint
               run: yarn lint
-            - name: Prisma generate
-              run: yarn prisma generate
