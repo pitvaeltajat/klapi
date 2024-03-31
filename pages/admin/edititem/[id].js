@@ -16,6 +16,7 @@ import {
 import { use, useEffect, useState } from 'react';
 import { CreatableSelect, Select } from 'chakra-react-select';
 import { useRouter } from 'next/router';
+import prisma from '../../../utils/prisma';
 
 export async function getServerSideProps(req, res) {
 	const item = await prisma.item.findUnique({
