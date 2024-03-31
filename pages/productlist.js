@@ -2,7 +2,6 @@ import React from 'react';
 import { Stack, Button, SimpleGrid } from '@chakra-ui/react';
 import ItemCard from '../components/ItemCard';
 import { useSelector } from 'react-redux';
-import Link from '../components/Link';
 import { useState } from 'react';
 import { useEffect } from 'react';
 
