@@ -152,7 +152,7 @@ export default function BrowseItems({ items, categories }) {
 			</Select>
 
 			<SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={10}>
-				{filteredItems.map((item) => itemCard(item))}
+				{filteredItems.map((item) => ItemCard(item))}
 			</SimpleGrid>
 		</>
 	);
