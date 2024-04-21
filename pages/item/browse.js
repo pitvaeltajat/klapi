@@ -73,7 +73,7 @@ export default function BrowseItems({ items, categories }) {
 			}
 		});
 
-	const itemCard = (item) => {
+	const ItemCard = (item) => {
 		return (
 			<Box w='full' alignItems='center' justifyContent='center'>
 				<Box
