@@ -46,7 +46,7 @@ export async function getServerSideProps(context) {
 	};
 }
 
-export default function browseItems({ items, categories }) {
+export default function BrowseItems({ items, categories }) {
 	items = items.sort((a, b) => {
 		return a.name.localeCompare(b.name);
 	});
