@@ -49,5 +49,10 @@
 	},
 	"prisma": {
 		"seed": "node prisma/seed.js"
+	},
+	"overrides": {
+		"@chakra-ui/focus-lock": {
+			"react-focus-lock": "2.11.3"
+		}
 	}
 }
