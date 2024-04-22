@@ -3,10 +3,7 @@ import prisma from '/utils/prisma';
 import React from 'react';
 import { useRouter } from 'next/router';
 import {
-	Editable,
-	EditableInput,
-	EditableTextarea,
-	EditablePreview,
+	Image,
 	Heading,
 	Button,
 	Modal,
@@ -95,18 +92,23 @@ export default function ItemView({ item }) {
 
 	return (
 		<>
-			<Heading>{item.name}</Heading>
-			<Editable defaultValue={item.name}>
-				<EditablePreview />
-				<EditableInput />
-			</Editable>
-			<Editable defaultValue={item.description}>
-				<EditablePreview />
-				<EditableTextarea />
-			</Editable>
+			<Heading marginBottom='1em'>{item.name}</Heading>
+			{item.description && <p>{item.description}</p>}
+
+			{item.image && (
+				<Image
+					width='500px'
+					marginBottom='0.5em'
+					src={item.image}
+					alt={item.name}
+					fallbackSrc='https://via.placeholder.com/500x300'
+				/>
+			)}
 			{session?.user?.group === 'ADMIN' ? (
 				<>
-					<Button onClick={() => router.push(`/admin/edititem/${item.id}`)}>Muokkaa</Button>
+					<Button marginEnd='0.5em' onClick={() => router.push(`/admin/edititem/${item.id}`)}>
+						Muokkaa
+					</Button>
 					<Button onClick={onOpen}>Poista</Button>
 				</>
 			) : null}
