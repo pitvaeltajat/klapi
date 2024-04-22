@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
 	try {
 		const client = new S3Client({
-			region: process.env.AWS_REGION,
+			region: process.env.KLAPI_AWS_REGION,
 			credentials: {
 				accessKeyId: process.env.KLAPI_AWS_ACCESS_KEY_ID,
 				secretAccessKey: process.env.KLAPI_AWS_SECRET_ACCESS_KEY,
