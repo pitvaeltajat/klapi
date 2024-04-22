@@ -88,11 +88,11 @@ export default function BrowseItems({ items, categories }) {
 					<Image
 						src={item.image}
 						alt={`Picture of ${item.name}`}
+						width='500px'
+						height='300px'
 						roundedTop='lg'
 						objectFit='cover'
 						objectPosition='center'
-						w='full'
-						h='full'
 						fallbackSrc='https://via.placeholder.com/500x300'
 					/>
 
