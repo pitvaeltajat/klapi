@@ -20,6 +20,7 @@ import {
 	Image,
 	SimpleGrid,
 	Select,
+	AspectRatio,
 } from '@chakra-ui/react';
 import prisma from '../../utils/prisma';
 import NextLink from 'next/link';
@@ -85,16 +86,16 @@ export default function BrowseItems({ items, categories }) {
 					position='relative'
 					_hover={{ shadow: '2xl', transform: 'scale(1.01)', transition: 'all 0.2s', zIndex: 1 }}
 				>
-					<Image
-						src={item.image}
-						alt={`Picture of ${item.name}`}
-						width='500px'
-						height='300px'
-						roundedTop='lg'
-						objectFit='cover'
-						objectPosition='center'
-						fallbackSrc='https://via.placeholder.com/500x300'
-					/>
+					<AspectRatio ratio={5 / 3}>
+						<Image
+							src={item.image}
+							alt={`Picture of ${item.name}`}
+							roundedTop='lg'
+							objectFit='cover'
+							objectPosition='center'
+							fallbackSrc='https://via.placeholder.com/500x300'
+						/>
+					</AspectRatio>
 
 					<Box margin={'1.5em'} marginTop={'0.5em'}>
 						<Flex mt='1' justifyContent='space-between' alignContent='center'>
