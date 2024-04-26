@@ -1,4 +1,4 @@
-import { Flex, Box, Image, useColorModeValue, Button, useToast, Circle } from '@chakra-ui/react';
+import { Flex, Box, Image, useColorModeValue, Button, useToast, Circle, AspectRatio } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/cart.slice';
@@ -38,16 +38,16 @@ export default function ItemCard({ item, availableAmount }) {
 				position='relative'
 				_hover={{ shadow: '2xl', transform: 'scale(1.01)', transition: 'all 0.2s', zIndex: 1 }}
 			>
-				<Image
-					src={item.image}
-					alt={`Picture of ${item.name}`}
-					width='500px'
-					height='300px'
-					roundedTop='lg'
-					objectFit='cover'
-					objectPosition='center'
-					fallbackSrc='https://via.placeholder.com/500x300'
-				/>
+				<AspectRatio ratio={5 / 3}>
+					<Image
+						src={item.image}
+						alt={`Picture of ${item.name}`}
+						roundedTop='lg'
+						objectFit='cover'
+						objectPosition='center'
+						fallbackSrc='https://via.placeholder.com/500x300'
+					/>
+				</AspectRatio>
 
 				<Box p='6'>
 					<Flex mt='1' justifyContent='space-between' alignContent='center'>
