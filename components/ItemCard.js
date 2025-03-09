@@ -28,8 +28,6 @@ export default function ItemCard({ item, availableAmount }) {
   };
 
   const cartItems = useSelector((state) => state.cart.items);
-  const cart = useSelector((state) => state.cart);
-  const dates = useSelector((state) => state.dates);
 
   const amountInCart =
     cartItems.find((cartItem) => cartItem.id == item.id) != undefined
@@ -54,12 +52,12 @@ export default function ItemCard({ item, availableAmount }) {
       >
         <AspectRatio ratio={5 / 3}>
           <Image
-            src={item.image}
+            src={item.image ? item.image : "https://placehold.co/500x300"}
             alt={`Picture of ${item.name}`}
             roundedTop="lg"
             objectFit="cover"
             objectPosition="center"
-            fallbackSrc="https://via.placeholder.com/500x300"
+            fallbackSrc="https://placehold.co/500x300"
           />
         </AspectRatio>
 
