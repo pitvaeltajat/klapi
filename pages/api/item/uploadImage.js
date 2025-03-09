@@ -1,42 +1,42 @@
-import { S3Client } from '@aws-sdk/client-s3';
-import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
+import { S3Client } from "@aws-sdk/client-s3";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(req, res) {
-	const session = await getServerSession(req, res, authOptions);
-	if (session?.user?.group !== 'ADMIN') {
-		res.status(401).json({
-			message: 'Sinulla ei ole oikeutta tähän toimintoon',
-		});
-		return;
-	}
+  const session = await getServerSession(req, res, authOptions);
+  if (session?.user?.group !== "ADMIN") {
+    res.status(401).json({
+      message: "Sinulla ei ole oikeutta tähän toimintoon",
+    });
+    return;
+  }
 
-	const { filename, contentType } = req.body;
+  const { filename, contentType } = req.body;
 
-	try {
-		const client = new S3Client({
-			region: process.env.KLAPI_AWS_REGION,
-			credentials: {
-				accessKeyId: process.env.KLAPI_AWS_ACCESS_KEY_ID,
-				secretAccessKey: process.env.KLAPI_AWS_SECRET_ACCESS_KEY,
-			},
-		});
-		const { url, fields } = await createPresignedPost(client, {
-			Bucket: process.env.AWS_BUCKET_NAME,
-			Key: filename,
-			Conditions: [
-				['content-length-range', 0, 10485760], // up to 10 MB
-				['starts-with', '$Content-Type', contentType],
-			],
-			Fields: {
-				'Content-Type': contentType,
-			},
-			Expires: 600,
-		});
+  try {
+    const client = new S3Client({
+      region: process.env.KLAPI_AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.KLAPI_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.KLAPI_AWS_SECRET_ACCESS_KEY,
+      },
+    });
+    const { url, fields } = await createPresignedPost(client, {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: filename,
+      Conditions: [
+        ["content-length-range", 0, 10485760], // up to 10 MB
+        ["starts-with", "$Content-Type", contentType],
+      ],
+      Fields: {
+        "Content-Type": contentType,
+      },
+      Expires: 600,
+    });
 
-		res.status(200).json({ url, fields });
-	} catch (error) {
-		res.status(500).json({ message: error.message });
-	}
+    res.status(200).json({ url, fields });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 }

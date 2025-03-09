@@ -697,7 +697,7 @@ async function main() {
       },
     });
     console.log(
-      `Created category with name ${newCategory.name} and id: ${newCategory.id}`
+      `Created category with name ${newCategory.name} and id: ${newCategory.id}`,
     );
   }
 
@@ -726,7 +726,7 @@ async function main() {
         },
       });
       console.log(
-        `Updated item with name ${updatedItem.name} and id: ${updatedItem.id}`
+        `Updated item with name ${updatedItem.name} and id: ${updatedItem.id}`,
       );
     } catch (error) {
       console.error(`Failed to update item ${item.name}: ${error.message}`);
