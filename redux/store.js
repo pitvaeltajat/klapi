@@ -1,27 +1,27 @@
-import { configureStore, combineReducers, getDefaultMiddleware } from '@reduxjs/toolkit';
-import { cartReducer } from './cart.slice';
-import { dateReducer } from './dates.slice';
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { cartReducer } from "./cart.slice";
+import { dateReducer } from "./dates.slice";
 
 const reducer = {
   cart: cartReducer,
-  dates: dateReducer
+  dates: dateReducer,
 };
 
 const combineReducer = combineReducers({
   cart: cartReducer,
-  dates: dateReducer
-})
+  dates: dateReducer,
+});
 
 const rootReducer = (state, action) => {
-  if (action.type === 'cart/clearCart'){
-    state = undefined
+  if (action.type === "cart/clearCart") {
+    state = undefined;
   }
-  return combineReducer(state, action)
-}
+  return combineReducer(state, action);
+};
 
 const store = configureStore({
   reducer: rootReducer,
-  middleware: [...getDefaultMiddleware()]
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware(),
 });
 
 export default store;
