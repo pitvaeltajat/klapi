@@ -29,7 +29,7 @@ export default function AllItems({ items, categories }) {
         setLoading(false);
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [StartDate, EndDate]);
 
   const availabilities = data?.availabilities;
 
