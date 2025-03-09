@@ -10,7 +10,7 @@ export default function Layout(props) {
   return (
     <>
       <TopBar>
-        <CartButton onOpen={onOpen} />
+        <CartButton onOpen={onOpen} onClose={onClose} isOpen={isOpen} />
       </TopBar>
       <CartDrawer isOpen={isOpen} onClose={onClose} />
       <Box as="main" padding={10} paddingTop={20} margin="auto">
