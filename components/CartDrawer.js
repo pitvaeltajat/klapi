@@ -82,6 +82,12 @@ export default function CartDrawer({ isOpen, onClose }) {
     return <div>Ladataan...</div>;
   }
 
+  const timeStringWithoutTimeZone = (date) => {
+    const finnishDate = date.toLocaleString("fi-FI");
+    const datewihOutTimeZone = finnishDate;
+    return datewihOutTimeZone;
+  };
+
   return (
     <Drawer
       isOpen={isOpen}
@@ -117,11 +123,19 @@ export default function CartDrawer({ isOpen, onClose }) {
             </Box>
             <Box>
               <FormLabel htmlFor="startTime">Alku</FormLabel>
-              <Input id="startTime" value={startTime} readOnly />
+              <Input
+                id="startTime"
+                value={timeStringWithoutTimeZone(startTime)}
+                readOnly
+              />
             </Box>
             <Box>
               <FormLabel htmlFor="endTime">Loppu</FormLabel>
-              <Input id="endTime" value={endTime} readOnly />
+              <Input
+                id="endTime"
+                value={timeStringWithoutTimeZone(endTime)}
+                readOnly
+              />
             </Box>
           </Stack>
 
@@ -160,7 +174,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                         </InputRightAddon>
                       </InputGroup>
                     </Box>
-                  ),
+                  )
               )}
             </Stack>
           ) : (

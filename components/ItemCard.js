@@ -38,7 +38,7 @@ export default function ItemCard({ item, availableAmount }) {
     <Box w="full" alignItems="center" justifyContent="center">
       <Box
         bg={useColorModeValue("white", "gray.800")}
-        maxW="sm"
+        maxW="100%"
         borderWidth="1px"
         rounded="lg"
         shadow="lg"
@@ -61,10 +61,10 @@ export default function ItemCard({ item, availableAmount }) {
           />
         </AspectRatio>
 
-        <Box p="6">
+        <Box p="4">
           <Flex mt="1" justifyContent="space-between" alignContent="center">
             <Box
-              fontSize="2xl"
+              fontSize={{ base: "xl", md: "2xl" }}
               fontWeight="semibold"
               as="h4"
               lineHeight="tight"

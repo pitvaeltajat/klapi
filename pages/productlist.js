@@ -40,7 +40,7 @@ export default function AllItems({ items, categories }) {
 
   return (
     <>
-      <SimpleGrid columns={[null, 1, 2, 3, 4]} spacing={10}>
+      <SimpleGrid columns={[1, 2, 2, 3, 4]} spacing={[4, 6, 8, 10]}>
         {items.map((item) => (
           <ItemCard
             key={item.id}

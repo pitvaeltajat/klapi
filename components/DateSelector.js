@@ -136,12 +136,13 @@ export default function DateSelector() {
                   selected={startDateModified ? startDate : false}
                   placeholderText="🗓️ Kamojen noutoaika"
                   onChange={(date) => {
-                    setLocalStartDate(date);
+                    const dateWith18 = new Date(date);
+                    dateWith18.setHours(18, 0, 0, 0);
+                    setLocalStartDate(dateWith18);
                     setStartDateModified(true);
                   }}
-                  showTimeSelect
                   dateFormat="d.M.yyyy H:mm"
-                  timeFormat="H:mm"
+                  shouldCloseOnSelect={true}
                 />
               </Box>
 
@@ -151,12 +152,13 @@ export default function DateSelector() {
                   selected={endDateModified ? endDate : false}
                   placeholderText="🗓️ Kamojen palautusaika"
                   onChange={(date) => {
-                    setLocalEndDate(date);
+                    const dateWith18 = new Date(date);
+                    dateWith18.setHours(18, 0, 0, 0);
+                    setLocalEndDate(dateWith18);
                     setEndDateModified(true);
                   }}
-                  showTimeSelect
                   dateFormat="d.M.yyyy H:mm"
-                  timeFormat="H:mm"
+                  shouldCloseOnSelect={true}
                 />
               </Box>
               {dates.datesSet
