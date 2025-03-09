@@ -9,6 +9,7 @@
     "cypress-headless": "cypress run",
     "lint": "next lint"
   },
+  "packageManager": "pnpm@10.5.2",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.540.0",
     "@aws-sdk/client-ses": "^3.171.0",
