@@ -13,8 +13,8 @@ import {
   Button,
   useToast,
 } from "@chakra-ui/react";
-import { use, useEffect, useState } from "react";
-import { CreatableSelect, Select } from "chakra-react-select";
+import { useState } from "react";
+import { CreatableSelect } from "chakra-react-select";
 import { useRouter } from "next/router";
 import prisma from "../../../utils/prisma";
 
@@ -46,9 +46,6 @@ export default function EditItem({ item, categories }) {
   };
 
   const [itemCategories, setItemCategories] = useState(item.categories);
-  const handleCategoryChange = (e) => {
-    setItemCategories(e.target.value);
-  };
 
   const [itemDescription, setItemDescription] = useState(item.description);
   const handleDescriptionChange = (e) => {

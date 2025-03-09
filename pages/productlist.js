@@ -1,5 +1,5 @@
 import React from "react";
-import { Stack, Button, SimpleGrid } from "@chakra-ui/react";
+import { SimpleGrid } from "@chakra-ui/react";
 import ItemCard from "../components/ItemCard";
 import { useSelector } from "react-redux";
 import { useState } from "react";
@@ -29,7 +29,7 @@ export default function AllItems({ items, categories }) {
         setLoading(false);
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [StartDate, EndDate]);
 
   const availabilities = data?.availabilities;
 

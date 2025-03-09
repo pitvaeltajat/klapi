@@ -1,4 +1,4 @@
-import { LoanStatus, PrismaClient } from "@prisma/client";
+import { LoanStatus } from "@prisma/client";
 import prisma from "/utils/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";

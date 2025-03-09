@@ -22,9 +22,7 @@ import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { incrementAmount, decrementAmount } from "../redux/cart.slice";
-import { useSession } from "next-auth/react";
 import { setDescription } from "../redux/cart.slice";
-import useSWR from "swr";
 import SubmitConfirmation from "./SubmitConfirmation";
 import { useState } from "react";
 import { useEffect } from "react";
@@ -42,8 +40,6 @@ export default function CartDrawer({ isOpen, onClose }) {
   const endTime = dates.endDate;
 
   const description = cart.description;
-  const { data: session, status } = useSession();
-  const { data: items, error: itemsError } = useSWR("/api/item/getItems");
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +62,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         setLoading(false);
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [StartDate, EndDate]);
 
   function getCartAmount(id) {
     const amountInCart =
