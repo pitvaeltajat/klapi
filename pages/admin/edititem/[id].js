@@ -86,12 +86,6 @@ export default function EditItem({ item, categories }) {
         method: "POST",
         body: formData,
       });
-
-      if (uploadResponse.ok) {
-        console.log("Image uploaded");
-      } else {
-        console.error("Image upload failed");
-      }
     }
   };
 
@@ -189,7 +183,7 @@ export default function EditItem({ item, categories }) {
         }))}
         onChange={(e) =>
           setItemCategories(
-            e.map((cat) => ({ name: cat.label, id: cat.value })),
+            e.map((cat) => ({ name: cat.label, id: cat.value }))
           )
         }
         isInvalid={itemCategories !== item.categories}

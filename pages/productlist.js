@@ -27,7 +27,6 @@ export default function AllItems({ items, categories }) {
       .then((data) => {
         setData(data);
         setLoading(false);
-        console.log(data);
       })
       .catch((error) => console.log(error));
   }, []);

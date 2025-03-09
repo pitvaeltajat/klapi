@@ -11,7 +11,7 @@ const styles = {
       },
     },
     main: {
-      "padding-top": "100px",
+      paddingTop: "100px",
     },
   },
 };

@@ -31,7 +31,6 @@ export const sendEmail = async (recipientEmail, subject, html) => {
   const command = new SendEmailCommand(params);
   try {
     const data = await client.send(command);
-    console.log(data);
     return data;
   } catch (err) {
     console.log(err);

@@ -15,7 +15,6 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
-  Tooltip,
   Link,
 } from "@chakra-ui/react";
 import { useRouter } from "next/router";
@@ -23,7 +22,6 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import NextLink from "next/link";
 import ReservationTableLoanView from "../../components/ReservationTableLoanView";
 import { useSession } from "next-auth/react";
-import { LoanStatus } from "@prisma/client";
 
 export async function getServerSideProps(req, res) {
   const loan = await prisma.loan.findUnique({
@@ -224,12 +222,12 @@ export default function LoanView({ loan }) {
             {loan.status === "APPROVED"
               ? "Hyväksytty"
               : loan.status === "REJECTED"
-                ? "Hylätty"
-                : loan.status === "INUSE"
-                  ? "Käytössä"
-                  : loan.status === "RETURNED"
-                    ? "Palautettu"
-                    : "Odottaa käsittelyä"}
+              ? "Hylätty"
+              : loan.status === "INUSE"
+              ? "Käytössä"
+              : loan.status === "RETURNED"
+              ? "Palautettu"
+              : "Odottaa käsittelyä"}
           </p>
         </Box>
       </Stack>
@@ -241,6 +239,7 @@ export default function LoanView({ loan }) {
       <Stack
         direction={"row"}
         padding="0.5em"
+        gap="10"
         display={
           loan.status === "INUSE" || loan.status === "RETURNED"
             ? "none"
@@ -259,7 +258,7 @@ export default function LoanView({ loan }) {
         ) : null}
         {session?.user?.group === "ADMIN" ? (
           <>
-            <Link as={NextLink} href={`/admin/editloan/${loan.id}`}>
+            <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
               <Button colorScheme={"yellow"}>Muokkaa</Button>
             </Link>
             <Button

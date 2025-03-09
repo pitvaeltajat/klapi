@@ -73,7 +73,6 @@ export default function SubmitConfirmation({ isOpen, onClose, closeDrawer }) {
       },
       body: JSON.stringify(body),
     })
-      .then((response) => console.log(response))
       .then(() => dispatch(clearCart()))
       .then(onClose)
       .then(successToast())

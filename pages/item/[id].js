@@ -74,7 +74,7 @@ export default function ItemView({ item }) {
           status: "success",
           duration: 5000,
           isClosable: true,
-        }),
+        })
       )
       .catch((err) => {
         toast({
@@ -101,7 +101,7 @@ export default function ItemView({ item }) {
           marginBottom="0.5em"
           src={item.image}
           alt={item.name}
-          fallbackSrc="https://via.placeholder.com/500x300"
+          fallbackSrc="https://placehold.co/500x300"
         />
       )}
       {session?.user?.group === "ADMIN" ? (

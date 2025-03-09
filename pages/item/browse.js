@@ -76,7 +76,7 @@ export default function BrowseItems({ items, categories }) {
 
   const ItemCard = (item) => {
     return (
-      <Box w="full" alignItems="center" justifyContent="center">
+      <Box w="full" alignItems="center" justifyContent="center" key={item.id}>
         <Box
           bg={useColorModeValue("white", "gray.800")}
           maxW="sm"
@@ -98,7 +98,7 @@ export default function BrowseItems({ items, categories }) {
               roundedTop="lg"
               objectFit="cover"
               objectPosition="center"
-              fallbackSrc="https://via.placeholder.com/500x300"
+              fallbackSrc="https://placehold.co/500x300"
             />
           </AspectRatio>
 
