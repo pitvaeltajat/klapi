@@ -22,7 +22,7 @@ export async function getServerSideProps() {
 }
 
 export default function Account({ loans }) {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   loans = loans.filter((loan) => loan.user.id === session?.user?.id);
   loans = loans.sort((a, b) => {
     let dateA = new Date(a.startTime);

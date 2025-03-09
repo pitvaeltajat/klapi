@@ -1,10 +1,14 @@
+import React, { ReactNode } from "react";
 import TopBar from "./TopBar";
 import CartDrawer from "./CartDrawer";
 import CartButton from "./CartButton";
 import { useDisclosure, Box } from "@chakra-ui/react";
 
-export default function Layout(props) {
-  const { children } = props;
+interface LayoutProps {
+  children: ReactNode;
+}
+
+export default function Layout({ children }: LayoutProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (

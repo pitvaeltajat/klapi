@@ -50,12 +50,12 @@ export const LoanCard = ({ loan }) => {
             {loan.status === "ACCEPTED"
               ? "Hyväksytty"
               : loan.status === "REJECTED"
-              ? "Hylätty"
-              : loan.status === "INUSE"
-              ? "Käytössä"
-              : loan.status === "RETURNED"
-              ? "Palautettu"
-              : "Odottaa käsittelyä"}
+                ? "Hylätty"
+                : loan.status === "INUSE"
+                  ? "Käytössä"
+                  : loan.status === "RETURNED"
+                    ? "Palautettu"
+                    : "Odottaa käsittelyä"}
           </p>
         </Box>
         <Box

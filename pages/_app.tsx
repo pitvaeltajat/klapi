@@ -1,22 +1,23 @@
+import React from "react";
+import { AppProps } from "next/app";
 import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
 import { useToast, ChakraProvider } from "@chakra-ui/react";
 import { ThemeProvider } from "next-themes";
-
-import store from "../redux/store";
 import { Provider } from "react-redux";
-
+import store from "../redux/store";
 import Layout from "../components/Layout";
 import RedirectUnauthorized from "../components/RedirectUnauthorized";
 import theme from "../styles/theme";
 
-const fetcher = (...args) => fetch(...args).then((res) => res.json());
+const fetcher = (...args: Parameters<typeof fetch>) =>
+  fetch(...args).then((res) => res.json());
 
 export default function App({
   Component,
   pageProps: { session, ...pageProps },
   router,
-}) {
+}: AppProps) {
   const toast = useToast();
 
   return (
@@ -25,7 +26,7 @@ export default function App({
         <SWRConfig
           value={{
             fetcher,
-            onError: (error, key) => {
+            onError: (error: any) => {
               if (error.status !== 403 && error.status !== 404) {
                 toast({
                   title: "Error",

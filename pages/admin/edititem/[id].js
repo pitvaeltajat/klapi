@@ -180,7 +180,7 @@ export default function EditItem({ item, categories }) {
         }))}
         onChange={(e) =>
           setItemCategories(
-            e.map((cat) => ({ name: cat.label, id: cat.value }))
+            e.map((cat) => ({ name: cat.label, id: cat.value })),
           )
         }
         isInvalid={itemCategories !== item.categories}

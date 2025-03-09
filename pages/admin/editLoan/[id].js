@@ -71,11 +71,11 @@ export default function LoanEditView({ loan, items }) {
   const handleDescriptionChange = (e) => setDescription(e.target.value);
 
   const [startDate, setStartDate] = useState(
-    loan.startTime.toISOString().split(".")[0]
+    loan.startTime.toISOString().split(".")[0],
   );
   const handleStartDateChange = (e) => setStartDate(e.target.value);
   const [endDate, setEndDate] = useState(
-    loan.endTime.toISOString().split(".")[0]
+    loan.endTime.toISOString().split(".")[0],
   );
   const handleEndDateChange = (e) => setEndDate(e.target.value);
 
@@ -320,7 +320,7 @@ export default function LoanEditView({ loan, items }) {
                                     return { ...r, amount: r.amount - 1 };
                                   }
                                   return r;
-                                })
+                                }),
                               );
                             }
                           }}
@@ -330,11 +330,11 @@ export default function LoanEditView({ loan, items }) {
                       <Input
                         borderColor={
                           loan.reservations.filter(
-                            (r) => r.id == reservation.id
+                            (r) => r.id == reservation.id,
                           ).length > 0
                             ? reservation.amount ==
                               loan.reservations.filter(
-                                (r) => r.id == reservation.id
+                                (r) => r.id == reservation.id,
                               )[0].amount
                               ? "gray.300"
                               : "orange.200"
@@ -342,11 +342,11 @@ export default function LoanEditView({ loan, items }) {
                         }
                         borderWidth={
                           loan.reservations.filter(
-                            (r) => r.id == reservation.id
+                            (r) => r.id == reservation.id,
                           ).length > 0
                             ? reservation.amount ==
                               loan.reservations.filter(
-                                (r) => r.id == reservation.id
+                                (r) => r.id == reservation.id,
                               )[0].amount
                               ? "1px"
                               : "2px"
@@ -365,7 +365,7 @@ export default function LoanEditView({ loan, items }) {
                                   return { ...r, amount: r.amount + 1 };
                                 }
                                 return r;
-                              })
+                              }),
                             );
                           }}
                           isDisabled={
@@ -380,7 +380,7 @@ export default function LoanEditView({ loan, items }) {
                       icon={<FaTrash />}
                       onClick={() => {
                         setReservations(
-                          reservations.filter((r) => r.id != reservation.id)
+                          reservations.filter((r) => r.id != reservation.id),
                         );
                       }}
                     />

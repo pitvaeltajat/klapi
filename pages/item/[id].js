@@ -74,7 +74,7 @@ export default function ItemView({ item }) {
           status: "success",
           duration: 5000,
           isClosable: true,
-        })
+        }),
       )
       .catch((err) => {
         toast({

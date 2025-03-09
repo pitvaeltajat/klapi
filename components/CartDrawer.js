@@ -170,7 +170,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                         </InputRightAddon>
                       </InputGroup>
                     </Box>
-                  )
+                  ),
               )}
             </Stack>
           ) : (

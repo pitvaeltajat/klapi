@@ -1,3 +1,4 @@
+import React from "react";
 import { Heading, Button, Link } from "@chakra-ui/react";
 import NextLink from "next/link";
 

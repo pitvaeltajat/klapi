@@ -1,11 +1,21 @@
+import React, { ReactNode } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 
-const RedirectUnauthorized = ({ router, children }) => {
+interface RedirectUnauthorizedProps {
+  children: ReactNode;
+  router: ReturnType<typeof useRouter>;
+}
+
+const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({
+  router,
+  children,
+}) => {
   const { data: session, status } = useSession();
   const isBrowser = () => typeof window !== "undefined";
 
   if (
-    status == "unauthenticated" &&
+    status === "unauthenticated" &&
     isBrowser() &&
     router.pathname !== "/login"
   ) {
@@ -15,8 +25,8 @@ const RedirectUnauthorized = ({ router, children }) => {
     });
   }
 
-  if (session || router.pathname == "/login") {
-    return children;
+  if (session || router.pathname === "/login") {
+    return <>{children}</>;
   } else {
     return <>Ladataan...</>;
   }
