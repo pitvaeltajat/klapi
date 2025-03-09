@@ -37,7 +37,21 @@ New schema diagram is generated every time when generating new Prisma Client.
 
 ### Prisma
 
-Klapi uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`. After making changes to the schema, remember to run `pnpm prisma migrate dev`.
+Klapi uses Prisma as ORM provider to connect Next.js to the database. Database schema is defined in `prisma/schema.prisma`.
+
+To get started, generate the Prisma Client:
+
+```
+pnpm prisma generate
+```
+
+Then deploy it to the database:
+
+```
+pnpm prisma db push
+```
+
+After making changes to the schema, remember to run `pnpm prisma migrate dev`.
 
 To generate dummy data, run `pnpm prisma db seed`. The data is defined in `prisma/seed.ts`.
 
