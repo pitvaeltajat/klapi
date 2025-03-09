@@ -1,6 +1,6 @@
 import prisma from "/utils/prisma";
 
-require("dotenv").config();
+import "dotenv/config";
 
 export default async function handler(req, res) {
   try {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           id: result.id,
           email: user.email,
         }),
-      },
+      }
     );
 
     await fetch(
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
           id: result.id,
           loanCreator: user.name,
         }),
-      },
+      }
     );
 
     res.status(200).json(result);

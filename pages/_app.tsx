@@ -26,7 +26,7 @@ export default function App({
         <SWRConfig
           value={{
             fetcher,
-            onError: (error: any) => {
+            onError: (error) => {
               if (error.status !== 403 && error.status !== 404) {
                 toast({
                   title: "Error",
