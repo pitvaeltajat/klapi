@@ -7,8 +7,6 @@ import {
   Input,
   InputGroup,
   InputRightElement,
-  Stack,
-  Link,
   Button,
   Wrap,
   WrapItem,

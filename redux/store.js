@@ -2,11 +2,6 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { cartReducer } from "./cart.slice";
 import { dateReducer } from "./dates.slice";
 
-const reducer = {
-  cart: cartReducer,
-  dates: dateReducer,
-};
-
 const combineReducer = combineReducers({
   cart: cartReducer,
   dates: dateReducer,

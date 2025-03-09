@@ -1,4 +1,4 @@
-import { LoanStatus, PrismaClient } from "@prisma/client";
+import { LoanStatus } from "@prisma/client";
 import prisma from "/utils/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.body;
-  const Loan = await prisma.loan.findMany({
+  await prisma.loan.findMany({
     where: { id: id },
     include: {
       user: true,

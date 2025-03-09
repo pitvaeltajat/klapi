@@ -1,10 +1,8 @@
 import {
-  Box,
   Heading,
   Input,
   InputGroup,
   InputRightAddon,
-  InputRightElement,
   TableContainer,
   Text,
   Table,
@@ -16,7 +14,6 @@ import {
   IconButton,
   InputLeftAddon,
   Stack,
-  FormLabel,
   useToast,
   Button,
   Select,
@@ -101,7 +98,7 @@ export default function LoanEditView({ loan, items }) {
   }
 
   async function updateLoan() {
-    const res = await fetch(`/api/loan/updateLoan`, {
+    await fetch(`/api/loan/updateLoan`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
