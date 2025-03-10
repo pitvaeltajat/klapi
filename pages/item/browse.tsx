@@ -17,8 +17,13 @@ import prisma from "../../utils/prisma";
 import NextLink from "next/link";
 import { useState } from "react";
 import { FaSearch } from "react-icons/fa";
-import { Item } from "@prisma/client";
-import { Category } from "@prisma/client";
+import { Item, Category, Loan, Reservation } from "@prisma/client";
+
+interface ItemWithRelations extends Item {
+  categories: Category[];
+  location: { id: string; name: string } | null;
+  reservations: (Reservation & { loan: Loan })[];
+}
 
 export async function getServerSideProps() {
   const items = await prisma.item.findMany({
@@ -36,7 +41,10 @@ export async function getServerSideProps() {
   });
 
   return {
-    props: { items, categories }, // will be passed to the page component as props
+    props: {
+      items: JSON.parse(JSON.stringify(items)),
+      categories: JSON.parse(JSON.stringify(categories)),
+    },
   };
 }
 
@@ -44,7 +52,7 @@ export default function BrowseItems({
   items,
   categories,
 }: {
-  items: Item[];
+  items: ItemWithRelations[];
   categories: Category[];
 }) {
   items = items.sort((a, b) => {
@@ -57,7 +65,7 @@ export default function BrowseItems({
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
 
@@ -73,7 +81,7 @@ export default function BrowseItems({
       }
     });
 
-  const ItemCard = (item: Item) => {
+  const ItemCard = (item: ItemWithRelations) => {
     return (
       <Box w="full" alignItems="center" justifyContent="center" key={item.id}>
         <Box
@@ -92,7 +100,7 @@ export default function BrowseItems({
         >
           <AspectRatio ratio={5 / 3}>
             <Image
-              src={item.image}
+              src={item.image ?? "https://placehold.co/500x300"}
               alt={`Picture of ${item.name}`}
               roundedTop="lg"
               objectFit="cover"

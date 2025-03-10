@@ -3,6 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Category } from "@prisma/client";
+
+interface CategoryInput {
+  value: string;
+  label: string;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -22,7 +28,7 @@ export default async function handler(
     ...rest
   } = req.body;
   // create new array with connectorcreate query for each category
-  const categoryJSON = categoriesList?.map((categoryObject: Category) => ({
+  const categoryJSON = categoriesList?.map((categoryObject: CategoryInput) => ({
     where: {
       id: categoryObject.value,
     },

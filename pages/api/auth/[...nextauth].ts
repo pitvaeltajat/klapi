@@ -1,17 +1,22 @@
-import NextAuth, { DefaultSession, NextAuthOptions } from "next-auth";
+import NextAuth, {
+  DefaultSession,
+  NextAuthOptions,
+  DefaultUser,
+} from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "../../../utils/prisma";
 
 declare module "next-auth" {
-  interface Session extends DefaultSession {
+  interface Session {
     user: {
       id: string;
       group: "ADMIN" | "USER";
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
+    } & DefaultSession["user"];
+  }
+
+  interface User extends DefaultUser {
+    group: "ADMIN" | "USER";
   }
 }
 
@@ -24,7 +29,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }: any) {
+    async session({ session, user }) {
       return {
         ...session,
         user: {

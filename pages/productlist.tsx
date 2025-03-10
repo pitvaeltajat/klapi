@@ -4,10 +4,18 @@ import ItemCard from "../components/ItemCard";
 import { useSelector } from "react-redux";
 import { useState } from "react";
 import { useEffect } from "react";
-import type { Item, Category } from "@prisma/client";
+import { Item, Category } from "@prisma/client";
+
+interface ItemWithCategories extends Item {
+  categories: Category[];
+}
 
 interface Availability {
   available: number;
+}
+
+interface Availabilities {
+  [key: string]: Availability;
 }
 
 interface AvailabilityResponse {
@@ -15,7 +23,7 @@ interface AvailabilityResponse {
 }
 
 interface AllItemsProps {
-  items: Item[];
+  items: ItemWithCategories[];
   categories: Category[];
 }
 
@@ -64,8 +72,18 @@ export default function AllItems({ items }: AllItemsProps) {
         {items.map((item) => (
           <ItemCard
             key={item.id}
-            item={item}
-            availableAmount={availabilities[item.id].available}
+            item={{
+              id: item.id,
+              name: item.name,
+              description: item.description || undefined,
+              amount: item.amount,
+              image: item.image || undefined,
+              categories: item.categories.map((cat) => ({
+                id: cat.id,
+                name: cat.name,
+              })),
+            }}
+            availableAmount={availabilities?.[item.id]?.available ?? 0}
           />
         ))}
       </SimpleGrid>

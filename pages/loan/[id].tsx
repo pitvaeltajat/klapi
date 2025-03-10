@@ -22,9 +22,23 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import NextLink from "next/link";
 import ReservationTableLoanView from "../../components/ReservationTableLoanView";
 import { useSession } from "next-auth/react";
-import { Loan } from "@prisma/client";
+import { Loan, User, Reservation, Item, LoanStatus } from "@prisma/client";
+import { GetServerSideProps } from "next";
 
-export async function getServerSideProps(req) {
+interface LoanWithRelations extends Loan {
+  user: User;
+  reservations: (Reservation & {
+    item: Item;
+  })[];
+}
+
+export const getServerSideProps: GetServerSideProps<{
+  loan: LoanWithRelations;
+}> = async (req) => {
+  if (!req.params?.id || typeof req.params.id !== "string") {
+    return { notFound: true };
+  }
+
   const loan = await prisma.loan.findUnique({
     where: {
       id: req.params.id,
@@ -38,20 +52,19 @@ export async function getServerSideProps(req) {
       },
     },
   });
+
   if (!loan) {
-    return {
-      notFound: true,
-    };
+    return { notFound: true };
   }
 
   return {
     props: {
-      loan,
+      loan: JSON.parse(JSON.stringify(loan)),
     },
   };
-}
+};
 
-export default function LoanView({ loan }: { loan: Loan }) {
+export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -220,15 +233,17 @@ export default function LoanView({ loan }: { loan: Loan }) {
           <p>Varaaja: {loan.user.name}</p>
           <p>
             Status:{" "}
-            {loan.status === "APPROVED"
+            {loan.status === LoanStatus.ACCEPTED
               ? "Hyväksytty"
-              : loan.status === "REJECTED"
+              : loan.status === LoanStatus.REJECTED
               ? "Hylätty"
-              : loan.status === "INUSE"
+              : loan.status === LoanStatus.PENDING
+              ? "Odottaa"
+              : loan.status === LoanStatus.INUSE
               ? "Käytössä"
-              : loan.status === "RETURNED"
+              : loan.status === LoanStatus.RETURNED
               ? "Palautettu"
-              : "Odottaa käsittelyä"}
+              : "Tuntematon"}
           </p>
         </Box>
       </Stack>

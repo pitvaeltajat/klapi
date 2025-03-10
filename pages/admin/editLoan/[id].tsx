@@ -39,8 +39,14 @@ import NotAuthenticated from "../../../components/NotAuthenticated";
 import prisma from "../../../utils/prisma";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
-import { Loan } from "@prisma/client";
-import { Item } from "@prisma/client";
+import { Loan, Item, User, Reservation } from "@prisma/client";
+
+interface LoanWithRelations extends Loan {
+  reservations: (Reservation & {
+    item: Item;
+  })[];
+  user: User;
+}
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const loan = await prisma.loan.findUnique({
@@ -64,8 +70,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
   return {
     props: {
-      loan,
-      items,
+      loan: JSON.parse(JSON.stringify(loan)),
+      items: JSON.parse(JSON.stringify(items)),
     },
   };
 };
@@ -74,28 +80,31 @@ export default function LoanEditView({
   loan,
   items,
 }: {
-  loan: Loan;
+  loan: LoanWithRelations;
   items: Item[];
 }) {
   const [description, setDescription] = useState(loan.description);
-  const handleDescriptionChange = (e) => setDescription(e.target.value);
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) =>
+    setDescription(e.target.value);
 
   const [startDate, setStartDate] = useState(
-    loan.startTime.toISOString().split(".")[0]
+    loan.startTime.toString().split(".")[0]
   );
-  const handleStartDateChange = (e) => setStartDate(e.target.value);
-  const [endDate, setEndDate] = useState(
-    loan.endTime.toISOString().split(".")[0]
-  );
-  const handleEndDateChange = (e) => setEndDate(e.target.value);
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setStartDate(e.target.value);
+  const [endDate, setEndDate] = useState(loan.endTime.toString().split(".")[0]);
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setEndDate(e.target.value);
 
   const [selectedItem, setSelectedItem] = useState(items[0].id);
   const [selectedItemAmount, setSelectedItemAmount] = useState(0);
 
-  const [reservations, setReservations] = useState([...loan.reservations]);
+  const [reservations, setReservations] = useState(loan.reservations);
+  const [reservationToDelete, setReservationToDelete] =
+    useState<Reservation | null>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const cancelRef = useRef();
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   const toast = useToast();
 
@@ -222,14 +231,12 @@ export default function LoanEditView({
       <Stack direction="row">
         <Input
           borderColor={
-            startDate != loan.startTime.toISOString().split(".")[0]
+            startDate != loan.startTime.toString().split(".")[0]
               ? "orange.200"
               : "gray.300"
           }
           borderWidth={
-            startDate != loan.startTime.toISOString().split(".")[0]
-              ? "2px"
-              : "1px"
+            startDate != loan.startTime.toString().split(".")[0] ? "2px" : "1px"
           }
           onChange={handleStartDateChange}
           width="20em"
@@ -239,12 +246,10 @@ export default function LoanEditView({
         <IconButton
           aria-label="Reset"
           icon={<FaHistory />}
-          onClick={() =>
-            setStartDate(loan.startTime.toISOString().split(".")[0])
-          }
+          onClick={() => setStartDate(loan.startTime.toString().split(".")[0])}
         />
       </Stack>
-      {startDate != loan.startTime.toISOString().split(".")[0] ? (
+      {startDate != loan.startTime.toString().split(".")[0] ? (
         <Text size={"s"} color="gray.500">
           Muokattu
         </Text>
@@ -255,12 +260,12 @@ export default function LoanEditView({
       <Stack direction="row">
         <Input
           borderColor={
-            endDate != loan.endTime.toISOString().split(".")[0]
+            endDate != loan.endTime.toString().split(".")[0]
               ? "orange.200"
               : "gray.300"
           }
           borderWidth={
-            endDate != loan.endTime.toISOString().split(".")[0] ? "2px" : "1px"
+            endDate != loan.endTime.toString().split(".")[0] ? "2px" : "1px"
           }
           onChange={handleEndDateChange}
           width="20em"
@@ -270,10 +275,10 @@ export default function LoanEditView({
         <IconButton
           aria-label="Reset"
           icon={<FaHistory />}
-          onClick={() => setEndDate(loan.endTime.toISOString().split(".")[0])}
+          onClick={() => setEndDate(loan.endTime.toString().split(".")[0])}
         />
       </Stack>
-      {endDate != loan.endTime.toISOString().split(".")[0] ? (
+      {endDate != loan.endTime.toString().split(".")[0] ? (
         <Text size={"s"} color="gray.500">
           Muokattu
         </Text>
@@ -297,7 +302,7 @@ export default function LoanEditView({
                   title={"Palauta"}
                   icon={<FaHistory />}
                   onClick={() => {
-                    setReservations([...loan.reservations]);
+                    setReservations(loan.reservations);
                   }}
                 />
               </Th>
@@ -434,12 +439,13 @@ export default function LoanEditView({
           })}
         </Select>
         <NumberInput
-          value={parseInt(selectedItemAmount)}
-          onChange={(e) => {
-            setSelectedItemAmount(parseInt(e));
+          value={selectedItemAmount}
+          onChange={(valueString) => {
+            const value = parseInt(valueString) || 0;
+            setSelectedItemAmount(value);
           }}
           min={0}
-          max={items.filter((item) => item.id == selectedItem)[0].amount}
+          max={items.find((item) => item.id === selectedItem)?.amount ?? 99}
         >
           <NumberInputField />
           <NumberInputStepper>
@@ -449,15 +455,23 @@ export default function LoanEditView({
         </NumberInput>
         <Button
           onClick={() => {
-            reservations.push({
-              id: Math.random(),
+            const newReservations = [...reservations];
+            const selectedItemObj = items.find(
+              (item) => item.id === selectedItem
+            );
+            if (!selectedItemObj) return;
+
+            newReservations.push({
+              id: Math.random().toString(),
               amount: selectedItemAmount,
-              item: items.filter((item) => item.id == selectedItem)[0],
+              itemId: selectedItem,
+              loanId: loan.id,
+              item: selectedItemObj,
             });
-            setReservations(reservations);
+            setReservations(newReservations);
             setSelectedItemAmount(0);
           }}
-          isDisabled={selectedItemAmount == 0}
+          isDisabled={selectedItemAmount === 0}
         >
           Lisää
         </Button>

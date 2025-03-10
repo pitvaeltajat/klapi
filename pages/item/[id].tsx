@@ -1,6 +1,6 @@
 // get item by id and return it
 import prisma from "../../utils/prisma";
-import { Item, Category, Reservation, Loan } from "@prisma/client";
+import { Item, Category, Reservation, Loan, LoanStatus } from "@prisma/client";
 
 import React from "react";
 import { useRouter } from "next/router";
@@ -18,48 +18,61 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { ReservationTable } from "../../components/ReservationTable";
+import ReservationTable from "../../components/ReservationTable";
 import { useSession } from "next-auth/react";
 import type { NextApiRequest } from "next";
 import { GetServerSideProps } from "next";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
-  reservations: (Reservation & { loan: Loan })[];
+  reservations: (Reservation & {
+    loan: {
+      id: string;
+      description: string | null;
+      status: LoanStatus;
+      startTime: Date;
+      endTime: Date;
+      userId: string;
+    };
+    item: {
+      name: string;
+    };
+  })[];
 }
 
 export const getServerSideProps: GetServerSideProps<{
   item: ItemWithRelations;
 }> = async ({ params }) => {
-  if (!params?.id) {
-    return {
-      notFound: true,
-    };
+  if (!params?.id || typeof params.id !== "string") {
+    return { notFound: true };
   }
 
   const item = await prisma.item.findUnique({
     where: {
-      id: params.id as string,
+      id: params.id,
     },
     include: {
       categories: true,
       reservations: {
         include: {
           loan: true,
+          item: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
   });
 
   if (!item) {
-    return {
-      notFound: true,
-    };
+    return { notFound: true };
   }
 
   return {
     props: {
-      item,
+      item: JSON.parse(JSON.stringify(item)),
     },
   };
 };
@@ -73,35 +86,37 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const deleteItem = async () => {
-    // use api route to delete item
-    await fetch("/api/item/deleteItem", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(item.id),
-    })
-      .then(
+    try {
+      const response = await fetch("/api/item/deleteItem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(item.id),
+      });
+
+      if (response.ok) {
         toast({
           title: "Success",
           description: "Item deleted",
           status: "success",
           duration: 5000,
           isClosable: true,
-        })
-      )
-      .catch((err) => {
-        toast({
-          title: "Error",
-          description: err.message,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
         });
+        onClose();
+        router.push("/");
+      } else {
+        throw new Error("Failed to delete item");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "An error occurred",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
       });
-    onClose();
-    // redirect to home page with router
-    router.push("/");
+    }
   };
 
   const handleSubmit = async () => {
@@ -111,7 +126,11 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          itemId: item.id,
+          amount: 1,
+          description: item.description,
+        }),
       });
 
       if (response.ok) {

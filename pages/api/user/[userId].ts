@@ -45,7 +45,7 @@ export default async function handler(
         data: {
           name: req.body.name,
           email: req.body.email,
-          role: req.body.role,
+          group: req.body.group,
         },
       })
       .then((user) => {
@@ -63,6 +63,7 @@ export default async function handler(
       });
       return;
     }
+    const newGroup = req.body.group as "ADMIN" | "USER";
     // update the user in the database
     await prisma.user
       .update({
@@ -70,7 +71,7 @@ export default async function handler(
           id: userId as string,
         },
         data: {
-          group: req.body.group,
+          group: newGroup,
         },
       })
       .then((user) => {

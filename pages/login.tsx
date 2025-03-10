@@ -8,9 +8,10 @@ const Login: NextPage = () => {
   const { data: session } = useSession();
 
   if (session) {
-    Router.push(
-      (Router.query.from && decodeURIComponent(Router.query.from)) || "/"
-    );
+    const from = Array.isArray(Router.query.from)
+      ? Router.query.from[0]
+      : Router.query.from;
+    Router.push((from && decodeURIComponent(from)) || "/");
   }
 
   return (
