@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from "react";
+import React, { createContext, useContext, useReducer, useState } from "react";
 import { CartState, CartItem } from "../types";
 
 const initialState: CartState = {
@@ -11,8 +11,7 @@ type CartAction =
   | { type: "INCREMENT_AMOUNT"; payload: string }
   | { type: "DECREMENT_AMOUNT"; payload: string }
   | { type: "REMOVE_FROM_CART"; payload: string }
-  | { type: "CLEAR_CART" }
-  | { type: "SET_DESCRIPTION"; payload: string };
+  | { type: "CLEAR_CART" };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -62,15 +61,19 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         items: [],
         description: "",
       };
-    case "SET_DESCRIPTION":
-      return {
-        ...state,
-        description: action.payload,
-      };
     default:
       return state;
   }
 }
+
+// Separate context for description
+const CartDescriptionContext = createContext<{
+  description: string;
+  setDescription: (description: string) => void;
+}>({
+  description: "",
+  setDescription: () => {},
+});
 
 type CartContextType = {
   state: CartState;
@@ -79,13 +82,13 @@ type CartContextType = {
   decrementAmount: (id: string) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
-  setDescription: (description: string) => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [description, setDescription] = useState("");
 
   const value = {
     state,
@@ -98,17 +101,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     removeFromCart: (id: string) =>
       dispatch({ type: "REMOVE_FROM_CART", payload: id }),
     clearCart: () => dispatch({ type: "CLEAR_CART" }),
-    setDescription: (description: string) =>
-      dispatch({ type: "SET_DESCRIPTION", payload: description }),
   };
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>
+      <CartDescriptionContext.Provider value={{ description, setDescription }}>
+        {children}
+      </CartDescriptionContext.Provider>
+    </CartContext.Provider>
+  );
 }
 
 export function useCart() {
   const context = useContext(CartContext);
   if (context === undefined) {
     throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
+}
+
+export function useCartDescription() {
+  const context = useContext(CartDescriptionContext);
+  if (context === undefined) {
+    throw new Error("useCartDescription must be used within a CartProvider");
   }
   return context;
 }

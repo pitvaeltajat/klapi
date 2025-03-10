@@ -23,8 +23,9 @@ import { FaPlus, FaMinus } from "react-icons/fa";
 import SubmitConfirmation from "./SubmitConfirmation";
 import { useState } from "react";
 import { useEffect } from "react";
-import { useCart } from "@/contexts/CartContext";
+import { useCart, useCartDescription } from "@/contexts/CartContext";
 import { useDates } from "@/contexts/DatesContext";
+import { CartDescriptionInput } from "./CartDescriptionInput";
 
 interface AvailabilityData {
   availabilities: Record<string, { available: number }>;
@@ -38,12 +39,8 @@ export default function CartDrawer({
   onClose: () => void;
 }) {
   const firstField = useRef<HTMLInputElement>(null);
-  const {
-    state: cart,
-    incrementAmount,
-    decrementAmount,
-    setDescription,
-  } = useCart();
+  const { state: cart, incrementAmount, decrementAmount } = useCart();
+  const { description, setDescription } = useCartDescription();
   const cartItems = cart.items;
   const { state: dates } = useDates();
 
@@ -52,13 +49,11 @@ export default function CartDrawer({
   const startTime = dates.startDate;
   const endTime = dates.endDate;
 
-  const description = cart.description;
+  const StartDate = dates.startDate;
+  const EndDate = dates.endDate;
 
   const [data, setData] = useState<AvailabilityData | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const StartDate = dates.startDate;
-  const EndDate = dates.endDate;
 
   useEffect(() => {
     setLoading(true);
@@ -117,19 +112,7 @@ export default function CartDrawer({
             closeDrawer={onClose}
           />
           <Stack spacing={4}>
-            <Box>
-              <FormLabel htmlFor="description">Kuvaus</FormLabel>
-              <Input
-                ref={firstField}
-                id="description"
-                name="description"
-                placeholder="Kuvaus"
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                }}
-              />
-            </Box>
+            <CartDescriptionInput inputRef={firstField} />
             <Box>
               <FormLabel htmlFor="startTime">Alku</FormLabel>
               <Input
