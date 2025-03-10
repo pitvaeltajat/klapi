@@ -29,13 +29,12 @@ interface DateState {
 }
 
 export default function AllItems({ items }: AllItemsProps) {
-  const { state: dates } = useDates();
+  const {
+    state: { startDate, endDate },
+  } = useDates();
 
   const [data, setData] = useState<AvailabilityResponse | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const StartDate = dates.startDate;
-  const EndDate = dates.endDate;
 
   useEffect(() => {
     setLoading(true);
@@ -44,7 +43,7 @@ export default function AllItems({ items }: AllItemsProps) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ StartDate, EndDate }),
+      body: JSON.stringify({ startDate, endDate }),
     })
       .then((response) => response.json())
       .then((data: AvailabilityResponse) => {
@@ -52,7 +51,7 @@ export default function AllItems({ items }: AllItemsProps) {
         setLoading(false);
       })
       .catch((error) => console.log(error));
-  }, [StartDate, EndDate]);
+  }, [startDate, endDate]);
 
   const availabilities = data?.availabilities;
 

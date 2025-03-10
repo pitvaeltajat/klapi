@@ -14,17 +14,24 @@ import {
   Td,
   Link,
   Container,
+  Circle,
 } from "@chakra-ui/react";
 import { FaBars } from "react-icons/fa";
 import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import { useDisclosure } from "@chakra-ui/react";
 import { ReactNode } from "react";
+import { useCart } from "@/contexts/CartContext";
 
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const role = session?.user?.group;
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const {
+    state: { items },
+  } = useCart();
+  const totalItems = items.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <>
@@ -70,10 +77,51 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <Link as={NextLink} href="/account" fontWeight="medium">
                 Oma tili
               </Link>
-              {children}
+              <Box position="relative">
+                {children}
+                {totalItems > 0 && (
+                  <Circle
+                    position="absolute"
+                    right="-12px"
+                    top="-12px"
+                    marginTop="5px"
+                    size="24px"
+                    bg="red.500"
+                    color="white"
+                    fontSize="sm"
+                    fontWeight="bold"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    boxShadow="md"
+                  >
+                    {totalItems}
+                  </Circle>
+                )}
+              </Box>
             </Flex>
 
-            <Box display={["block", "block", "none"]}>{children}</Box>
+            <Box display={["block", "block", "none"]} position="relative">
+              {children}
+              {totalItems > 0 && (
+                <Circle
+                  position="absolute"
+                  right="-12px"
+                  top="-12px"
+                  size="24px"
+                  bg="red.500"
+                  color="white"
+                  fontSize="sm"
+                  fontWeight="bold"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  boxShadow="md"
+                >
+                  {totalItems}
+                </Circle>
+              )}
+            </Box>
           </Flex>
         </Container>
       </Box>

@@ -6,21 +6,40 @@ import {
   Link,
   AspectRatio,
   useColorModeValue,
+  Circle,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { ItemCardProps } from "../types";
 import { useCart } from "@/contexts/CartContext";
-
+import { useToast } from "@chakra-ui/react";
 export default function ItemCard({ item, availableAmount }: ItemCardProps) {
   const { addToCart } = useCart();
+  const toast = useToast();
 
   function handleAddToCart() {
+    const currentAmount =
+      cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0;
     addToCart({
       id: item.id,
       name: item.name,
-      amount: 1,
+      amount: currentAmount + 1,
+    });
+    toast({
+      title: "Lisättiin kama",
+      description: `${item.name} lisätty ostoskoriin`,
+      status: "success",
+      duration: 1500,
+      isClosable: true,
     });
   }
+  const {
+    state: { items: cartItems },
+  } = useCart();
+
+  const amountInCart =
+    cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0;
+
+  const canTakeMoreItems = availableAmount - amountInCart > 0;
 
   return (
     <Box
@@ -80,10 +99,26 @@ export default function ItemCard({ item, availableAmount }: ItemCardProps) {
           colorScheme="blue"
           width="full"
           mt={4}
-          isDisabled={availableAmount === 0}
+          isDisabled={!canTakeMoreItems}
         >
-          {availableAmount === 0 ? "Ei saatavilla" : "Lisää koriin"}
+          {canTakeMoreItems ? "Lisää koriin" : "Ei saatavilla"}
         </Button>
+        <Circle
+          position="absolute"
+          right="-12px"
+          top="-12px"
+          size="24px"
+          bg="red.500"
+          color="white"
+          display={amountInCart > 0 ? "flex" : "none"}
+          fontSize="sm"
+          fontWeight="bold"
+          alignItems="center"
+          justifyContent="center"
+          boxShadow="md"
+        >
+          {amountInCart}
+        </Circle>
       </Box>
     </Box>
   );

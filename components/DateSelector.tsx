@@ -107,7 +107,7 @@ export default function DateSelector() {
       )}
       <Box>
         <Button onClick={onOpen}>
-          {dates.datesSet ? "Muokkaa päivämääriä" : "Aseta Päivämäärät"}
+          {dates.datesSet ? "Muokkaa ajankohtaa" : "Aseta ajankohta"}
         </Button>
       </Box>
       {!dates.datesSet ? (
