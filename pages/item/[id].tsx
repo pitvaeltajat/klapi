@@ -1,6 +1,6 @@
 // get item by id and return it
 import prisma from "../../utils/prisma";
-import { Item, Category, Reservation, Loan, LoanStatus } from "@prisma/client";
+import { Item, Category, Reservation, LoanStatus } from "@prisma/client";
 
 import React from "react";
 import { useRouter } from "next/router";
@@ -20,7 +20,6 @@ import {
 } from "@chakra-ui/react";
 import ReservationTable from "../../components/ReservationTable";
 import { useSession } from "next-auth/react";
-import type { NextApiRequest } from "next";
 import { GetServerSideProps } from "next";
 
 interface ItemWithRelations extends Item {
@@ -112,44 +111,6 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "An error occurred",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("/api/loan/createLoan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          itemId: item.id,
-          amount: 1,
-          description: item.description,
-        }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Loan created successfully",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-        router.push("/account");
-      } else {
-        throw new Error("Failed to create loan");
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "An error occurred",
         status: "error",
         duration: 5000,
         isClosable: true,

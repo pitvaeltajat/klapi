@@ -1,7 +1,7 @@
 import React from "react";
 import { SimpleGrid } from "@chakra-ui/react";
 import ItemCard from "../components/ItemCard";
-import { useSelector } from "react-redux";
+import { useDates } from "@/contexts/DatesContext";
 import { useState } from "react";
 import { useEffect } from "react";
 import { Item, Category } from "@prisma/client";
@@ -12,10 +12,6 @@ interface ItemWithCategories extends Item {
 
 interface Availability {
   available: number;
-}
-
-interface Availabilities {
-  [key: string]: Availability;
 }
 
 interface AvailabilityResponse {
@@ -33,9 +29,7 @@ interface DateState {
 }
 
 export default function AllItems({ items }: AllItemsProps) {
-  const dates = useSelector<{ dates: DateState }, DateState>(
-    (state) => state.dates
-  );
+  const { state: dates } = useDates();
 
   const [data, setData] = useState<AvailabilityResponse | null>(null);
   const [loading, setLoading] = useState(true);

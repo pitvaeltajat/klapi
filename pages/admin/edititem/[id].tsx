@@ -14,7 +14,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { CreatableSelect } from "chakra-react-select";
+import { CreatableSelect, MultiValue } from "chakra-react-select";
 import { useRouter } from "next/router";
 import prisma from "../../../utils/prisma";
 import { Item, Category } from "@prisma/client";
@@ -217,7 +217,7 @@ export default function EditItem({
           value: cat.id,
           label: cat.name,
         }))}
-        onChange={(e: any) =>
+        onChange={(e: MultiValue<{ value: string; label: string }>) =>
           setItemCategories(
             e.map((cat: { label: string; value: string }) => ({
               name: cat.label,

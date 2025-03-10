@@ -100,8 +100,6 @@ export default function LoanEditView({
   const [selectedItemAmount, setSelectedItemAmount] = useState(0);
 
   const [reservations, setReservations] = useState(loan.reservations);
-  const [reservationToDelete, setReservationToDelete] =
-    useState<Reservation | null>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -400,16 +398,6 @@ export default function LoanEditView({
                         setReservations(
                           reservations.filter((r) => r.id != reservation.id)
                         );
-                      }}
-                    />
-                  </Td>
-                  <Td>
-                    <IconButton
-                      aria-label="Palauta varaus"
-                      icon={<FaHistory />}
-                      onClick={() => {
-                        setReservationToDelete(reservation);
-                        onOpen();
                       }}
                     />
                   </Td>

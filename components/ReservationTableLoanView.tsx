@@ -27,10 +27,6 @@ interface Loan {
   reservations: Reservation[];
 }
 
-const DateTimeToString = (date: Date): string => {
-  return new Date(date).toLocaleDateString("fi-FI");
-};
-
 export default function ReservationTableLoanView({ loan }: { loan: Loan }) {
   return (
     <TableContainer>

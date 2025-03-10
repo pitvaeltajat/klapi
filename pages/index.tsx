@@ -13,9 +13,9 @@ import {
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import AllItems from "./productlist";
-import { useSelector } from "react-redux";
 import type { GetServerSideProps } from "next";
 import type { Item, Category, Loan, Reservation } from "@prisma/client";
+import { useDates } from "@/contexts/DatesContext";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -48,9 +48,7 @@ export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
 };
 
 export default function Index({ items, categories }: IndexProps) {
-  const datesSet = useSelector<{ dates: DateState }, boolean>(
-    (state) => state.dates.datesSet
-  );
+  const { state: dates } = useDates();
 
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("");
@@ -73,7 +71,7 @@ export default function Index({ items, categories }: IndexProps) {
 
   return (
     <>
-      {datesSet ? (
+      {dates.datesSet ? (
         <>
           <DateSelector />
           <Box padding="4px">

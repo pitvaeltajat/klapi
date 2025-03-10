@@ -25,6 +25,11 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useDates } from "@/contexts/DatesContext";
+
+interface AvailabilityData {
+  availabilities: Record<string, { available: number }>;
+}
+
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -49,7 +54,7 @@ export default function CartDrawer({
 
   const description = cart.description;
 
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AvailabilityData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const StartDate = dates.startDate;
@@ -84,7 +89,7 @@ export default function CartDrawer({
 
   const availabilities = data?.availabilities;
 
-  if (loading) {
+  if (loading || !availabilities) {
     return <div>Ladataan...</div>;
   }
 

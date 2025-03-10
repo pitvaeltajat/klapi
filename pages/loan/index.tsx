@@ -1,4 +1,3 @@
-import { GetServerSideProps } from "next";
 import { LoanStatus } from "@prisma/client";
 import prisma from "../../utils/prisma";
 import {

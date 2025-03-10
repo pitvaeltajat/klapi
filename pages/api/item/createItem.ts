@@ -2,7 +2,6 @@ import prisma from "../../../utils/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Category } from "@prisma/client";
 
 interface CategoryInput {
   value: string;
