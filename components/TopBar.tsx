@@ -2,7 +2,6 @@ import {
   Heading,
   Flex,
   Box,
-  Spacer,
   IconButton,
   Drawer,
   DrawerBody,
@@ -25,83 +24,66 @@ import { ReactNode } from "react";
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const role = session?.user?.group;
-
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
     <>
-      <Box bg="white" boxShadow="sm" position="sticky" top={0} zIndex={1}>
-        <Container maxW="container.xl" py={4}>
-          <Flex
-            color="white"
-            backgroundBlendMode="overlay"
-            background="rgba(66,131,209,0.9)"
-            justify="space-between"
-            align="center"
-            position="fixed"
-            top="0"
-            width="100%"
-            zIndex="9999"
-            backdropFilter="auto"
-            backdropBlur="4px"
-            gap="5"
-          >
-            <Box
-              marginInlineStart="0.5em"
-              display={["block", "block", "none", "none", " none"]}
-            >
+      <Box
+        as="header"
+        position="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bg="rgba(66,131,209,0.9)"
+        backdropFilter="auto"
+        backdropBlur="4px"
+        zIndex={1000}
+        boxShadow="sm"
+      >
+        <Container maxW="container.xl" px={4}>
+          <Flex h="4rem" align="center" justify="space-between" color="white">
+            <Flex align="center" gap={4}>
               <IconButton
                 aria-label="open menu"
                 icon={<FaBars />}
                 colorScheme="blue"
                 onClick={isOpen ? onClose : onOpen}
+                display={["block", "block", "none"]}
               />
-            </Box>
 
-            <Box marginInlineStart="2em">
-              <Link as={NextLink} href="/">
-                <Heading>KLAPI</Heading>
+              <Link as={NextLink} href="/" _hover={{ textDecoration: "none" }}>
+                <Heading size="lg">KLAPI</Heading>
               </Link>
-            </Box>
-            <Spacer display={["none", "none", "block", "block", " block"]} />
+            </Flex>
 
-            {role === "ADMIN" ? (
-              <>
-                <Link
-                  as={NextLink}
-                  href="/loan"
-                  display={["none", "none", "block", "block", " block"]}
-                >
-                  Varaukset
-                </Link>
-                <Link
-                  as={NextLink}
-                  href="/admin"
-                  display={["none", "none", "block", "block", " block"]}
-                >
-                  Hallinta
-                </Link>
-              </>
-            ) : null}
-            <Link
-              as={NextLink}
-              href="/account"
-              display={["none", "none", "block", "block", " block"]}
-            >
-              Oma tili
-            </Link>
+            <Flex gap={6} align="center" display={["none", "none", "flex"]}>
+              {role === "ADMIN" && (
+                <>
+                  <Link as={NextLink} href="/loan" fontWeight="medium">
+                    Varaukset
+                  </Link>
+                  <Link as={NextLink} href="/admin" fontWeight="medium">
+                    Hallinta
+                  </Link>
+                </>
+              )}
+              <Link as={NextLink} href="/account" fontWeight="medium">
+                Oma tili
+              </Link>
+              {children}
+            </Flex>
 
-            <Box marginInlineEnd="em">{children}</Box>
+            <Box display={["block", "block", "none"]}>{children}</Box>
           </Flex>
         </Container>
       </Box>
-
+      <Box h="4rem" />{" "}
       <Drawer placement="top" onClose={onClose} isOpen={isOpen}>
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerBody paddingTop="4rem">
+          <DrawerBody pt="4rem">
             <TableContainer>
-              <Table variant={"simple"}>
+              <Table variant="simple">
                 <Tbody>
                   <Tr>
                     <Td>

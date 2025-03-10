@@ -16,25 +16,14 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import React from "react";
-import { clearCart } from "../redux/cart.slice";
-import { useDispatch, useSelector } from "react-redux";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import type { RootState } from "../redux/store";
+import { useCart } from "@/contexts/CartContext";
+import { useDates } from "@/contexts/DatesContext";
 
 interface CartItem {
   id: string;
   amount: number;
-}
-
-interface Dates {
-  startDate: Date;
-  endDate: Date;
-}
-
-interface Cart {
-  items: CartItem[];
-  description: string;
 }
 
 export default function SubmitConfirmation({
@@ -46,10 +35,9 @@ export default function SubmitConfirmation({
   onClose: () => void;
   closeDrawer: () => void;
 }) {
-  const dates = useSelector((state: RootState) => state.dates);
-  const cart = useSelector((state: RootState) => state.cart);
+  const { state: dates } = useDates();
+  const { state: cart, clearCart } = useCart();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
-  const dispatch = useDispatch();
   const router = useRouter();
 
   const { data: session } = useSession();
@@ -110,7 +98,7 @@ export default function SubmitConfirmation({
     });
 
     if (response.ok) {
-      dispatch(clearCart());
+      clearCart();
       successToast();
       router.push("/account");
     } else {

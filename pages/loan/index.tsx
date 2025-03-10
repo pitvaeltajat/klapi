@@ -80,9 +80,7 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
         <Tag colorScheme={getColor(loan.status)} width="fit-content">
           {loan.status}
         </Tag>
-        <Text>
-          <p>Varaaja: {loan.user.name}</p>
-        </Text>
+        <Text>Varaaja: {loan.user.name}</Text>
       </Stack>
     </Box>
   );

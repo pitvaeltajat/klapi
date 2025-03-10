@@ -4,11 +4,11 @@ import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
 import { useToast, ChakraProvider } from "@chakra-ui/react";
 import { ThemeProvider } from "next-themes";
-import { Provider } from "react-redux";
-import store from "../redux/store";
 import Layout from "../components/Layout";
 import RedirectUnauthorized from "../components/RedirectUnauthorized";
 import theme from "../styles/theme";
+import { CartProvider } from "../contexts/CartContext";
+import { DatesProvider } from "../contexts/DatesContext";
 
 const fetcher = (...args: Parameters<typeof fetch>) =>
   fetch(...args).then((res) => res.json());
@@ -39,15 +39,17 @@ export default function App({
             },
           }}
         >
-          <Provider store={store}>
-            <ChakraProvider theme={theme}>
-              <ThemeProvider>
-                <Layout>
-                  <Component {...pageProps} />
-                </Layout>
-              </ThemeProvider>
-            </ChakraProvider>
-          </Provider>
+          <DatesProvider>
+            <CartProvider>
+              <ChakraProvider theme={theme}>
+                <ThemeProvider>
+                  <Layout>
+                    <Component {...pageProps} />
+                  </Layout>
+                </ThemeProvider>
+              </ChakraProvider>
+            </CartProvider>
+          </DatesProvider>
         </SWRConfig>
       </RedirectUnauthorized>
     </SessionProvider>

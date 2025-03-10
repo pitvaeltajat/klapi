@@ -1,4 +1,3 @@
-import { useDispatch, useSelector } from "react-redux";
 import DatePicker from "react-datepicker";
 import {
   Box,
@@ -15,16 +14,16 @@ import {
   Text,
 } from "@chakra-ui/react";
 import "react-datepicker/dist/react-datepicker.css";
-import { setStartDate, setEndDate, datesSet } from "../redux/dates.slice";
-import { clearCart } from "../redux/cart.slice";
+
 import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import type { RootState } from "../redux/store";
+import { useDates } from "@/contexts/DatesContext";
+import { useCart } from "@/contexts/CartContext";
 
 export default function DateSelector() {
-  const dates = useSelector((state: RootState) => state.dates);
-  const dispatch = useDispatch();
+  const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
+  const { clearCart } = useCart();
 
   const Ref = React.useRef<HTMLButtonElement>(null);
 
@@ -39,12 +38,12 @@ export default function DateSelector() {
   const [endDate, setLocalEndDate] = useState<Date | null>(null);
 
   function setDates() {
-    dispatch(clearCart());
+    clearCart();
 
     if (startDate && endDate) {
-      dispatch(setStartDate(startDate));
-      dispatch(setEndDate(endDate));
-      dispatch(datesSet(true));
+      setStartDate(startDate);
+      setEndDate(endDate);
+      setDatesSet(true);
     }
 
     onClose();

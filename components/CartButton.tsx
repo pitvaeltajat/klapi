@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton } from "@chakra-ui/react";
 import { FaShoppingCart } from "react-icons/fa";
-import { useAppSelector } from "../redux/hooks";
+import { useDates } from "@/contexts/DatesContext";
 
 interface CartButtonProps {
   onOpen: () => void;
@@ -14,7 +14,7 @@ export default function CartButton({
   onClose,
   isOpen,
 }: CartButtonProps) {
-  const dates = useAppSelector((state) => state.dates);
+  const { state: dates } = useDates();
 
   return (
     <IconButton

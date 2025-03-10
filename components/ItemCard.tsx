@@ -8,21 +8,18 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
-import { useDispatch } from "react-redux";
-import { addToCart } from "../redux/cart.slice";
 import { ItemCardProps } from "../types";
+import { useCart } from "@/contexts/CartContext";
 
 export default function ItemCard({ item, availableAmount }: ItemCardProps) {
-  const dispatch = useDispatch();
+  const { addToCart } = useCart();
 
   function handleAddToCart() {
-    dispatch(
-      addToCart({
-        id: item.id,
-        name: item.name,
-        amount: 1,
-      }),
-    );
+    addToCart({
+      id: item.id,
+      name: item.name,
+      amount: 1,
+    });
   }
 
   return (

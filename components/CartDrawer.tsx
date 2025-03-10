@@ -20,14 +20,11 @@ import {
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
-import { useSelector, useDispatch } from "react-redux";
-import { incrementAmount, decrementAmount } from "../redux/cart.slice";
-import { setDescription } from "../redux/cart.slice";
 import SubmitConfirmation from "./SubmitConfirmation";
 import { useState } from "react";
 import { useEffect } from "react";
-import type { RootState } from "../redux/store";
-
+import { useCart } from "@/contexts/CartContext";
+import { useDates } from "@/contexts/DatesContext";
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -36,10 +33,14 @@ export default function CartDrawer({
   onClose: () => void;
 }) {
   const firstField = useRef<HTMLInputElement>(null);
-  const dispatch = useDispatch();
-  const cart = useSelector((state: RootState) => state.cart);
+  const {
+    state: cart,
+    incrementAmount,
+    decrementAmount,
+    setDescription,
+  } = useCart();
   const cartItems = cart.items;
-  const dates = useSelector((state: RootState) => state.dates);
+  const { state: dates } = useDates();
 
   const ConfirmationDialog = useDisclosure();
 
@@ -120,7 +121,7 @@ export default function CartDrawer({
                 placeholder="Kuvaus"
                 value={description}
                 onChange={(e) => {
-                  dispatch(setDescription(e.target.value));
+                  setDescription(e.target.value);
                 }}
               />
             </Box>
@@ -159,7 +160,7 @@ export default function CartDrawer({
                           <IconButton
                             icon={<FaMinus />}
                             aria-label="decrement"
-                            onClick={() => dispatch(decrementAmount(item.id))}
+                            onClick={() => decrementAmount(item.id)}
                           />
                         </InputLeftAddon>
                         <Input id={`item-${item.id}`} value={item.amount} />
@@ -167,7 +168,7 @@ export default function CartDrawer({
                           <IconButton
                             icon={<FaPlus />}
                             aria-label="increment"
-                            onClick={() => dispatch(incrementAmount(item.id))}
+                            onClick={() => incrementAmount(item.id)}
                             isDisabled={
                               availabilities[item.id].available -
                                 getCartAmount(item.id) <
