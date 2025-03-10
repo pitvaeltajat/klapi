@@ -14,7 +14,6 @@ export default function CartButton({
   onClose,
   isOpen,
 }: CartButtonProps) {
-  const cart = useAppSelector((state) => state.cart);
   const dates = useAppSelector((state) => state.dates);
 
   return (

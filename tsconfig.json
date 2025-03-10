@@ -20,6 +20,13 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "*.ts", "*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "*.ts",
+    "*.tsx",
+    "pages/admin/edititem/[id].tsx"
+  ],
   "exclude": ["node_modules"]
 }
