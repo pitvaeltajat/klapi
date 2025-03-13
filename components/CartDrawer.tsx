@@ -69,7 +69,6 @@ export default function CartDrawer({
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log("Availability data:", data);
         setData(data);
         setLoading(false);
       })
@@ -91,8 +90,6 @@ export default function CartDrawer({
   }
 
   const { availabilities } = data;
-
-  console.log(availabilities);
 
   const timeStringWithoutTimeZone = (date: Date): string => {
     const year = date.getFullYear();

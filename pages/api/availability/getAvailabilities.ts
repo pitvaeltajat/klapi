@@ -116,6 +116,5 @@ export default async function handler(
     })
   );
 
-  console.log("Sending availabilities:", availabilities);
   res.status(200).json({ availabilities });
 }

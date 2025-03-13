@@ -50,7 +50,6 @@ export default function AllItems({ items }: AllItemsProps) {
     })
       .then((response) => response.json())
       .then((data: AvailabilityResponse) => {
-        console.log("Received availabilities:", data);
         setData(data);
         setLoading(false);
       })
