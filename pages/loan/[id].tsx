@@ -16,6 +16,9 @@ import {
   ModalCloseButton,
   useDisclosure,
   Link,
+  Container,
+  Text,
+  Tag,
 } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import NotAuthenticated from "../../components/NotAuthenticated";
@@ -24,6 +27,7 @@ import ReservationTableLoanView from "../../components/ReservationTableLoanView"
 import { useSession } from "next-auth/react";
 import { Loan, User, Reservation, Item, LoanStatus } from "@prisma/client";
 import { GetServerSideProps } from "next";
+import { getColor } from "./index";
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -221,71 +225,113 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
   // list reservations and show loan basic information and user information
   return (
-    <>
-      <Heading as="h1">Varaus: {loan.description || "Ei kuvausta"}</Heading>
-      <Heading as="h2" size="lg">
-        Perustiedot
-      </Heading>
-      <Stack direction="column" spacing={4}>
-        <Box>
-          <p>Aloitusaika: {loan.startTime.toLocaleString("fi-FI")}</p>
-          <p>Lopetusaika: {loan.endTime.toLocaleString("fi-FI")}</p>
-          <p>Varaaja: {loan.user.name}</p>
-          <p>
-            Status:{" "}
-            {loan.status === LoanStatus.ACCEPTED
-              ? "Hyväksytty"
-              : loan.status === LoanStatus.REJECTED
-              ? "Hylätty"
-              : loan.status === LoanStatus.PENDING
-              ? "Odottaa"
-              : loan.status === LoanStatus.INUSE
-              ? "Käytössä"
-              : loan.status === LoanStatus.RETURNED
-              ? "Palautettu"
-              : "Tuntematon"}
-          </p>
-        </Box>
-      </Stack>
-      <Heading as="h2" size="lg">
-        Kamat
-      </Heading>
-      <ReservationTableLoanView loan={loan} />
+    <Container maxW="container.xl" py={8}>
+      <Stack spacing={6}>
+        <Heading as="h1" mb={4}>
+          Varaus: {loan.description || "Ei kuvausta"}
+        </Heading>
 
-      <Stack
-        direction={"row"}
-        padding="0.5em"
-        gap="10"
-        display={
-          loan.status === "INUSE" || loan.status === "RETURNED"
-            ? "none"
-            : "block"
-        }
-      >
-        {session?.user?.group === "ADMIN" ||
-        session?.user?.id === loan.user.id ? (
-          <Button
-            colorScheme={"red"}
-            onClick={onOpen}
-            isDisabled={loan.status === "REJECTED"}
-          >
-            Hylkää
-          </Button>
-        ) : null}
-        {session?.user?.group === "ADMIN" ? (
-          <>
-            <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
-              <Button colorScheme={"yellow"}>Muokkaa</Button>
-            </Link>
-            <Button
-              colorScheme={"green"}
-              onClick={approveLoan}
-              isDisabled={loan.status === "ACCEPTED"}
-            >
-              Hyväksy
-            </Button>
-          </>
-        ) : null}
+        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+          <Heading as="h2" size="lg" mb={4}>
+            Perustiedot
+          </Heading>
+          <Stack spacing={3}>
+            <Text>
+              Aloitusaika:{" "}
+              {new Date(loan.startTime).toLocaleString("fi-FI", {
+                dateStyle: "full",
+                timeStyle: "short",
+              })}
+            </Text>
+            <Text>
+              Lopetusaika:{" "}
+              {new Date(loan.endTime).toLocaleString("fi-FI", {
+                dateStyle: "full",
+                timeStyle: "short",
+              })}
+            </Text>
+            <Text>Varaaja: {loan.user.name}</Text>
+            <Box>
+              <Tag colorScheme={getColor(loan.status)} width="fit-content">
+                {loan.status === LoanStatus.ACCEPTED
+                  ? "Hyväksytty"
+                  : loan.status === LoanStatus.REJECTED
+                  ? "Hylätty"
+                  : loan.status === LoanStatus.PENDING
+                  ? "Odottaa"
+                  : loan.status === LoanStatus.INUSE
+                  ? "Käytössä"
+                  : loan.status === LoanStatus.RETURNED
+                  ? "Palautettu"
+                  : "Tuntematon"}
+              </Tag>
+            </Box>
+          </Stack>
+        </Box>
+
+        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+          <Heading as="h2" size="lg" mb={4}>
+            Kamat
+          </Heading>
+          <ReservationTableLoanView loan={loan} />
+        </Box>
+
+        {loan.status !== "INUSE" && loan.status !== "RETURNED" && (
+          <Stack direction="row" spacing={4}>
+            {(session?.user?.group === "ADMIN" ||
+              session?.user?.id === loan.user.id) && (
+              <Button
+                colorScheme="red"
+                onClick={onOpen}
+                isDisabled={loan.status === "REJECTED"}
+              >
+                Hylkää
+              </Button>
+            )}
+            {session?.user?.group === "ADMIN" && (
+              <>
+                <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
+                  <Button colorScheme="yellow">Muokkaa</Button>
+                </Link>
+                <Button
+                  colorScheme="green"
+                  onClick={approveLoan}
+                  isDisabled={loan.status === "ACCEPTED"}
+                >
+                  Hyväksy
+                </Button>
+              </>
+            )}
+          </Stack>
+        )}
+
+        {(loan.status === "ACCEPTED" || loan.status === "INUSE") &&
+          session?.user?.group === "ADMIN" && (
+            <Stack direction="row" spacing={4}>
+              <Button
+                isDisabled={loan.status === "INUSE"}
+                onClick={loanToUse}
+                colorScheme="blue"
+              >
+                Merkitse kamat annetuksi
+              </Button>
+              <Button
+                isDisabled={loan.status !== "INUSE"}
+                onClick={loanReturned}
+                colorScheme="green"
+              >
+                Merkitse kamat palautetuksi
+              </Button>
+            </Stack>
+          )}
+
+        {loan.status === "RETURNED" && (
+          <Box bg="gray.50" p={6} borderRadius="lg" borderWidth="1px">
+            <Heading as="h2" size="lg">
+              Lainaustapahtuma suoritettu loppuun
+            </Heading>
+          </Box>
+        )}
 
         <Modal isOpen={isOpen} onClose={onClose}>
           <ModalOverlay />
@@ -305,31 +351,6 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </ModalContent>
         </Modal>
       </Stack>
-      <Stack
-        direction="row"
-        padding="0.5em"
-        display={
-          (loan.status === "ACCEPTED" || loan.status === "INUSE") &&
-          session?.user?.group === "ADMIN"
-            ? "block"
-            : "none"
-        }
-      >
-        <Button isDisabled={loan.status === "INUSE"} onClick={loanToUse}>
-          Merkitse kamat annetuksi
-        </Button>
-        <Button isDisabled={loan.status !== "INUSE"} onClick={loanReturned}>
-          Merkitse kamat palautetuksi
-        </Button>
-      </Stack>
-
-      <Heading
-        as="h2"
-        size="lg"
-        display={loan.status === "RETURNED" ? "block" : "none"}
-      >
-        Lainaustapahtuma suoritettu loppuun
-      </Heading>
-    </>
+    </Container>
   );
 }

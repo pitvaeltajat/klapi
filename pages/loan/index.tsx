@@ -39,7 +39,7 @@ export async function getServerSideProps() {
   return { props: { loans } };
 }
 
-const getColor = (status: LoanStatus): string => {
+export const getColor = (status: LoanStatus): string => {
   switch (status) {
     case LoanStatus.PENDING:
       return "yellow";

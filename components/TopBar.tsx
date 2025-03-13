@@ -53,14 +53,24 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <IconButton
                 aria-label="open menu"
                 icon={<FaBars />}
-                colorScheme="blue"
+                colorScheme="whiteAlpha"
                 onClick={isOpen ? onClose : onOpen}
                 display={["block", "block", "none"]}
+                variant="ghost"
+                color="white"
+                _hover={{ bg: "whiteAlpha.300" }}
+                _active={{ bg: "whiteAlpha.400" }}
               />
 
-              <Link as={NextLink} href="/" _hover={{ textDecoration: "none" }}>
-                <Heading size="lg">KLAPI</Heading>
-              </Link>
+              <Box>
+                <Link
+                  as={NextLink}
+                  href="/"
+                  _hover={{ textDecoration: "none" }}
+                >
+                  <Heading size="lg">KLAPI</Heading>
+                </Link>
+              </Box>
             </Flex>
 
             <Flex gap={6} align="center" display={["none", "none", "flex"]}>

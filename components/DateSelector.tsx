@@ -14,6 +14,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import "react-datepicker/dist/react-datepicker.css";
+import { FaEdit } from "react-icons/fa";
 
 import React from "react";
 import { useState } from "react";
@@ -31,11 +32,19 @@ export default function DateSelector() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const [startDateModified, setStartDateModified] = useState(false);
-  const [endDateModified, setEndDateModified] = useState(false);
+  // Combine the date states into a single array
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    null,
+    null,
+  ]);
+  const [startDate, endDate] = dateRange;
 
-  const [startDate, setLocalStartDate] = useState<Date | null>(null);
-  const [endDate, setLocalEndDate] = useState<Date | null>(null);
+  // Helper function to set default time to 18:00
+  const setDefaultTime = (date: Date): Date => {
+    const newDate = new Date(date);
+    newDate.setHours(18, 0, 0);
+    return newDate;
+  };
 
   function setDates() {
     clearCart();
@@ -59,6 +68,9 @@ export default function DateSelector() {
             aikoja valitessasi, että lähtökohtaisesti kamoja voi noutaa vain
             kalustopäivystyksestä maanantaisin klo 18-19.
           </Box>
+          <Box>
+            <Button onClick={onOpen}>Aseta ajankohta</Button>
+          </Box>
         </>
       ) : (
         <>
@@ -71,6 +83,10 @@ export default function DateSelector() {
             borderRadius="lg"
             marginTop={"0.5em"}
             marginBottom="0.5em"
+            cursor="pointer"
+            onClick={onOpen}
+            align="center"
+            _hover={{ bg: "gray.50" }}
           >
             <Box p={4}>
               <Box>
@@ -102,14 +118,13 @@ export default function DateSelector() {
                 </Box>
               </Box>
             </Box>
+            <Box p={4} color="gray.500">
+              <FaEdit />
+            </Box>
           </Flex>
         </>
       )}
-      <Box>
-        <Button onClick={onOpen}>
-          {dates.datesSet ? "Muokkaa ajankohtaa" : "Aseta ajankohta"}
-        </Button>
-      </Box>
+
       {!dates.datesSet ? (
         <>
           <Text>Tai</Text>
@@ -123,6 +138,7 @@ export default function DateSelector() {
           </Box>
         </>
       ) : null}
+
       <AlertDialog isOpen={isOpen} leastDestructiveRef={Ref} onClose={onClose}>
         <AlertDialogOverlay>
           <AlertDialogContent>
@@ -131,44 +147,20 @@ export default function DateSelector() {
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              <Box>
-                <Heading size="sm" mb={2}>
-                  Alkupäivä
-                </Heading>
-                <DatePicker
-                  selected={startDate}
-                  onChange={(date: Date | null) => {
-                    if (date) {
-                      setLocalStartDate(date);
-                      setStartDateModified(true);
-                    }
-                  }}
-                  selectsStart
-                  startDate={startDate}
-                  endDate={endDate}
-                  minDate={new Date()}
-                  dateFormat="dd.MM.yyyy"
-                />
-              </Box>
-              <Box mt={4}>
-                <Heading size="sm" mb={2}>
-                  Loppupäivä
-                </Heading>
-                <DatePicker
-                  selected={endDate}
-                  onChange={(date: Date | null) => {
-                    if (date) {
-                      setLocalEndDate(date);
-                      setEndDateModified(true);
-                    }
-                  }}
-                  selectsEnd
-                  startDate={startDate}
-                  endDate={endDate}
-                  minDate={startDate || new Date()}
-                  dateFormat="dd.MM.yyyy"
-                />
-              </Box>
+              <DatePicker
+                selected={startDate}
+                onChange={(update: [Date | null, Date | null]) => {
+                  if (update[0]) update[0] = setDefaultTime(update[0]);
+                  if (update[1]) update[1] = setDefaultTime(update[1]);
+                  setDateRange(update);
+                }}
+                startDate={startDate}
+                endDate={endDate}
+                selectsRange
+                inline
+                minDate={new Date()}
+                dateFormat="dd.MM.yyyy HH:mm"
+              />
             </AlertDialogBody>
 
             <AlertDialogFooter>
@@ -177,7 +169,7 @@ export default function DateSelector() {
               </Button>
               <Button
                 colorScheme="blue"
-                isDisabled={!startDateModified || !endDateModified}
+                isDisabled={!startDate || !endDate}
                 onClick={() => setDates()}
                 ml={3}
               >
