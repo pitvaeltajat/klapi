@@ -95,7 +95,13 @@ export default function CartDrawer({
   console.log(availabilities);
 
   const timeStringWithoutTimeZone = (date: Date): string => {
-    return date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
   const isDescriptionValid = cart.description.trim().length > 0;
@@ -167,24 +173,27 @@ export default function CartDrawer({
                       <FormLabel htmlFor={`item-${item.id}`}>
                         {item.name}
                       </FormLabel>
-                      <InputGroup>
-                        <InputLeftAddon>
+                      <InputGroup size="md">
+                        <InputLeftAddon width="8%" padding={0}>
                           <IconButton
                             icon={<FaMinus />}
                             aria-label="decrement"
                             onClick={() => decrementAmount(item.id)}
+                            width="100%"
                           />
                         </InputLeftAddon>
                         <Input
                           id={`item-${item.id}`}
                           value={item.amount}
                           readOnly
+                          textAlign="center"
                         />
-                        <InputRightAddon>
+                        <InputRightAddon width="8%" padding={0}>
                           <IconButton
                             icon={<FaPlus />}
                             aria-label="increment"
                             onClick={() => incrementAmount(item.id)}
+                            width="100%"
                             isDisabled={
                               !availabilities[item.id] ||
                               getCartAmount(item.id) >=
