@@ -23,9 +23,8 @@ import { FaPlus, FaMinus } from "react-icons/fa";
 import SubmitConfirmation from "./SubmitConfirmation";
 import { useState } from "react";
 import { useEffect } from "react";
-import { useCart, useCartDescription } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/CartContext";
 import { useDates } from "@/contexts/DatesContext";
-import { CartDescriptionInput } from "./CartDescriptionInput";
 
 interface AvailabilityData {
   availabilities: Record<string, { available: number }>;
@@ -39,8 +38,12 @@ export default function CartDrawer({
   onClose: () => void;
 }) {
   const firstField = useRef<HTMLInputElement>(null);
-  const { state: cart, incrementAmount, decrementAmount } = useCart();
-  const { description, setDescription } = useCartDescription();
+  const {
+    state: cart,
+    incrementAmount,
+    decrementAmount,
+    setDescription,
+  } = useCart();
   const cartItems = cart.items;
   const { state: dates } = useDates();
 
@@ -66,6 +69,7 @@ export default function CartDrawer({
     })
       .then((response) => response.json())
       .then((data) => {
+        console.log("Availability data:", data);
         setData(data);
         setLoading(false);
       })
@@ -82,15 +86,19 @@ export default function CartDrawer({
       : 0;
   }
 
-  const availabilities = data?.availabilities;
-
-  if (loading || !availabilities) {
+  if (loading || !data) {
     return <div>Ladataan...</div>;
   }
+
+  const { availabilities } = data;
+
+  console.log(availabilities);
 
   const timeStringWithoutTimeZone = (date: Date): string => {
     return date.toISOString().split("T")[0];
   };
+
+  const isDescriptionValid = cart.description.trim().length > 0;
 
   return (
     <Drawer
@@ -112,7 +120,23 @@ export default function CartDrawer({
             closeDrawer={onClose}
           />
           <Stack spacing={4}>
-            <CartDescriptionInput inputRef={firstField} />
+            <Box>
+              <FormLabel htmlFor="description">
+                Kuvaus <span style={{ color: "red" }}>*</span>
+              </FormLabel>
+              <Input
+                ref={firstField}
+                id="description"
+                name="description"
+                placeholder="Kuvaus (pakollinen)"
+                value={cart.description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                }}
+                isRequired
+                isInvalid={!isDescriptionValid && cart.items.length > 0}
+              />
+            </Box>
             <Box>
               <FormLabel htmlFor="startTime">Alku</FormLabel>
               <Input
@@ -151,16 +175,20 @@ export default function CartDrawer({
                             onClick={() => decrementAmount(item.id)}
                           />
                         </InputLeftAddon>
-                        <Input id={`item-${item.id}`} value={item.amount} />
+                        <Input
+                          id={`item-${item.id}`}
+                          value={item.amount}
+                          readOnly
+                        />
                         <InputRightAddon>
                           <IconButton
                             icon={<FaPlus />}
                             aria-label="increment"
                             onClick={() => incrementAmount(item.id)}
                             isDisabled={
-                              availabilities[item.id].available -
-                                getCartAmount(item.id) <
-                              1
+                              !availabilities[item.id] ||
+                              getCartAmount(item.id) >=
+                                availabilities[item.id].available
                             }
                           />
                         </InputRightAddon>
@@ -183,7 +211,7 @@ export default function CartDrawer({
           <Button
             colorScheme="blue"
             onClick={ConfirmationDialog.onOpen}
-            isDisabled={cart.items.length == 0}
+            isDisabled={cart.items.length === 0 || !isDescriptionValid}
           >
             Varaa
           </Button>

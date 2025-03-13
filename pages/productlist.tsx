@@ -43,10 +43,14 @@ export default function AllItems({ items }: AllItemsProps) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ startDate, endDate }),
+      body: JSON.stringify({
+        StartDate: startDate,
+        EndDate: endDate,
+      }),
     })
       .then((response) => response.json())
       .then((data: AvailabilityResponse) => {
+        console.log("Received availabilities:", data);
         setData(data);
         setLoading(false);
       })

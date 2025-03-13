@@ -12,17 +12,35 @@ import NextLink from "next/link";
 import { ItemCardProps } from "../types";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@chakra-ui/react";
-export default function ItemCard({ item, availableAmount }: ItemCardProps) {
-  const { addToCart } = useCart();
+import { useCallback, useMemo, memo } from "react";
+
+const ItemCard = memo(function ItemCard({
+  item,
+  availableAmount,
+}: ItemCardProps) {
+  const {
+    addToCart,
+    state: { items: cartItems },
+  } = useCart();
   const toast = useToast();
 
-  function handleAddToCart() {
-    const currentAmount =
-      cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0;
+  const amountInCart = useMemo(
+    () => cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0,
+    [cartItems, item.id]
+  );
+
+  const amountLeft = useMemo(
+    () => availableAmount - amountInCart,
+    [availableAmount, amountInCart]
+  );
+
+  const canTakeMoreItems = useMemo(() => amountLeft > 0, [amountLeft]);
+
+  const handleAddToCart = useCallback(() => {
     addToCart({
       id: item.id,
       name: item.name,
-      amount: currentAmount + 1,
+      amount: amountInCart + 1,
     });
     toast({
       title: "Lisättiin kama",
@@ -31,19 +49,13 @@ export default function ItemCard({ item, availableAmount }: ItemCardProps) {
       duration: 1500,
       isClosable: true,
     });
-  }
-  const {
-    state: { items: cartItems },
-  } = useCart();
+  }, [addToCart, item.id, item.name, amountInCart, toast]);
 
-  const amountInCart =
-    cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0;
-
-  const canTakeMoreItems = availableAmount - amountInCart > 0;
+  const bgColor = useColorModeValue("white", "gray.800");
 
   return (
     <Box
-      bg={useColorModeValue("white", "gray.800")}
+      bg={bgColor}
       maxW="sm"
       borderWidth="1px"
       rounded="lg"
@@ -87,7 +99,7 @@ export default function ItemCard({ item, availableAmount }: ItemCardProps) {
         </Flex>
 
         <Box fontSize="l" fontWeight="semibold" as="h5">
-          Saatavilla: {availableAmount} / {item.amount} kpl
+          Saatavilla: {amountLeft} / {item.amount} kpl
         </Box>
 
         <Box fontSize="l" fontWeight="semibold" as="h5">
@@ -122,4 +134,6 @@ export default function ItemCard({ item, availableAmount }: ItemCardProps) {
       </Box>
     </Box>
   );
-}
+});
+
+export default ItemCard;

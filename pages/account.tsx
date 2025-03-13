@@ -19,6 +19,8 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (
 ) => {
   const session = await getSession(context);
 
+  console.log("session", session);
+
   const loans = await prisma.loan.findMany({
     where: { user: { id: session?.user?.id } },
     include: {
@@ -39,10 +41,13 @@ function compareDates(dateA: Date, dateB: Date) {
 
 export default function Account({ loans }: AccountProps) {
   const { data: session } = useSession();
-  loans = loans.filter((loan) => loan.user.id === session?.user?.id);
-  loans = loans.sort((a, b) =>
+
+  const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime))
   );
+
+  console.log("loans no filtering", loans);
+  console.log("session", session);
 
   if (session) {
     return (
@@ -55,7 +60,7 @@ export default function Account({ loans }: AccountProps) {
         <Auth />
         <Heading size="md">Omat varaukset:</Heading>
         <Stack spacing={5}>
-          {loans.map((loan) => (
+          {loansSorted.map((loan) => (
             <LoanCard key={loan.id} loan={loan} />
           ))}
         </Stack>

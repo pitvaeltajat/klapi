@@ -89,7 +89,7 @@ export default function SubmitConfirmation({
       description,
     };
 
-    const response = await fetch("/api/loan/createLoan", {
+    const response = await fetch("/api/loan/submitLoan", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
