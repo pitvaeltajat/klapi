@@ -18,7 +18,6 @@ import {
   Link,
   Container,
   Text,
-  Tag,
 } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import NotAuthenticated from "../../components/NotAuthenticated";
@@ -27,7 +26,7 @@ import ReservationTableLoanView from "../../components/ReservationTableLoanView"
 import { useSession } from "next-auth/react";
 import { Loan, User, Reservation, Item, LoanStatus } from "@prisma/client";
 import { GetServerSideProps } from "next";
-import { getColor } from "./index";
+import StatusLabel from "@/components/StatusLabel";
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -251,21 +250,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
               })}
             </Text>
             <Text>Varaaja: {loan.user.name}</Text>
-            <Box>
-              <Tag colorScheme={getColor(loan.status)} width="fit-content">
-                {loan.status === LoanStatus.ACCEPTED
-                  ? "Hyväksytty"
-                  : loan.status === LoanStatus.REJECTED
-                  ? "Hylätty"
-                  : loan.status === LoanStatus.PENDING
-                  ? "Odottaa"
-                  : loan.status === LoanStatus.INUSE
-                  ? "Käytössä"
-                  : loan.status === LoanStatus.RETURNED
-                  ? "Palautettu"
-                  : "Tuntematon"}
-              </Tag>
-            </Box>
+            <StatusLabel status={loan.status} />
           </Stack>
         </Box>
 

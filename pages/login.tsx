@@ -17,7 +17,7 @@ const Login: NextPage = () => {
   return (
     <>
       <Heading>Kirjaudu sisään</Heading>
-      <p>Käyttääksesi KLAPIa sinun tulee kirjautua palveluun.</p>
+      <p>Käyttääksesi Klapia, kirjaudu ensin sisään.</p>
       <br />
       <Auth />
     </>

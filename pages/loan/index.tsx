@@ -15,6 +15,7 @@ import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import NotAuthenticated from "../../components/NotAuthenticated";
+import StatusLabel from "@/components/StatusLabel";
 
 interface LoanType {
   id: string;
@@ -39,23 +40,6 @@ export async function getServerSideProps() {
   return { props: { loans } };
 }
 
-export const getColor = (status: LoanStatus): string => {
-  switch (status) {
-    case LoanStatus.PENDING:
-      return "yellow";
-    case LoanStatus.ACCEPTED:
-      return "green";
-    case LoanStatus.REJECTED:
-      return "red";
-    case LoanStatus.INUSE:
-      return "blue";
-    case LoanStatus.RETURNED:
-      return "gray";
-    default:
-      return "gray";
-  }
-};
-
 function compareDates(dateA: Date, dateB: Date) {
   return dateB.getTime() - dateA.getTime();
 }
@@ -76,9 +60,7 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
             {loan.description || loan.user.name}
           </Link>
         </Heading>
-        <Tag colorScheme={getColor(loan.status)} width="fit-content">
-          {loan.status}
-        </Tag>
+        <StatusLabel status={loan.status} />
         <Text>Varaaja: {loan.user.name}</Text>
       </Stack>
     </Box>
