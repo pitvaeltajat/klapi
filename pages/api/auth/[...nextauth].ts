@@ -12,6 +12,7 @@ declare module "next-auth" {
     user: {
       id: string;
       group: "ADMIN" | "USER";
+      isAdmin: boolean;
     } & DefaultSession["user"];
   }
 
@@ -33,6 +34,8 @@ export const authOptions: NextAuthOptions = {
       const newSession = session;
       newSession.user.id = user.id;
       newSession.user.group = user.group;
+      newSession.user.isAdmin = user.group === "ADMIN";
+
       return newSession;
     },
   },

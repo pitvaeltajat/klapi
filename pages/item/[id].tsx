@@ -81,6 +81,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
   const toast = useToast();
 
   const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin;
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -131,7 +132,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
           fallbackSrc="https://placehold.co/500x300"
         />
       )}
-      {session?.user?.group === "ADMIN" ? (
+      {isAdmin ? (
         <>
           <Button
             marginEnd="0.5em"

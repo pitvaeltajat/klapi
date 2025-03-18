@@ -41,13 +41,14 @@ export default function ReservationTable({
   reservations: Reservation[];
 }) {
   const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin;
 
   return (
     <TableContainer>
       <Table variant="simple">
         <Thead>
           <Tr>
-            {session?.user?.group === "ADMIN" ? <Th>Tuote</Th> : null}
+            {isAdmin ? <Th>Tuote</Th> : null}
             <Th>Määrä</Th>
             <Th>Nouto</Th>
             <Th>Palautus</Th>
@@ -57,9 +58,7 @@ export default function ReservationTable({
           {reservations.map((reservation) => {
             return (
               <Tr key={reservation.id}>
-                {session?.user?.group === "ADMIN" ? (
-                  <Td>{reservation.item.name}</Td>
-                ) : null}
+                {isAdmin ? <Td>{reservation.item.name}</Td> : null}
                 <Td>{reservation.amount}</Td>
                 <Td>{DateTimeToString(reservation.loan.startTime)}</Td>
                 <Td>{DateTimeToString(reservation.loan.endTime)}</Td>

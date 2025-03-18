@@ -17,6 +17,7 @@ import {
   IconButton,
   Heading,
   useDisclosure,
+  Select,
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
@@ -25,6 +26,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useDates } from "@/contexts/DatesContext";
+import { useSession } from "next-auth/react";
 
 interface AvailabilityData {
   availabilities: Record<string, { available: number }>;
@@ -33,10 +35,17 @@ interface AvailabilityData {
 export default function CartDrawer({
   isOpen,
   onClose,
+  selectedUser,
+  setSelectedUser,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  selectedUser: string;
+  setSelectedUser: (userId: string) => void;
 }) {
+  const { data: session } = useSession();
+
+  const user = session?.user;
   const firstField = useRef<HTMLInputElement>(null);
   const {
     state: cart,
@@ -46,6 +55,7 @@ export default function CartDrawer({
   } = useCart();
   const cartItems = cart.items;
   const { state: dates } = useDates();
+  const [users, setUsers] = useState<Array<{ id: string; email: string }>>([]);
 
   const ConfirmationDialog = useDisclosure();
 
@@ -74,6 +84,21 @@ export default function CartDrawer({
       })
       .catch((error) => console.log(error));
   }, [StartDate, EndDate]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (user?.isAdmin) {
+        try {
+          const response = await fetch("/api/user/getUsers");
+          const data = await response.json();
+          setUsers(data);
+        } catch (error) {
+          console.error("Failed to fetch users:", error);
+        }
+      }
+    };
+    fetchUsers();
+  }, [user]);
 
   function getCartAmount(id: string): number {
     return cartItems.find(
@@ -123,6 +148,33 @@ export default function CartDrawer({
             closeDrawer={onClose}
           />
           <Stack spacing={4}>
+            {user?.isAdmin && (
+              <Box>
+                <FormLabel htmlFor="userSelect">Varauksen käyttäjä</FormLabel>
+                <Select
+                  id="userSelect"
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                >
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.email}
+                    </option>
+                  ))}
+                </Select>
+              </Box>
+            )}
+
+            {user?.isAdmin && selectedUser && (
+              <Box>
+                <FormLabel>Varauksen käyttäjä</FormLabel>
+                <Input
+                  value={users.find((u) => u.id === selectedUser)?.email || ""}
+                  isReadOnly
+                />
+              </Box>
+            )}
+
             <Box>
               <FormLabel htmlFor="description">
                 Kuvaus <span style={{ color: "red" }}>*</span>

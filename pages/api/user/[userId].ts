@@ -9,10 +9,11 @@ export default async function handler(
 ) {
   const session = await getServerSession(req, res, authOptions);
   const { userId } = req.query;
+  const isAdmin = session?.user?.isAdmin;
   if (req.method == "GET") {
     // get the user from the database
     // allow only admins to do this, or the user himself
-    if (session?.user?.group === "ADMIN" || session?.user?.id === userId) {
+    if (isAdmin || session?.user?.id === userId) {
       await prisma.user
         .findUnique({
           where: {
@@ -31,7 +32,7 @@ export default async function handler(
       });
     }
   } else if (req.method == "PUT") {
-    if (session?.user?.group !== "ADMIN") {
+    if (!isAdmin) {
       res.status(401).json({
         message: "Sinulla ei ole oikeutta tähän toimintoon",
       });

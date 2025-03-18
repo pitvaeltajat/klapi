@@ -72,6 +72,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin;
 
   const approveLoan = async () => {
     const body = { id: loan.id };
@@ -210,9 +211,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   };
 
   //Check if user is allowed to see information about this loan
-  if (
-    !(session?.user?.group === "ADMIN" || session?.user?.id === loan.user.id)
-  ) {
+  if (!isAdmin && !(session?.user?.id === loan.user.id)) {
     return (
       <>
         <NotAuthenticated />
@@ -263,17 +262,17 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
         {loan.status !== "INUSE" && loan.status !== "RETURNED" && (
           <Stack direction="row" spacing={4}>
-            {(session?.user?.group === "ADMIN" ||
-              session?.user?.id === loan.user.id) && (
-              <Button
-                colorScheme="red"
-                onClick={onOpen}
-                isDisabled={loan.status === "REJECTED"}
-              >
-                Hylkää
-              </Button>
-            )}
-            {session?.user?.group === "ADMIN" && (
+            {isAdmin ||
+              (session?.user?.id === loan.user.id && (
+                <Button
+                  colorScheme="red"
+                  onClick={onOpen}
+                  isDisabled={loan.status === "REJECTED"}
+                >
+                  Hylkää
+                </Button>
+              ))}
+            {isAdmin && (
               <>
                 <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
                   <Button colorScheme="yellow">Muokkaa</Button>
@@ -290,25 +289,24 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </Stack>
         )}
 
-        {(loan.status === "ACCEPTED" || loan.status === "INUSE") &&
-          session?.user?.group === "ADMIN" && (
-            <Stack direction="row" spacing={4}>
-              <Button
-                isDisabled={loan.status === "INUSE"}
-                onClick={loanToUse}
-                colorScheme="blue"
-              >
-                Merkitse kamat annetuksi
-              </Button>
-              <Button
-                isDisabled={loan.status !== "INUSE"}
-                onClick={loanReturned}
-                colorScheme="green"
-              >
-                Merkitse kamat palautetuksi
-              </Button>
-            </Stack>
-          )}
+        {(loan.status === "ACCEPTED" || loan.status === "INUSE") && isAdmin && (
+          <Stack direction="row" spacing={4}>
+            <Button
+              isDisabled={loan.status === "INUSE"}
+              onClick={loanToUse}
+              colorScheme="blue"
+            >
+              Merkitse kamat annetuksi
+            </Button>
+            <Button
+              isDisabled={loan.status !== "INUSE"}
+              onClick={loanReturned}
+              colorScheme="green"
+            >
+              Merkitse kamat palautetuksi
+            </Button>
+          </Stack>
+        )}
 
         {loan.status === "RETURNED" && (
           <Box bg="gray.50" p={6} borderRadius="lg" borderWidth="1px">

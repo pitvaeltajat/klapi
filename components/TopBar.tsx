@@ -25,7 +25,7 @@ import { useCart } from "@/contexts/CartContext";
 
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
-  const role = session?.user?.group;
+  const isAdmin = session?.user?.isAdmin;
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const {
@@ -74,7 +74,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
             </Flex>
 
             <Flex gap={6} align="center" display={["none", "none", "flex"]}>
-              {role === "ADMIN" && (
+              {isAdmin && (
                 <>
                   <Link as={NextLink} href="/loan" fontWeight="medium">
                     Varaukset
