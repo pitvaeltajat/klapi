@@ -8,8 +8,8 @@
     "cypress": "cypress open",
     "cypress-headless": "cypress run",
     "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "type-check:watch": "tsc --noEmit --watch"
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch"
   },
   "packageManager": "pnpm@10.5.2",
   "dependencies": {

@@ -35,16 +35,12 @@ interface AvailabilityData {
 export default function CartDrawer({
   isOpen,
   onClose,
-  selectedUser,
-  setSelectedUser,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  selectedUser: string;
-  setSelectedUser: (userId: string) => void;
 }) {
   const { data: session } = useSession();
-
+  const { state: dates } = useDates();
   const user = session?.user;
   const firstField = useRef<HTMLInputElement>(null);
   const {
@@ -54,8 +50,11 @@ export default function CartDrawer({
     setDescription,
   } = useCart();
   const cartItems = cart.items;
-  const { state: dates } = useDates();
   const [users, setUsers] = useState<Array<{ id: string; email: string }>>([]);
+
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(
+    dates.selectedUserId || user?.id || null
+  );
 
   const ConfirmationDialog = useDisclosure();
 
@@ -153,8 +152,8 @@ export default function CartDrawer({
                 <FormLabel htmlFor="userSelect">Varauksen käyttäjä</FormLabel>
                 <Select
                   id="userSelect"
-                  value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
+                  value={selectedUserId || ""}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
                 >
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -165,11 +164,13 @@ export default function CartDrawer({
               </Box>
             )}
 
-            {user?.isAdmin && selectedUser && (
+            {user?.isAdmin && selectedUserId && (
               <Box>
                 <FormLabel>Varauksen käyttäjä</FormLabel>
                 <Input
-                  value={users.find((u) => u.id === selectedUser)?.email || ""}
+                  value={
+                    users.find((u) => u.id === selectedUserId)?.email || ""
+                  }
                   isReadOnly
                 />
               </Box>
