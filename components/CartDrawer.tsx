@@ -131,7 +131,7 @@ export default function CartDrawer({
     <Drawer
       isOpen={isOpen}
       placement="right"
-      size="full"
+      size="lg"
       initialFocusRef={firstField}
       onClose={onClose}
     >

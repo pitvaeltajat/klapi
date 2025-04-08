@@ -56,10 +56,11 @@
     "prisma": "^6.4.1",
     "prisma-erd-generator": "^2.0.4",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.0"
+    "typescript-eslint": "^8.26.0",
+    "tsx": "^4.19.0"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "tsx prisma/seed.ts"
   },
   "overrides": {
     "@chakra-ui/focus-lock": {

@@ -98,9 +98,10 @@ export default function SubmitConfirmation({
     });
 
     if (response.ok) {
+      const data = await response.json();
       clearCart();
       successToast();
-      router.push("/account");
+      router.push(`/loan/${data.id}`);
     } else {
       errorToast();
     }

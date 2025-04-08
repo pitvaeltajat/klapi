@@ -690,12 +690,14 @@ async function main() {
   console.log(`Start seeding ...`);
 
   // First create all categories
+  const categoryMap = new Map<string, string>();
   for (const category of newCategories) {
     const newCategory = await prisma.category.create({
       data: {
         name: category,
       },
     });
+    categoryMap.set(newCategory.name, newCategory.id);
     console.log(
       `Created category with name ${newCategory.name} and id: ${newCategory.id}`
     );
@@ -715,13 +717,38 @@ async function main() {
   // Finally update items with their category connections
   for (const item of itemsWithCategories) {
     try {
+      const existingItem = await prisma.item.findFirst({
+        where: {
+          name: item.name,
+        },
+      });
+
+      if (!existingItem) {
+        console.error(`Item not found: ${item.name}`);
+        continue;
+      }
+
+      // Get the actual category IDs from the database
+      const categories = await prisma.category.findMany({
+        where: {
+          id: {
+            in: item.categoryIDs,
+          },
+        },
+      });
+
+      if (categories.length === 0) {
+        console.error(`No categories found for item ${item.name}`);
+        continue;
+      }
+
       const updatedItem = await prisma.item.update({
         where: {
-          id: item.id,
+          id: existingItem.id,
         },
         data: {
           categories: {
-            connect: item.categoryIDs.map((id) => ({ id })),
+            connect: categories.map((category) => ({ id: category.id })),
           },
         },
       });

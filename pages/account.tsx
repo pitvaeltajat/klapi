@@ -1,5 +1,15 @@
 import Auth from "./auth";
-import { Heading, Stack } from "@chakra-ui/react";
+import {
+  Heading,
+  Stack,
+  Container,
+  Box,
+  Text,
+  VStack,
+  Divider,
+  Card,
+  CardBody,
+} from "@chakra-ui/react";
 import { useSession, getSession } from "next-auth/react";
 import prisma from "../utils/prisma";
 import { LoanCard } from "./loan";
@@ -46,27 +56,50 @@ export default function Account({ loans }: AccountProps) {
 
   if (session) {
     return (
-      <>
-        <Heading>{session?.user?.name}</Heading>
-        <Heading>{session?.user?.email}</Heading>
-        <Heading>
-          Rooli: {session?.user?.group === "USER" ? "Käyttäjä" : "Admin"}
-        </Heading>
-        <Auth />
-        <Heading size="md">Omat varaukset:</Heading>
-        <Stack spacing={5}>
-          {loansSorted.map((loan) => (
-            <LoanCard key={loan.id} loan={loan} />
-          ))}
-        </Stack>
-      </>
+      <Container maxW="container.lg" py={8}>
+        <VStack spacing={8} align="stretch">
+          <Card>
+            <CardBody>
+              <VStack spacing={2} align="stretch">
+                <Heading size="lg">{session?.user?.name}</Heading>
+                <Text fontSize="md" color="gray.600">
+                  {session?.user?.email}
+                </Text>
+                <Text fontSize="md">
+                  Rooli:{" "}
+                  <Text as="span" fontWeight="medium">
+                    {session?.user?.group === "USER" ? "Käyttäjä" : "Admin"}
+                  </Text>
+                </Text>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <Box>
+            <Auth />
+          </Box>
+
+          <Box>
+            <Heading size="md" mb={4}>
+              Omat varaukset
+            </Heading>
+            <Stack spacing={4}>
+              {loansSorted.map((loan) => (
+                <LoanCard key={loan.id} loan={loan} />
+              ))}
+            </Stack>
+          </Box>
+        </VStack>
+      </Container>
     );
   } else {
     return (
-      <>
-        <Heading>Ei kirjautunut sisään</Heading>
-        <Auth />
-      </>
+      <Container maxW="container.lg" py={8}>
+        <VStack spacing={8} align="center">
+          <Heading>Ei kirjautunut sisään</Heading>
+          <Auth />
+        </VStack>
+      </Container>
     );
   }
 }
