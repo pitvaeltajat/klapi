@@ -164,18 +164,6 @@ export default function CartDrawer({
               </Box>
             )}
 
-            {user?.isAdmin && selectedUserId && (
-              <Box>
-                <FormLabel>Varauksen käyttäjä</FormLabel>
-                <Input
-                  value={
-                    users.find((u) => u.id === selectedUserId)?.email || ""
-                  }
-                  isReadOnly
-                />
-              </Box>
-            )}
-
             <Box>
               <FormLabel htmlFor="description">
                 Kuvaus <span style={{ color: "red" }}>*</span>

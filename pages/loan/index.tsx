@@ -8,7 +8,6 @@ import {
   Link,
   Select,
   Stack,
-  Tag,
   Text,
 } from "@chakra-ui/react";
 import NextLink from "next/link";

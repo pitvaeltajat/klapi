@@ -6,7 +6,6 @@ import {
   Box,
   Text,
   VStack,
-  Divider,
   Card,
   CardBody,
 } from "@chakra-ui/react";

@@ -12,23 +12,18 @@ import {
   useDisclosure,
   Flex,
   Text,
-  Select,
 } from "@chakra-ui/react";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaEdit } from "react-icons/fa";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { useDates } from "@/contexts/DatesContext";
 import { useCart } from "@/contexts/CartContext";
-import { useSession } from "next-auth/react";
 
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
   const { clearCart } = useCart();
-  const { data } = useSession();
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const [users, setUsers] = useState<Array<{ id: string; email: string }>>([]);
 
   const Ref = React.useRef<HTMLButtonElement>(null);
 
@@ -36,30 +31,12 @@ export default function DateSelector() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const user = data?.user;
-
   // Combine the date states into a single array
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
     null,
   ]);
   const [startDate, endDate] = dateRange;
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (user?.isAdmin) {
-        try {
-          const response = await fetch("/api/user/getUsers");
-          const data = await response.json();
-          console.log(data);
-          setUsers(data);
-        } catch (error) {
-          console.error("Failed to fetch users:", error);
-        }
-      }
-    };
-    fetchUsers();
-  }, [user]);
 
   // Helper function to set default time to 18:00
   const setDefaultTime = (date: Date): Date => {
@@ -85,27 +62,6 @@ export default function DateSelector() {
       {!dates.datesSet ? (
         <>
           <Heading>Aloitus</Heading>
-          {user?.isAdmin && (
-            <Box mb={4}>
-              <Heading size="md">Valitse käyttäjä</Heading>
-              <Text>
-                Valitse käyttäjä, jonka nouto- ja palautusajankohdat haluat
-                määrittää.
-              </Text>
-              <Heading size="sm">Käyttäjät</Heading>
-              <Select
-                placeholder="Valitse käyttäjä"
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-              >
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.email}
-                  </option>
-                ))}
-              </Select>
-            </Box>
-          )}
           <Box>
             <Heading size="md">Aloitus</Heading>
             <Text>

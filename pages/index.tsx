@@ -16,7 +16,7 @@ import AllItems from "./productlist";
 import type { GetServerSideProps } from "next";
 import type { Item, Category, Loan, Reservation } from "@prisma/client";
 import { useDates } from "@/contexts/DatesContext";
-
+import UserSelector from "@/components/UserSelector";
 interface ItemWithRelations extends Item {
   categories: Category[];
   reservations: (Reservation & { loan: Loan })[];
@@ -25,10 +25,6 @@ interface ItemWithRelations extends Item {
 interface IndexProps {
   items: ItemWithRelations[];
   categories: Category[];
-}
-
-interface DateState {
-  datesSet: boolean;
 }
 
 export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
@@ -71,6 +67,7 @@ export default function Index({ items, categories }: IndexProps) {
 
   return (
     <>
+      <UserSelector />
       {dates.datesSet ? (
         <>
           <DateSelector />
