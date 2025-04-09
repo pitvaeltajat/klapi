@@ -10,6 +10,13 @@ import {
   Button,
   Wrap,
   WrapItem,
+  Container,
+  Card,
+  CardBody,
+  VStack,
+  Skeleton,
+  Text,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import AllItems from "./productlist";
@@ -17,6 +24,7 @@ import type { GetServerSideProps } from "next";
 import type { Item, Category, Loan, Reservation } from "@prisma/client";
 import { useDates } from "@/contexts/DatesContext";
 import UserSelector from "@/components/UserSelector";
+
 interface ItemWithRelations extends Item {
   categories: Category[];
   reservations: (Reservation & { loan: Loan })[];
@@ -45,9 +53,9 @@ export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
 
 export default function Index({ items, categories }: IndexProps) {
   const { state: dates } = useDates();
-
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("");
+  const bgColor = useColorModeValue("white", "gray.800");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -66,59 +74,86 @@ export default function Index({ items, categories }: IndexProps) {
     });
 
   return (
-    <>
-      <UserSelector />
-      {dates.datesSet ? (
-        <>
-          <DateSelector />
-          <Box padding="4px">
-            <InputGroup width={"fit-content"}>
-              <Input
-                placeholder="Hae kamoja"
-                marginBottom={"1em"}
-                value={search}
-                onChange={handleChange}
-              />
-              <InputRightElement>
-                <FaSearch />
-              </InputRightElement>
-            </InputGroup>
-          </Box>
-          <Box padding="2em" paddingLeft={0}>
-            <Heading as="h2" size="md" marginBottom={"1em"}>
-              Kategoriat
-            </Heading>
-            <Wrap padding="4px">
-              <WrapItem key="all">
-                <Button onClick={() => setCategory("")}>Kaikki</Button>
-              </WrapItem>
-              {categories.map((category) => (
-                <WrapItem key={category.id}>
-                  <Button onClick={() => setCategory(category.name)}>
-                    {category.name}
-                  </Button>
-                </WrapItem>
-              ))}
-            </Wrap>
-          </Box>
-          <Box padding="1em" paddingLeft={0}>
-            {category !== "" && (
-              <Heading as="h2" size="md" marginBottom={"1em"}>
-                Valittu kategoria: {category}
-              </Heading>
-            )}
-          </Box>
-          {filteredItems.length > 0 ? (
-            <AllItems items={filteredItems} categories={categories} />
-          ) : (
-            <Heading textAlign="center" marginTop="1em">
-              Ei hakutuloksia :(
-            </Heading>
-          )}
-        </>
-      ) : (
+    <Container maxW="container.xl" py={8}>
+      <VStack spacing={8} align="stretch">
+        <UserSelector />
+
         <DateSelector />
-      )}
-    </>
+
+        {dates.datesSet && (
+          <Card variant="outline" bg={bgColor} shadow="sm">
+            <CardBody>
+              <VStack spacing={6} align="stretch">
+                <Box>
+                  <InputGroup maxW="md">
+                    <Input
+                      placeholder="Hae kamoja"
+                      value={search}
+                      onChange={handleChange}
+                      size="lg"
+                      borderRadius="md"
+                    />
+                    <InputRightElement h="full" pr={2}>
+                      <FaSearch color="gray.300" />
+                    </InputRightElement>
+                  </InputGroup>
+                </Box>
+
+                <Box>
+                  <Heading as="h2" size="md" mb={4}>
+                    Kategoriat
+                  </Heading>
+                  <Wrap spacing={3}>
+                    <WrapItem key="all">
+                      <Button
+                        onClick={() => setCategory("")}
+                        colorScheme={category === "" ? "blue" : "gray"}
+                        variant={category === "" ? "solid" : "outline"}
+                      >
+                        Kaikki
+                      </Button>
+                    </WrapItem>
+                    {categories.map((cat) => (
+                      <WrapItem key={cat.id}>
+                        <Button
+                          onClick={() => setCategory(cat.name)}
+                          colorScheme={category === cat.name ? "blue" : "gray"}
+                          variant={category === cat.name ? "solid" : "outline"}
+                        >
+                          {cat.name}
+                        </Button>
+                      </WrapItem>
+                    ))}
+                  </Wrap>
+                </Box>
+
+                {category !== "" && (
+                  <Box>
+                    <Text fontSize="lg" fontWeight="medium" color="gray.600">
+                      Valittu kategoria: {category}
+                    </Text>
+                  </Box>
+                )}
+
+                <Box>
+                  {filteredItems.length > 0 ? (
+                    <AllItems items={filteredItems} categories={categories} />
+                  ) : (
+                    <Card variant="outline" p={8} textAlign="center">
+                      <VStack spacing={4}>
+                        <Heading size="md" color="gray.500">
+                          Ei hakutuloksia
+                        </Heading>
+                        <Text color="gray.500">Kokeile muuttaa hakuehtoja</Text>
+                      </VStack>
+                    </Card>
+                  )}
+                </Box>
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+      </VStack>
+    </Container>
   );
 }

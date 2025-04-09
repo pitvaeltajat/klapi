@@ -28,7 +28,7 @@ const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({
   if (session || router.pathname === "/login") {
     return <>{children}</>;
   } else {
-    return <>Ladataan...</>;
+    return null;
   }
 };
 

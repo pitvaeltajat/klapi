@@ -54,7 +54,7 @@ export default function AllItems({ items }: AllItemsProps) {
   const availabilities = data?.availabilities;
 
   if (loading) {
-    return <div>Ladataan...</div>;
+    return null;
   }
 
   return (

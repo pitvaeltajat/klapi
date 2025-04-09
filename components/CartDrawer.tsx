@@ -110,7 +110,7 @@ export default function CartDrawer({
   }
 
   if (loading || !data) {
-    return <div>Ladataan...</div>;
+    return null;
   }
 
   const { availabilities } = data;
