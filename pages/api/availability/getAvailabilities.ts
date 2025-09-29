@@ -99,7 +99,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 				const modReservations = itemReservations.filter((reservation) => {
 					reservation.loan.startTime = new Date(reservation.loan.startTime);
 					reservation.loan.endTime = new Date(reservation.loan.endTime);
-					return reservation.loan.startTime <= date && reservation.loan.endTime >= date;
+					return (
+						reservation.loan.startTime <= date &&
+						reservation.loan.endTime >= date &&
+						reservation.loan.status !== "REJECTED" &&
+						reservation.loan.status !== "RETURNED"
+					);
 				});
 				modReservations.map((reservation) => {
 					sum += reservation.amount;
