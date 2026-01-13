@@ -160,11 +160,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
   const router = useRouter();
   const toast = useToast();
-  const [returningLoans, setReturningLoans] = useState<Set<string>>(new Set());
-
   const handleReturn = async (loanId: string) => {
-    setReturningLoans((prev) => new Set(prev).add(loanId));
-
     try {
       const response = await fetch("/api/loan/loanReturned", {
         method: "POST",
@@ -186,18 +182,13 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
       } else {
         throw new Error("Palautus epäonnistui");
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Virhe",
         description: "Palautus epäonnistui. Yritä uudelleen.",
         status: "error",
         duration: 5000,
         isClosable: true,
-      });
-      setReturningLoans((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(loanId);
-        return newSet;
       });
     }
   };
