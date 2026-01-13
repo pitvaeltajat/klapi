@@ -45,6 +45,7 @@ export default function CartDrawer({
     incrementAmount,
     decrementAmount,
     setDescription,
+    setLoaner,
   } = useCart();
   const cartItems = cart.items;
   const { state: dates } = useDates();
@@ -97,7 +98,12 @@ export default function CartDrawer({
       return null;
     }
     return (
-      <Drawer isOpen={isOpen} placement="right" size="full" onClose={onClose}>
+      <Drawer
+        isOpen={isOpen}
+        placement="right"
+        size={{ base: "full", md: "md" }}
+        onClose={onClose}
+      >
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -128,7 +134,7 @@ export default function CartDrawer({
     <Drawer
       isOpen={isOpen}
       placement="right"
-      size="full"
+      size={{ base: "full", md: "md" }}
       initialFocusRef={firstField}
       onClose={onClose}
     >
@@ -144,6 +150,18 @@ export default function CartDrawer({
             closeDrawer={onClose}
           />
           <Stack spacing={4}>
+            <Box>
+              <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
+              <Input
+                id="loaner"
+                name="loaner"
+                placeholder="Lainaajan nimi"
+                value={cart.loaner || ""}
+                onChange={(e) => {
+                  setLoaner(e.target.value);
+                }}
+              />
+            </Box>
             <Box>
               <FormLabel htmlFor="description">
                 Kuvaus <span style={{ color: "red" }}>*</span>

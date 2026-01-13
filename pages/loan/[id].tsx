@@ -258,10 +258,10 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                   ? "Hyväksytty"
                   : loan.status === LoanStatus.REJECTED
                   ? "Hylätty"
-                  : loan.status === LoanStatus.PENDING
-                  ? "Odottaa"
                   : loan.status === LoanStatus.INUSE
                   ? "Käytössä"
+                  : loan.status === LoanStatus.IN_BOX
+                  ? "Laatikossa"
                   : loan.status === LoanStatus.RETURNED
                   ? "Palautettu"
                   : "Tuntematon"}

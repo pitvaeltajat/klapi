@@ -50,7 +50,12 @@ export default function Account({ loans }: AccountProps) {
         <Heading>{session?.user?.name}</Heading>
         <Heading>{session?.user?.email}</Heading>
         <Heading>
-          Rooli: {session?.user?.group === "USER" ? "Käyttäjä" : "Admin"}
+          Rooli:{" "}
+          {session?.user?.group === "USER"
+            ? "Käyttäjä"
+            : session?.user?.group === "KIOSK"
+            ? "Kaluston kone"
+            : "Admin"}
         </Heading>
         <Auth />
         <Heading size="md">Omat varaukset:</Heading>
