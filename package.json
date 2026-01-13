@@ -26,7 +26,6 @@
     "@prisma/generator-helper": "^6.4.1",
     "@reduxjs/toolkit": "^2.6.1",
     "chakra-react-select": "^4.7.6",
-    "dotenv": "^17.2.3",
     "formik": "^2.2.9",
     "framer-motion": "^10.18.0",
     "next": "15.2.8",
