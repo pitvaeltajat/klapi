@@ -41,14 +41,14 @@ export async function getServerSideProps() {
 
 export const getColor = (status: LoanStatus): string => {
   switch (status) {
-    case LoanStatus.PENDING:
-      return "yellow";
     case LoanStatus.ACCEPTED:
       return "green";
     case LoanStatus.REJECTED:
       return "red";
     case LoanStatus.INUSE:
       return "blue";
+    case LoanStatus.IN_BOX:
+      return "purple";
     case LoanStatus.RETURNED:
       return "gray";
     default:
@@ -121,10 +121,10 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
             mb={4}
           >
             <option value="ALL">Kaikki</option>
-            <option value={LoanStatus.PENDING}>Odottavat</option>
             <option value={LoanStatus.ACCEPTED}>Hyväksytyt</option>
             <option value={LoanStatus.REJECTED}>Hylätyt</option>
             <option value={LoanStatus.INUSE}>Käytössä</option>
+            <option value={LoanStatus.IN_BOX}>Laatikossa</option>
             <option value={LoanStatus.RETURNED}>Palautetut</option>
           </Select>
           {loans

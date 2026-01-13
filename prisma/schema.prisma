@@ -75,8 +75,10 @@ model Item {
   amount       Int
   categories   Category[]
   reservations Reservation[]
-  location     Location?      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  location     Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
   locationId   String?
+  box          Box?          @relation(fields: [boxId], references: [id], onDelete: SetNull)
+  boxId        String?
 }
 
 model Location {
@@ -84,6 +86,15 @@ model Location {
   name        String
   description String?
   items       Item[]
+}
+
+model Box {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  items       Item[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Category {
@@ -104,7 +115,7 @@ model Reservation {
 
 model Loan {
   id           String        @id @default(cuid())
-  status       LoanStatus    @default(PENDING)
+  status       LoanStatus    @default(ACCEPTED)
   description  String? @db.VarChar(100)
   reservations Reservation[]
   startTime    DateTime
@@ -115,9 +126,9 @@ model Loan {
 }
 
 enum LoanStatus {
-  PENDING
   ACCEPTED
   REJECTED
   INUSE
+  IN_BOX
   RETURNED
 }

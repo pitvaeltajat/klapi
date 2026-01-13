@@ -12,6 +12,7 @@ import {
   Button,
   Wrap,
   WrapItem,
+  Flex,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import AllItems from "./productlist";
@@ -20,6 +21,7 @@ import type { Item, Category, Loan, Reservation } from "@prisma/client";
 import { useDates } from "@/contexts/DatesContext";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/contexts/CartContext";
+import { useRouter } from "next/router";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -51,6 +53,7 @@ export default function Index({ items, categories }: IndexProps) {
   const { state: dates } = useDates();
   const { data: session } = useSession();
   const { state: cart } = useCart();
+  const router = useRouter();
 
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("");
@@ -82,7 +85,19 @@ export default function Index({ items, categories }: IndexProps) {
             <KioskModeSelector />
           ) : dates.datesSet ? (
             <>
-              <KioskDateSelector />
+              <Flex justifyContent="space-between" alignItems="center" mb={4}>
+                <Box flex={1}>
+                  <KioskDateSelector />
+                </Box>
+                <Button
+                  colorScheme="green"
+                  size="lg"
+                  onClick={() => router.push("/kiosk/return")}
+                  ml={4}
+                >
+                  Palauta
+                </Button>
+              </Flex>
               <Box padding="4px">
                 <InputGroup width={"fit-content"}>
                   <Input
@@ -102,23 +117,26 @@ export default function Index({ items, categories }: IndexProps) {
                 </Heading>
                 <Wrap padding="4px">
                   <WrapItem key="all">
-                    <Button onClick={() => setCategory("")}>Kaikki</Button>
+                    <Button
+                      onClick={() => setCategory("")}
+                      variant={category === "" ? "solid" : "outline"}
+                      colorScheme={category === "" ? "blue" : "gray"}
+                    >
+                      Kaikki
+                    </Button>
                   </WrapItem>
-                  {categories.map((category) => (
-                    <WrapItem key={category.id}>
-                      <Button onClick={() => setCategory(category.name)}>
-                        {category.name}
+                  {categories.map((cat) => (
+                    <WrapItem key={cat.id}>
+                      <Button
+                        onClick={() => setCategory(cat.name)}
+                        variant={category === cat.name ? "solid" : "outline"}
+                        colorScheme={category === cat.name ? "blue" : "gray"}
+                      >
+                        {cat.name}
                       </Button>
                     </WrapItem>
                   ))}
                 </Wrap>
-              </Box>
-              <Box padding="1em" paddingLeft={0}>
-                {category !== "" && (
-                  <Heading as="h2" size="md" marginBottom={"1em"}>
-                    Valittu kategoria: {category}
-                  </Heading>
-                )}
               </Box>
               {filteredItems.length > 0 ? (
                 <AllItems items={filteredItems} categories={categories} />
@@ -155,23 +173,26 @@ export default function Index({ items, categories }: IndexProps) {
                 </Heading>
                 <Wrap padding="4px">
                   <WrapItem key="all">
-                    <Button onClick={() => setCategory("")}>Kaikki</Button>
+                    <Button
+                      onClick={() => setCategory("")}
+                      variant={category === "" ? "solid" : "outline"}
+                      colorScheme={category === "" ? "blue" : "gray"}
+                    >
+                      Kaikki
+                    </Button>
                   </WrapItem>
-                  {categories.map((category) => (
-                    <WrapItem key={category.id}>
-                      <Button onClick={() => setCategory(category.name)}>
-                        {category.name}
+                  {categories.map((cat) => (
+                    <WrapItem key={cat.id}>
+                      <Button
+                        onClick={() => setCategory(cat.name)}
+                        variant={category === cat.name ? "solid" : "outline"}
+                        colorScheme={category === cat.name ? "blue" : "gray"}
+                      >
+                        {cat.name}
                       </Button>
                     </WrapItem>
                   ))}
                 </Wrap>
-              </Box>
-              <Box padding="1em" paddingLeft={0}>
-                {category !== "" && (
-                  <Heading as="h2" size="md" marginBottom={"1em"}>
-                    Valittu kategoria: {category}
-                  </Heading>
-                )}
               </Box>
               {filteredItems.length > 0 ? (
                 <AllItems items={filteredItems} categories={categories} />

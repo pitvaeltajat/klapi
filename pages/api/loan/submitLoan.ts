@@ -10,12 +10,18 @@ export default async function handler(
     const { reservations, startTime, endTime, userId, description, loaner } = req.body;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true },
+      select: { name: true, email: true, group: true },
     });
     if (!user) {
       res.status(404).json({ message: "Käyttäjää ei löytynyt" });
       return;
     }
+
+    // Determine status based on user type
+    // KIOSK users: INUSE immediately
+    // Other users: ACCEPTED (skip PENDING)
+    const status = user.group === "KIOSK" ? "INUSE" : "ACCEPTED";
+
     const result = await prisma.loan.create({
       data: {
         reservations: { create: reservations },
@@ -24,6 +30,7 @@ export default async function handler(
         user: { connect: { id: userId } },
         description,
         loaner,
+        status,
       },
     });
 
