@@ -78,8 +78,6 @@ model Item {
   reservations Reservation[]
   location     Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
   locationId   String?
-  box          Box?          @relation(fields: [boxId], references: [id], onDelete: SetNull)
-  boxId        String?
 }
 
 enum ItemType {
@@ -98,7 +96,7 @@ model Box {
   id          String   @id @default(cuid())
   name        String
   description String?
-  items       Item[]
+  loans       Loan[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -129,6 +127,8 @@ model Loan {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
   loaner       String?
+  box          Box?          @relation(fields: [boxId], references: [id], onDelete: SetNull)
+  boxId        String?
 }
 
 enum LoanStatus {
