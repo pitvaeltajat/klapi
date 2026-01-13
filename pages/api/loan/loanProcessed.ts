@@ -18,16 +18,9 @@ export default async function handler(
 
   const { id } = req.body;
 
-  // Get the loan with its reservations and items
+  // Get the loan
   const loan = await prisma.loan.findUnique({
     where: { id },
-    include: {
-      reservations: {
-        include: {
-          item: true,
-        },
-      },
-    },
   });
 
   if (!loan) {
@@ -35,26 +28,13 @@ export default async function handler(
     return;
   }
 
-  // Update loan status to RETURNED and remove all items from their boxes
-  const result = await prisma.$transaction(async (tx) => {
-    // Remove all items in this loan from their boxes
-    const itemIds = loan.reservations.map((r) => r.itemId);
-    await tx.item.updateMany({
-      where: {
-        id: { in: itemIds },
-      },
-      data: {
-        boxId: null,
-      },
-    });
-
-    // Update loan status to RETURNED
-    return await tx.loan.update({
-      where: { id },
-      data: {
-        status: LoanStatus.RETURNED,
-      },
-    });
+  // Update loan status to RETURNED and remove it from its box
+  const result = await prisma.loan.update({
+    where: { id },
+    data: {
+      status: LoanStatus.RETURNED,
+      boxId: null,
+    },
   });
 
   res.status(200).json(result);

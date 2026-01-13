@@ -18,16 +18,9 @@ export default async function handler(
 
   const { id } = req.body;
 
-  // Get the loan with its reservations and items
+  // Get the loan
   const loan = await prisma.loan.findUnique({
     where: { id },
-    include: {
-      reservations: {
-        include: {
-          item: true,
-        },
-      },
-    },
   });
 
   if (!loan) {
@@ -35,13 +28,13 @@ export default async function handler(
     return;
   }
 
-  // Get all item IDs in this loan
-  const loanItemIds = loan.reservations.map((r) => r.itemId);
-
-  // Find all boxes with their items
+  // Find all boxes with their loans
   const boxes = await prisma.box.findMany({
     include: {
-      items: {
+      loans: {
+        where: {
+          status: LoanStatus.IN_BOX,
+        },
         select: {
           id: true,
         },
@@ -50,41 +43,22 @@ export default async function handler(
   });
 
   if (boxes.length === 0) {
-    res.status(400).json({ message: "No boxes available to store items" });
+    res.status(400).json({ message: "No boxes available" });
     return;
   }
 
-  // Find a box that doesn't contain any of the loan's items
-  let selectedBox = boxes.find((box) => {
-    const boxItemIds = box.items.map((item) => item.id);
-    // Check if no loan items exist in this box
-    return !loanItemIds.some((loanItemId) => boxItemIds.includes(loanItemId));
-  });
+  // Find the box with the fewest loans (or an empty box)
+  let selectedBox = boxes.reduce((prev, current) =>
+    current.loans.length < prev.loans.length ? current : prev
+  );
 
-  // If no suitable box found, randomly select any box
-  if (!selectedBox) {
-    selectedBox = boxes[Math.floor(Math.random() * boxes.length)];
-  }
-
-  // Update loan status to IN_BOX and assign all items to the selected box
-  const result = await prisma.$transaction(async (tx) => {
-    // Assign all items in this loan to the selected box
-    await tx.item.updateMany({
-      where: {
-        id: { in: loanItemIds },
-      },
-      data: {
-        boxId: selectedBox.id,
-      },
-    });
-
-    // Update loan status to IN_BOX
-    return await tx.loan.update({
-      where: { id },
-      data: {
-        status: LoanStatus.IN_BOX,
-      },
-    });
+  // Update loan status to IN_BOX and assign it to the selected box
+  const result = await prisma.loan.update({
+    where: { id },
+    data: {
+      status: LoanStatus.IN_BOX,
+      boxId: selectedBox.id,
+    },
   });
 
   res.status(200).json(result);
