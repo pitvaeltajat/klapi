@@ -1,6 +1,8 @@
 import React, { ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import LoadingSpinner from "./LoadingSpinner";
+import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 
 interface RedirectUnauthorizedProps {
   children: ReactNode;
@@ -13,6 +15,7 @@ const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({
 }) => {
   const { data: session, status } = useSession();
   const isBrowser = () => typeof window !== "undefined";
+  const showLoading = useDelayedLoading(status === "loading");
 
   if (
     status === "unauthenticated" &&
@@ -27,9 +30,16 @@ const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({
 
   if (session || router.pathname === "/login") {
     return <>{children}</>;
-  } else {
-    return <>Ladataan...</>;
   }
+
+  if (status === "loading") {
+    if (!showLoading) {
+      return null;
+    }
+    return <LoadingSpinner />;
+  }
+
+  return null;
 };
 
 export default RedirectUnauthorized;
