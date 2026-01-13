@@ -22,11 +22,11 @@ export default async function handler(
     return;
   }
 
-  // Check if box has items
+  // Check if box has loans
   const box = await prisma.box.findUnique({
     where: { id },
     include: {
-      items: true,
+      loans: true,
     },
   });
 
@@ -35,9 +35,9 @@ export default async function handler(
     return;
   }
 
-  if (box.items.length > 0) {
+  if (box.loans.length > 0) {
     res.status(400).json({
-      message: "Cannot delete box with items. Remove items first.",
+      message: "Cannot delete box with loans. Remove loans first.",
     });
     return;
   }

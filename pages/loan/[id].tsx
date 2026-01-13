@@ -150,7 +150,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       });
   };
 
-  const loanToUse = async () => {
+  const _loanToUse = async () => {
     const body = { id: loan.id };
     await fetch("/api/loan/loanToUse", {
       method: "POST",
