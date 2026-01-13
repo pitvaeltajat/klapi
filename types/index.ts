@@ -6,7 +6,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      group: "ADMIN" | "USER";
+      group: "ADMIN" | "USER" | "KIOSK";
     } & DefaultSession["user"];
   }
 }
@@ -28,6 +28,7 @@ export interface CartItem {
 export interface CartState {
   items: CartItem[];
   description: string;
+  loaner?: string;
 }
 
 // Component Props Types
@@ -79,4 +80,5 @@ export interface SubmitLoanRequest {
   endTime: Date;
   userId: string;
   description?: string;
+  loaner?: string;
 }

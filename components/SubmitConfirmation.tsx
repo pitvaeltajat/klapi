@@ -80,6 +80,7 @@ export default function SubmitConfirmation({
     }));
 
     const description = cart.description;
+    const loaner = cart.loaner;
 
     const body = {
       reservations,
@@ -87,6 +88,7 @@ export default function SubmitConfirmation({
       endTime,
       userId,
       description,
+      loaner,
     };
 
     const response = await fetch("/api/loan/submitLoan", {

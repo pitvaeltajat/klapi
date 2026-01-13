@@ -4,6 +4,7 @@ import { CartState, CartItem } from "../types";
 const initialState: CartState = {
   items: [],
   description: "",
+  loaner: undefined,
 };
 
 type CartAction =
@@ -12,7 +13,8 @@ type CartAction =
   | { type: "DECREMENT_AMOUNT"; payload: string }
   | { type: "REMOVE_FROM_CART"; payload: string }
   | { type: "CLEAR_CART" }
-  | { type: "SET_DESCRIPTION"; payload: string };
+  | { type: "SET_DESCRIPTION"; payload: string }
+  | { type: "SET_LOANER"; payload: string };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -62,6 +64,11 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         ...state,
         description: action.payload,
       };
+    case "SET_LOANER":
+      return {
+        ...state,
+        loaner: action.payload,
+      };
     case "CLEAR_CART":
       return initialState;
     default:
@@ -77,6 +84,7 @@ type CartContextType = {
   removeFromCart: (id: string) => void;
   clearCart: () => void;
   setDescription: (description: string) => void;
+  setLoaner: (loaner: string) => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -97,6 +105,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     clearCart: () => dispatch({ type: "CLEAR_CART" }),
     setDescription: (description: string) =>
       dispatch({ type: "SET_DESCRIPTION", payload: description }),
+    setLoaner: (loaner: string) =>
+      dispatch({ type: "SET_LOANER", payload: loaner }),
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

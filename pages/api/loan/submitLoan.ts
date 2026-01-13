@@ -7,7 +7,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    const { reservations, startTime, endTime, userId, description } = req.body;
+    const { reservations, startTime, endTime, userId, description, loaner } = req.body;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true },
@@ -23,6 +23,7 @@ export default async function handler(
         endTime: endTime,
         user: { connect: { id: userId } },
         description,
+        loaner,
       },
     });
 

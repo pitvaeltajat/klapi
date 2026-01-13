@@ -11,12 +11,12 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      group: "ADMIN" | "USER";
+      group: "ADMIN" | "USER" | "KIOSK";
     } & DefaultSession["user"];
   }
 
   interface User extends DefaultUser {
-    group: "ADMIN" | "USER";
+    group: "ADMIN" | "USER" | "KIOSK";
   }
 }
 

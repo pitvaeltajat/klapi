@@ -251,6 +251,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
               })}
             </Text>
             <Text>Varaaja: {loan.user.name}</Text>
+            {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
             <Box>
               <Tag colorScheme={getColor(loan.status)} width="fit-content">
                 {loan.status === LoanStatus.ACCEPTED
