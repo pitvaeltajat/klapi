@@ -19,7 +19,7 @@ import {
 import { FaSearch } from 'react-icons/fa';
 import AllItems from './productlist';
 import type { GetServerSideProps } from 'next';
-import type { Item, Category, Loan, Reservation } from '@prisma/client';
+import { Item, Category, Loan, Reservation, ItemType } from '@prisma/client';
 import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
 import { useCart } from '@/contexts/CartContext';
@@ -27,6 +27,7 @@ import CustomItemDialog from '../components/CustomItemDialog';
 
 interface ItemWithRelations extends Item {
 	categories: Category[];
+	type: ItemType;
 	reservations: (Reservation & { loan: Loan })[];
 }
 
@@ -77,7 +78,11 @@ export default function Index({ items, categories }: IndexProps) {
 			} else {
 				return item.categories.some((cat) => cat.name === category);
 			}
+		})
+		.filter((item) => {
+			return item.type == ItemType.normal;
 		});
+	// ;
 
 	return (
 		<>
