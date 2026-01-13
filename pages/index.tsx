@@ -86,6 +86,83 @@ export default function Index({ items, categories }: IndexProps) {
       return item.type == ItemType.normal;
     });
 
+  const renderSearchAndCategories = () => (
+    <>
+      <Box padding="4px">
+        <InputGroup width={"fit-content"}>
+          <Input
+            placeholder="Hae kamoja"
+            marginBottom={"1em"}
+            value={search}
+            onChange={handleChange}
+          />
+          <InputRightElement>
+            <FaSearch />
+          </InputRightElement>
+        </InputGroup>
+      </Box>
+      <Box padding="2em" paddingLeft={0}>
+        <Heading as="h2" size="md" marginBottom={"1em"}>
+          Kategoriat
+        </Heading>
+        <Wrap padding="4px">
+          <WrapItem key="all">
+            <Button
+              onClick={() => setCategory("")}
+              {...(isKioskMode && {
+                variant: category === "" ? "solid" : "outline",
+                colorScheme: category === "" ? "blue" : "gray",
+              })}
+            >
+              Kaikki
+            </Button>
+          </WrapItem>
+          {categories.map((cat) => (
+            <WrapItem key={cat.id}>
+              <Button
+                onClick={() => setCategory(cat.name)}
+                {...(isKioskMode && {
+                  variant: category === cat.name ? "solid" : "outline",
+                  colorScheme: category === cat.name ? "blue" : "gray",
+                })}
+              >
+                {cat.name}
+              </Button>
+            </WrapItem>
+          ))}
+        </Wrap>
+      </Box>
+      <Box padding="1em" paddingLeft={0}>
+        {category !== "" && (
+          <Heading as="h2" size="md" marginBottom={"1em"}>
+            Valittu kategoria: {category}
+          </Heading>
+        )}
+      </Box>
+    </>
+  );
+
+  const renderItemsList = () => (
+    <>
+      <Box marginBottom={"1em"}>
+        <Text>
+          Jos haluamaasi kamaa ole lisätty valikoimaan klikkaa{" "}
+          <Link color="teal.500" onClick={onOpen}>
+            tästä
+          </Link>
+        </Text>
+      </Box>
+      <CustomItemDialog isOpen={isOpen} onClose={onClose} />
+      {filteredItems.length > 0 ? (
+        <AllItems items={filteredItems} categories={categories} />
+      ) : (
+        <Heading textAlign="center" marginTop="1em">
+          Ei hakutuloksia :(
+        </Heading>
+      )}
+    </>
+  );
+
   return (
     <>
       {isKioskMode ? (
@@ -107,71 +184,8 @@ export default function Index({ items, categories }: IndexProps) {
                   Palauta
                 </Button>
               </Flex>
-              <Box padding="4px">
-                <InputGroup width={"fit-content"}>
-                  <Input
-                    placeholder="Hae kamoja"
-                    marginBottom={"1em"}
-                    value={search}
-                    onChange={handleChange}
-                  />
-                  <InputRightElement>
-                    <FaSearch />
-                  </InputRightElement>
-                </InputGroup>
-              </Box>
-              <Box padding="2em" paddingLeft={0}>
-                <Heading as="h2" size="md" marginBottom={"1em"}>
-                  Kategoriat
-                </Heading>
-                <Wrap padding="4px">
-                  <WrapItem key="all">
-                    <Button
-                      onClick={() => setCategory("")}
-                      variant={category === "" ? "solid" : "outline"}
-                      colorScheme={category === "" ? "blue" : "gray"}
-                    >
-                      Kaikki
-                    </Button>
-                  </WrapItem>
-                  {categories.map((cat) => (
-                    <WrapItem key={cat.id}>
-                      <Button
-                        onClick={() => setCategory(cat.name)}
-                        variant={category === cat.name ? "solid" : "outline"}
-                        colorScheme={category === cat.name ? "blue" : "gray"}
-                      >
-                        {cat.name}
-                      </Button>
-                    </WrapItem>
-                  ))}
-                </Wrap>
-              </Box>
-              <Box padding="1em" paddingLeft={0}>
-                {category !== "" && (
-                  <Heading as="h2" size="md" marginBottom={"1em"}>
-                    Valittu kategoria: {category}
-                  </Heading>
-                )}
-              </Box>
-              <>
-                <Box marginBottom={"1em"}>
-                  <Text>
-                    Jos haluamaasi kamaa ole lisättu valikoimaan klikkaa{" "}
-                    <Link color="teal.500" onClick={onOpen}>
-                      tästä
-                    </Link>
-                  </Text>
-                </Box>
-                <CustomItemDialog isOpen={isOpen} onClose={onClose} />
-                {filteredItems.length > 0 ? (
-                  <AllItems items={filteredItems} categories={categories} />
-                ) : (
-                  <Heading textAlign="center" marginTop="1em">
-                    Ei hakutuloksia :(
-                  </Heading>
-                )}
-              </>
+              {renderSearchAndCategories()}
+              {renderItemsList()}
             </>
           ) : null}
         </>
@@ -180,61 +194,8 @@ export default function Index({ items, categories }: IndexProps) {
           {dates.datesSet ? (
             <>
               <DateSelector />
-              <Box padding="4px">
-                <InputGroup width={"fit-content"}>
-                  <Input
-                    placeholder="Hae kamoja"
-                    marginBottom={"1em"}
-                    value={search}
-                    onChange={handleChange}
-                  />
-                  <InputRightElement>
-                    <FaSearch />
-                  </InputRightElement>
-                </InputGroup>
-              </Box>
-              <Box padding="2em" paddingLeft={0}>
-                <Heading as="h2" size="md" marginBottom={"1em"}>
-                  Kategoriat
-                </Heading>
-                <Wrap padding="4px">
-                  <WrapItem key="all">
-                    <Button onClick={() => setCategory("")}>Kaikki</Button>
-                  </WrapItem>
-                  {categories.map((cat) => (
-                    <WrapItem key={cat.id}>
-                      <Button onClick={() => setCategory(cat.name)}>
-                        {cat.name}
-                      </Button>
-                    </WrapItem>
-                  ))}
-                </Wrap>
-              </Box>
-              <Box padding="1em" paddingLeft={0}>
-                {category !== "" && (
-                  <Heading as="h2" size="md" marginBottom={"1em"}>
-                    Valittu kategoria: {category}
-                  </Heading>
-                )}
-              </Box>
-              <>
-                <Box marginBottom={"1em"}>
-                  <Text>
-                    Jos haluamaasi kamaa ole lisättu valikoimaan klikkaa{" "}
-                    <Link color="teal.500" onClick={onOpen}>
-                      tästä
-                    </Link>
-                  </Text>
-                </Box>
-                <CustomItemDialog isOpen={isOpen} onClose={onClose} />
-                {filteredItems.length > 0 ? (
-                  <AllItems items={filteredItems} categories={categories} />
-                ) : (
-                  <Heading textAlign="center" marginTop="1em">
-                    Ei hakutuloksia :(
-                  </Heading>
-                )}
-              </>
+              {renderSearchAndCategories()}
+              {renderItemsList()}
             </>
           ) : (
             <DateSelector />
