@@ -25,7 +25,14 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import NextLink from "next/link";
 import ReservationTableLoanView from "../../components/ReservationTableLoanView";
 import { useSession } from "next-auth/react";
-import { Loan, User, Reservation, Item, LoanStatus, Box as BoxType } from "@prisma/client";
+import {
+  Loan,
+  User,
+  Reservation,
+  Item,
+  LoanStatus,
+  Box as BoxType,
+} from "@prisma/client";
 import { GetServerSideProps } from "next";
 import { getColor } from "./index";
 
@@ -181,9 +188,9 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       });
   };
 
-  const loanReturned = async () => {
+  const loanProcessed = async () => {
     const body = { id: loan.id };
-    await fetch("/api/loan/loanReturned", {
+    await fetch("/api/loan/loanProcessed", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -311,7 +318,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
         {loan.status === "IN_BOX" && session?.user?.group === "ADMIN" && (
           <Stack direction="row" spacing={4}>
-            <Button onClick={loanReturned} colorScheme="green">
+            <Button onClick={loanProcessed} colorScheme="green">
               Merkitse kamat palautetuksi
             </Button>
           </Stack>
