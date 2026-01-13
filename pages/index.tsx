@@ -13,18 +13,23 @@ import {
   Wrap,
   WrapItem,
   Flex,
+  Text,
+  Link,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import AllItems from "./productlist";
 import type { GetServerSideProps } from "next";
-import type { Item, Category, Loan, Reservation } from "@prisma/client";
+import { Item, Category, Loan, Reservation, ItemType } from "@prisma/client";
 import { useDates } from "@/contexts/DatesContext";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "next/router";
+import CustomItemDialog from "../components/CustomItemDialog";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
+  type: ItemType;
   reservations: (Reservation & { loan: Loan })[];
 }
 
@@ -60,6 +65,8 @@ export default function Index({ items, categories }: IndexProps) {
 
   const isKioskMode = session?.user?.group === "KIOSK";
 
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
@@ -74,12 +81,14 @@ export default function Index({ items, categories }: IndexProps) {
       } else {
         return item.categories.some((cat) => cat.name === category);
       }
+    })
+    .filter((item) => {
+      return item.type == ItemType.normal;
     });
 
   return (
     <>
       {isKioskMode ? (
-        // Kiosk mode flow
         <>
           {!cart.loaner ? (
             <KioskModeSelector />
@@ -138,18 +147,35 @@ export default function Index({ items, categories }: IndexProps) {
                   ))}
                 </Wrap>
               </Box>
-              {filteredItems.length > 0 ? (
-                <AllItems items={filteredItems} categories={categories} />
-              ) : (
-                <Heading textAlign="center" marginTop="1em">
-                  Ei hakutuloksia :(
-                </Heading>
-              )}
+              <Box padding="1em" paddingLeft={0}>
+                {category !== "" && (
+                  <Heading as="h2" size="md" marginBottom={"1em"}>
+                    Valittu kategoria: {category}
+                  </Heading>
+                )}
+              </Box>
+              <>
+                <Box marginBottom={"1em"}>
+                  <Text>
+                    Jos haluamaasi kamaa ole lisättu valikoimaan klikkaa{" "}
+                    <Link color="teal.500" onClick={onOpen}>
+                      tästä
+                    </Link>
+                  </Text>
+                </Box>
+                <CustomItemDialog isOpen={isOpen} onClose={onClose} />
+                {filteredItems.length > 0 ? (
+                  <AllItems items={filteredItems} categories={categories} />
+                ) : (
+                  <Heading textAlign="center" marginTop="1em">
+                    Ei hakutuloksia :(
+                  </Heading>
+                )}
+              </>
             </>
           ) : null}
         </>
       ) : (
-        // Normal mode flow
         <>
           {dates.datesSet ? (
             <>
@@ -173,34 +199,42 @@ export default function Index({ items, categories }: IndexProps) {
                 </Heading>
                 <Wrap padding="4px">
                   <WrapItem key="all">
-                    <Button
-                      onClick={() => setCategory("")}
-                      variant={category === "" ? "solid" : "outline"}
-                      colorScheme={category === "" ? "blue" : "gray"}
-                    >
-                      Kaikki
-                    </Button>
+                    <Button onClick={() => setCategory("")}>Kaikki</Button>
                   </WrapItem>
                   {categories.map((cat) => (
                     <WrapItem key={cat.id}>
-                      <Button
-                        onClick={() => setCategory(cat.name)}
-                        variant={category === cat.name ? "solid" : "outline"}
-                        colorScheme={category === cat.name ? "blue" : "gray"}
-                      >
+                      <Button onClick={() => setCategory(cat.name)}>
                         {cat.name}
                       </Button>
                     </WrapItem>
                   ))}
                 </Wrap>
               </Box>
-              {filteredItems.length > 0 ? (
-                <AllItems items={filteredItems} categories={categories} />
-              ) : (
-                <Heading textAlign="center" marginTop="1em">
-                  Ei hakutuloksia :(
-                </Heading>
-              )}
+              <Box padding="1em" paddingLeft={0}>
+                {category !== "" && (
+                  <Heading as="h2" size="md" marginBottom={"1em"}>
+                    Valittu kategoria: {category}
+                  </Heading>
+                )}
+              </Box>
+              <>
+                <Box marginBottom={"1em"}>
+                  <Text>
+                    Jos haluamaasi kamaa ole lisättu valikoimaan klikkaa{" "}
+                    <Link color="teal.500" onClick={onOpen}>
+                      tästä
+                    </Link>
+                  </Text>
+                </Box>
+                <CustomItemDialog isOpen={isOpen} onClose={onClose} />
+                {filteredItems.length > 0 ? (
+                  <AllItems items={filteredItems} categories={categories} />
+                ) : (
+                  <Heading textAlign="center" marginTop="1em">
+                    Ei hakutuloksia :(
+                  </Heading>
+                )}
+              </>
             </>
           ) : (
             <DateSelector />

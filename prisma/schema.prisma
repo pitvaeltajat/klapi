@@ -73,12 +73,18 @@ model Item {
   description  String?
   image        String?
   amount       Int
+  type         ItemType      @default(normal)
   categories   Category[]
   reservations Reservation[]
   location     Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
   locationId   String?
   box          Box?          @relation(fields: [boxId], references: [id], onDelete: SetNull)
   boxId        String?
+}
+
+enum ItemType {
+  normal
+  temporary
 }
 
 model Location {

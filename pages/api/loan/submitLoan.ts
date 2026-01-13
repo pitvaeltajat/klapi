@@ -7,7 +7,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    const { reservations, startTime, endTime, userId, description, loaner } = req.body;
+    const { reservations, startTime, endTime, userId, description, loaner } =
+      req.body;
+    // reservations: [{ itemId, amount, name? }]
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, group: true },
@@ -17,14 +19,44 @@ export default async function handler(
       return;
     }
 
-    // Determine status based on user type
-    // KIOSK users: INUSE immediately
-    // Other users: ACCEPTED (skip PENDING)
+    // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
     const status = user.group === "KIOSK" ? "INUSE" : "ACCEPTED";
+
+    // Ensure referenced items exist; for custom items (client-generated ids)
+    // create temporary Item records and replace itemId accordingly.
+    const processedReservations: { itemId: string; amount: number }[] = [];
+    for (const r of reservations) {
+      let itemId = r.itemId as string;
+      const existing = await prisma.item.findUnique({ where: { id: itemId } });
+      if (!existing) {
+        // If client provided a name for the custom item, create it as temporary.
+        if (!r.name) {
+          res
+            .status(400)
+            .json({ message: `Missing name for custom item ${itemId}` });
+          return;
+        }
+        const created = await prisma.item.create({
+          data: {
+            name: r.name,
+            description: "Automaattisesti luotu väliaikainen item",
+            amount: r.amount ?? 1,
+            type: "temporary",
+          },
+        });
+        itemId = created.id;
+      }
+      processedReservations.push({ itemId, amount: r.amount });
+    }
+
+    const createReservations = processedReservations.map((r) => ({
+      amount: r.amount,
+      item: { connect: { id: r.itemId } },
+    }));
 
     const result = await prisma.loan.create({
       data: {
-        reservations: { create: reservations },
+        reservations: { create: createReservations },
         startTime: startTime,
         endTime: endTime,
         user: { connect: { id: userId } },
