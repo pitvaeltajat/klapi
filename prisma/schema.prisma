@@ -45,6 +45,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  username      String?   @unique
+  password      String?
   group         Group     @default(USER)
   accounts      Account[]
   sessions      Session[]

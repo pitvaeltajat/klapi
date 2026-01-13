@@ -684,10 +684,24 @@ const newCategories = [
 ];
 
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+
 const prisma = new PrismaClient({});
 
 async function main() {
   console.log(`Start seeding ...`);
+
+  // Create kiosk user
+  const hashedPassword = await bcrypt.hash("pitva", 10);
+  const kioskUser = await prisma.user.create({
+    data: {
+      username: "pitva",
+      password: hashedPassword,
+      name: "Kiosk User",
+      group: "KIOSK",
+    },
+  });
+  console.log(`Created kiosk user with username ${kioskUser.username} and id: ${kioskUser.id}`);
 
   // First create all categories
   for (const category of newCategories) {
