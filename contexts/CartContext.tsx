@@ -70,7 +70,10 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         loaner: action.payload,
       };
     case "CLEAR_CART":
-      return initialState;
+      return {
+        ...initialState,
+        loaner: state.loaner, // Preserve loaner when clearing cart
+      };
     default:
       return state;
   }
