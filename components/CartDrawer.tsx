@@ -149,7 +149,7 @@ export default function CartDrawer({
             onClose={ConfirmationDialog.onClose}
             closeDrawer={onClose}
           />
-          <Stack spacing={4}>
+          <Stack spacing={1}>
             <Box>
               <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
               <Input
@@ -180,7 +180,7 @@ export default function CartDrawer({
               />
             </Box>
             <Box>
-              <FormLabel htmlFor="startTime">Alku</FormLabel>
+              <FormLabel htmlFor="startTime">Lainaus alkaa</FormLabel>
               <Input
                 id="startTime"
                 value={timeStringWithoutTimeZone(startTime)}
@@ -188,7 +188,7 @@ export default function CartDrawer({
               />
             </Box>
             <Box>
-              <FormLabel htmlFor="endTime">Loppu</FormLabel>
+              <FormLabel htmlFor="endTime">Lainaus loppuu</FormLabel>
               <Input
                 id="endTime"
                 value={timeStringWithoutTimeZone(endTime)}
@@ -198,7 +198,7 @@ export default function CartDrawer({
           </Stack>
 
           {cart.items.length > 0 ? (
-            <Stack spacing="24px">
+            <Stack spacing={2} marginTop="20px">
               <Heading as="h3" size="md">
                 Valitut tavarat
               </Heading>

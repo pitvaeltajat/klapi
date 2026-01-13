@@ -118,6 +118,11 @@ export default function SubmitConfirmation({
 					</AlertDialogHeader>
 					<AlertDialogBody>
 						<p>
+							<b>Lainaaja: </b>
+							{cart.loaner || session?.user?.name || session?.user?.email || 'Ei määritelty'}
+							<br />
+							<br />
+
 							<b>Kamojen nouto: </b>
 							{dates.startDate.toLocaleString('fi', {
 								day: 'numeric',

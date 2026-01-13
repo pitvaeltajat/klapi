@@ -13,6 +13,7 @@ import { ItemCardProps } from "../types";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@chakra-ui/react";
 import { useCallback, useMemo, memo } from "react";
+import { FaCartArrowDown } from "react-icons/fa";
 
 const ItemCard = memo(function ItemCard({
   item,
@@ -113,7 +114,8 @@ const ItemCard = memo(function ItemCard({
           mt={4}
           isDisabled={!canTakeMoreItems}
         >
-          {canTakeMoreItems ? "Lisää koriin" : "Ei saatavilla"}
+          {canTakeMoreItems ? "Lisää" : "Ei saatavilla"}
+          {canTakeMoreItems && <FaCartArrowDown />}
         </Button>
         <Circle
           position="absolute"

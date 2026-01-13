@@ -59,6 +59,9 @@ export default async function handler(
       status: LoanStatus.IN_BOX,
       boxId: selectedBox.id,
     },
+    include: {
+      box: true,
+    },
   });
 
   res.status(200).json(result);
