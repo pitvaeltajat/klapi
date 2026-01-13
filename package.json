@@ -22,7 +22,7 @@
     "@fullcalendar/daygrid": "^6.1.1",
     "@fullcalendar/react": "^6.1.2",
     "@next-auth/prisma-adapter": "^1.0.3",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^6.19.2",
     "@prisma/generator-helper": "^6.4.1",
     "@reduxjs/toolkit": "^2.6.1",
     "chakra-react-select": "^4.7.6",
@@ -55,13 +55,14 @@
     "eslint": "9.22.0",
     "eslint-config-next": "15.2.1",
     "eslint-config-prettier": "^10.1.1",
-    "prisma": "^7.2.0",
+    "prisma": "^6.19.2",
     "prisma-erd-generator": "^2.0.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "tsx prisma/seed.ts"
   },
   "overrides": {
     "@chakra-ui/focus-lock": {
