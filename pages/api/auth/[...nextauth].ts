@@ -1,11 +1,6 @@
-import NextAuth, {
-  DefaultSession,
-  NextAuthOptions,
-  DefaultUser,
-} from "next-auth";
+import NextAuth, { DefaultSession, NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "../../../utils/prisma";
 import bcrypt from "bcrypt";
 
@@ -17,13 +12,19 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 
-  interface User extends DefaultUser {
+  interface User {
+    group: "ADMIN" | "USER" | "KIOSK";
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
     group: "ADMIN" | "USER" | "KIOSK";
   }
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
@@ -33,7 +34,7 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
@@ -41,14 +42,17 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username }
+          where: { username: credentials.username },
         });
 
         if (!user || !user.password) {
           return null;
         }
 
-        const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+        const isValidPassword = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
 
         if (!isValidPassword) {
           return null;
@@ -60,30 +64,58 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           group: user.group,
         };
-      }
+      },
     }),
   ],
   callbacks: {
-    async session({ session, user, token }) {
-      const newSession = session;
-      if (user) {
-        newSession.user.id = user.id;
-        newSession.user.group = user.group;
-      } else if (token) {
-        newSession.user.id = token.sub as string;
-        newSession.user.group = token.group as "ADMIN" | "USER" | "KIOSK";
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google" && user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              emailVerified: new Date(),
+              group: "USER",
+            },
+          });
+        }
       }
-      return newSession;
+      return true;
     },
-    async jwt({ token, user }) {
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.sub as string;
+        session.user.group = token.group || "USER";
+      }
+      return session;
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.group = user.group;
       }
+
+      if (account?.provider === "google" && token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+        });
+        if (dbUser) {
+          token.group = dbUser.group;
+        } else {
+          token.group = "USER";
+        }
+      }
+
       return token;
     },
   },
   session: {
-    strategy: "jwt" as const,
+    strategy: "jwt",
   },
 };
 

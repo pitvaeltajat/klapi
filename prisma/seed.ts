@@ -691,6 +691,15 @@ const prisma = new PrismaClient({});
 async function main() {
   console.log(`Start seeding ...`);
 
+  // Clean up existing data (in order to respect foreign key constraints)
+  console.log("Cleaning up existing data...");
+  await prisma.reservation.deleteMany({});
+  await prisma.item.deleteMany({});
+  await prisma.category.deleteMany({});
+  await prisma.location.deleteMany({});
+  await prisma.user.deleteMany({});
+  console.log("Cleanup complete.");
+
   // Create kiosk user
   const hashedPassword = await bcrypt.hash("pitva", 10);
   const kioskUser = await prisma.user.create({
