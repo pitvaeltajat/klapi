@@ -48,7 +48,7 @@ export default async function handler(
   }
 
   // Find the box with the fewest loans (or an empty box)
-  let selectedBox = boxes.reduce((prev, current) =>
+  const selectedBox = boxes.reduce((prev, current) =>
     current.loans.length < prev.loans.length ? current : prev
   );
 
