@@ -31,10 +31,6 @@ interface IndexProps {
   categories: Category[];
 }
 
-interface DateState {
-  datesSet: boolean;
-}
-
 export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
   const items = await prisma.item.findMany({
     include: {

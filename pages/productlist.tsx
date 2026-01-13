@@ -25,11 +25,6 @@ interface AllItemsProps {
   categories: Category[];
 }
 
-interface DateState {
-  startDate: string;
-  endDate: string;
-}
-
 export default function AllItems({ items }: AllItemsProps) {
   const {
     state: { startDate, endDate },
