@@ -1,7 +1,9 @@
 import React from "react";
 import { SimpleGrid } from "@chakra-ui/react";
 import ItemCard from "../components/ItemCard";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { useDates } from "@/contexts/DatesContext";
+import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 import { useState } from "react";
 import { useEffect } from "react";
 import { Item, Category } from "@prisma/client";
@@ -35,9 +37,11 @@ export default function AllItems({ items }: AllItemsProps) {
 
   const [data, setData] = useState<AvailabilityResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDelayedLoading(loading);
 
   useEffect(() => {
     setLoading(true);
+
     fetch("/api/availability/getAvailabilities", {
       method: "POST",
       headers: {
@@ -53,13 +57,19 @@ export default function AllItems({ items }: AllItemsProps) {
         setData(data);
         setLoading(false);
       })
-      .catch((error) => console.log(error));
+      .catch((error) => {
+        console.log(error);
+        setLoading(false);
+      });
   }, [startDate, endDate]);
 
   const availabilities = data?.availabilities;
 
   if (loading) {
-    return <div>Ladataan...</div>;
+    if (!showLoading) {
+      return null;
+    }
+    return <LoadingSpinner minHeight="30vh" />;
   }
 
   return (

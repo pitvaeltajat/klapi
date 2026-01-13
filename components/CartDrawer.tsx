@@ -21,10 +21,12 @@ import {
 import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import SubmitConfirmation from "./SubmitConfirmation";
+import LoadingSpinner from "./LoadingSpinner";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useDates } from "@/contexts/DatesContext";
+import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 
 interface AvailabilityData {
   availabilities: Record<string, { available: number }>;
@@ -57,9 +59,11 @@ export default function CartDrawer({
 
   const [data, setData] = useState<AvailabilityData | null>(null);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDelayedLoading(loading);
 
   useEffect(() => {
     setLoading(true);
+
     fetch("/api/availability/getAvailabilities", {
       method: "POST",
       headers: {
@@ -72,7 +76,10 @@ export default function CartDrawer({
         setData(data);
         setLoading(false);
       })
-      .catch((error) => console.log(error));
+      .catch((error) => {
+        console.log(error);
+        setLoading(false);
+      });
   }, [StartDate, EndDate]);
 
   function getCartAmount(id: string): number {
@@ -86,7 +93,21 @@ export default function CartDrawer({
   }
 
   if (loading || !data) {
-    return <div>Ladataan...</div>;
+    if (!showLoading) {
+      return null;
+    }
+    return (
+      <Drawer isOpen={isOpen} placement="right" size="full" onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
+          <DrawerBody>
+            <LoadingSpinner fullWidth />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    );
   }
 
   const { availabilities } = data;
@@ -161,7 +182,7 @@ export default function CartDrawer({
           {cart.items.length > 0 ? (
             <Stack spacing="24px">
               <Heading as="h3" size="md">
-                Valitut kamat
+                Valitut tavarat
               </Heading>
               {cart.items.map(
                 (item) =>

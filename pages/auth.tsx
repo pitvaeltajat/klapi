@@ -1,5 +1,5 @@
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Button, Spinner } from "@chakra-ui/react";
+import { Button } from "@chakra-ui/react";
 import type { FC } from "react";
 
 const Auth: FC = () => {
@@ -18,10 +18,10 @@ const Auth: FC = () => {
       <Button
         colorScheme="blue"
         onClick={() => signIn()}
-        isDisabled={status === "loading"}
+        isLoading={status === "loading"}
+        loadingText="Kirjaudutaan..."
       >
         Kirjaudu sisään
-        <Spinner display={status === "loading" ? "block" : "none"} />
       </Button>
     </>
   );

@@ -63,11 +63,7 @@ export default function DateSelector() {
       {!dates.datesSet ? (
         <>
           <Heading>Aloitus</Heading>
-          <Box>
-            Aloita valitsemalla kamojen nouto- ja palautusajankohdat. Huomioi
-            aikoja valitessasi, että lähtökohtaisesti kamoja voi noutaa vain
-            kalustopäivystyksestä maanantaisin klo 18-19.
-          </Box>
+          <Box>Aloita valitsemalla kamojen nouto- ja palautusajankohdat.</Box>
           <Box>
             <Button onClick={onOpen}>Aseta ajankohta</Button>
           </Box>
