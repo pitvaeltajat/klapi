@@ -24,8 +24,7 @@ ALTER TABLE "Reservation" DROP CONSTRAINT "itemId";
 ALTER TABLE "Reservation" DROP CONSTRAINT "loanId";
 
 -- AlterTable
-ALTER TABLE "Item" ADD COLUMN     "amount" INTEGER NOT NULL,
-ADD COLUMN     "locationId" TEXT NOT NULL;
+ALTER TABLE "Item" ADD COLUMN     "locationId" TEXT NOT NULL;
 
 -- AlterTable
 ALTER TABLE "Loan" ADD COLUMN     "userId" TEXT NOT NULL;

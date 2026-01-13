@@ -701,12 +701,22 @@ async function main() {
     );
   }
 
+  // Create a default location for all items
+  const defaultLocation = await prisma.location.create({
+    data: {
+      name: "Varasto",
+      description: "Oletuslokaalitila",
+    },
+  });
+  console.log(`Created location with name ${defaultLocation.name} and id: ${defaultLocation.id}`);
+
   // Then create all items with their basic data
   for (const item of items) {
     const newItem = await prisma.item.create({
       data: {
         name: item.name,
         amount: item.amount,
+        locationId: defaultLocation.id,
       },
     });
     console.log(`Created item with name ${newItem.name} and id: ${newItem.id}`);
