@@ -25,12 +25,13 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import NextLink from "next/link";
 import ReservationTableLoanView from "../../components/ReservationTableLoanView";
 import { useSession } from "next-auth/react";
-import { Loan, User, Reservation, Item, LoanStatus } from "@prisma/client";
+import { Loan, User, Reservation, Item, LoanStatus, Box as BoxType } from "@prisma/client";
 import { GetServerSideProps } from "next";
 import { getColor } from "./index";
 
 interface LoanWithRelations extends Loan {
   user: User;
+  box: BoxType | null;
   reservations: (Reservation & {
     item: Item;
   })[];
@@ -49,6 +50,7 @@ export const getServerSideProps: GetServerSideProps<{
     },
     include: {
       user: true,
+      box: true,
       reservations: {
         include: {
           item: true,
@@ -252,6 +254,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             </Text>
             <Text>Varaaja: {loan.user.name}</Text>
             {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
+            {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
             <Box>
               <Tag colorScheme={getColor(loan.status)} width="fit-content">
                 {loan.status === LoanStatus.ACCEPTED
@@ -306,25 +309,13 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </Stack>
         )}
 
-        {(loan.status === "ACCEPTED" || loan.status === "INUSE") &&
-          session?.user?.group === "ADMIN" && (
-            <Stack direction="row" spacing={4}>
-              <Button
-                isDisabled={loan.status === "INUSE"}
-                onClick={loanToUse}
-                colorScheme="blue"
-              >
-                Merkitse kamat annetuksi
-              </Button>
-              <Button
-                isDisabled={loan.status !== "INUSE"}
-                onClick={loanReturned}
-                colorScheme="green"
-              >
-                Merkitse kamat palautetuksi
-              </Button>
-            </Stack>
-          )}
+        {loan.status === "IN_BOX" && session?.user?.group === "ADMIN" && (
+          <Stack direction="row" spacing={4}>
+            <Button onClick={loanReturned} colorScheme="green">
+              Merkitse kamat palautetuksi
+            </Button>
+          </Stack>
+        )}
 
         {loan.status === "RETURNED" && (
           <Box bg="gray.50" p={6} borderRadius="lg" borderWidth="1px">

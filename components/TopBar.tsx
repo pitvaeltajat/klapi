@@ -79,6 +79,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   <Link as={NextLink} href="/loan" fontWeight="medium">
                     Varaukset
                   </Link>
+                  <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
+                    Laatikot
+                  </Link>
                   <Link as={NextLink} href="/admin" fontWeight="medium">
                     Hallinta
                   </Link>
@@ -143,20 +146,31 @@ export default function TopBar({ children }: { children: ReactNode }) {
             <TableContainer>
               <Table variant="simple">
                 <Tbody>
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/loan" onClick={onClose}>
-                        Varaukset
-                      </Link>
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/admin" onClick={onClose}>
-                        Hallinta
-                      </Link>
-                    </Td>
-                  </Tr>
+                  {role === "ADMIN" && (
+                    <>
+                      <Tr>
+                        <Td>
+                          <Link as={NextLink} href="/loan" onClick={onClose}>
+                            Varaukset
+                          </Link>
+                        </Td>
+                      </Tr>
+                      <Tr>
+                        <Td>
+                          <Link as={NextLink} href="/admin/boxes" onClick={onClose}>
+                            Laatikot
+                          </Link>
+                        </Td>
+                      </Tr>
+                      <Tr>
+                        <Td>
+                          <Link as={NextLink} href="/admin" onClick={onClose}>
+                            Hallinta
+                          </Link>
+                        </Td>
+                      </Tr>
+                    </>
+                  )}
                   <Tr>
                     <Td>
                       <Link as={NextLink} href="/account" onClick={onClose}>
