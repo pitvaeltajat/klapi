@@ -17,10 +17,31 @@ export default async function handler(
 
   const boxes = await prisma.box.findMany({
     include: {
-      items: {
+      loans: {
         select: {
           id: true,
-          name: true,
+          status: true,
+          description: true,
+          startTime: true,
+          endTime: true,
+          loaner: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          reservations: {
+            include: {
+              item: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
       },
     },
