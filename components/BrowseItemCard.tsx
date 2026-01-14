@@ -11,7 +11,7 @@ import { Item, Category, ItemType } from "@prisma/client";
 
 interface ItemWithCategories extends Item {
   categories: Category[];
-  type?: ItemType;
+  type: ItemType;
 }
 
 interface BrowseItemCardProps {

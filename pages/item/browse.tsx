@@ -56,7 +56,6 @@ export default function BrowseItems({
         items={sortedItems}
         categories={sortedCategories}
         filterByType={false}
-        categoryLayout="select"
       />
     </>
   );
