@@ -12,7 +12,6 @@ import {
   Button,
   Wrap,
   WrapItem,
-  Flex,
   Text,
   Link,
   useDisclosure,
@@ -24,7 +23,6 @@ import { Item, Category, Loan, Reservation, ItemType } from "@prisma/client";
 import { useDates } from "@/contexts/DatesContext";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/contexts/CartContext";
-import { useRouter } from "next/router";
 import CustomItemDialog from "../components/CustomItemDialog";
 
 interface ItemWithRelations extends Item {
@@ -58,7 +56,6 @@ export default function Index({ items, categories }: IndexProps) {
   const { state: dates } = useDates();
   const { data: session } = useSession();
   const { state: cart } = useCart();
-  const router = useRouter();
 
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("");
@@ -167,27 +164,15 @@ export default function Index({ items, categories }: IndexProps) {
     <>
       {isKioskMode ? (
         <>
-          {!cart.loaner ? (
+          {!dates.datesSet ? (
             <KioskModeSelector />
-          ) : dates.datesSet ? (
+          ) : (
             <>
-              <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                <Box flex={1}>
-                  <KioskDateSelector />
-                </Box>
-                <Button
-                  colorScheme="green"
-                  size="lg"
-                  onClick={() => router.push("/kiosk/return")}
-                  ml={4}
-                >
-                  Palauta
-                </Button>
-              </Flex>
+              <KioskDateSelector />
               {renderSearchAndCategories()}
               {renderItemsList()}
             </>
-          ) : null}
+          )}
         </>
       ) : (
         <>

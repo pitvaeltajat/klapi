@@ -15,6 +15,7 @@ import {
   Link,
   Container,
   Circle,
+  Button,
 } from "@chakra-ui/react";
 import { FaBars } from "react-icons/fa";
 import NextLink from "next/link";
@@ -22,11 +23,13 @@ import { useSession } from "next-auth/react";
 import { useDisclosure } from "@chakra-ui/react";
 import { ReactNode } from "react";
 import { useCart } from "@/contexts/CartContext";
+import { useRouter } from "next/router";
 
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const role = session?.user?.group;
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const router = useRouter();
 
   const {
     state: { items },
@@ -86,6 +89,15 @@ export default function TopBar({ children }: { children: ReactNode }) {
                     Hallinta
                   </Link>
                 </>
+              )}
+              {role === "KIOSK" && (
+                <Button
+                  colorScheme="green"
+                  size="sm"
+                  onClick={() => router.push("/kiosk/return")}
+                >
+                  Palauta
+                </Button>
               )}
               <Link as={NextLink} href="/account" fontWeight="medium">
                 Oma tili
@@ -170,6 +182,22 @@ export default function TopBar({ children }: { children: ReactNode }) {
                         </Td>
                       </Tr>
                     </>
+                  )}
+                  {role === "KIOSK" && (
+                    <Tr>
+                      <Td>
+                        <Button
+                          colorScheme="green"
+                          size="sm"
+                          onClick={() => {
+                            router.push("/kiosk/return");
+                            onClose();
+                          }}
+                        >
+                          Palauta
+                        </Button>
+                      </Td>
+                    </Tr>
                   )}
                   <Tr>
                     <Td>

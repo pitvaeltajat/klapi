@@ -3,18 +3,13 @@ import {
   Box,
   Button,
   Heading,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  useDisclosure,
-  Flex,
+  VStack,
+  HStack,
   Text,
+  FormControl,
+  FormLabel,
 } from "@chakra-ui/react";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaEdit } from "react-icons/fa";
 
 import React from "react";
 import { useState } from "react";
@@ -25,12 +20,7 @@ import { useCart } from "@/contexts/CartContext";
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
   const { clearCart } = useCart();
-
-  const Ref = React.useRef<HTMLButtonElement>(null);
-
   const router = useRouter();
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Combine the date states into a single array
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
@@ -46,7 +36,7 @@ export default function DateSelector() {
     return newDate;
   };
 
-  function setDates() {
+  function applyDates() {
     clearCart();
 
     if (startDate && endDate) {
@@ -54,95 +44,30 @@ export default function DateSelector() {
       setEndDate(endDate);
       setDatesSet(true);
     }
-
-    onClose();
   }
 
   return (
-    <>
+    <VStack spacing={4} align="stretch" mb={4}>
       {!dates.datesSet ? (
         <>
-          <Heading>Aloitus</Heading>
-          <Box>Aloita valitsemalla kamojen nouto- ja palautusajankohdat.</Box>
           <Box>
-            <Button onClick={onOpen}>Aseta ajankohta</Button>
+            <Heading size="lg" mb={2}>
+              Aloitus
+            </Heading>
+            <Text color="gray.600">
+              Aloita valitsemalla kamojen nouto- ja palautusajankohdat.
+            </Text>
           </Box>
-        </>
-      ) : (
-        <>
-          <Heading as={"h2"} size="md">
-            Valitut päivämäärät:
-          </Heading>
-          <Flex
-            width={"fit-content"}
-            borderWidth={"1px"}
+
+          <Box
+            borderWidth="1px"
             borderRadius="lg"
-            marginTop={"0.5em"}
-            marginBottom="0.5em"
-            cursor="pointer"
-            onClick={onOpen}
-            align="center"
-            _hover={{ bg: "gray.50" }}
+            p={4}
+            bg="white"
+            boxShadow="sm"
           >
-            <Box p={4}>
-              <Box>
-                <Box as={"span"} fontWeight="bold">
-                  Nouto:
-                </Box>
-                <Box as={"span"} ml={2}>
-                  {dates.startDate.toLocaleDateString("fi-FI", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </Box>
-              </Box>
-              <Box>
-                <Box as={"span"} fontWeight="bold">
-                  Palautus:
-                </Box>
-                <Box as={"span"} ml={2}>
-                  {dates.endDate.toLocaleDateString("fi-FI", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </Box>
-              </Box>
-            </Box>
-            <Box p={4} color="gray.500">
-              <FaEdit />
-            </Box>
-          </Flex>
-        </>
-      )}
-
-      {!dates.datesSet ? (
-        <>
-          <Text>Tai</Text>
-          <Box>
-            <Button
-              marginBottom={"1em"}
-              onClick={() => router.push("/item/browse")}
-            >
-              Selaa kaikkia kamoja
-            </Button>
-          </Box>
-        </>
-      ) : null}
-
-      <AlertDialog isOpen={isOpen} leastDestructiveRef={Ref} onClose={onClose}>
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Valitse lainausaika
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
+            <FormControl>
+              <FormLabel fontWeight="bold">Valitse lainausaika</FormLabel>
               <DatePicker
                 selected={startDate}
                 onChange={(update: [Date | null, Date | null]) => {
@@ -155,26 +80,97 @@ export default function DateSelector() {
                 selectsRange
                 inline
                 minDate={new Date()}
-                dateFormat="dd.MM.yyyy HH:mm"
+                dateFormat="dd.MM.yyyy"
               />
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button ref={Ref} onClick={onClose} ml={3}>
-                Peruuta
-              </Button>
               <Button
                 colorScheme="blue"
+                mt={4}
+                width="full"
                 isDisabled={!startDate || !endDate}
-                onClick={() => setDates()}
-                ml={3}
+                onClick={applyDates}
               >
-                Vahvista
+                Vahvista ajankohta
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </>
+            </FormControl>
+          </Box>
+
+          <Text textAlign="center" fontWeight="medium">
+            Tai
+          </Text>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/item/browse")}
+          >
+            Selaa kaikkia kamoja
+          </Button>
+        </>
+      ) : (
+        <>
+          <Box>
+            <Heading as="h2" size="md" mb={3}>
+              Valitut päivämäärät
+            </Heading>
+          </Box>
+
+          <Box
+            borderWidth="1px"
+            borderRadius="lg"
+            p={4}
+            bg="white"
+            boxShadow="sm"
+          >
+            <VStack align="stretch" spacing={3}>
+              <HStack spacing={2}>
+                <Text fontWeight="bold">Nouto:</Text>
+                <Text>
+                  {dates.startDate.toLocaleDateString("fi-FI", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </HStack>
+              <HStack spacing={2}>
+                <Text fontWeight="bold">Palautus:</Text>
+                <Text>
+                  {dates.endDate.toLocaleDateString("fi-FI", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </HStack>
+
+              <Box pt={2}>
+                <FormLabel fontWeight="bold">Muokkaa aikaa</FormLabel>
+                <DatePicker
+                  selected={dates.startDate}
+                  onChange={(update: [Date | null, Date | null]) => {
+                    if (update[0]) {
+                      update[0] = setDefaultTime(update[0]);
+                      setStartDate(update[0]);
+                    }
+                    if (update[1]) {
+                      update[1] = setDefaultTime(update[1]);
+                      setEndDate(update[1]);
+                    }
+                  }}
+                  startDate={dates.startDate}
+                  endDate={dates.endDate}
+                  selectsRange
+                  inline
+                  minDate={new Date()}
+                  dateFormat="dd.MM.yyyy"
+                />
+              </Box>
+            </VStack>
+          </Box>
+        </>
+      )}
+    </VStack>
   );
 }

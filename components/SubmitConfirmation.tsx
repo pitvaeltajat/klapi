@@ -67,7 +67,9 @@ export default function SubmitConfirmation({
 		const startTime = dates.startDate;
 		const endTime = dates.endDate;
 
-		const userId = session?.user?.id;
+		// Use userId from cart context if available (kiosk mode with selected user)
+		// Otherwise fall back to session user id
+		const userId = cart.userId || session?.user?.id;
 
 		const reservations = cart.items.map((cartitem: CartItem) => ({
 			itemId: cartitem.id,

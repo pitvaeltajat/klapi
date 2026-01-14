@@ -22,6 +22,7 @@ import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import SubmitConfirmation from "./SubmitConfirmation";
 import LoadingSpinner from "./LoadingSpinner";
+import LoanerAutocomplete from "./LoanerAutocomplete";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
@@ -46,6 +47,7 @@ export default function CartDrawer({
     decrementAmount,
     setDescription,
     setLoaner,
+    setUserId,
   } = useCart();
   const cartItems = cart.items;
   const { state: dates } = useDates();
@@ -152,14 +154,14 @@ export default function CartDrawer({
           <Stack spacing={1}>
             <Box>
               <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
-              <Input
-                id="loaner"
-                name="loaner"
-                placeholder="Lainaajan nimi"
+              <LoanerAutocomplete
                 value={cart.loaner || ""}
-                onChange={(e) => {
-                  setLoaner(e.target.value);
+                onChange={(value, userId) => {
+                  setLoaner(value);
+                  setUserId(userId);
                 }}
+                placeholder="Lainaajan nimi tai sähköposti"
+                size="md"
               />
             </Box>
             <Box>
