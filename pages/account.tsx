@@ -39,8 +39,21 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (
 ) => {
   const session = await getSession(context);
 
+  // If no session, return empty data
+  if (!session?.user?.id) {
+    return {
+      props: {
+        loans: [],
+        userEmailPreferences: {
+          emailWeeklyReminder: true,
+          emailNewLoanNotification: true,
+        },
+      },
+    };
+  }
+
   const loans = await prisma.loan.findMany({
-    where: { user: { id: session?.user?.id } },
+    where: { user: { id: session.user.id } },
     include: {
       user: true,
       reservations: {
@@ -59,7 +72,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (
 
   // Get user email preferences
   const user = await prisma.user.findUnique({
-    where: { id: session?.user?.id },
+    where: { id: session.user.id },
     select: {
       emailWeeklyReminder: true,
       emailNewLoanNotification: true,

@@ -93,16 +93,6 @@ export default function DateSelector() {
               </Button>
             </FormControl>
           </Box>
-
-          <Text textAlign="center" fontWeight="medium">
-            Tai
-          </Text>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/item/browse")}
-          >
-            Selaa kaikkia kamoja
-          </Button>
         </>
       ) : (
         <>
