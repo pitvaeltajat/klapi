@@ -7,13 +7,18 @@ import {
   AspectRatio,
   useColorModeValue,
   Circle,
+  IconButton,
+  InputGroup,
+  InputLeftAddon,
+  InputRightAddon,
+  Input,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { ItemCardProps } from "../types";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@chakra-ui/react";
 import { useCallback, useMemo, memo } from "react";
-import { FaCartArrowDown } from "react-icons/fa";
+import { FaCartArrowDown, FaPlus, FaMinus } from "react-icons/fa";
 
 const ItemCard = memo(function ItemCard({
   item,
@@ -21,6 +26,8 @@ const ItemCard = memo(function ItemCard({
 }: ItemCardProps) {
   const {
     addToCart,
+    incrementAmount,
+    decrementAmount,
     state: { items: cartItems },
   } = useCart();
   const toast = useToast();
@@ -43,14 +50,15 @@ const ItemCard = memo(function ItemCard({
       name: item.name,
       amount: amountInCart + 1,
     });
-    toast({
-      title: "Lisättiin kama",
-      description: `${item.name} lisätty ostoskoriin`,
-      status: "success",
-      duration: 1500,
-      isClosable: true,
-    });
   }, [addToCart, item.id, item.name, amountInCart, toast]);
+
+  const handleIncrement = useCallback(() => {
+    incrementAmount(item.id);
+  }, [incrementAmount, item.id]);
+
+  const handleDecrement = useCallback(() => {
+    decrementAmount(item.id);
+  }, [decrementAmount, item.id]);
 
   const bgColor = useColorModeValue("white", "gray.800");
 
@@ -100,39 +108,53 @@ const ItemCard = memo(function ItemCard({
         </Flex>
 
         <Box fontSize="l" fontWeight="semibold" as="h5">
-          Saatavilla: {amountLeft} / {item.amount} kpl
+          Vapaana: {amountLeft} / {item.amount} kpl
         </Box>
 
         <Box fontSize="l" fontWeight="semibold" as="h5">
           {item.categories.map((cat) => cat.name).join(", ")}
         </Box>
 
-        <Button
-          onClick={handleAddToCart}
-          colorScheme="blue"
-          width="full"
-          mt={4}
-          isDisabled={!canTakeMoreItems}
-        >
-          {canTakeMoreItems ? "Lisää" : "Ei saatavilla"}
-          {canTakeMoreItems && <FaCartArrowDown />}
-        </Button>
-        <Circle
-          position="absolute"
-          right="-12px"
-          top="-12px"
-          size="24px"
-          bg="red.500"
-          color="white"
-          display={amountInCart > 0 ? "flex" : "none"}
-          fontSize="sm"
-          fontWeight="bold"
-          alignItems="center"
-          justifyContent="center"
-          boxShadow="md"
-        >
-          {amountInCart}
-        </Circle>
+        {amountInCart > 0 ? (
+          <InputGroup size="md" mt={4}>
+            <InputLeftAddon width="20%" padding={0}>
+              <IconButton
+                icon={<FaMinus />}
+                aria-label="decrement"
+                onClick={handleDecrement}
+                width="100%"
+                height="100%"
+              />
+            </InputLeftAddon>
+            <Input
+              value={amountInCart}
+              readOnly
+              textAlign="center"
+              fontWeight="bold"
+            />
+            <InputRightAddon width="20%" padding={0}>
+              <IconButton
+                icon={<FaPlus />}
+                aria-label="increment"
+                onClick={handleIncrement}
+                width="100%"
+                height="100%"
+                isDisabled={!canTakeMoreItems}
+              />
+            </InputRightAddon>
+          </InputGroup>
+        ) : (
+          <Button
+            onClick={handleAddToCart}
+            colorScheme="blue"
+            width="full"
+            mt={4}
+            isDisabled={!canTakeMoreItems}
+          >
+            {canTakeMoreItems ? "Lisää" : "Ei saatavilla"}
+            {canTakeMoreItems && <FaCartArrowDown />}
+          </Button>
+        )}
       </Box>
     </Box>
   );
