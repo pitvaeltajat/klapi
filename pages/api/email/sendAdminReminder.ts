@@ -15,7 +15,9 @@ async function sendAdminReminderEmail(
   const loansList = loans
     .map(
       (loan) =>
-        `<li>Varaus ${loan.id} - ${loan.userName} - Boksissa: ${loan.boxName || "Tuntematon"} - Aloitettu: ${loan.startTime}</li>`
+        `<li>Varaus ${loan.id} - ${loan.userName} - Boksissa: ${
+          loan.boxName || "Tuntematon"
+        } - Aloitettu: ${loan.startTime}</li>`
     )
     .join("");
 
@@ -31,7 +33,6 @@ async function sendAdminReminderEmail(
 
       Voit tarkastella varauksia admin-paneelista osoitteessa ${process.env.NEXT_PUBLIC_VERCEL_URL}/admin.<br /><br />
 
-      <i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i>
     </p>
     `;
 
