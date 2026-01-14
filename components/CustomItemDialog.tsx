@@ -2,8 +2,7 @@ import React from "react";
 import {
   Dialog,
   Button,
-  FormControl,
-  FormLabel,
+  Field,
   Input,
   NumberInput,
   NumberInputField,
@@ -43,7 +42,11 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
   };
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} placement="center">
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(e) => !e.open && onClose()}
+      placement="center"
+    >
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content>
@@ -52,16 +55,16 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
             <Dialog.CloseTrigger />
           </Dialog.Header>
           <Dialog.Body>
-            <FormControl mb={spacing.elementSpacing}>
-              <FormLabel>Nimi</FormLabel>
+            <Field.Root mb={spacing.elementSpacing}>
+              <Field.Label>Nimi</Field.Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Kaman nimi"
               />
-            </FormControl>
-            <FormControl>
-              <FormLabel>Määrä</FormLabel>
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Määrä</Field.Label>
               <NumberInput
                 min={1}
                 value={amount}
@@ -69,10 +72,15 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
               >
                 <NumberInputField />
               </NumberInput>
-            </FormControl>
+            </Field.Root>
           </Dialog.Body>
           <Dialog.Footer>
-            <Button mr={spacing.elementSpacing} onClick={onClose} variant="ghost" colorScheme={buttonColors.secondary}>
+            <Button
+              mr={spacing.elementSpacing}
+              onClick={onClose}
+              variant="ghost"
+              colorScheme={buttonColors.secondary}
+            >
               Peruuta
             </Button>
             <Button colorScheme={buttonColors.primary} onClick={handleSubmit}>

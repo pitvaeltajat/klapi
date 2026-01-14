@@ -12,12 +12,7 @@ import {
   Container,
   Text,
   Tag,
-  AlertDialog,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogBody,
-  AlertDialogFooter,
+  Dialog,
 } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import NotAuthenticated from "../../components/NotAuthenticated";
@@ -148,37 +143,6 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         toast({
           title: "Laina hylätty",
           description: "Laina hylätty onnituneesti",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-        router.push("/loan");
-      })
-      .catch((err) => {
-        toast({
-          title: "Error",
-          description: err.message,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      });
-  };
-
-  const _loanToUse = async () => {
-    const body = { id: loan.id };
-    await fetch("/api/loan/loanToUse", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        toast({
-          title: "Lainan status päivitetty onnistuneesti",
-          description: "Kamat ovat maailmalla",
           status: "success",
           duration: 5000,
           isClosable: true,

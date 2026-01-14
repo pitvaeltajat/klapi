@@ -19,7 +19,7 @@ export default function CartButton({
   return (
     <IconButton
       aria-label="open cart"
-      icon={<FaShoppingCart />}
+      children={<FaShoppingCart />}
       colorScheme="blue"
       onClick={isOpen ? onClose : onOpen}
       disabled={!dates.datesSet}

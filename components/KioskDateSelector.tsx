@@ -1,25 +1,13 @@
 import DatePicker from "react-datepicker";
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  FormControl,
-  FormLabel,
-  Button,
-  Grid,
-  GridItem,
-} from "@chakra-ui/react";
+import { Box, VStack, Field, Grid, GridItem, Text } from "@chakra-ui/react";
 import "react-datepicker/dist/react-datepicker.css";
 
 import React from "react";
-import { useRouter } from "next/router";
 import { useDates } from "@/contexts/DatesContext";
 import { useCart } from "@/contexts/CartContext";
 import LoanerAutocomplete from "./LoanerAutocomplete";
 
 export default function KioskDateSelector() {
-  const router = useRouter();
   const { state: dates, setEndDate } = useDates();
   const { state: cart, setLoaner, setUserId } = useCart();
 
@@ -58,10 +46,16 @@ export default function KioskDateSelector() {
           boxShadow="sm"
           height="full"
         >
-          <FormControl>
-            <FormLabel fontWeight="bold" fontSize="lg" mb={4}>
+          <Field.Root>
+            <Text
+              as="label"
+              fontWeight="bold"
+              fontSize="lg"
+              mb={4}
+              display="block"
+            >
               Lainaaja
-            </FormLabel>
+            </Text>
             <LoanerAutocomplete
               value={cart.loaner || ""}
               onChange={handleLoanerChange}
@@ -69,7 +63,7 @@ export default function KioskDateSelector() {
               size="lg"
               showValidationFeedback
             />
-          </FormControl>
+          </Field.Root>
         </Box>
       </GridItem>
 
@@ -83,11 +77,17 @@ export default function KioskDateSelector() {
           boxShadow="sm"
           height="full"
         >
-          <FormControl>
-            <FormLabel fontWeight="bold" fontSize="lg" mb={2}>
+          <Field.Root>
+            <Text
+              as="label"
+              fontWeight="bold"
+              fontSize="lg"
+              mb={2}
+              display="block"
+            >
               Palautuspäivä
-            </FormLabel>
-            <VStack align="stretch" spacing={3}>
+            </Text>
+            <VStack align="stretch" gap={3}>
               <Box
                 sx={{
                   ".react-datepicker": {
@@ -120,7 +120,7 @@ export default function KioskDateSelector() {
                 />
               </Box>
             </VStack>
-          </FormControl>
+          </Field.Root>
         </Box>
       </GridItem>
     </Grid>

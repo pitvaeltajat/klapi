@@ -25,7 +25,12 @@ import { useDates } from "@/contexts/DatesContext";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/contexts/CartContext";
 import CustomItemDialog from "../components/CustomItemDialog";
-import { spacing, buttonColors, containerMaxWidth, headingSizes } from "@/styles/designTokens";
+import {
+  spacing,
+  buttonColors,
+  containerMaxWidth,
+  headingSizes,
+} from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -64,7 +69,7 @@ export default function Index({ items, categories }: IndexProps) {
 
   const isKioskMode = session?.user?.group === "KIOSK";
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -100,12 +105,14 @@ export default function Index({ items, categories }: IndexProps) {
         </InputGroup>
       </Box>
       <Box mb={spacing.sectionSpacing}>
-        <Wrap spacing={spacing.tightSpacing}>
+        <Wrap gap={spacing.tightSpacing}>
           <WrapItem key="all">
             <Button
               onClick={() => setCategory("")}
               variant={category === "" ? "solid" : "outline"}
-              colorScheme={category === "" ? buttonColors.primary : buttonColors.secondary}
+              colorScheme={
+                category === "" ? buttonColors.primary : buttonColors.secondary
+              }
             >
               Kaikki
             </Button>
@@ -115,7 +122,11 @@ export default function Index({ items, categories }: IndexProps) {
               <Button
                 onClick={() => setCategory(cat.name)}
                 variant={category === cat.name ? "solid" : "outline"}
-                colorScheme={category === cat.name ? buttonColors.primary : buttonColors.secondary}
+                colorScheme={
+                  category === cat.name
+                    ? buttonColors.primary
+                    : buttonColors.secondary
+                }
               >
                 {cat.name}
               </Button>
@@ -136,11 +147,15 @@ export default function Index({ items, categories }: IndexProps) {
           </Link>
         </Text>
       </Box>
-      <CustomItemDialog isOpen={isOpen} onClose={onClose} />
+      <CustomItemDialog isOpen={open} onClose={onClose} />
       {filteredItems.length > 0 ? (
         <AllItems items={filteredItems} categories={categories} />
       ) : (
-        <Heading textAlign="center" mt={spacing.elementSpacing} size={headingSizes.subsection}>
+        <Heading
+          textAlign="center"
+          mt={spacing.elementSpacing}
+          size={headingSizes.subsection}
+        >
           Ei hakutuloksia :(
         </Heading>
       )}

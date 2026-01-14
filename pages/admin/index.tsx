@@ -5,21 +5,10 @@ import {
   Heading,
   Link,
   Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
   Switch,
   IconButton,
   useDisclosure,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
+  Dialog,
   useToast,
   VStack,
   HStack,
@@ -79,7 +68,7 @@ const RoleSwitch: React.FC<RoleSwitchProps> = ({ user }) => {
       });
 
       mutate("/api/user/getUsers");
-    } catch (error) {
+    } catch {
       toast({
         title: "Virhe",
         description: "Roolin päivitys epäonnistui",
@@ -105,7 +94,7 @@ const Admin: NextPage = () => {
   const { data: users, error } = useSWR<UserWithGroup[]>("/api/user/getUsers");
   const { mutate } = useSWRConfig();
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const [userToDelete, setUserToDelete] = useState<UserWithGroup | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -138,7 +127,7 @@ const Admin: NextPage = () => {
 
       mutate("/api/user/getUsers");
       onClose();
-    } catch (error) {
+    } catch {
       toast({
         title: "Virhe",
         description: "Käyttäjän poisto epäonnistui",
@@ -186,7 +175,7 @@ const Admin: NextPage = () => {
   }
 
   return (
-    <VStack spacing={spacing.sectionSpacing} align="stretch">
+    <VStack gap={spacing.sectionSpacing} align="stretch">
       {/* Header */}
       <Flex justifyContent="space-between" alignItems="center">
         <Heading size={headingSizes.pageTitle}>Admin</Heading>
@@ -212,30 +201,31 @@ const Admin: NextPage = () => {
           </Text>
         </HStack>
 
-        <TableContainer>
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Nimi</Th>
-                <Th>Sähköposti</Th>
-                <Th>Rooli</Th>
-                <Th>Admin-oikeudet</Th>
-                <Th width="100px">Toiminnot</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
+        <Table.ScrollArea>
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Nimi</Table.ColumnHeader>
+                <Table.ColumnHeader>Sähköposti</Table.ColumnHeader>
+                <Table.ColumnHeader>Rooli</Table.ColumnHeader>
+                <Table.ColumnHeader>Admin-oikeudet</Table.ColumnHeader>
+                <Table.ColumnHeader width="100px">Toiminnot</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {users.map((user) => (
-                <Tr key={user.id}>
-                  <Td fontWeight="medium">{user.name || "-"}</Td>
-                  <Td>{user.email}</Td>
-                  <Td>{getGroupBadge(user.group)}</Td>
-                  <Td>
+                <Table.Row key={user.id}>
+                  <Table.Cell fontWeight="medium">
+                    {user.name || "-"}
+                  </Table.Cell>
+                  <Table.Cell>{user.email}</Table.Cell>
+                  <Table.Cell>{getGroupBadge(user.group)}</Table.Cell>
+                  <Table.Cell>
                     <RoleSwitch user={user} />
-                  </Td>
-                  <Td>
+                  </Table.Cell>
+                  <Table.Cell>
                     <IconButton
                       aria-label="Poista käyttäjä"
-                      icon={<FaTrash />}
                       colorScheme={buttonColors.danger}
                       variant="ghost"
                       size="sm"
@@ -247,17 +237,18 @@ const Admin: NextPage = () => {
                           : "Poista käyttäjä"
                       }
                     />
-                  </Td>
-                </Tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </Tbody>
-          </Table>
-        </TableContainer>
+            </Table.Body>
+          </Table.Root>
+        </Table.ScrollArea>
       </Box>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        isOpen={isOpen}
+      <Dialog.Root
+        role="alertdialog"
+        isOpen={open}
         leastDestructiveRef={cancelRef}
         onClose={onClose}
       >
@@ -289,7 +280,7 @@ const Admin: NextPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogOverlay>
-      </AlertDialog>
+      </Dialog.Root>
     </VStack>
   );
 };

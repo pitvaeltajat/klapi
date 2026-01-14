@@ -15,11 +15,18 @@ import {
   Box,
   HStack,
   Container,
+  Text,
 } from "@chakra-ui/react";
 import ReservationTable from "../../components/ReservationTable";
 import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
-import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+  buttonColors,
+} from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -173,7 +180,11 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
               </Dialog.Body>
 
               <Dialog.Footer>
-                <Button colorScheme={buttonColors.danger} mr={3} onClick={deleteItem}>
+                <Button
+                  colorScheme={buttonColors.danger}
+                  mr={3}
+                  onClick={deleteItem}
+                >
                   Poista
                 </Button>
                 <Button colorScheme={buttonColors.secondary} onClick={onClose}>

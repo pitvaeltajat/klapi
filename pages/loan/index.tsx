@@ -6,7 +6,7 @@ import {
   Container,
   Heading,
   Link,
-  Select,
+  NativeSelect,
   Stack,
   Tag,
   Text,
@@ -19,7 +19,12 @@ import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import NotAuthenticated from "../../components/NotAuthenticated";
-import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+} from "@/styles/designTokens";
 
 interface LoanType {
   id: string;
@@ -95,14 +100,10 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
   };
 
   return (
-    <Box
-      {...cardStyles.compact}
-      overflow="hidden"
-      mb={spacing.elementSpacing}
-    >
-      <VStack spacing={spacing.tightSpacing} align="stretch">
+    <Box {...cardStyles.compact} overflow="hidden" mb={spacing.elementSpacing}>
+      <VStack gap={spacing.tightSpacing} align="stretch">
         <HStack justifyContent="space-between" alignItems="start">
-          <VStack align="start" spacing={1} flex={1}>
+          <VStack align="start" gap={1} flex={1}>
             <Heading size={headingSizes.subsection}>
               <Link as={NextLink} href={`/loan/${loan.id}`}>
                 {loan.description || loan.user.name}
@@ -112,12 +113,12 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
               Varaaja: {loan.user.name}
             </Text>
           </VStack>
-          <Tag colorScheme={getColor(loan.status)} size="md">
+          <Tag.Root colorScheme={getColor(loan.status)} size="md">
             {loan.status}
-          </Tag>
+          </Tag.Root>
         </HStack>
 
-        <HStack spacing={4} fontSize="sm" color="gray.600">
+        <HStack gap={4} fontSize="sm" color="gray.600">
           <Text>
             <Text as="span" fontWeight="medium">
               Alku:
@@ -137,19 +138,19 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.700">
               Kamat ({loan.reservations.length}):
             </Text>
-            <Wrap spacing={2}>
+            <Wrap gap={2}>
               {loan.reservations.slice(0, 5).map((reservation) => (
                 <WrapItem key={reservation.item.id}>
-                  <Tag size="sm" variant="subtle" colorScheme="blue">
+                  <Tag.Root size="sm" variant="subtle" colorScheme="blue">
                     {reservation.item.name}
-                  </Tag>
+                  </Tag.Root>
                 </WrapItem>
               ))}
               {loan.reservations.length > 5 && (
                 <WrapItem>
-                  <Tag size="sm" variant="subtle" colorScheme="gray">
+                  <Tag.Root size="sm" variant="subtle" colorScheme="gray">
                     +{loan.reservations.length - 5} lisää
-                  </Tag>
+                  </Tag.Root>
                 </WrapItem>
               )}
             </Wrap>
@@ -187,8 +188,10 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
     <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
       <Stack gap={spacing.sectionSpacing}>
         <Box>
-          <Heading size={headingSizes.pageTitle} mb={spacing.elementSpacing}>Varaukset</Heading>
-          <Select
+          <Heading size={headingSizes.pageTitle} mb={spacing.elementSpacing}>
+            Varaukset
+          </Heading>
+          <NativeSelect.Root
             value={loanCategory}
             onChange={(e) =>
               setLoanCategory(e.target.value as LoanStatus | "ALL")
@@ -201,7 +204,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
             <option value={LoanStatus.INUSE}>Käytössä</option>
             <option value={LoanStatus.IN_BOX}>Laatikossa</option>
             <option value={LoanStatus.RETURNED}>Palautetut</option>
-          </Select>
+          </NativeSelect.Root>
           {loans
             .filter(
               (loan) => loanCategory === "ALL" || loan.status === loanCategory
