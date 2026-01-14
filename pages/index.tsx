@@ -99,17 +99,12 @@ export default function Index({ items, categories }: IndexProps) {
         </InputGroup>
       </Box>
       <Box padding="2em" paddingLeft={0}>
-        <Heading as="h2" size="md" marginBottom={"1em"}>
-          Kategoriat
-        </Heading>
         <Wrap padding="4px">
           <WrapItem key="all">
             <Button
               onClick={() => setCategory("")}
-              {...(isKioskMode && {
-                variant: category === "" ? "solid" : "outline",
-                colorScheme: category === "" ? "blue" : "gray",
-              })}
+              variant={category === "" ? "solid" : "outline"}
+              colorScheme={category === "" ? "blue" : "gray"}
             >
               Kaikki
             </Button>
@@ -118,23 +113,14 @@ export default function Index({ items, categories }: IndexProps) {
             <WrapItem key={cat.id}>
               <Button
                 onClick={() => setCategory(cat.name)}
-                {...(isKioskMode && {
-                  variant: category === cat.name ? "solid" : "outline",
-                  colorScheme: category === cat.name ? "blue" : "gray",
-                })}
+                variant={category === cat.name ? "solid" : "outline"}
+                colorScheme={category === cat.name ? "blue" : "gray"}
               >
                 {cat.name}
               </Button>
             </WrapItem>
           ))}
         </Wrap>
-      </Box>
-      <Box padding="1em" paddingLeft={0}>
-        {category !== "" && (
-          <Heading as="h2" size="md" marginBottom={"1em"}>
-            Valittu kategoria: {category}
-          </Heading>
-        )}
       </Box>
     </>
   );
