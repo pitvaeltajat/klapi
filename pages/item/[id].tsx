@@ -17,6 +17,14 @@ import {
   ModalCloseButton,
   useDisclosure,
   useToast,
+  Container,
+  VStack,
+  Text,
+  HStack,
+  Box,
+  Badge,
+  Divider,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import ReservationTable from "../../components/ReservationTable";
 import { useSession } from "next-auth/react";
@@ -119,35 +127,84 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
   };
 
   return (
-    <div>
-      <Heading marginBottom={8} size={"lg"}>
-        {item.name}
-      </Heading>
-      <p>{item.description}</p>
-      {item.image && (
-        <Image
-          width="500px"
-          marginBottom="0.5em"
-          src={item.image}
-          alt={item.name}
-          fallbackSrc="https://placehold.co/500x300"
-        />
-      )}
-      {session?.user?.group === "ADMIN" ? (
-        <>
-          <Button
-            marginEnd="0.5em"
-            onClick={() => router.push(`/admin/edititem/${item.id}`)}
-          >
-            Muokkaa
-          </Button>
-          <Button onClick={onOpen}>Poista</Button>
-        </>
-      ) : null}
+    <Container maxW="container.lg" py={6}>
+      <VStack spacing={6} align="stretch">
+        <Heading as="h1" size={{ base: "lg", md: "xl" }}>
+          {item.name}
+        </Heading>
+
+        {item.description && (
+          <Text fontSize={{ base: "md", md: "lg" }} color="gray.700">
+            {item.description}
+          </Text>
+        )}
+
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+          <Box>
+            <Text fontSize="sm" color="gray.600" fontWeight="semibold">
+              Määrä:
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {item.amount} kpl
+            </Text>
+          </Box>
+          {item.categories && item.categories.length > 0 && (
+            <Box>
+              <Text fontSize="sm" color="gray.600" fontWeight="semibold" mb={2}>
+                Kategoriat:
+              </Text>
+              <HStack spacing={2} flexWrap="wrap">
+                {item.categories.map((category) => (
+                  <Badge key={category.id} colorScheme="blue" fontSize="sm">
+                    {category.name}
+                  </Badge>
+                ))}
+              </HStack>
+            </Box>
+          )}
+        </SimpleGrid>
+
+        <Divider />
+
+        {item.image && (
+          <Box>
+            <Image
+              src={item.image}
+              alt={item.name}
+              fallbackSrc="https://placehold.co/500x300"
+              maxW="full"
+              maxH={{ base: "300px", md: "500px" }}
+              objectFit="contain"
+              borderRadius="md"
+            />
+          </Box>
+        )}
+
+        {session?.user?.group === "ADMIN" && (
+          <HStack spacing={3}>
+            <Button
+              colorScheme="blue"
+              onClick={() => router.push(`/admin/edititem/${item.id}`)}
+            >
+              Muokkaa
+            </Button>
+            <Button colorScheme="red" onClick={onOpen}>
+              Poista
+            </Button>
+          </HStack>
+        )}
+
+        <Box mt={4}>
+          <Heading size="md" mb={4}>
+            Varaushistoria
+          </Heading>
+          <ReservationTable reservations={item.reservations} />
+        </Box>
+      </VStack>
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent mx={4}>
           <ModalHeader>Poistetaanko kama?</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -164,8 +221,6 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Heading size={"md"}>Varaushistoria</Heading>
-      <ReservationTable reservations={item.reservations} />
-    </div>
+    </Container>
   );
 }
