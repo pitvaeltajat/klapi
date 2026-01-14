@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Heading,
-  Input,
   VStack,
   FormControl,
   FormLabel,
@@ -15,19 +14,28 @@ import React, { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useDates } from "@/contexts/DatesContext";
 import { useRouter } from "next/router";
+import LoanerAutocomplete from "./LoanerAutocomplete";
 
 export default function KioskModeSelector() {
   const [loaner, setLoaner] = useState("");
-  const { setLoaner: setCartLoaner } = useCart();
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
+  const { setLoaner: setCartLoaner, setUserId: setCartUserId } = useCart();
   const { setStartDate, setEndDate, setDatesSet } = useDates();
   const router = useRouter();
   const bgColor = useColorModeValue("blue.50", "blue.900");
   const borderColor = useColorModeValue("blue.200", "blue.700");
 
+  const handleLoanerChange = (value: string, userId?: string) => {
+    setLoaner(value);
+    setSelectedUserId(userId);
+  };
+
   const handleSubmit = () => {
     if (loaner.trim()) {
-      // Set the loaner in cart context
+      // Set the loaner text in cart context
       setCartLoaner(loaner);
+      // Set the userId if a user was selected, otherwise undefined (freeform entry)
+      setCartUserId(selectedUserId);
 
       // Set dates to now and one week from now as defaults for kiosk mode
       const now = new Date();
@@ -71,11 +79,13 @@ export default function KioskModeSelector() {
 
         <FormControl isRequired>
           <FormLabel>Lainaajan nimi</FormLabel>
-          <Input
-            placeholder="Syötä nimesi"
+          <LoanerAutocomplete
             value={loaner}
-            onChange={(e) => setLoaner(e.target.value)}
+            onChange={handleLoanerChange}
+            placeholder="Syötä nimesi tai valitse sähköposti"
             size="lg"
+            isRequired
+            showValidationFeedback
             onKeyPress={(e) => {
               if (e.key === "Enter") {
                 handleSubmit();
@@ -83,8 +93,10 @@ export default function KioskModeSelector() {
             }}
           />
           <FormHelperText>
-            Anna nimesi aloittaaksesi lainauksen. Laina alkaa heti ja voit
-            valita palautuspäivän seuraavassa vaiheessa.
+            <Text>
+              Laina alkaa heti ja voit valita palautuspäivän seuraavassa
+              vaiheessa.
+            </Text>
           </FormHelperText>
         </FormControl>
 
@@ -96,7 +108,7 @@ export default function KioskModeSelector() {
             isDisabled={!loaner.trim()}
             flex={1}
           >
-            Jatka
+            Lainaa
           </Button>
           <Button
             colorScheme="green"

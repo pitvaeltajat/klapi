@@ -1,47 +1,27 @@
 import DatePicker from "react-datepicker";
 import {
   Box,
+  VStack,
+  HStack,
+  Text,
+  FormControl,
+  FormLabel,
   Button,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  useDisclosure,
-  Flex,
-  Input,
+  Grid,
+  GridItem,
 } from "@chakra-ui/react";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaEdit } from "react-icons/fa";
 
 import React from "react";
-import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { useDates } from "@/contexts/DatesContext";
 import { useCart } from "@/contexts/CartContext";
+import LoanerAutocomplete from "./LoanerAutocomplete";
 
 export default function KioskDateSelector() {
+  const router = useRouter();
   const { state: dates, setEndDate } = useDates();
-  const { clearCart, state: cart, setLoaner } = useCart();
-
-  const Ref = React.useRef<HTMLButtonElement>(null);
-  const LoanerRef = React.useRef<HTMLButtonElement>(null);
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const {
-    isOpen: isLoanerOpen,
-    onOpen: onLoanerOpen,
-    onClose: onLoanerClose,
-  } = useDisclosure();
-
-  const [returnDate, setReturnDate] = useState<Date | null>(dates.endDate);
-  const [loanerName, setLoanerName] = useState<string>(cart.loaner || "");
-
-  useEffect(() => {
-    if (isLoanerOpen) {
-      setLoanerName(cart.loaner || "");
-    }
-  }, [isLoanerOpen, cart.loaner]);
+  const { state: cart, setLoaner, setUserId } = useCart();
 
   // Helper function to set default time to 18:00
   const setDefaultTime = (date: Date): Date => {
@@ -50,162 +30,99 @@ export default function KioskDateSelector() {
     return newDate;
   };
 
-  function updateReturnDate() {
-    clearCart();
+  const handleLoanerChange = (value: string, userId?: string) => {
+    setLoaner(value);
+    setUserId(userId);
+  };
 
-    if (returnDate) {
-      setEndDate(returnDate);
+  const handleDateChange = (date: Date | null) => {
+    if (date) {
+      setEndDate(setDefaultTime(date));
     }
-
-    onClose();
-  }
-
-  function updateLoaner() {
-    if (loanerName.trim()) {
-      setLoaner(loanerName.trim());
-    }
-    onLoanerClose();
-  }
+  };
 
   return (
-    <>
-      <Flex
-        width={"fit-content"}
-        borderWidth={"1px"}
-        borderRadius="lg"
-        marginTop={"0.5em"}
-        marginBottom="0.5em"
-        cursor="pointer"
-        onClick={onLoanerOpen}
-        align="center"
-        _hover={{ bg: "gray.50" }}
-      >
-        <Box p={4}>
-          <Box>
-            <Box as={"span"} fontWeight="bold">
-              Lainaaja:
-            </Box>
-            <Box as={"span"} ml={2}>
-              {cart.loaner}
-            </Box>
-          </Box>
+    <Grid
+      templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+      gap={4}
+      mb={4}
+      alignItems="start"
+    >
+      {/* Left column - Loaner info */}
+      <GridItem>
+        <Box
+          borderWidth="1px"
+          borderRadius="lg"
+          p={6}
+          bg="white"
+          boxShadow="sm"
+          height="full"
+        >
+          <FormControl>
+            <FormLabel fontWeight="bold" fontSize="lg" mb={4}>
+              Lainaaja
+            </FormLabel>
+            <LoanerAutocomplete
+              value={cart.loaner || ""}
+              onChange={handleLoanerChange}
+              placeholder="Syötä nimi tai valitse sähköposti"
+              size="lg"
+              showValidationFeedback
+            />
+          </FormControl>
         </Box>
-        <Box p={4} color="gray.500">
-          <FaEdit />
-        </Box>
-      </Flex>
-      <Flex
-        width={"fit-content"}
-        borderWidth={"1px"}
-        borderRadius="lg"
-        marginTop={"0.5em"}
-        marginBottom="0.5em"
-        cursor="pointer"
-        onClick={onOpen}
-        align="center"
-        _hover={{ bg: "gray.50" }}
-      >
-        <Box p={4}>
-          <Box>
-            <Box as={"span"} fontWeight="bold">
-              Palautus:
-            </Box>
-            <Box as={"span"} ml={2}>
-              {dates.endDate.toLocaleDateString("fi-FI", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </Box>
-          </Box>
-        </Box>
-        <Box p={4} color="gray.500">
-          <FaEdit />
-        </Box>
-      </Flex>
+      </GridItem>
 
-      <AlertDialog
-        isOpen={isLoanerOpen}
-        leastDestructiveRef={LoanerRef}
-        onClose={onLoanerClose}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Muokkaa lainaajan nimeä
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              <Input
-                placeholder="Syötä lainaajan nimi"
-                value={loanerName}
-                onChange={(e) => setLoanerName(e.target.value)}
-                size="lg"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    updateLoaner();
-                  }
+      {/* Right column - Return date */}
+      <GridItem>
+        <Box
+          borderWidth="1px"
+          borderRadius="lg"
+          p={6}
+          bg="white"
+          boxShadow="sm"
+          height="full"
+        >
+          <FormControl>
+            <FormLabel fontWeight="bold" fontSize="lg" mb={2}>
+              Palautuspäivä
+            </FormLabel>
+            <VStack align="stretch" spacing={3}>
+              <Box
+                sx={{
+                  ".react-datepicker": {
+                    border: "none",
+                    fontFamily: "inherit",
+                  },
+                  ".react-datepicker__header": {
+                    backgroundColor: "white",
+                    borderBottom: "1px solid",
+                    borderColor: "gray.200",
+                  },
+                  ".react-datepicker__day--selected": {
+                    backgroundColor: "blue.500",
+                    color: "white",
+                  },
+                  ".react-datepicker__day--keyboard-selected": {
+                    backgroundColor: "blue.100",
+                  },
+                  ".react-datepicker__day:hover": {
+                    backgroundColor: "gray.100",
+                  },
                 }}
-                autoFocus
-              />
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button ref={LoanerRef} onClick={onLoanerClose} ml={3}>
-                Peruuta
-              </Button>
-              <Button
-                colorScheme="blue"
-                isDisabled={!loanerName.trim()}
-                onClick={updateLoaner}
-                ml={3}
               >
-                Vahvista
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-
-      <AlertDialog isOpen={isOpen} leastDestructiveRef={Ref} onClose={onClose}>
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Valitse palautuspäivä
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              <DatePicker
-                selected={returnDate}
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    setReturnDate(setDefaultTime(date));
-                  }
-                }}
-                inline
-                minDate={new Date()}
-                dateFormat="dd.MM.yyyy HH:mm"
-              />
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button ref={Ref} onClick={onClose} ml={3}>
-                Peruuta
-              </Button>
-              <Button
-                colorScheme="blue"
-                isDisabled={!returnDate}
-                onClick={() => updateReturnDate()}
-                ml={3}
-              >
-                Vahvista
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </>
+                <DatePicker
+                  selected={dates.endDate}
+                  onChange={handleDateChange}
+                  inline
+                  minDate={new Date()}
+                  dateFormat="dd.MM.yyyy"
+                />
+              </Box>
+            </VStack>
+          </FormControl>
+        </Box>
+      </GridItem>
+    </Grid>
   );
 }

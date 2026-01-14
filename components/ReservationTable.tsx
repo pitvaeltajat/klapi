@@ -54,7 +54,7 @@ export default function ReservationTable({
           </Tr>
         </Thead>
         <Tbody>
-          {reservations.map((reservation) => {
+          {reservations.toReversed().map((reservation) => {
             return (
               <Tr key={reservation.id}>
                 {session?.user?.group === "ADMIN" ? (

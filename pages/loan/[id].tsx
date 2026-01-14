@@ -83,6 +83,8 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: session } = useSession();
 
+  const isAdmin = session?.user?.group === "ADMIN";
+
   const approveLoan = async () => {
     const body = { id: loan.id };
     await fetch("/api/loan/approveLoan", {
@@ -289,8 +291,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
         {loan.status !== "INUSE" && loan.status !== "RETURNED" && (
           <Stack direction="row" spacing={4}>
-            {(session?.user?.group === "ADMIN" ||
-              session?.user?.id === loan.user.id) && (
+            {(isAdmin || session?.user?.id === loan.user.id) && (
               <Button
                 colorScheme="red"
                 onClick={onOpen}
@@ -299,7 +300,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                 Hylkää
               </Button>
             )}
-            {session?.user?.group === "ADMIN" && (
+            {isAdmin && (
               <>
                 <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
                   <Button colorScheme="yellow">Muokkaa</Button>
@@ -316,7 +317,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </Stack>
         )}
 
-        {loan.status === "IN_BOX" && session?.user?.group === "ADMIN" && (
+        {(loan.status === "IN_BOX" || loan.status === "INUSE") && isAdmin && (
           <Stack direction="row" spacing={4}>
             <Button onClick={loanProcessed} colorScheme="green">
               Merkitse kamat palautetuksi

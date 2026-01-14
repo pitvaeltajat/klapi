@@ -29,6 +29,7 @@ export interface CartState {
   items: CartItem[];
   description: string;
   loaner?: string;
+  userId?: string;
 }
 
 // Component Props Types

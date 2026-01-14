@@ -22,6 +22,7 @@ import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import SubmitConfirmation from "./SubmitConfirmation";
 import LoadingSpinner from "./LoadingSpinner";
+import LoanerAutocomplete from "./LoanerAutocomplete";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
@@ -46,6 +47,7 @@ export default function CartDrawer({
     decrementAmount,
     setDescription,
     setLoaner,
+    setUserId,
   } = useCart();
   const cartItems = cart.items;
   const { state: dates } = useDates();
@@ -149,17 +151,17 @@ export default function CartDrawer({
             onClose={ConfirmationDialog.onClose}
             closeDrawer={onClose}
           />
-          <Stack spacing={4}>
+          <Stack spacing={1}>
             <Box>
               <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
-              <Input
-                id="loaner"
-                name="loaner"
-                placeholder="Lainaajan nimi"
+              <LoanerAutocomplete
                 value={cart.loaner || ""}
-                onChange={(e) => {
-                  setLoaner(e.target.value);
+                onChange={(value, userId) => {
+                  setLoaner(value);
+                  setUserId(userId);
                 }}
+                placeholder="Lainaajan nimi tai sähköposti"
+                size="md"
               />
             </Box>
             <Box>
@@ -180,7 +182,7 @@ export default function CartDrawer({
               />
             </Box>
             <Box>
-              <FormLabel htmlFor="startTime">Alku</FormLabel>
+              <FormLabel htmlFor="startTime">Lainaus alkaa</FormLabel>
               <Input
                 id="startTime"
                 value={timeStringWithoutTimeZone(startTime)}
@@ -188,7 +190,7 @@ export default function CartDrawer({
               />
             </Box>
             <Box>
-              <FormLabel htmlFor="endTime">Loppu</FormLabel>
+              <FormLabel htmlFor="endTime">Lainaus loppuu</FormLabel>
               <Input
                 id="endTime"
                 value={timeStringWithoutTimeZone(endTime)}
@@ -198,7 +200,7 @@ export default function CartDrawer({
           </Stack>
 
           {cart.items.length > 0 ? (
-            <Stack spacing="24px">
+            <Stack spacing={2} marginTop="20px">
               <Heading as="h3" size="md">
                 Valitut tavarat
               </Heading>
