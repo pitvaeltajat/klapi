@@ -83,7 +83,7 @@ export default function LoanerAutocomplete({
           onKeyPress={onKeyPress}
           bg={selectedUserId ? "green.50" : "white"}
           borderColor={selectedUserId ? "green.300" : undefined}
-          isRequired={isRequired}
+          required={isRequired}
           autoFocus={autoFocus}
         />
         <InputRightElement>

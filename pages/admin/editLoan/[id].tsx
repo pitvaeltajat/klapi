@@ -31,6 +31,12 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useDisclosure,
+  Container,
+  VStack,
+  Box,
+  FormControl,
+  FormLabel,
+  HStack,
 } from "@chakra-ui/react";
 import { FaMinus, FaPlus, FaTrash, FaHistory } from "react-icons/fa";
 import { useState, useRef } from "react";
@@ -40,6 +46,7 @@ import prisma from "../../../utils/prisma";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import { Loan, Item, User, Reservation } from "@prisma/client";
+import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
 
 interface LoanWithRelations extends Loan {
   reservations: (Reservation & {
@@ -157,7 +164,7 @@ export default function LoanEditView({
   }
 
   return (
-    <div>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
@@ -175,10 +182,10 @@ export default function LoanEditView({
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose}>
+              <Button ref={cancelRef} onClick={onClose} colorScheme={buttonColors.secondary}>
                 Peruuta
               </Button>
-              <Button colorScheme="green" ml={3} onClick={() => updateLoan()}>
+              <Button colorScheme={buttonColors.success} ml={spacing.elementSpacing} onClick={() => updateLoan()}>
                 Vahvista
               </Button>
             </AlertDialogFooter>
@@ -186,288 +193,319 @@ export default function LoanEditView({
         </AlertDialogOverlay>
       </AlertDialog>
 
-      <Heading>Muokkaa lainaa</Heading>
-      <Heading size="md">Id:</Heading>
-      <Text>{loan.id}</Text>
-      <Heading size="md">Lainaaja:</Heading>
-      <Text>{loan.user.name}</Text>
-      <Text>{loan.user.email}</Text>
+      <VStack spacing={spacing.sectionSpacing} align="stretch">
+        <Heading size={headingSizes.pageTitle}>Muokkaa lainaa</Heading>
 
-      <Heading size={"lg"} marginTop="1em">
-        Kuvaus:
-      </Heading>
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <Box>
+              <Text fontSize="sm" color="gray.600" fontWeight="medium">Id:</Text>
+              <Text>{loan.id}</Text>
+            </Box>
+            <Box>
+              <Text fontSize="sm" color="gray.600" fontWeight="medium">Lainaaja:</Text>
+              <Text>{loan.user.name}</Text>
+              <Text>{loan.user.email}</Text>
+            </Box>
+          </VStack>
+        </Box>
 
-      <Stack spacing={3} direction="row">
-        <Textarea
-          borderColor={
-            description != loan.description ? "orange.200" : "gray.300"
-          }
-          borderWidth={description != loan.description ? "2px" : "1px"}
-          value={description ?? ""}
-          width="20em"
-          placeholder={"Ei kuvausta"}
-          onChange={handleDescriptionChange}
-        />
-        <IconButton
-          aria-label="Reset"
-          icon={<FaHistory />}
-          onClick={() => setDescription(loan.description)}
-        />
-      </Stack>
-      {description != loan.description ? (
-        <Text size={"s"} color="gray.500">
-          Muokattu
-        </Text>
-      ) : null}
-      <Heading size={"lg"} marginTop={"1em"}>
-        Päivämäärät:
-      </Heading>
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <Heading size={headingSizes.sectionTitle}>Kuvaus</Heading>
+            <Stack gap={spacing.tightSpacing} direction="row">
+              <Textarea
+                borderColor={
+                  description != loan.description ? "orange.200" : "gray.300"
+                }
+                borderWidth={description != loan.description ? "2px" : "1px"}
+                value={description ?? ""}
+                maxW="400px"
+                placeholder={"Ei kuvausta"}
+                onChange={handleDescriptionChange}
+              />
+              <IconButton
+                aria-label="Reset"
+                icon={<FaHistory />}
+                onClick={() => setDescription(loan.description)}
+              />
+            </Stack>
+            {description != loan.description ? (
+              <Text fontSize="sm" color="gray.500">
+                Muokattu
+              </Text>
+            ) : null}
+          </VStack>
+        </Box>
 
-      <Heading size={"md"} marginTop={"1em"}>
-        Aloitus:
-      </Heading>
-      <Stack direction="row">
-        <Input
-          borderColor={
-            startDate != loan.startTime.toString().split(".")[0]
-              ? "orange.200"
-              : "gray.300"
-          }
-          borderWidth={
-            startDate != loan.startTime.toString().split(".")[0] ? "2px" : "1px"
-          }
-          onChange={handleStartDateChange}
-          width="20em"
-          type={"datetime-local"}
-          value={startDate}
-        />
-        <IconButton
-          aria-label="Reset"
-          icon={<FaHistory />}
-          onClick={() => setStartDate(loan.startTime.toString().split(".")[0])}
-        />
-      </Stack>
-      {startDate != loan.startTime.toString().split(".")[0] ? (
-        <Text size={"s"} color="gray.500">
-          Muokattu
-        </Text>
-      ) : null}
-      <Heading size={"md"} marginTop={"1em"}>
-        Lopetus:
-      </Heading>
-      <Stack direction="row">
-        <Input
-          borderColor={
-            endDate != loan.endTime.toString().split(".")[0]
-              ? "orange.200"
-              : "gray.300"
-          }
-          borderWidth={
-            endDate != loan.endTime.toString().split(".")[0] ? "2px" : "1px"
-          }
-          onChange={handleEndDateChange}
-          width="20em"
-          type={"datetime-local"}
-          value={endDate}
-        />
-        <IconButton
-          aria-label="Reset"
-          icon={<FaHistory />}
-          onClick={() => setEndDate(loan.endTime.toString().split(".")[0])}
-        />
-      </Stack>
-      {endDate != loan.endTime.toString().split(".")[0] ? (
-        <Text size={"s"} color="gray.500">
-          Muokattu
-        </Text>
-      ) : null}
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <Heading size={headingSizes.sectionTitle}>Päivämäärät</Heading>
 
-      <Heading size={"lg"} marginTop={"1em"}>
-        Varaukset:
-      </Heading>
-
-      <TableContainer>
-        <Table>
-          <Thead>
-            <Tr>
-              <Th>Kama</Th>
-              <Th>Määrä</Th>
-              <Th>
-                <IconButton
-                  position={"relative"}
-                  right={"0px"}
-                  aria-label={"Palauta"}
-                  title={"Palauta"}
-                  icon={<FaHistory />}
-                  onClick={() => {
-                    setReservations(loan.reservations);
-                  }}
+            <FormControl>
+              <FormLabel>Aloitus</FormLabel>
+              <Stack direction="row" spacing={spacing.tightSpacing}>
+                <Input
+                  borderColor={
+                    startDate != loan.startTime.toString().split(".")[0]
+                      ? "orange.200"
+                      : "gray.300"
+                  }
+                  borderWidth={
+                    startDate != loan.startTime.toString().split(".")[0] ? "2px" : "1px"
+                  }
+                  onChange={handleStartDateChange}
+                  maxW="300px"
+                  type={"datetime-local"}
+                  value={startDate}
                 />
-              </Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {reservations.map((reservation) => {
-              return (
-                <Tr key={reservation.id}>
-                  <Td
-                    color={
-                      loan.reservations.filter((r) => r.id == reservation.id)
-                        .length > 0
-                        ? "gray.900"
-                        : "orange.500"
-                    }
-                  >
-                    {reservation.item.name}
-                  </Td>
-                  <Td>
-                    <InputGroup>
-                      <InputLeftAddon>
-                        <IconButton
-                          icon={<FaMinus />}
-                          onClick={() => {
-                            if (reservation.amount > 1) {
-                              setReservations(
-                                reservations.map((r) => {
-                                  if (r.id == reservation.id) {
-                                    return { ...r, amount: r.amount - 1 };
-                                  }
-                                  return r;
-                                })
-                              );
-                            }
-                          }}
-                          isDisabled={reservation.amount <= 1}
-                          aria-label="Vähennä määrää"
-                        />
-                      </InputLeftAddon>
-                      <Input
-                        borderColor={
-                          loan.reservations.filter(
-                            (r) => r.id == reservation.id
-                          ).length > 0
-                            ? reservation.amount ==
-                              loan.reservations.filter(
-                                (r) => r.id == reservation.id
-                              )[0].amount
-                              ? "gray.300"
-                              : "orange.200"
-                            : "gray.300"
-                        }
-                        borderWidth={
-                          loan.reservations.filter(
-                            (r) => r.id == reservation.id
-                          ).length > 0
-                            ? reservation.amount ==
-                              loan.reservations.filter(
-                                (r) => r.id == reservation.id
-                              )[0].amount
-                              ? "1px"
-                              : "2px"
-                            : "1px"
-                        }
-                        value={reservation.amount}
-                        width="5em"
-                      />
-                      <InputRightAddon>
-                        <IconButton
-                          icon={<FaPlus />}
-                          aria-label="Lisää määrää"
-                          onClick={() => {
-                            setReservations(
-                              reservations.map((r) => {
-                                if (r.id == reservation.id) {
-                                  return { ...r, amount: r.amount + 1 };
-                                }
-                                return r;
-                              })
-                            );
-                          }}
-                          isDisabled={
-                            reservation.amount >= reservation.item.amount
+                <IconButton
+                  aria-label="Reset"
+                  icon={<FaHistory />}
+                  onClick={() => setStartDate(loan.startTime.toString().split(".")[0])}
+                />
+              </Stack>
+              {startDate != loan.startTime.toString().split(".")[0] ? (
+                <Text fontSize="sm" color="gray.500" mt={spacing.tightSpacing}>
+                  Muokattu
+                </Text>
+              ) : null}
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Lopetus</FormLabel>
+              <Stack direction="row" spacing={spacing.tightSpacing}>
+                <Input
+                  borderColor={
+                    endDate != loan.endTime.toString().split(".")[0]
+                      ? "orange.200"
+                      : "gray.300"
+                  }
+                  borderWidth={
+                    endDate != loan.endTime.toString().split(".")[0] ? "2px" : "1px"
+                  }
+                  onChange={handleEndDateChange}
+                  maxW="300px"
+                  type={"datetime-local"}
+                  value={endDate}
+                />
+                <IconButton
+                  aria-label="Reset"
+                  icon={<FaHistory />}
+                  onClick={() => setEndDate(loan.endTime.toString().split(".")[0])}
+                />
+              </Stack>
+              {endDate != loan.endTime.toString().split(".")[0] ? (
+                <Text fontSize="sm" color="gray.500" mt={spacing.tightSpacing}>
+                  Muokattu
+                </Text>
+              ) : null}
+            </FormControl>
+          </VStack>
+        </Box>
+
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <Heading size={headingSizes.sectionTitle}>Varaukset</Heading>
+
+            <HStack justify="space-between" mb={spacing.tightSpacing}>
+              <Text fontWeight="medium">Varaukset</Text>
+              <IconButton
+                aria-label={"Palauta"}
+                title={"Palauta"}
+                icon={<FaHistory />}
+                onClick={() => {
+                  setReservations(loan.reservations);
+                }}
+                size="sm"
+              />
+            </HStack>
+            <TableContainer>
+              <Table>
+                <Thead>
+                  <Tr>
+                    <Th>Kama</Th>
+                    <Th>Määrä</Th>
+                    <Th>Toiminnot</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {reservations.map((reservation) => {
+                    return (
+                      <Tr key={reservation.id}>
+                        <Td
+                          color={
+                            loan.reservations.filter((r) => r.id == reservation.id)
+                              .length > 0
+                              ? "gray.900"
+                              : "orange.500"
                           }
-                        />
-                      </InputRightAddon>
-                    </InputGroup>
-                  </Td>
-                  <Td>
-                    <IconButton
-                      aria-label="Poista varaus"
-                      icon={<FaTrash />}
-                      onClick={() => {
-                        setReservations(
-                          reservations.filter((r) => r.id != reservation.id)
-                        );
-                      }}
-                    />
-                  </Td>
-                </Tr>
-              );
-            })}
-          </Tbody>
-        </Table>
-      </TableContainer>
-      <Heading size={"lg"} marginTop={"1em"}>
-        Lisää kama:
-      </Heading>
-      <Stack marginTop={"1em"} direction={"row"} spacing={4}>
-        <Select
-          value={selectedItem}
-          onChange={(e) => {
-            setSelectedItem(e.target.value);
-            setSelectedItemAmount(0);
-          }}
-        >
-          {items.map((item) => {
-            return (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            );
-          })}
-        </Select>
-        <NumberInput
-          value={selectedItemAmount}
-          onChange={(valueString) => {
-            const value = parseInt(valueString) || 0;
-            setSelectedItemAmount(value);
-          }}
-          min={0}
-          max={items.find((item) => item.id === selectedItem)?.amount ?? 99}
-        >
-          <NumberInputField />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-        <Button
-          onClick={() => {
-            const newReservations = [...reservations];
-            const selectedItemObj = items.find(
-              (item) => item.id === selectedItem
-            );
-            if (!selectedItemObj) return;
+                        >
+                          {reservation.item.name}
+                        </Td>
+                        <Td>
+                          <InputGroup size="sm" maxW="150px">
+                            <InputLeftAddon p={0}>
+                              <IconButton
+                                icon={<FaMinus />}
+                                onClick={() => {
+                                  if (reservation.amount > 1) {
+                                    setReservations(
+                                      reservations.map((r) => {
+                                        if (r.id == reservation.id) {
+                                          return { ...r, amount: r.amount - 1 };
+                                        }
+                                        return r;
+                                      })
+                                    );
+                                  }
+                                }}
+                                isDisabled={reservation.amount <= 1}
+                                aria-label="Vähennä määrää"
+                                size="sm"
+                              />
+                            </InputLeftAddon>
+                            <Input
+                              borderColor={
+                                loan.reservations.filter(
+                                  (r) => r.id == reservation.id
+                                ).length > 0
+                                  ? reservation.amount ==
+                                    loan.reservations.filter(
+                                      (r) => r.id == reservation.id
+                                    )[0].amount
+                                    ? "gray.300"
+                                    : "orange.200"
+                                  : "gray.300"
+                              }
+                              borderWidth={
+                                loan.reservations.filter(
+                                  (r) => r.id == reservation.id
+                                ).length > 0
+                                  ? reservation.amount ==
+                                    loan.reservations.filter(
+                                      (r) => r.id == reservation.id
+                                    )[0].amount
+                                    ? "1px"
+                                    : "2px"
+                                  : "1px"
+                              }
+                              value={reservation.amount}
+                              textAlign="center"
+                              readOnly
+                            />
+                            <InputRightAddon p={0}>
+                              <IconButton
+                                icon={<FaPlus />}
+                                aria-label="Lisää määrää"
+                                onClick={() => {
+                                  setReservations(
+                                    reservations.map((r) => {
+                                      if (r.id == reservation.id) {
+                                        return { ...r, amount: r.amount + 1 };
+                                      }
+                                      return r;
+                                    })
+                                  );
+                                }}
+                                isDisabled={
+                                  reservation.amount >= reservation.item.amount
+                                }
+                                size="sm"
+                              />
+                            </InputRightAddon>
+                          </InputGroup>
+                        </Td>
+                        <Td>
+                          <IconButton
+                            aria-label="Poista varaus"
+                            icon={<FaTrash />}
+                            onClick={() => {
+                              setReservations(
+                                reservations.filter((r) => r.id != reservation.id)
+                              );
+                            }}
+                            colorScheme={buttonColors.danger}
+                            size="sm"
+                            variant="ghost"
+                          />
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          </VStack>
+        </Box>
 
-            newReservations.push({
-              id: Math.random().toString(),
-              amount: selectedItemAmount,
-              itemId: selectedItem,
-              loanId: loan.id,
-              item: selectedItemObj,
-            });
-            setReservations(newReservations);
-            setSelectedItemAmount(0);
-          }}
-          isDisabled={selectedItemAmount === 0}
-        >
-          Lisää
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <Heading size={headingSizes.subsection}>Lisää kama</Heading>
+            <Stack direction={"row"} spacing={spacing.elementSpacing} flexWrap="wrap">
+              <Select
+                value={selectedItem}
+                onChange={(e) => {
+                  setSelectedItem(e.target.value);
+                  setSelectedItemAmount(0);
+                }}
+                maxW="300px"
+              >
+                {items.map((item) => {
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  );
+                })}
+              </Select>
+              <NumberInput
+                value={selectedItemAmount}
+                onChange={(valueString) => {
+                  const value = parseInt(valueString) || 0;
+                  setSelectedItemAmount(value);
+                }}
+                min={0}
+                max={items.find((item) => item.id === selectedItem)?.amount ?? 99}
+                maxW="150px"
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <Button
+                onClick={() => {
+                  const newReservations = [...reservations];
+                  const selectedItemObj = items.find(
+                    (item) => item.id === selectedItem
+                  );
+                  if (!selectedItemObj) return;
+
+                  newReservations.push({
+                    id: Math.random().toString(),
+                    amount: selectedItemAmount,
+                    itemId: selectedItem,
+                    loanId: loan.id,
+                    item: selectedItemObj,
+                  });
+                  setReservations(newReservations);
+                  setSelectedItemAmount(0);
+                }}
+                isDisabled={selectedItemAmount === 0}
+                colorScheme={buttonColors.primary}
+              >
+                Lisää
+              </Button>
+            </Stack>
+          </VStack>
+        </Box>
+
+        <Button colorScheme={buttonColors.success} onClick={onOpen} size="lg">
+          Tallenna
         </Button>
-      </Stack>
-
-      <Button colorScheme={"green"} marginTop={"1em"} onClick={onOpen}>
-        Tallenna
-      </Button>
-    </div>
+      </VStack>
+    </Container>
   );
 }

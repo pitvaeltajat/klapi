@@ -12,6 +12,11 @@ import {
   NumberDecrementStepper,
   Button,
   useToast,
+  VStack,
+  FormControl,
+  FormLabel,
+  Container,
+  Box,
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { CreatableSelect, MultiValue } from "chakra-react-select";
@@ -19,6 +24,7 @@ import { useRouter } from "next/router";
 import prisma from "../../../utils/prisma";
 import { Item, Category } from "@prisma/client";
 import { GetServerSideProps } from "next";
+import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -167,104 +173,116 @@ export default function EditItem({
   }
 
   return (
-    <>
-      <Heading as="h1" size="md" marginBottom={"1em"}>
-        Muokkaa kamaa
-      </Heading>
-      <Heading as="h3" size="sm" marginBottom={"1em"}>
-        Nimi:
-      </Heading>
-      <Input
-        placeholder="Mäkihyppylehti"
-        marginBottom={"1em"}
-        value={itemName}
-        onChange={handleNameChange}
-        width={"20em"}
-        borderColor={itemName === item.name ? "gray.300" : "orange.300"}
-        borderWidth={itemName === item.name ? "1px" : "2px"}
-      />
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <VStack spacing={spacing.sectionSpacing} align="stretch">
+        <Heading as="h1" size={headingSizes.pageTitle}>
+          Muokkaa kamaa
+        </Heading>
 
-      <Heading as="h3" size="sm" marginBottom={"1em"}>
-        Kuvaus:
-      </Heading>
-      <Textarea
-        placeholder="Viihteeksi reissuille kaluston vessaan."
-        marginBottom={"1em"}
-        value={itemDescription || ""}
-        onChange={handleDescriptionChange}
-        width={"20em"}
-        borderColor={
-          itemDescription === item.description ? "gray.300" : "orange.300"
-        }
-        borderWidth={itemDescription === item.description ? "1px" : "2px"}
-      />
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <FormControl>
+              <FormLabel>Nimi</FormLabel>
+              <Input
+                placeholder="Mäkihyppylehti"
+                value={itemName}
+                onChange={handleNameChange}
+                maxW="400px"
+                borderColor={itemName === item.name ? "gray.300" : "orange.300"}
+                borderWidth={itemName === item.name ? "1px" : "2px"}
+              />
+            </FormControl>
 
-      <Heading as="h3" size="sm" marginBottom={"1em"}>
-        Kategoriat:
-      </Heading>
+            <FormControl>
+              <FormLabel>Kuvaus</FormLabel>
+              <Textarea
+                placeholder="Viihteeksi reissuille kaluston vessaan."
+                value={itemDescription || ""}
+                onChange={handleDescriptionChange}
+                maxW="400px"
+                borderColor={
+                  itemDescription === item.description ? "gray.300" : "orange.300"
+                }
+                borderWidth={itemDescription === item.description ? "1px" : "2px"}
+              />
+            </FormControl>
 
-      <CreatableSelect
-        isMulti
-        value={itemCategories.map((cat: Category) => ({
-          value: cat.id,
-          label: cat.name,
-        }))}
-        options={categories.map((cat: Category) => ({
-          value: cat.id,
-          label: cat.name,
-        }))}
-        defaultValue={item.categories.map((cat: Category) => ({
-          value: cat.id,
-          label: cat.name,
-        }))}
-        onChange={(e: MultiValue<{ value: string; label: string }>) =>
-          setItemCategories(
-            e.map((cat: { label: string; value: string }) => ({
-              name: cat.label,
-              id: cat.value,
-              description: null,
-            }))
-          )
-        }
-        isInvalid={itemCategories !== item.categories}
-        errorBorderColor="orange.300"
-      />
+            <FormControl>
+              <FormLabel>Kategoriat</FormLabel>
+              <Box maxW="400px">
+                <CreatableSelect
+                  isMulti
+                  value={itemCategories.map((cat: Category) => ({
+                    value: cat.id,
+                    label: cat.name,
+                  }))}
+                  options={categories.map((cat: Category) => ({
+                    value: cat.id,
+                    label: cat.name,
+                  }))}
+                  defaultValue={item.categories.map((cat: Category) => ({
+                    value: cat.id,
+                    label: cat.name,
+                  }))}
+                  onChange={(e: MultiValue<{ value: string; label: string }>) =>
+                    setItemCategories(
+                      e.map((cat: { label: string; value: string }) => ({
+                        name: cat.label,
+                        id: cat.value,
+                        description: null,
+                      }))
+                    )
+                  }
+                  invalid={itemCategories !== item.categories}
+                  errorBorderColor="orange.300"
+                />
+              </Box>
+            </FormControl>
 
-      <Heading as="h3" size="sm" marginBottom={"1em"}>
-        Määrä:
-      </Heading>
-      <NumberInput
-        min={1}
-        width={"20em"}
-        marginBottom={"1em"}
-        borderColor={itemAmount === item.amount ? "grey.300" : "orange.300"}
-        value={itemAmount}
-        onChange={(valueString) => setItemAmount(parseInt(valueString))}
-      >
-        <NumberInputField />
-        <NumberInputStepper>
-          <NumberIncrementStepper />
-          <NumberDecrementStepper />
-        </NumberInputStepper>
-      </NumberInput>
+            <FormControl>
+              <FormLabel>Määrä</FormLabel>
+              <NumberInput
+                min={1}
+                maxW="200px"
+                borderColor={itemAmount === item.amount ? "gray.300" : "orange.300"}
+                value={itemAmount}
+                onChange={(valueString) => setItemAmount(parseInt(valueString))}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
 
-      <Heading as="h3" size="sm" marginBottom={"1em"}>
-        Kuva:
-      </Heading>
-      {image !== null ? (
-        <Image
-          src={URL.createObjectURL(image)}
-          alt={item.name}
-          width={"20em"}
-        />
-      ) : item.image !== null ? (
-        <Image src={item.image} alt={item.name} width={"20em"} />
-      ) : null}
-      <Input type="file" accept="image/*" onChange={handleImageChange} />
+            <FormControl>
+              <FormLabel>Kuva</FormLabel>
+              {image !== null ? (
+                <Image
+                  src={URL.createObjectURL(image)}
+                  alt={item.name}
+                  maxW="400px"
+                  borderRadius="md"
+                  mb={spacing.tightSpacing}
+                />
+              ) : item.image !== null ? (
+                <Image src={item.image} alt={item.name} maxW="400px" borderRadius="md" mb={spacing.tightSpacing} />
+              ) : null}
+              <Input type="file" accept="image/*" onChange={handleImageChange} maxW="400px" />
+            </FormControl>
 
-      <Button onClick={updateItem} isLoading={isSubmitting}>
-        Tallenna
-      </Button>
-    </>
+            <Button
+              onClick={updateItem}
+              loading={isSubmitting}
+              colorScheme={buttonColors.success}
+              maxW="200px"
+            >
+              Tallenna
+            </Button>
+          </VStack>
+        </Box>
+      </VStack>
+    </Container>
   );
 }

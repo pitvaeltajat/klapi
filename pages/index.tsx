@@ -15,6 +15,7 @@ import {
   Text,
   Link,
   useDisclosure,
+  Container,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import AllItems from "./productlist";
@@ -24,6 +25,7 @@ import { useDates } from "@/contexts/DatesContext";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/contexts/CartContext";
 import CustomItemDialog from "../components/CustomItemDialog";
+import { spacing, buttonColors, containerMaxWidth, headingSizes } from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -85,11 +87,10 @@ export default function Index({ items, categories }: IndexProps) {
 
   const renderSearchAndCategories = () => (
     <>
-      <Box padding="4px">
+      <Box mb={spacing.elementSpacing}>
         <InputGroup width={"fit-content"}>
           <Input
             placeholder="Hae kamoja"
-            marginBottom={"1em"}
             value={search}
             onChange={handleChange}
           />
@@ -98,13 +99,13 @@ export default function Index({ items, categories }: IndexProps) {
           </InputRightElement>
         </InputGroup>
       </Box>
-      <Box padding="2em" paddingLeft={0}>
-        <Wrap padding="4px">
+      <Box mb={spacing.sectionSpacing}>
+        <Wrap spacing={spacing.tightSpacing}>
           <WrapItem key="all">
             <Button
               onClick={() => setCategory("")}
               variant={category === "" ? "solid" : "outline"}
-              colorScheme={category === "" ? "blue" : "gray"}
+              colorScheme={category === "" ? buttonColors.primary : buttonColors.secondary}
             >
               Kaikki
             </Button>
@@ -114,7 +115,7 @@ export default function Index({ items, categories }: IndexProps) {
               <Button
                 onClick={() => setCategory(cat.name)}
                 variant={category === cat.name ? "solid" : "outline"}
-                colorScheme={category === cat.name ? "blue" : "gray"}
+                colorScheme={category === cat.name ? buttonColors.primary : buttonColors.secondary}
               >
                 {cat.name}
               </Button>
@@ -127,7 +128,7 @@ export default function Index({ items, categories }: IndexProps) {
 
   const renderItemsList = () => (
     <>
-      <Box marginBottom={"1em"}>
+      <Box mb={spacing.elementSpacing}>
         <Text>
           Jos haluamaasi kamaa ole lisätty valikoimaan klikkaa{" "}
           <Link color="teal.500" onClick={onOpen}>
@@ -139,7 +140,7 @@ export default function Index({ items, categories }: IndexProps) {
       {filteredItems.length > 0 ? (
         <AllItems items={filteredItems} categories={categories} />
       ) : (
-        <Heading textAlign="center" marginTop="1em">
+        <Heading textAlign="center" mt={spacing.elementSpacing} size={headingSizes.subsection}>
           Ei hakutuloksia :(
         </Heading>
       )}
@@ -147,7 +148,7 @@ export default function Index({ items, categories }: IndexProps) {
   );
 
   return (
-    <>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
       {isKioskMode ? (
         <>
           {!dates.datesSet ? (
@@ -173,6 +174,6 @@ export default function Index({ items, categories }: IndexProps) {
           )}
         </>
       )}
-    </>
+    </Container>
   );
 }

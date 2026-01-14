@@ -77,7 +77,7 @@ export default function KioskModeSelector() {
           </Text>
         </Box>
 
-        <FormControl isRequired>
+        <FormControl required>
           <FormLabel>Lainaajan nimi</FormLabel>
           <LoanerAutocomplete
             value={loaner}
@@ -105,7 +105,7 @@ export default function KioskModeSelector() {
             colorScheme="blue"
             size="lg"
             onClick={handleSubmit}
-            isDisabled={!loaner.trim()}
+            disabled={!loaner.trim()}
             flex={1}
           >
             Lainaa

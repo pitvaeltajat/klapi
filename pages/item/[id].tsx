@@ -8,19 +8,18 @@ import {
   Image,
   Heading,
   Button,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
+  Dialog,
   useDisclosure,
   useToast,
+  VStack,
+  Box,
+  HStack,
+  Container,
 } from "@chakra-ui/react";
 import ReservationTable from "../../components/ReservationTable";
 import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
+import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -119,53 +118,72 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
   };
 
   return (
-    <div>
-      <Heading marginBottom={8} size={"lg"}>
-        {item.name}
-      </Heading>
-      <p>{item.description}</p>
-      {item.image && (
-        <Image
-          width="500px"
-          marginBottom="0.5em"
-          src={item.image}
-          alt={item.name}
-          fallbackSrc="https://placehold.co/500x300"
-        />
-      )}
-      {session?.user?.group === "ADMIN" ? (
-        <>
-          <Button
-            marginEnd="0.5em"
-            onClick={() => router.push(`/admin/edititem/${item.id}`)}
-          >
-            Muokkaa
-          </Button>
-          <Button onClick={onOpen}>Poista</Button>
-        </>
-      ) : null}
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <VStack spacing={spacing.sectionSpacing} align="stretch">
+        <Box {...cardStyles.base}>
+          <VStack spacing={spacing.elementSpacing} align="stretch">
+            <Heading size={headingSizes.pageTitle}>{item.name}</Heading>
+            {item.description && (
+              <Text color="gray.700">{item.description}</Text>
+            )}
+            {item.image && (
+              <Box>
+                <Image
+                  maxW="500px"
+                  src={item.image}
+                  alt={item.name}
+                  fallbackSrc="https://placehold.co/500x300"
+                  borderRadius="lg"
+                />
+              </Box>
+            )}
+            {session?.user?.group === "ADMIN" && (
+              <HStack spacing={spacing.tightSpacing}>
+                <Button
+                  colorScheme={buttonColors.secondary}
+                  onClick={() => router.push(`/admin/edititem/${item.id}`)}
+                >
+                  Muokkaa
+                </Button>
+                <Button colorScheme={buttonColors.danger} onClick={onOpen}>
+                  Poista
+                </Button>
+              </HStack>
+            )}
+          </VStack>
+        </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Poistetaanko kama?</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <strong>{item.name}</strong> poistetaan. Oletko varma?
-          </ModalBody>
+        <Box {...cardStyles.base}>
+          <Heading size={headingSizes.sectionTitle} mb={spacing.elementSpacing}>
+            Varaushistoria
+          </Heading>
+          <ReservationTable reservations={item.reservations} />
+        </Box>
 
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={deleteItem}>
-              Poista
-            </Button>
-            <Button colorScheme="gray" onClick={onClose}>
-              Peruuta
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-      <Heading size={"md"}>Varaushistoria</Heading>
-      <ReservationTable reservations={item.reservations} />
-    </div>
+        <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>Poistetaanko kama?</Dialog.Title>
+                <Dialog.CloseTrigger />
+              </Dialog.Header>
+              <Dialog.Body>
+                <strong>{item.name}</strong> poistetaan. Oletko varma?
+              </Dialog.Body>
+
+              <Dialog.Footer>
+                <Button colorScheme={buttonColors.danger} mr={3} onClick={deleteItem}>
+                  Poista
+                </Button>
+                <Button colorScheme={buttonColors.secondary} onClick={onClose}>
+                  Peruuta
+                </Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Dialog.Root>
+      </VStack>
+    </Container>
   );
 }

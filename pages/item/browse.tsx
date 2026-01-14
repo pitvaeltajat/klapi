@@ -12,12 +12,15 @@ import {
   SimpleGrid,
   Select,
   AspectRatio,
+  Container,
+  VStack,
 } from "@chakra-ui/react";
 import prisma from "../../utils/prisma";
 import NextLink from "next/link";
 import { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { Item, Category, Loan, Reservation } from "@prisma/client";
+import { cardStyles, headingSizes, spacing, containerMaxWidth } from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -87,12 +90,10 @@ export default function BrowseItems({
         <Box
           bg={useColorModeValue("white", "gray.800")}
           maxW="sm"
-          borderWidth="1px"
-          rounded="lg"
-          shadow="lg"
+          {...cardStyles.compact}
           position="relative"
           _hover={{
-            shadow: "2xl",
+            ...cardStyles.hover,
             transform: "scale(1.01)",
             transition: "all 0.2s",
             zIndex: 1,
@@ -109,7 +110,7 @@ export default function BrowseItems({
             />
           </AspectRatio>
 
-          <Box margin={"1.5em"} marginTop={"0.5em"}>
+          <Box p={4}>
             <Flex mt="1" justifyContent="space-between" alignContent="center">
               <Box
                 fontSize="2xl"
@@ -127,10 +128,10 @@ export default function BrowseItems({
                 </Link>
               </Box>
             </Flex>
-            <Box fontSize="l" fontWeight="semibold" as="h5">
+            <Box fontSize="md" fontWeight="semibold" as="h5" mt={2}>
               {item.amount} kpl
             </Box>
-            <Box fontSize="l" fontWeight="semibold" as="h5">
+            <Box fontSize="md" fontWeight="semibold" as="h5" mt={2}>
               {item.categories.map((cat) => cat.name).join(", ")}
             </Box>
           </Box>
@@ -140,45 +141,47 @@ export default function BrowseItems({
   };
 
   return (
-    <>
-      <Heading as="h1" size="2xl">
-        Kaikki kamat
-      </Heading>
-      <Stack direction="row" spacing={4}>
-        <InputGroup width={"fit-content"}>
-          <Input
-            placeholder="Hae kamoja"
-            marginBottom={"1em"}
-            value={search}
-            onChange={handleChange}
-          />
-          <InputRightElement>
-            <FaSearch />
-          </InputRightElement>
-        </InputGroup>
-      </Stack>
-      <Heading as="h2" size="md" marginBottom={"0.5em"}>
-        Kategoriat
-      </Heading>
-      <Select
-        width={"fit-content"}
-        marginBottom={"1em"}
-        onChange={(e) => setCategory(e.target.value)}
-      >
-        <option value="">Kaikki</option>
-        {categories.map((category) => (
-          <option key={category.id} value={category.name}>
-            {category.name}
-          </option>
-        ))}
-      </Select>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <VStack spacing={spacing.sectionSpacing} align="stretch">
+        <Heading as="h1" size={headingSizes.pageTitle}>
+          Kaikki kamat
+        </Heading>
+        <Stack direction="row" spacing={spacing.elementSpacing}>
+          <InputGroup width={"fit-content"}>
+            <Input
+              placeholder="Hae kamoja"
+              value={search}
+              onChange={handleChange}
+            />
+            <InputRightElement>
+              <FaSearch />
+            </InputRightElement>
+          </InputGroup>
+        </Stack>
+        <Box>
+          <Heading as="h2" size={headingSizes.subsection} mb={spacing.tightSpacing}>
+            Kategoriat
+          </Heading>
+          <Select
+            width={"fit-content"}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Kaikki</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+          </Select>
+        </Box>
 
-      <SimpleGrid
-        columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }}
-        spacing={[4, 6, 8, 10]}
-      >
-        {filteredItems.map((item) => ItemCard(item))}
-      </SimpleGrid>
-    </>
+        <SimpleGrid
+          columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }}
+          spacing={[4, 6, 8, 10]}
+        >
+          {filteredItems.map((item) => ItemCard(item))}
+        </SimpleGrid>
+      </VStack>
+    </Container>
   );
 }

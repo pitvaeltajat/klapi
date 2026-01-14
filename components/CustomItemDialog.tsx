@@ -1,12 +1,6 @@
 import React from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
+  Dialog,
   Button,
   FormControl,
   FormLabel,
@@ -17,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useCart } from "@/contexts/CartContext";
 import { FaCartArrowDown } from "react-icons/fa";
+import { spacing, buttonColors } from "@/styles/designTokens";
 
 interface Props {
   isOpen: boolean;
@@ -48,41 +43,45 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Lisää oma kama varaukseen</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <FormControl mb={3}>
-            <FormLabel>Nimi</FormLabel>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Kaman nimi"
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Määrä</FormLabel>
-            <NumberInput
-              min={1}
-              value={amount}
-              onChange={(val) => setAmount(Number(val))}
-            >
-              <NumberInputField />
-            </NumberInput>
-          </FormControl>
-        </ModalBody>
-        <ModalFooter>
-          <Button mr={3} onClick={onClose} variant="ghost">
-            Peruuta
-          </Button>
-          <Button colorScheme="teal" onClick={handleSubmit}>
-            Lisää
-            <FaCartArrowDown />
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} placement="center">
+      <Dialog.Backdrop />
+      <Dialog.Positioner>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title>Lisää oma kama varaukseen</Dialog.Title>
+            <Dialog.CloseTrigger />
+          </Dialog.Header>
+          <Dialog.Body>
+            <FormControl mb={spacing.elementSpacing}>
+              <FormLabel>Nimi</FormLabel>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Kaman nimi"
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel>Määrä</FormLabel>
+              <NumberInput
+                min={1}
+                value={amount}
+                onChange={(val) => setAmount(Number(val))}
+              >
+                <NumberInputField />
+              </NumberInput>
+            </FormControl>
+          </Dialog.Body>
+          <Dialog.Footer>
+            <Button mr={spacing.elementSpacing} onClick={onClose} variant="ghost" colorScheme={buttonColors.secondary}>
+              Peruuta
+            </Button>
+            <Button colorScheme={buttonColors.primary} onClick={handleSubmit}>
+              Lisää
+              <FaCartArrowDown />
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Positioner>
+    </Dialog.Root>
   );
 }

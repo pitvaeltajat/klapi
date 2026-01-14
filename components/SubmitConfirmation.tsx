@@ -21,6 +21,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
+import { spacing, buttonColors } from '@/styles/designTokens';
 
 export default function SubmitConfirmation({
 	isOpen,
@@ -170,10 +171,10 @@ export default function SubmitConfirmation({
 					</AlertDialogBody>
 
 					<AlertDialogFooter>
-						<Button ref={cancelRef} onClick={onClose}>
+						<Button ref={cancelRef} onClick={onClose} colorScheme={buttonColors.secondary}>
 							Peruuta
 						</Button>
-						<Button colorScheme='green' onClick={handleSubmit} ml={3} isLoading={isLoading}>
+						<Button colorScheme={buttonColors.success} onClick={handleSubmit} ml={spacing.elementSpacing} loading={isLoading}>
 							Lähetä varaus
 						</Button>
 					</AlertDialogFooter>

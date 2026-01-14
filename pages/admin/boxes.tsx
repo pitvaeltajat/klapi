@@ -16,6 +16,12 @@ import {
 import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import NotAuthenticated from "../../components/NotAuthenticated";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+} from "@/styles/designTokens";
 import { Box as BoxType, Item, Reservation, Loan } from "@prisma/client";
 import { GetServerSideProps } from "next";
 
@@ -99,43 +105,44 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
   };
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <Heading as="h1" size="xl" mb={6}>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <Heading
+        as="h1"
+        size={headingSizes.pageTitle}
+        mb={spacing.sectionSpacing}
+      >
         Laatikot
       </Heading>
 
       {boxes.length === 0 ? (
-        <Box
-          bg="gray.50"
-          p={8}
-          borderRadius="lg"
-          textAlign="center"
-          borderWidth="1px"
-        >
+        <Box {...cardStyles.base} textAlign="center">
           <Text fontSize="lg" color="gray.600">
             Ei laatikkoja
           </Text>
         </Box>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+        <SimpleGrid
+          columns={{ base: 1, md: 2, lg: 3 }}
+          spacing={spacing.sectionSpacing}
+        >
           {boxes.map((box) => {
             return (
               <Box
                 key={box.id}
-                bg="white"
-                borderWidth="2px"
-                borderRadius="xl"
-                p={6}
-                shadow="md"
+                {...cardStyles.base}
                 _hover={{
-                  shadow: "lg",
+                  ...cardStyles.hover,
                   transform: "translateY(-2px)",
                   transition: "all 0.2s",
                 }}
               >
-                <VStack align="stretch" spacing={4}>
+                <VStack align="stretch" spacing={spacing.elementSpacing}>
                   <Box>
-                    <Heading as="h2" size="md" mb={2}>
+                    <Heading
+                      as="h2"
+                      size={headingSizes.subsection}
+                      mb={spacing.tightSpacing}
+                    >
                       {box.name}
                     </Heading>
                     {box.description && (
@@ -148,7 +155,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                   <Divider />
 
                   <Box>
-                    <HStack justify="space-between" mb={3}>
+                    <HStack justify="space-between" mb={spacing.tightSpacing}>
                       <Text
                         fontWeight="semibold"
                         fontSize="sm"
@@ -164,7 +171,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                         Ei varauksia
                       </Text>
                     ) : (
-                      <Stack spacing={3}>
+                      <Stack gap={spacing.tightSpacing}>
                         {box.loans.map((loan) => (
                           <Link
                             key={loan.id}
@@ -173,18 +180,17 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                             _hover={{ textDecoration: "none" }}
                           >
                             <Box
-                              bg="gray.50"
-                              p={3}
-                              borderRadius="md"
-                              borderWidth="1px"
+                              {...cardStyles.compact}
                               _hover={{
                                 bg: "gray.100",
                                 borderColor: "blue.300",
-                                shadow: "sm",
                               }}
                               transition="all 0.2s"
                             >
-                              <VStack align="stretch" spacing={2}>
+                              <VStack
+                                align="stretch"
+                                spacing={spacing.tightSpacing}
+                              >
                                 <HStack justify="space-between">
                                   <Text fontWeight="medium" fontSize="sm">
                                     {loan.description || "Ei kuvausta"}

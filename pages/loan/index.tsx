@@ -19,6 +19,7 @@ import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import NotAuthenticated from "../../components/NotAuthenticated";
+import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
 
 interface LoanType {
   id: string;
@@ -95,18 +96,14 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
 
   return (
     <Box
-      borderWidth="1px"
-      borderRadius="lg"
+      {...cardStyles.compact}
       overflow="hidden"
-      p={4}
-      mb={4}
-      bg="white"
-      boxShadow="sm"
+      mb={spacing.elementSpacing}
     >
-      <VStack spacing={3} align="stretch">
+      <VStack spacing={spacing.tightSpacing} align="stretch">
         <HStack justifyContent="space-between" alignItems="start">
           <VStack align="start" spacing={1} flex={1}>
-            <Heading size="md">
+            <Heading size={headingSizes.subsection}>
               <Link as={NextLink} href={`/loan/${loan.id}`}>
                 {loan.description || loan.user.name}
               </Link>
@@ -187,16 +184,16 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
   }
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <Stack spacing={8}>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <Stack gap={spacing.sectionSpacing}>
         <Box>
-          <Heading mb={4}>Varaukset</Heading>
+          <Heading size={headingSizes.pageTitle} mb={spacing.elementSpacing}>Varaukset</Heading>
           <Select
             value={loanCategory}
             onChange={(e) =>
               setLoanCategory(e.target.value as LoanStatus | "ALL")
             }
-            mb={4}
+            mb={spacing.elementSpacing}
           >
             <option value="ALL">Kaikki</option>
             <option value={LoanStatus.ACCEPTED}>Hyväksytyt</option>

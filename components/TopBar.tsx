@@ -150,8 +150,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
           </Flex>
         </Container>
       </Box>
-      <Box h="4rem" />{" "}
-      <Drawer placement="top" onClose={onClose} isOpen={isOpen}>
+      <Box h="4rem" />
+      <Drawer
+        placement="top"
+        onOpenChange={(e) => !e.open && onClose()}
+        open={isOpen}
+      >
         <DrawerOverlay />
         <DrawerContent>
           <DrawerBody pt="4rem">

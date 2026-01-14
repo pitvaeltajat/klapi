@@ -18,8 +18,7 @@ const Auth: FC = () => {
       <Button
         colorScheme="blue"
         onClick={() => signIn()}
-        isLoading={status === "loading"}
-        loadingText="Kirjaudutaan..."
+        loading={status === "loading"}
       >
         Kirjaudu sisään
       </Button>

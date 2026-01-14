@@ -2,11 +2,10 @@ import React from "react";
 import { AppProps } from "next/app";
 import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
-import { useToast, ChakraProvider } from "@chakra-ui/react";
-import { ThemeProvider } from "next-themes";
+import { useToast } from "@chakra-ui/react";
 import Layout from "../components/Layout";
 import RedirectUnauthorized from "../components/RedirectUnauthorized";
-import theme from "../styles/theme";
+import { Provider } from "../components/ui/provider";
 import { CartProvider } from "../contexts/CartContext";
 import { DatesProvider } from "../contexts/DatesContext";
 
@@ -41,13 +40,11 @@ export default function App({
         >
           <DatesProvider>
             <CartProvider>
-              <ChakraProvider theme={theme}>
-                <ThemeProvider>
-                  <Layout>
-                    <Component {...pageProps} />
-                  </Layout>
-                </ThemeProvider>
-              </ChakraProvider>
+              <Provider>
+                <Layout>
+                  <Component {...pageProps} />
+                </Layout>
+              </Provider>
             </CartProvider>
           </DatesProvider>
         </SWRConfig>

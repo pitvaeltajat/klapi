@@ -14,6 +14,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@chakra-ui/react";
 import { useCallback, useMemo, memo } from "react";
 import { FaCartArrowDown } from "react-icons/fa";
+import { cardStyles, buttonColors } from "@/styles/designTokens";
 
 const ItemCard = memo(function ItemCard({
   item,
@@ -58,12 +59,10 @@ const ItemCard = memo(function ItemCard({
     <Box
       bg={bgColor}
       maxW="sm"
-      borderWidth="1px"
-      rounded="lg"
-      shadow="lg"
+      {...cardStyles.compact}
       position="relative"
       _hover={{
-        shadow: "2xl",
+        ...cardStyles.hover,
         transform: "scale(1.01)",
         transition: "all 0.2s",
         zIndex: 1,
@@ -80,8 +79,8 @@ const ItemCard = memo(function ItemCard({
         />
       </AspectRatio>
 
-      <Box margin={"1.5em"} marginTop={"0.5em"}>
-        <Flex mt="1" justifyContent="space-between" alignContent="center">
+      <Box>
+        <Flex mt={2} justifyContent="space-between" alignContent="center">
           <Box
             fontSize="2xl"
             fontWeight="semibold"
@@ -99,20 +98,20 @@ const ItemCard = memo(function ItemCard({
           </Box>
         </Flex>
 
-        <Box fontSize="l" fontWeight="semibold" as="h5">
+        <Box fontSize="md" fontWeight="semibold" as="h5" mt={2}>
           Saatavilla: {amountLeft} / {item.amount} kpl
         </Box>
 
-        <Box fontSize="l" fontWeight="semibold" as="h5">
+        <Box fontSize="md" fontWeight="semibold" as="h5" mt={2}>
           {item.categories.map((cat) => cat.name).join(", ")}
         </Box>
 
         <Button
           onClick={handleAddToCart}
-          colorScheme="blue"
+          colorScheme={buttonColors.primary}
           width="full"
           mt={4}
-          isDisabled={!canTakeMoreItems}
+          disabled={!canTakeMoreItems}
         >
           {canTakeMoreItems ? "Lisää" : "Ei saatavilla"}
           {canTakeMoreItems && <FaCartArrowDown />}

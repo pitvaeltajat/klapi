@@ -18,6 +18,7 @@ import {
   Heading,
   useDisclosure,
 } from "@chakra-ui/react";
+import { spacing, buttonColors, headingSizes } from "@/styles/designTokens";
 import { useRef } from "react";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import SubmitConfirmation from "./SubmitConfirmation";
@@ -101,10 +102,10 @@ export default function CartDrawer({
     }
     return (
       <Drawer
-        isOpen={isOpen}
+        open={isOpen}
         placement="right"
         size={{ base: "full", md: "md" }}
-        onClose={onClose}
+        onOpenChange={(e) => !e.open && onClose()}
       >
         <DrawerOverlay />
         <DrawerContent>
@@ -134,24 +135,24 @@ export default function CartDrawer({
 
   return (
     <Drawer
-      isOpen={isOpen}
+      open={isOpen}
       placement="right"
       size={{ base: "full", md: "md" }}
-      initialFocusRef={firstField}
-      onClose={onClose}
+      initialFocusEl={() => firstField.current}
+      onOpenChange={(e) => !e.open && onClose()}
     >
       <DrawerOverlay />
       <DrawerContent height="100%">
         <DrawerCloseButton />
         <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
 
-        <DrawerBody>
-          <SubmitConfirmation
-            isOpen={ConfirmationDialog.isOpen}
-            onClose={ConfirmationDialog.onClose}
-            closeDrawer={onClose}
-          />
-          <Stack spacing={1}>
+          <DrawerBody>
+            <SubmitConfirmation
+              isOpen={ConfirmationDialog.isOpen}
+              onClose={ConfirmationDialog.onClose}
+              closeDrawer={onClose}
+            />
+          <Stack gap={spacing.elementSpacing}>
             <Box>
               <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
               <LoanerAutocomplete
@@ -177,8 +178,8 @@ export default function CartDrawer({
                 onChange={(e) => {
                   setDescription(e.target.value);
                 }}
-                isRequired
-                isInvalid={!isDescriptionValid && cart.items.length > 0}
+                required
+                invalid={!isDescriptionValid && cart.items.length > 0}
               />
             </Box>
             <Box>
@@ -200,8 +201,8 @@ export default function CartDrawer({
           </Stack>
 
           {cart.items.length > 0 ? (
-            <Stack spacing={2} marginTop="20px">
-              <Heading as="h3" size="md">
+            <Stack gap={spacing.tightSpacing} marginTop={spacing.sectionSpacing}>
+              <Heading as="h3" size={headingSizes.subsection}>
                 Valitut tavarat
               </Heading>
               {cart.items.map(
@@ -232,7 +233,7 @@ export default function CartDrawer({
                             aria-label="increment"
                             onClick={() => incrementAmount(item.id)}
                             width="100%"
-                            isDisabled={
+                            disabled={
                               !availabilities[item.id] ||
                               getCartAmount(item.id) >=
                                 availabilities[item.id].available
@@ -245,20 +246,20 @@ export default function CartDrawer({
               )}
             </Stack>
           ) : (
-            <Heading as="h3" size="md">
+            <Heading as="h3" size={headingSizes.subsection}>
               Ostoskori on tyhjä
             </Heading>
           )}
         </DrawerBody>
 
         <DrawerFooter borderTopWidth="1px">
-          <Button variant="outline" mr={3} onClick={onClose}>
+          <Button variant="outline" mr={spacing.elementSpacing} onClick={onClose}>
             Sulje
           </Button>
           <Button
-            colorScheme="blue"
+            colorScheme={buttonColors.primary}
             onClick={ConfirmationDialog.onOpen}
-            isDisabled={cart.items.length === 0 || !isDescriptionValid}
+            disabled={cart.items.length === 0 || !isDescriptionValid}
           >
             Varaa
           </Button>

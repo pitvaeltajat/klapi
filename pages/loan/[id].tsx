@@ -7,18 +7,17 @@ import {
   Heading,
   Box,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
   Link,
   Container,
   Text,
   Tag,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import NotAuthenticated from "../../components/NotAuthenticated";
@@ -35,6 +34,13 @@ import {
 } from "@prisma/client";
 import { GetServerSideProps } from "next";
 import { getColor } from "./index";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+  buttonColors,
+} from "@/styles/designTokens";
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -236,17 +242,25 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
   // list reservations and show loan basic information and user information
   return (
-    <Container maxW="container.xl" py={8}>
-      <Stack spacing={6}>
-        <Heading as="h1" mb={4}>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <Stack gap={spacing.sectionSpacing}>
+        <Heading
+          as="h1"
+          size={headingSizes.pageTitle}
+          mb={spacing.elementSpacing}
+        >
           Varaus: {loan.description || "Ei kuvausta"}
         </Heading>
 
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
-          <Heading as="h2" size="lg" mb={4}>
+        <Box {...cardStyles.base}>
+          <Heading
+            as="h2"
+            size={headingSizes.sectionTitle}
+            mb={spacing.elementSpacing}
+          >
             Perustiedot
           </Heading>
-          <Stack spacing={3}>
+          <Stack gap={spacing.tightSpacing}>
             <Text>
               Aloitusaika:{" "}
               {new Date(loan.startTime).toLocaleString("fi-FI", {
@@ -282,18 +296,22 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </Stack>
         </Box>
 
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
-          <Heading as="h2" size="lg" mb={4}>
+        <Box {...cardStyles.base}>
+          <Heading
+            as="h2"
+            size={headingSizes.sectionTitle}
+            mb={spacing.elementSpacing}
+          >
             Kamat
           </Heading>
           <ReservationTableLoanView loan={loan} />
         </Box>
 
         {loan.status !== "INUSE" && loan.status !== "RETURNED" && (
-          <Stack direction="row" spacing={4}>
+          <Stack direction="row" spacing={spacing.elementSpacing}>
             {(isAdmin || session?.user?.id === loan.user.id) && (
               <Button
-                colorScheme="red"
+                colorScheme={buttonColors.danger}
                 onClick={onOpen}
                 isDisabled={loan.status === "REJECTED"}
               >
@@ -303,10 +321,10 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             {isAdmin && (
               <>
                 <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
-                  <Button colorScheme="yellow">Muokkaa</Button>
+                  <Button colorScheme={buttonColors.secondary}>Muokkaa</Button>
                 </Link>
                 <Button
-                  colorScheme="green"
+                  colorScheme={buttonColors.success}
                   onClick={approveLoan}
                   isDisabled={loan.status === "ACCEPTED"}
                 >
@@ -318,38 +336,49 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         )}
 
         {(loan.status === "IN_BOX" || loan.status === "INUSE") && isAdmin && (
-          <Stack direction="row" spacing={4}>
-            <Button onClick={loanProcessed} colorScheme="green">
+          <Stack direction="row" spacing={spacing.elementSpacing}>
+            <Button onClick={loanProcessed} colorScheme={buttonColors.success}>
               Merkitse kamat palautetuksi
             </Button>
           </Stack>
         )}
 
         {loan.status === "RETURNED" && (
-          <Box bg="gray.50" p={6} borderRadius="lg" borderWidth="1px">
-            <Heading as="h2" size="lg">
+          <Box {...cardStyles.base}>
+            <Heading as="h2" size={headingSizes.sectionTitle}>
               Lainaustapahtuma suoritettu loppuun
             </Heading>
           </Box>
         )}
 
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Hylätäänkö varaus?</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>Varaushakemus hylätään. Oletko varma?</ModalBody>
+        <Dialog.Root
+          open={isOpen}
+          onOpenChange={(e: { open: boolean }) => !e.open && onClose()}
+        >
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>Hylätäänkö varaus?</Dialog.Title>
+                <Dialog.CloseTrigger />
+              </Dialog.Header>
+              <Dialog.Body>Varaushakemus hylätään. Oletko varma?</Dialog.Body>
 
-            <ModalFooter>
-              <Button colorScheme="red" mr={3} onClick={rejectLoan}>
-                Hylkää
-              </Button>
-              <Button colorScheme="gray" onClick={onClose}>
-                Peruuta
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+              <Dialog.Footer>
+                <Button
+                  colorScheme={buttonColors.danger}
+                  mr={3}
+                  onClick={rejectLoan}
+                >
+                  Hylkää
+                </Button>
+                <Button colorScheme={buttonColors.secondary} onClick={onClose}>
+                  Peruuta
+                </Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Dialog.Root>
       </Stack>
     </Container>
   );

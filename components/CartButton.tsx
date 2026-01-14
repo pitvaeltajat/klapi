@@ -22,7 +22,7 @@ export default function CartButton({
       icon={<FaShoppingCart />}
       colorScheme="blue"
       onClick={isOpen ? onClose : onOpen}
-      isDisabled={!dates.datesSet}
+      disabled={!dates.datesSet}
     />
   );
 }

@@ -9,13 +9,7 @@ import {
   Tag,
   Text,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
+  Dialog,
   useDisclosure,
   VStack,
   Image,
@@ -26,6 +20,7 @@ import { LoanStatus } from "@prisma/client";
 import type { GetServerSideProps } from "next";
 import NotAuthenticated from "../../components/NotAuthenticated";
 import { useRouter } from "next/router";
+import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
 
 interface Reservation {
   id: string;
@@ -107,15 +102,12 @@ const LoanReturnCard = ({
   return (
     <>
       <Box
-        borderWidth="1px"
-        borderRadius="lg"
+        {...cardStyles.compact}
         overflow="hidden"
-        p={4}
-        mb={4}
-        bg="white"
+        mb={spacing.elementSpacing}
       >
-        <Stack spacing={3}>
-          <Heading size="md">{loan.description || loan.loaner}</Heading>
+        <Stack gap={spacing.tightSpacing}>
+          <Heading size={headingSizes.subsection}>{loan.description || loan.loaner}</Heading>
           <Tag colorScheme="blue" width="fit-content">
             Käytössä
           </Tag>
@@ -125,7 +117,7 @@ const LoanReturnCard = ({
             {new Date(loan.endTime).toLocaleDateString()}
           </Text>
           <Box>
-            <Text fontWeight="bold" mb={2}>
+            <Text fontWeight="bold" mb={spacing.tightSpacing}>
               Tavarat:
             </Text>
             {loan.reservations.map((reservation) => (
@@ -134,102 +126,110 @@ const LoanReturnCard = ({
               </Text>
             ))}
           </Box>
-          <Button colorScheme="green" onClick={onOpen} size="lg">
+          <Button colorScheme={buttonColors.success} onClick={onOpen} size="lg">
             Palauta
           </Button>
         </Stack>
       </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Vahvista palautus</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="start" spacing={3}>
-              <Text fontWeight="bold">
-                Oletko palauttamassa seuraavat tavarat?
-              </Text>
-              {loan.reservations.map((reservation) => (
-                <HStack key={reservation.id} spacing={3} width="100%">
-                  {reservation.item.image && (
-                    <Image
-                      src={reservation.item.image}
-                      alt={reservation.item.name}
-                      boxSize="50px"
-                      objectFit="cover"
-                      borderRadius="md"
-                    />
-                  )}
-                  <Text>
-                    {reservation.item.name} ({reservation.amount} kpl)
-                  </Text>
-                </HStack>
-              ))}
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Peruuta
-            </Button>
-            <Button colorScheme="green" onClick={handleConfirmReturn}>
-              Vahvista palautus
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Vahvista palautus</Dialog.Title>
+              <Dialog.CloseTrigger />
+            </Dialog.Header>
+            <Dialog.Body>
+              <VStack align="start" spacing={3}>
+                <Text fontWeight="bold">
+                  Oletko palauttamassa seuraavat tavarat?
+                </Text>
+                {loan.reservations.map((reservation) => (
+                  <HStack key={reservation.id} spacing={3} width="100%">
+                    {reservation.item.image && (
+                      <Image
+                        src={reservation.item.image}
+                        alt={reservation.item.name}
+                        boxSize="50px"
+                        objectFit="cover"
+                        borderRadius="md"
+                      />
+                    )}
+                    <Text>
+                      {reservation.item.name} ({reservation.amount} kpl)
+                    </Text>
+                  </HStack>
+                ))}
+              </VStack>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <Button variant="ghost" mr={3} onClick={onClose}>
+                Peruuta
+              </Button>
+              <Button colorScheme={buttonColors.success} onClick={handleConfirmReturn}>
+                Vahvista palautus
+              </Button>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
-      <Modal
-        isOpen={isBoxInstructionsOpen}
-        onClose={onBoxInstructionsClose}
+      <Dialog.Root
+        open={isBoxInstructionsOpen}
+        onOpenChange={(e) => !e.open && onBoxInstructionsClose()}
         size="lg"
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Palautusohje</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="start" spacing={4}>
-              <Box
-                p={6}
-                bg="blue.50"
-                borderRadius="lg"
-                width="100%"
-                textAlign="center"
-              >
-                <Text fontSize="sm" color="gray.600" mb={2}>
-                  Palauta tavarat lokeroon:
-                </Text>
-                <Heading size="2xl" color="blue.600">
-                  {boxInfo?.name}
-                </Heading>
-              </Box>
-              {boxInfo?.description && (
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Palautusohje</Dialog.Title>
+              <Dialog.CloseTrigger />
+            </Dialog.Header>
+            <Dialog.Body>
+              <VStack align="start" spacing={spacing.elementSpacing}>
                 <Box
-                  p={4}
-                  bg="gray.50"
-                  borderRadius="md"
+                  p={6}
+                  bg="blue.50"
+                  borderRadius="lg"
                   width="100%"
+                  textAlign="center"
                 >
-                  <Text fontWeight="bold" mb={2}>
-                    Lisätiedot:
+                  <Text fontSize="sm" color="gray.600" mb={2}>
+                    Palauta tavarat lokeroon:
                   </Text>
-                  <Text>{boxInfo.description}</Text>
+                  <Heading size="2xl" color="blue.600">
+                    {boxInfo?.name}
+                  </Heading>
                 </Box>
-              )}
-              <Text color="gray.600" fontSize="sm">
-                Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan
-                lokeroon.
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={onBoxInstructionsClose} size="lg">
-              Sulje
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+                {boxInfo?.description && (
+                  <Box
+                    p={4}
+                    bg="gray.50"
+                    borderRadius="md"
+                    width="100%"
+                  >
+                    <Text fontWeight="bold" mb={2}>
+                      Lisätiedot:
+                    </Text>
+                    <Text>{boxInfo.description}</Text>
+                  </Box>
+                )}
+                <Text color="gray.600" fontSize="sm">
+                  Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan
+                  lokeroon.
+                </Text>
+              </VStack>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <Button colorScheme={buttonColors.primary} onClick={onBoxInstructionsClose} size="lg">
+                Sulje
+              </Button>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
     </>
   );
 };
@@ -286,17 +286,17 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
   }
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <Stack spacing={8}>
+    <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
+      <Stack gap={spacing.sectionSpacing}>
         <Box>
-          <Heading mb={4}>Palauta lainoja</Heading>
-          <Button mb={4} onClick={() => router.push("/")} colorScheme="gray">
+          <Heading size={headingSizes.pageTitle} mb={spacing.elementSpacing}>Palauta lainoja</Heading>
+          <Button mb={spacing.elementSpacing} onClick={() => router.push("/")} colorScheme={buttonColors.secondary}>
             Takaisin etusivulle
           </Button>
 
           {loans.length === 0 ? (
-            <Box textAlign="center" py={8}>
-              <Heading size="md" color="gray.500">
+            <Box textAlign="center" py={spacing.sectionSpacing}>
+              <Heading size={headingSizes.subsection} color="gray.500">
                 Ei käytössä olevia lainoja
               </Heading>
             </Box>

@@ -5,6 +5,7 @@ import prisma from "../utils/prisma";
 import { LoanCard } from "./loan";
 import type { GetServerSideProps } from "next";
 import type { Loan, User } from "@prisma/client";
+import { cardStyles, headingSizes, spacing } from "@/styles/designTokens";
 
 interface LoanWithUser extends Loan {
   user: User;
@@ -64,17 +65,12 @@ export default function Account({ loans }: AccountProps) {
 
   if (session) {
     return (
-      <VStack spacing={6} align="stretch">
-        <Box
-          bg="white"
-          p={6}
-          borderRadius="md"
-          boxShadow="sm"
-          borderWidth="1px"
-          borderColor="gray.200"
-        >
-          <VStack align="start" spacing={3}>
-            <Heading size="lg">{session?.user?.name}</Heading>
+      <VStack spacing={spacing.sectionSpacing} align="stretch">
+        <Box {...cardStyles.base}>
+          <VStack align="start" spacing={spacing.tightSpacing}>
+            <Heading size={headingSizes.pageTitle}>
+              {session?.user?.name}
+            </Heading>
             <Text fontSize="md" color="gray.600">
               {session?.user?.email}
             </Text>
@@ -87,22 +83,26 @@ export default function Account({ loans }: AccountProps) {
                 : "Admin"}
             </Text>
           </VStack>
-          <Divider my={4} />
+          <Divider my={spacing.elementSpacing} />
           <Auth />
         </Box>
 
         <Box>
-          <Heading size="md" mb={4}>
+          <Heading size={headingSizes.sectionTitle} mb={spacing.elementSpacing}>
             Omat varaukset:
           </Heading>
           {loansSorted.length > 0 ? (
-            <Stack spacing={4}>
+            <Stack gap={spacing.elementSpacing}>
               {loansSorted.map((loan) => (
                 <LoanCard key={loan.id} loan={loan} />
               ))}
             </Stack>
           ) : (
-            <Text color="gray.500" textAlign="center" py={8}>
+            <Text
+              color="gray.500"
+              textAlign="center"
+              py={spacing.sectionSpacing}
+            >
               Ei varauksia
             </Text>
           )}
@@ -111,16 +111,9 @@ export default function Account({ loans }: AccountProps) {
     );
   } else {
     return (
-      <Box
-        bg="white"
-        p={6}
-        borderRadius="md"
-        boxShadow="sm"
-        borderWidth="1px"
-        borderColor="gray.200"
-      >
-        <VStack spacing={4} align="start">
-          <Heading size="lg">Ei kirjautunut sisään</Heading>
+      <Box {...cardStyles.base}>
+        <VStack spacing={spacing.elementSpacing} align="start">
+          <Heading size={headingSizes.pageTitle}>Ei kirjautunut sisään</Heading>
           <Auth />
         </VStack>
       </Box>

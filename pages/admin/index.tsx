@@ -32,6 +32,12 @@ import { useSession } from "next-auth/react";
 import { useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import NotAuthenticated from "../../components/NotAuthenticated";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  buttonColors,
+} from "@/styles/designTokens";
 import type { NextPage } from "next";
 import type { User } from "@prisma/client";
 
@@ -87,9 +93,9 @@ const RoleSwitch: React.FC<RoleSwitchProps> = ({ user }) => {
   return (
     <Switch
       colorScheme="green"
-      isChecked={user.group === "ADMIN"}
+      checked={user.group === "ADMIN"}
       onChange={() => updateRole(user.id, user.group)}
-      isDisabled={user.group === "KIOSK"}
+      disabled={user.group === "KIOSK"}
     />
   );
 };
@@ -180,21 +186,27 @@ const Admin: NextPage = () => {
   }
 
   return (
-    <VStack spacing={6} align="stretch">
+    <VStack spacing={spacing.sectionSpacing} align="stretch">
       {/* Header */}
       <Flex justifyContent="space-between" alignItems="center">
-        <Heading size="xl">Admin</Heading>
+        <Heading size={headingSizes.pageTitle}>Admin</Heading>
         <Link as={NextLink} href="/admin/createItem">
-          <Button leftIcon={<FaPlus />} colorScheme="green" size="lg">
+          <Button
+            leftIcon={<FaPlus />}
+            colorScheme={buttonColors.success}
+            size="lg"
+          >
             Luo uusi kama
           </Button>
         </Link>
       </Flex>
 
       {/* User Management Section */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
-        <HStack justifyContent="space-between" mb={4}>
-          <Heading size="md">Käyttäjien hallinta</Heading>
+      <Box {...cardStyles.base}>
+        <HStack justifyContent="space-between" mb={spacing.elementSpacing}>
+          <Heading size={headingSizes.sectionTitle}>
+            Käyttäjien hallinta
+          </Heading>
           <Text color="gray.600" fontSize="sm">
             Yhteensä {users.length} käyttäjää
           </Text>
@@ -224,7 +236,7 @@ const Admin: NextPage = () => {
                     <IconButton
                       aria-label="Poista käyttäjä"
                       icon={<FaTrash />}
-                      colorScheme="red"
+                      colorScheme={buttonColors.danger}
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteClick(user)}
@@ -267,7 +279,11 @@ const Admin: NextPage = () => {
               <Button ref={cancelRef} onClick={onClose}>
                 Peruuta
               </Button>
-              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+              <Button
+                colorScheme={buttonColors.danger}
+                onClick={handleDeleteConfirm}
+                ml={3}
+              >
                 Poista
               </Button>
             </AlertDialogFooter>
