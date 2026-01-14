@@ -176,7 +176,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
   const [selectedStatuses, setSelectedStatuses] = useState<
     Set<LoanStatus | "ALL">
-  >(new Set(["IN_BOX", "INUSE"]));
+  >(new Set([LoanStatus.IN_BOX, LoanStatus.INUSE]));
 
   loans = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime))
@@ -203,8 +203,8 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
     if (status === "ALL") {
       if (newStatuses.has("ALL")) {
         newStatuses.clear();
-        newStatuses.add("IN_BOX");
-        newStatuses.add("INUSE");
+        newStatuses.add(LoanStatus.IN_BOX);
+        newStatuses.add(LoanStatus.INUSE);
       } else {
         newStatuses.clear();
         newStatuses.add("ALL");

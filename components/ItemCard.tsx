@@ -6,7 +6,6 @@ import {
   Link,
   AspectRatio,
   useColorModeValue,
-  Circle,
   IconButton,
   InputGroup,
   InputLeftAddon,
@@ -49,6 +48,13 @@ const ItemCard = memo(function ItemCard({
       id: item.id,
       name: item.name,
       amount: amountInCart + 1,
+    });
+    toast({
+      title: "Lisättiin kama",
+      description: `${item.name} lisätty ostoskoriin`,
+      status: "success",
+      duration: 1500,
+      isClosable: true,
     });
   }, [addToCart, item.id, item.name, amountInCart, toast]);
 

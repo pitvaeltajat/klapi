@@ -11,7 +11,6 @@ import {
   Text,
   Link,
   useDisclosure,
-  Select,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import AllItems from "../pages/productlist";

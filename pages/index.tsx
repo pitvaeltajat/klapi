@@ -7,7 +7,6 @@ import type { GetServerSideProps } from "next";
 import { Item, Category, Loan, Reservation, ItemType } from "@prisma/client";
 import { useDates } from "@/contexts/DatesContext";
 import { useSession } from "next-auth/react";
-import { useCart } from "@/contexts/CartContext";
 import ItemBrowser from "../components/ItemBrowser";
 
 interface ItemWithRelations extends Item {
@@ -40,7 +39,6 @@ export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
 export default function Index({ items, categories }: IndexProps) {
   const { state: dates } = useDates();
   const { data: session } = useSession();
-  const { state: cart } = useCart();
 
   const isKioskMode = session?.user?.group === "KIOSK";
 

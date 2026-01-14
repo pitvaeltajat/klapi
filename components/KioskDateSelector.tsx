@@ -10,13 +10,11 @@ import {
 import "react-datepicker/dist/react-datepicker.css";
 
 import React from "react";
-import { useRouter } from "next/router";
 import { useDates } from "@/contexts/DatesContext";
 import { useCart } from "@/contexts/CartContext";
 import LoanerAutocomplete from "./LoanerAutocomplete";
 
 export default function KioskDateSelector() {
-  const router = useRouter();
   const { state: dates, setEndDate } = useDates();
   const { state: cart, setLoaner, setUserId } = useCart();
 
