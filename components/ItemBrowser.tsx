@@ -11,8 +11,10 @@ import {
   Text,
   Link,
   useDisclosure,
+  Flex,
+  Icon,
 } from "@chakra-ui/react";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaInfoCircle } from "react-icons/fa";
 import AllItems from "../pages/productlist";
 import { Item, Category, Loan, Reservation, ItemType } from "@prisma/client";
 import CustomItemDialog from "./CustomItemDialog";
@@ -105,14 +107,30 @@ export default function ItemBrowser({
       </Box>
       {showCustomItemLink && (
         <>
-          <Box marginBottom={"1em"}>
-            <Text>
-              Jos haluamaasi kamaa ole lisätty valikoimaan klikkaa{" "}
-              <Link color="teal.500" onClick={onOpen}>
-                tästä
+          <Flex
+            alignItems="center"
+            gap={3}
+            padding="1em"
+            marginBottom="1em"
+            bg="blue.50"
+            borderRadius="md"
+            borderLeft="4px solid"
+            borderColor="blue.400"
+          >
+            <Icon as={FaInfoCircle} color="blue.500" boxSize={5} />
+            <Text fontSize="sm">
+              Jos haluamaasi kamaa ei löydy,{" "}
+              <Link
+                color="blue.600"
+                fontWeight="semibold"
+                onClick={onOpen}
+                textDecoration="underline"
+                _hover={{ color: "blue.700" }}
+              >
+                klikkaa tästä
               </Link>
             </Text>
-          </Box>
+          </Flex>
           <CustomItemDialog isOpen={isOpen} onClose={onClose} />
         </>
       )}

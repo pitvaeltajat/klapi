@@ -1,5 +1,7 @@
 import prisma from "../../../utils/prisma";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]";
 import "dotenv/config";
 
 export default async function handler(
@@ -7,9 +9,15 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session?.user?.id) {
+      res.status(401).json({ message: "Ei kirjautunut" });
+      return;
+    }
+
     const { reservations, startTime, endTime, userId, description, loaner } =
       req.body;
-    // reservations: [{ itemId, amount, name? }]
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, group: true },
@@ -20,7 +28,8 @@ export default async function handler(
     }
 
     // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
-    const status = user.group === "KIOSK" ? "INUSE" : "ACCEPTED";
+    // Check the session user's group (who is creating the loan), not the target user's group
+    const status = session.user.group === "KIOSK" ? "INUSE" : "ACCEPTED";
 
     // Ensure referenced items exist; for custom items (client-generated ids)
     // create temporary Item records and replace itemId accordingly.
@@ -66,33 +75,45 @@ export default async function handler(
       },
     });
 
-    await fetch(
-      `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendNewLoanToUser`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: result.id,
-          email: user.email,
-        }),
-      }
-    );
+    // Only send emails for non-kiosk loans (ACCEPTED status)
+    // Kiosk loans (INUSE) are immediate and don't need approval notifications
+    if (status === "ACCEPTED") {
+      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith("http")
+        ? process.env.NEXT_PUBLIC_VERCEL_URL
+        : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
 
-    await fetch(
-      `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendNewLoanToAdmin`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: result.id,
-          loanCreator: user.name,
-        }),
+      try {
+        await fetch(`${baseUrl}/api/email/sendNewLoanToUser`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: result.id,
+            email: user.email,
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to send user email:", error);
+        // Continue execution even if email fails
       }
-    );
+
+      try {
+        await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: result.id,
+            loanCreator: user.name,
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to send admin email:", error);
+        // Continue execution even if email fails
+      }
+    }
 
     res.status(200).json(result);
   } catch (err) {

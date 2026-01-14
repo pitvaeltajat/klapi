@@ -80,9 +80,11 @@ export const getServerSideProps: GetServerSideProps = async () => {
 const LoanReturnCard = ({
   loan,
   onReturn,
+  onReturnComplete,
 }: {
   loan: LoanType;
   onReturn: (id: string) => Promise<{ name: string; description: string | null } | null>;
+  onReturnComplete: () => void;
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -97,11 +99,16 @@ const LoanReturnCard = ({
 
   const handleConfirmReturn = async () => {
     const box = await onReturn(loan.id);
-    onClose();
     if (box) {
       setBoxInfo(box);
+      onClose();
       onBoxInstructionsOpen();
     }
+  };
+
+  const handleBoxInstructionsClose = () => {
+    onBoxInstructionsClose();
+    onReturnComplete();
   };
 
   return (
@@ -140,92 +147,158 @@ const LoanReturnCard = ({
         </Stack>
       </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Vahvista palautus</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="start" spacing={3}>
-              <Text fontWeight="bold">
-                Oletko palauttamassa seuraavat tavarat?
-              </Text>
-              {loan.reservations.map((reservation) => (
-                <HStack key={reservation.id} spacing={3} width="100%">
-                  {reservation.item.image && (
-                    <Image
-                      src={reservation.item.image}
-                      alt={reservation.item.name}
-                      boxSize="50px"
-                      objectFit="cover"
-                      borderRadius="md"
-                    />
-                  )}
-                  <Text>
-                    {reservation.item.name} ({reservation.amount} kpl)
-                  </Text>
-                </HStack>
-              ))}
+      <Modal isOpen={isOpen} onClose={onClose} size="full">
+        <ModalOverlay bg="white" />
+        <ModalContent bg="white" m={0}>
+          <ModalCloseButton size="lg" />
+          <ModalBody p={8}>
+            <VStack spacing={8} maxW="800px" mx="auto" align="stretch">
+              <Heading size="xl" textAlign="center" color="blue.600">
+                Palautat kamoja
+              </Heading>
+
+              <VStack spacing={4} align="stretch">
+                {loan.reservations.map((reservation) => (
+                  <HStack
+                    key={reservation.id}
+                    p={4}
+                    bg="gray.50"
+                    borderRadius="lg"
+                    borderWidth="2px"
+                    borderColor="gray.200"
+                    spacing={4}
+                  >
+                    {reservation.item.image ? (
+                      <Image
+                        src={reservation.item.image}
+                        alt={reservation.item.name}
+                        boxSize="80px"
+                        objectFit="cover"
+                        borderRadius="md"
+                      />
+                    ) : (
+                      <Box
+                        boxSize="80px"
+                        bg="gray.200"
+                        borderRadius="md"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text fontSize="sm" color="gray.500">
+                          Ei kuvaa
+                        </Text>
+                      </Box>
+                    )}
+                    <VStack align="start" spacing={1} flex={1}>
+                      <Text fontSize="lg" fontWeight="bold">
+                        {reservation.item.name}
+                      </Text>
+                      <Text fontSize="md" color="gray.600">
+                        Määrä: {reservation.amount} kpl
+                      </Text>
+                    </VStack>
+                  </HStack>
+                ))}
+              </VStack>
+
+              <Box
+                p={6}
+                bg="blue.50"
+                borderRadius="lg"
+                borderWidth="2px"
+                borderColor="blue.200"
+              >
+                <Text fontSize="md" lineHeight="tall">
+                  Vahvistamalla palautuksen otat vastuun siitä, että kaikki
+                  tavarat ovat mukana, puhtaita ja toimivassa kunnossa.
+                  Palauta tavarat oikeaan lokeroon.
+                </Text>
+              </Box>
+
+              <Button
+                colorScheme="green"
+                size="lg"
+                onClick={handleConfirmReturn}
+                height="60px"
+                fontSize="xl"
+              >
+                Vahvista palautus
+              </Button>
             </VStack>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Peruuta
-            </Button>
-            <Button colorScheme="green" onClick={handleConfirmReturn}>
-              Vahvista palautus
-            </Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
 
       <Modal
         isOpen={isBoxInstructionsOpen}
-        onClose={onBoxInstructionsClose}
-        size="lg"
+        onClose={handleBoxInstructionsClose}
+        size="xl"
+        closeOnOverlayClick={false}
+        closeOnEsc={false}
       >
-        <ModalOverlay />
+        <ModalOverlay bg="blackAlpha.700" />
         <ModalContent>
-          <ModalHeader>Palautusohje</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="start" spacing={4}>
+          <ModalHeader fontSize="2xl" textAlign="center" pt={6}>
+            Palautusohje
+          </ModalHeader>
+          <ModalBody pb={6}>
+            <VStack spacing={6}>
               <Box
-                p={6}
+                p={8}
                 bg="blue.50"
                 borderRadius="lg"
                 width="100%"
                 textAlign="center"
+                borderWidth="3px"
+                borderColor="blue.400"
               >
-                <Text fontSize="sm" color="gray.600" mb={2}>
+                <Text fontSize="lg" color="gray.700" mb={3} fontWeight="medium">
                   Palauta tavarat lokeroon:
                 </Text>
-                <Heading size="2xl" color="blue.600">
+                <Heading size="3xl" color="blue.600">
                   {boxInfo?.name}
                 </Heading>
               </Box>
               {boxInfo?.description && (
                 <Box
-                  p={4}
+                  p={5}
                   bg="gray.50"
                   borderRadius="md"
                   width="100%"
+                  borderWidth="1px"
+                  borderColor="gray.300"
                 >
-                  <Text fontWeight="bold" mb={2}>
+                  <Text fontWeight="bold" mb={2} fontSize="lg">
                     Lisätiedot:
                   </Text>
-                  <Text>{boxInfo.description}</Text>
+                  <Text fontSize="md">{boxInfo.description}</Text>
                 </Box>
               )}
-              <Text color="gray.600" fontSize="sm">
-                Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan
-                lokeroon.
-              </Text>
+              <Box
+                p={5}
+                bg="green.50"
+                borderRadius="md"
+                width="100%"
+                textAlign="center"
+              >
+                <Text color="green.700" fontSize="md" fontWeight="medium">
+                  Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan
+                  lokeroon.
+                </Text>
+              </Box>
             </VStack>
           </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={onBoxInstructionsClose} size="lg">
-              Sulje
+          <ModalFooter justifyContent="center" pb={6}>
+            <Button
+              colorScheme="blue"
+              onClick={handleBoxInstructionsClose}
+              size="lg"
+              width="200px"
+              height="60px"
+              fontSize="xl"
+            >
+              OK
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -238,6 +311,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
   const router = useRouter();
   const toast = useToast();
+
   const handleReturn = async (
     loanId: string
   ): Promise<{ name: string; description: string | null } | null> => {
@@ -260,11 +334,6 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
           isClosable: true,
         });
 
-        // Reload after a delay to allow the box instructions modal to be shown
-        setTimeout(() => {
-          router.reload();
-        }, 100);
-
         return result.box;
       } else {
         throw new Error("Palautus epäonnistui");
@@ -279,6 +348,10 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
       });
       return null;
     }
+  };
+
+  const handleReturnComplete = () => {
+    router.push("/");
   };
 
   if (session?.user?.group !== "KIOSK") {
@@ -306,6 +379,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
                 key={loan.id}
                 loan={loan}
                 onReturn={handleReturn}
+                onReturnComplete={handleReturnComplete}
               />
             ))
           )}
