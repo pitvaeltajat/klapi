@@ -63,8 +63,9 @@ export default async function handler(
 
   // Strategy 1: Find a box with no loans (empty box)
   const emptyBox = boxes.find((box) => box.loans.length === 0);
+  let selectedBox;
   if (emptyBox) {
-    var selectedBox = emptyBox;
+    selectedBox = emptyBox;
   } else {
     // Strategy 2: Find a box with no overlapping items
     const loanItemIdsArray = Array.from(loanItemIds);
@@ -78,12 +79,12 @@ export default async function handler(
 
     if (boxesWithNoOverlap.length > 0) {
       // Select the one with fewest loans
-      var selectedBox = boxesWithNoOverlap.reduce((prev, current) =>
+      selectedBox = boxesWithNoOverlap.reduce((prev, current) =>
         current.loans.length < prev.loans.length ? current : prev
       );
     } else {
       // Strategy 3: Fallback to box with fewest loans
-      var selectedBox = boxes.reduce((prev, current) =>
+      selectedBox = boxes.reduce((prev, current) =>
         current.loans.length < prev.loans.length ? current : prev
       );
     }
