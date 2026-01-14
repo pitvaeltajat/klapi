@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  Dialog,
-  Button,
-  Field,
-  Input,
-  NumberInput,
-  NumberInputField,
-  useToast,
-} from "@chakra-ui/react";
+import { Dialog, Button, Field, Input, NumberInput } from "@chakra-ui/react";
+
+import { toaster } from "@/components/ui/toaster";
 import { useCart } from "@/contexts/CartContext";
 import { FaCartArrowDown } from "react-icons/fa";
 import { spacing, buttonColors } from "@/styles/designTokens";
@@ -21,16 +15,19 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
   const [name, setName] = React.useState("");
   const [amount, setAmount] = React.useState<number>(1);
   const { addToCart } = useCart();
-  const toast = useToast();
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      toast({ title: "Anna kaman nimi", status: "warning", duration: 3000 });
+      toaster.create({
+        title: "Anna kaman nimi",
+        status: "warning",
+        duration: 3000,
+      });
       return;
     }
     const id = `custom-${Date.now()}`;
     addToCart({ id, name: name.trim(), amount });
-    toast({
+    toaster.create({
       title: "Lisätty koriin",
       description: name,
       status: "success",
@@ -44,7 +41,7 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
   return (
     <Dialog.Root
       open={isOpen}
-      onOpenChange={(e) => !e.open && onClose()}
+      onOpenChange={(e: any) => !e.open && onClose()}
       placement="center"
     >
       <Dialog.Backdrop />
@@ -65,13 +62,13 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
             </Field.Root>
             <Field.Root>
               <Field.Label>Määrä</Field.Label>
-              <NumberInput
+              <NumberInput.Root
                 min={1}
                 value={amount}
                 onChange={(val) => setAmount(Number(val))}
               >
-                <NumberInputField />
-              </NumberInput>
+                <NumberInput.Input />
+              </NumberInput.Root>
             </Field.Root>
           </Dialog.Body>
           <Dialog.Footer>

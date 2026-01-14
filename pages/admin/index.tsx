@@ -9,14 +9,17 @@ import {
   IconButton,
   useDisclosure,
   Dialog,
-  useToast,
   VStack,
   HStack,
   Text,
   Badge,
   Flex,
 } from "@chakra-ui/react";
-import { FaTrash, FaPlus } from "react-icons/fa";
+
+import { FaPlus } from "react-icons/fa";
+
+import { toaster, Toaster } from "@/components/ui/toaster";
+
 import { useSession } from "next-auth/react";
 import { useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
@@ -40,7 +43,6 @@ interface RoleSwitchProps {
 
 const RoleSwitch: React.FC<RoleSwitchProps> = ({ user }) => {
   const { mutate } = useSWRConfig();
-  const toast = useToast();
 
   const updateRole = async (
     userId: string,
@@ -59,7 +61,7 @@ const RoleSwitch: React.FC<RoleSwitchProps> = ({ user }) => {
         }),
       });
 
-      toast({
+      toaster.create({
         title: "Rooli päivitetty",
         description: `Käyttäjän rooli vaihdettu: ${newGroup}`,
         status: "success",
@@ -69,7 +71,7 @@ const RoleSwitch: React.FC<RoleSwitchProps> = ({ user }) => {
 
       mutate("/api/user/getUsers");
     } catch {
-      toast({
+      toaster.create({
         title: "Virhe",
         description: "Roolin päivitys epäonnistui",
         status: "error",
@@ -93,7 +95,6 @@ const Admin: NextPage = () => {
   const { data: session } = useSession();
   const { data: users, error } = useSWR<UserWithGroup[]>("/api/user/getUsers");
   const { mutate } = useSWRConfig();
-  const toast = useToast();
   const { open, onOpen, onClose } = useDisclosure();
   const [userToDelete, setUserToDelete] = useState<UserWithGroup | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -115,7 +116,7 @@ const Admin: NextPage = () => {
         method: "DELETE",
       });
 
-      toast({
+      toaster.create({
         title: "Käyttäjä poistettu",
         description: `${
           userToDelete.name || userToDelete.email
@@ -128,7 +129,7 @@ const Admin: NextPage = () => {
       mutate("/api/user/getUsers");
       onClose();
     } catch {
-      toast({
+      toaster.create({
         title: "Virhe",
         description: "Käyttäjän poisto epäonnistui",
         status: "error",
@@ -230,7 +231,7 @@ const Admin: NextPage = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteClick(user)}
-                      isDisabled={user.id === session?.user?.id}
+                      disabled={user.id === session?.user?.id}
                       title={
                         user.id === session?.user?.id
                           ? "Et voi poistaa itseäsi"
@@ -252,21 +253,21 @@ const Admin: NextPage = () => {
         leastDestructiveRef={cancelRef}
         onClose={onClose}
       >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header fontSize="lg" fontWeight="bold">
               Poista käyttäjä
-            </AlertDialogHeader>
+            </Dialog.Header>
 
-            <AlertDialogBody>
+            <Dialog.Body>
               Haluatko varmasti poistaa käyttäjän{" "}
               <Text as="span" fontWeight="bold">
                 {userToDelete?.name || userToDelete?.email}
               </Text>
               ? Tätä toimintoa ei voi perua.
-            </AlertDialogBody>
+            </Dialog.Body>
 
-            <AlertDialogFooter>
+            <Dialog.Footer>
               <Button ref={cancelRef} onClick={onClose}>
                 Peruuta
               </Button>
@@ -277,9 +278,9 @@ const Admin: NextPage = () => {
               >
                 Poista
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
       </Dialog.Root>
     </VStack>
   );

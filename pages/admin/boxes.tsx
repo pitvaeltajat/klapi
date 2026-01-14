@@ -123,7 +123,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
       ) : (
         <SimpleGrid
           columns={{ base: 1, md: 2, lg: 3 }}
-          spacing={spacing.sectionSpacing}
+          gap={spacing.sectionSpacing}
         >
           {boxes.map((box) => {
             return (
@@ -136,7 +136,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                   transition: "all 0.2s",
                 }}
               >
-                <VStack align="stretch" spacing={spacing.elementSpacing}>
+                <VStack align="stretch" gap={spacing.elementSpacing}>
                   <Box>
                     <Heading
                       as="h2"
@@ -189,7 +189,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                             >
                               <VStack
                                 align="stretch"
-                                spacing={spacing.tightSpacing}
+                                gap={spacing.tightSpacing}
                               >
                                 <HStack justify="space-between">
                                   <Text fontWeight="medium" fontSize="sm">

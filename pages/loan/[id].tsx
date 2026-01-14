@@ -6,7 +6,6 @@ import {
   Button,
   Heading,
   Box,
-  useToast,
   useDisclosure,
   Link,
   Container,
@@ -19,6 +18,9 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import NextLink from "next/link";
 import ReservationTableLoanView from "../../components/ReservationTableLoanView";
 import { useSession } from "next-auth/react";
+
+import { toaster, Toaster } from "@/components/ui/toaster";
+
 import {
   Loan,
   User,
@@ -80,8 +82,7 @@ export const getServerSideProps: GetServerSideProps<{
 
 export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   const router = useRouter();
-  const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const { data: session } = useSession();
 
   const isAdmin = session?.user?.group === "ADMIN";
@@ -97,7 +98,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     })
       .then((res) => res.json())
       .then(async () => {
-        toast({
+        toaster.create({
           title: "Laina hyväksytty",
           description: "Laina hyväksytty onnistuneesti",
           status: "success",
@@ -118,7 +119,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         router.push("/loan");
       })
       .catch((err) => {
-        toast({
+        toaster.create({
           title: "Error",
           description: err.message,
           status: "error",
@@ -140,7 +141,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     })
       .then((res) => res.json())
       .then(() => {
-        toast({
+        toaster.create({
           title: "Laina hylätty",
           description: "Laina hylätty onnituneesti",
           status: "success",
@@ -150,7 +151,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         router.push("/loan");
       })
       .catch((err) => {
-        toast({
+        toaster.create({
           title: "Error",
           description: err.message,
           status: "error",
@@ -171,7 +172,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     })
       .then((res) => res.json())
       .then(() => {
-        toast({
+        toaster.create({
           title: "Kamat palautettu",
           description: "Lainaus saatettu päätökseen",
           status: "success",
@@ -181,7 +182,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         router.push("/loan");
       })
       .catch((err) => {
-        toast({
+        toaster.create({
           title: "Error",
           description: err.message,
           status: "error",
@@ -243,7 +244,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
             {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
             <Box>
-              <Tag colorScheme={getColor(loan.status)} width="fit-content">
+              <Tag.Root colorScheme={getColor(loan.status)} width="fit-content">
                 {loan.status === LoanStatus.ACCEPTED
                   ? "Hyväksytty"
                   : loan.status === LoanStatus.REJECTED
@@ -255,7 +256,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                   : loan.status === LoanStatus.RETURNED
                   ? "Palautettu"
                   : "Tuntematon"}
-              </Tag>
+              </Tag.Root>
             </Box>
           </Stack>
         </Box>
@@ -272,12 +273,12 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         </Box>
 
         {loan.status !== "INUSE" && loan.status !== "RETURNED" && (
-          <Stack direction="row" spacing={spacing.elementSpacing}>
+          <Stack direction="row" gap={spacing.elementSpacing}>
             {(isAdmin || session?.user?.id === loan.user.id) && (
               <Button
                 colorScheme={buttonColors.danger}
                 onClick={onOpen}
-                isDisabled={loan.status === "REJECTED"}
+                disabled={loan.status === "REJECTED"}
               >
                 Hylkää
               </Button>
@@ -290,7 +291,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                 <Button
                   colorScheme={buttonColors.success}
                   onClick={approveLoan}
-                  isDisabled={loan.status === "ACCEPTED"}
+                  disabled={loan.status === "ACCEPTED"}
                 >
                   Hyväksy
                 </Button>
@@ -300,7 +301,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         )}
 
         {(loan.status === "IN_BOX" || loan.status === "INUSE") && isAdmin && (
-          <Stack direction="row" spacing={spacing.elementSpacing}>
+          <Stack direction="row" gap={spacing.elementSpacing}>
             <Button onClick={loanProcessed} colorScheme={buttonColors.success}>
               Merkitse kamat palautetuksi
             </Button>
@@ -316,7 +317,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         )}
 
         <Dialog.Root
-          open={isOpen}
+          open={open}
           onOpenChange={(e: { open: boolean }) => !e.open && onClose()}
         >
           <Dialog.Backdrop />

@@ -11,20 +11,28 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Button,
-  useToast,
   VStack,
   FormControl,
   FormLabel,
   Container,
   Box,
 } from "@chakra-ui/react";
+
+import { toaster, Toaster } from "@/components/ui/toaster";
+
 import { useState } from "react";
 import { CreatableSelect, MultiValue } from "chakra-react-select";
 import { useRouter } from "next/router";
 import prisma from "../../../utils/prisma";
 import { Item, Category } from "@prisma/client";
 import { GetServerSideProps } from "next";
-import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+  buttonColors,
+} from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -73,7 +81,6 @@ export default function EditItem({
 }) {
   const { data: session } = useSession();
   const router = useRouter();
-  const toast = useToast();
 
   const [itemName, setItemName] = useState(item.name);
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,13 +181,13 @@ export default function EditItem({
 
   return (
     <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
-      <VStack spacing={spacing.sectionSpacing} align="stretch">
+      <VStack gap={spacing.sectionSpacing} align="stretch">
         <Heading as="h1" size={headingSizes.pageTitle}>
           Muokkaa kamaa
         </Heading>
 
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <FormControl>
               <FormLabel>Nimi</FormLabel>
               <Input
@@ -201,9 +208,13 @@ export default function EditItem({
                 onChange={handleDescriptionChange}
                 maxW="400px"
                 borderColor={
-                  itemDescription === item.description ? "gray.300" : "orange.300"
+                  itemDescription === item.description
+                    ? "gray.300"
+                    : "orange.300"
                 }
-                borderWidth={itemDescription === item.description ? "1px" : "2px"}
+                borderWidth={
+                  itemDescription === item.description ? "1px" : "2px"
+                }
               />
             </FormControl>
 
@@ -244,7 +255,9 @@ export default function EditItem({
               <NumberInput
                 min={1}
                 maxW="200px"
-                borderColor={itemAmount === item.amount ? "gray.300" : "orange.300"}
+                borderColor={
+                  itemAmount === item.amount ? "gray.300" : "orange.300"
+                }
                 value={itemAmount}
                 onChange={(valueString) => setItemAmount(parseInt(valueString))}
               >
@@ -267,9 +280,20 @@ export default function EditItem({
                   mb={spacing.tightSpacing}
                 />
               ) : item.image !== null ? (
-                <Image src={item.image} alt={item.name} maxW="400px" borderRadius="md" mb={spacing.tightSpacing} />
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  maxW="400px"
+                  borderRadius="md"
+                  mb={spacing.tightSpacing}
+                />
               ) : null}
-              <Input type="file" accept="image/*" onChange={handleImageChange} maxW="400px" />
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                maxW="400px"
+              />
             </FormControl>
 
             <Button

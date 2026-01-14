@@ -10,13 +10,13 @@ import {
   Button,
   Dialog,
   useDisclosure,
-  useToast,
   VStack,
   Box,
   HStack,
   Container,
   Text,
 } from "@chakra-ui/react";
+
 import ReservationTable from "../../components/ReservationTable";
 import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
@@ -27,6 +27,7 @@ import {
   containerMaxWidth,
   buttonColors,
 } from "@/styles/designTokens";
+import { toaster, Toaster } from "@/components/ui/toaster";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -84,11 +85,10 @@ export const getServerSideProps: GetServerSideProps<{
 
 export default function ItemView({ item }: { item: ItemWithRelations }) {
   const router = useRouter();
-  const toast = useToast();
 
   const { data: session } = useSession();
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
 
   const deleteItem = async () => {
     try {
@@ -126,9 +126,9 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
   return (
     <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
-      <VStack spacing={spacing.sectionSpacing} align="stretch">
+      <VStack gap={spacing.sectionSpacing} align="stretch">
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <Heading size={headingSizes.pageTitle}>{item.name}</Heading>
             {item.description && (
               <Text color="gray.700">{item.description}</Text>
@@ -145,7 +145,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
               </Box>
             )}
             {session?.user?.group === "ADMIN" && (
-              <HStack spacing={spacing.tightSpacing}>
+              <HStack gap={spacing.tightSpacing}>
                 <Button
                   colorScheme={buttonColors.secondary}
                   onClick={() => router.push(`/admin/edititem/${item.id}`)}

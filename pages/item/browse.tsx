@@ -20,7 +20,12 @@ import NextLink from "next/link";
 import { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { Item, Category, Loan, Reservation } from "@prisma/client";
-import { cardStyles, headingSizes, spacing, containerMaxWidth } from "@/styles/designTokens";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+} from "@/styles/designTokens";
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -142,11 +147,11 @@ export default function BrowseItems({
 
   return (
     <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
-      <VStack spacing={spacing.sectionSpacing} align="stretch">
+      <VStack gap={spacing.sectionSpacing} align="stretch">
         <Heading as="h1" size={headingSizes.pageTitle}>
           Kaikki kamat
         </Heading>
-        <Stack direction="row" spacing={spacing.elementSpacing}>
+        <Stack direction="row" gap={spacing.elementSpacing}>
           <InputGroup width={"fit-content"}>
             <Input
               placeholder="Hae kamoja"
@@ -159,7 +164,11 @@ export default function BrowseItems({
           </InputGroup>
         </Stack>
         <Box>
-          <Heading as="h2" size={headingSizes.subsection} mb={spacing.tightSpacing}>
+          <Heading
+            as="h2"
+            size={headingSizes.subsection}
+            mb={spacing.tightSpacing}
+          >
             Kategoriat
           </Heading>
           <Select
@@ -177,7 +186,7 @@ export default function BrowseItems({
 
         <SimpleGrid
           columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }}
-          spacing={[4, 6, 8, 10]}
+          gap={[4, 6, 8, 10]}
         >
           {filteredItems.map((item) => ItemCard(item))}
         </SimpleGrid>

@@ -16,7 +16,12 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { useDates } from "@/contexts/DatesContext";
 import { useCart } from "@/contexts/CartContext";
-import { cardStyles, headingSizes, spacing, buttonColors } from "@/styles/designTokens";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  buttonColors,
+} from "@/styles/designTokens";
 
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
@@ -48,7 +53,7 @@ export default function DateSelector() {
   }
 
   return (
-    <VStack spacing={spacing.sectionSpacing} align="stretch">
+    <VStack gap={spacing.sectionSpacing} align="stretch">
       {!dates.datesSet ? (
         <>
           <Box>
@@ -62,7 +67,9 @@ export default function DateSelector() {
 
           <Box {...cardStyles.base}>
             <FormControl>
-              <FormLabel fontWeight="bold" mb={spacing.tightSpacing}>Valitse lainausaika</FormLabel>
+              <FormLabel fontWeight="bold" mb={spacing.tightSpacing}>
+                Valitse lainausaika
+              </FormLabel>
               <DatePicker
                 selected={startDate}
                 onChange={(update: [Date | null, Date | null]) => {
@@ -92,24 +99,25 @@ export default function DateSelector() {
           <Text textAlign="center" fontWeight="medium">
             Tai
           </Text>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/item/browse")}
-          >
+          <Button variant="outline" onClick={() => router.push("/item/browse")}>
             Selaa kaikkia kamoja
           </Button>
         </>
       ) : (
         <>
           <Box>
-            <Heading as="h2" size={headingSizes.sectionTitle} mb={spacing.elementSpacing}>
+            <Heading
+              as="h2"
+              size={headingSizes.sectionTitle}
+              mb={spacing.elementSpacing}
+            >
               Valitut päivämäärät
             </Heading>
           </Box>
 
           <Box {...cardStyles.base}>
-            <VStack align="stretch" spacing={spacing.elementSpacing}>
-              <HStack spacing={spacing.tightSpacing}>
+            <VStack align="stretch" gap={spacing.elementSpacing}>
+              <HStack gap={spacing.tightSpacing}>
                 <Text fontWeight="bold">Nouto:</Text>
                 <Text>
                   {dates.startDate.toLocaleDateString("fi-FI", {
@@ -121,7 +129,7 @@ export default function DateSelector() {
                   })}
                 </Text>
               </HStack>
-              <HStack spacing={spacing.tightSpacing}>
+              <HStack gap={spacing.tightSpacing}>
                 <Text fontWeight="bold">Palautus:</Text>
                 <Text>
                   {dates.endDate.toLocaleDateString("fi-FI", {
@@ -135,7 +143,9 @@ export default function DateSelector() {
               </HStack>
 
               <Box pt={spacing.tightSpacing}>
-                <FormLabel fontWeight="bold" mb={spacing.tightSpacing}>Muokkaa aikaa</FormLabel>
+                <FormLabel fontWeight="bold" mb={spacing.tightSpacing}>
+                  Muokkaa aikaa
+                </FormLabel>
                 <DatePicker
                   selected={dates.startDate}
                   onChange={(update: [Date | null, Date | null]) => {

@@ -2,12 +2,13 @@ import React from "react";
 import { AppProps } from "next/app";
 import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
-import { useToast } from "@chakra-ui/react";
 import Layout from "../components/Layout";
 import RedirectUnauthorized from "../components/RedirectUnauthorized";
 import { Provider } from "../components/ui/provider";
 import { CartProvider } from "../contexts/CartContext";
 import { DatesProvider } from "../contexts/DatesContext";
+
+import { toaster, Toaster } from "@/components/ui/toaster";
 
 const fetcher = (...args: Parameters<typeof fetch>) =>
   fetch(...args).then((res) => res.json());
@@ -17,8 +18,6 @@ export default function App({
   pageProps: { session, ...pageProps },
   router,
 }: AppProps) {
-  const toast = useToast();
-
   return (
     <SessionProvider session={session}>
       <RedirectUnauthorized router={router}>
@@ -27,7 +26,7 @@ export default function App({
             fetcher,
             onError: (error) => {
               if (error.status !== 403 && error.status !== 404) {
-                toast({
+                toaster.create({
                   title: "Error",
                   description: error.message,
                   status: "error",
@@ -43,6 +42,7 @@ export default function App({
               <Provider>
                 <Layout>
                   <Component {...pageProps} />
+                  <Toaster />
                 </Layout>
               </Provider>
             </CartProvider>

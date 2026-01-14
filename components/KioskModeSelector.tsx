@@ -51,7 +51,7 @@ export default function KioskModeSelector() {
 
   return (
     <Box maxW="500px" mx="auto" mt={8} p={6}>
-      <VStack spacing={6} align="stretch">
+      <VStack gap={6} align="stretch">
         <Heading mb={3}>Tervetuloa kalustoon!</Heading>
         <Box
           bg={bgColor}
@@ -100,7 +100,7 @@ export default function KioskModeSelector() {
           </FormHelperText>
         </FormControl>
 
-        <HStack spacing={4}>
+        <HStack gap={4}>
           <Button
             colorScheme="blue"
             size="lg"

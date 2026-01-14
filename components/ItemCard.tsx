@@ -11,10 +11,10 @@ import {
 import NextLink from "next/link";
 import { ItemCardProps } from "../types";
 import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@chakra-ui/react";
 import { useCallback, useMemo, memo } from "react";
 import { FaCartArrowDown } from "react-icons/fa";
 import { cardStyles, buttonColors } from "@/styles/designTokens";
+import { toaster } from "@/components/ui/toaster";
 
 const ItemCard = memo(function ItemCard({
   item,
@@ -24,7 +24,6 @@ const ItemCard = memo(function ItemCard({
     addToCart,
     state: { items: cartItems },
   } = useCart();
-  const toast = useToast();
 
   const amountInCart = useMemo(
     () => cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0,
@@ -44,14 +43,14 @@ const ItemCard = memo(function ItemCard({
       name: item.name,
       amount: amountInCart + 1,
     });
-    toast({
+    toaster.create({
       title: "Lisättiin kama",
       description: `${item.name} lisätty ostoskoriin`,
       status: "success",
       duration: 1500,
       isClosable: true,
     });
-  }, [addToCart, item.id, item.name, amountInCart, toast]);
+  }, [addToCart, item.id, item.name, amountInCart, toaster]);
 
   const bgColor = useColorModeValue("white", "gray.800");
 
@@ -86,7 +85,7 @@ const ItemCard = memo(function ItemCard({
             fontWeight="semibold"
             as="h4"
             lineHeight="tight"
-            isTruncated
+            truncated
             overflow="hidden"
             noOfLines={1}
             title={item.name}

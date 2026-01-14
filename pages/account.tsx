@@ -65,9 +65,9 @@ export default function Account({ loans }: AccountProps) {
 
   if (session) {
     return (
-      <VStack spacing={spacing.sectionSpacing} align="stretch">
+      <VStack gap={spacing.sectionSpacing} align="stretch">
         <Box {...cardStyles.base}>
-          <VStack align="start" spacing={spacing.tightSpacing}>
+          <VStack align="start" gap={spacing.tightSpacing}>
             <Heading size={headingSizes.pageTitle}>
               {session?.user?.name}
             </Heading>
@@ -112,7 +112,7 @@ export default function Account({ loans }: AccountProps) {
   } else {
     return (
       <Box {...cardStyles.base}>
-        <VStack spacing={spacing.elementSpacing} align="start">
+        <VStack gap={spacing.elementSpacing} align="start">
           <Heading size={headingSizes.pageTitle}>Ei kirjautunut sisään</Heading>
           <Auth />
         </VStack>

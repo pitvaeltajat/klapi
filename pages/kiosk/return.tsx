@@ -8,7 +8,6 @@ import {
   Stack,
   Tag,
   Text,
-  useToast,
   Dialog,
   useDisclosure,
   VStack,
@@ -20,7 +19,16 @@ import { LoanStatus } from "@prisma/client";
 import type { GetServerSideProps } from "next";
 import NotAuthenticated from "../../components/NotAuthenticated";
 import { useRouter } from "next/router";
-import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
+
+import { toaster, Toaster } from "@/components/ui/toaster";
+
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+  buttonColors,
+} from "@/styles/designTokens";
 
 interface Reservation {
   id: string;
@@ -77,7 +85,9 @@ const LoanReturnCard = ({
   onReturn,
 }: {
   loan: LoanType;
-  onReturn: (id: string) => Promise<{ name: string; description: string | null } | null>;
+  onReturn: (
+    id: string
+  ) => Promise<{ name: string; description: string | null } | null>;
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -107,7 +117,9 @@ const LoanReturnCard = ({
         mb={spacing.elementSpacing}
       >
         <Stack gap={spacing.tightSpacing}>
-          <Heading size={headingSizes.subsection}>{loan.description || loan.loaner}</Heading>
+          <Heading size={headingSizes.subsection}>
+            {loan.description || loan.loaner}
+          </Heading>
           <Tag colorScheme="blue" width="fit-content">
             Käytössä
           </Tag>
@@ -141,12 +153,12 @@ const LoanReturnCard = ({
               <Dialog.CloseTrigger />
             </Dialog.Header>
             <Dialog.Body>
-              <VStack align="start" spacing={3}>
+              <VStack align="start" gap={3}>
                 <Text fontWeight="bold">
                   Oletko palauttamassa seuraavat tavarat?
                 </Text>
                 {loan.reservations.map((reservation) => (
-                  <HStack key={reservation.id} spacing={3} width="100%">
+                  <HStack key={reservation.id} gap={3} width="100%">
                     {reservation.item.image && (
                       <Image
                         src={reservation.item.image}
@@ -167,7 +179,10 @@ const LoanReturnCard = ({
               <Button variant="ghost" mr={3} onClick={onClose}>
                 Peruuta
               </Button>
-              <Button colorScheme={buttonColors.success} onClick={handleConfirmReturn}>
+              <Button
+                colorScheme={buttonColors.success}
+                onClick={handleConfirmReturn}
+              >
                 Vahvista palautus
               </Button>
             </Dialog.Footer>
@@ -188,7 +203,7 @@ const LoanReturnCard = ({
               <Dialog.CloseTrigger />
             </Dialog.Header>
             <Dialog.Body>
-              <VStack align="start" spacing={spacing.elementSpacing}>
+              <VStack align="start" gap={spacing.elementSpacing}>
                 <Box
                   p={6}
                   bg="blue.50"
@@ -204,12 +219,7 @@ const LoanReturnCard = ({
                   </Heading>
                 </Box>
                 {boxInfo?.description && (
-                  <Box
-                    p={4}
-                    bg="gray.50"
-                    borderRadius="md"
-                    width="100%"
-                  >
+                  <Box p={4} bg="gray.50" borderRadius="md" width="100%">
                     <Text fontWeight="bold" mb={2}>
                       Lisätiedot:
                     </Text>
@@ -223,7 +233,11 @@ const LoanReturnCard = ({
               </VStack>
             </Dialog.Body>
             <Dialog.Footer>
-              <Button colorScheme={buttonColors.primary} onClick={onBoxInstructionsClose} size="lg">
+              <Button
+                colorScheme={buttonColors.primary}
+                onClick={onBoxInstructionsClose}
+                size="lg"
+              >
                 Sulje
               </Button>
             </Dialog.Footer>
@@ -237,7 +251,6 @@ const LoanReturnCard = ({
 export default function KioskReturn({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
   const router = useRouter();
-  const toast = useToast();
   const handleReturn = async (
     loanId: string
   ): Promise<{ name: string; description: string | null } | null> => {
@@ -289,8 +302,14 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
     <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
       <Stack gap={spacing.sectionSpacing}>
         <Box>
-          <Heading size={headingSizes.pageTitle} mb={spacing.elementSpacing}>Palauta lainoja</Heading>
-          <Button mb={spacing.elementSpacing} onClick={() => router.push("/")} colorScheme={buttonColors.secondary}>
+          <Heading size={headingSizes.pageTitle} mb={spacing.elementSpacing}>
+            Palauta lainoja
+          </Heading>
+          <Button
+            mb={spacing.elementSpacing}
+            onClick={() => router.push("/")}
+            colorScheme={buttonColors.secondary}
+          >
             Takaisin etusivulle
           </Button>
 

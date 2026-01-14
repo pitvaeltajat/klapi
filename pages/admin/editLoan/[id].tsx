@@ -4,37 +4,25 @@ import {
   Input,
   InputGroup,
   InputRightAddon,
-  TableContainer,
   Text,
   Table,
-  Thead,
-  Tr,
-  Th,
-  Tbody,
-  Td,
   IconButton,
   InputLeftAddon,
   Stack,
-  useToast,
   Button,
   Select,
   NumberInput,
+  Dialog,
   NumberInputField,
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
   Textarea,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
   useDisclosure,
   Container,
   VStack,
   Box,
-  FormControl,
+  Field,
   FormLabel,
   HStack,
 } from "@chakra-ui/react";
@@ -46,7 +34,13 @@ import prisma from "../../../utils/prisma";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import { Loan, Item, User, Reservation } from "@prisma/client";
-import { cardStyles, headingSizes, spacing, containerMaxWidth, buttonColors } from "@/styles/designTokens";
+import {
+  cardStyles,
+  headingSizes,
+  spacing,
+  containerMaxWidth,
+  buttonColors,
+} from "@/styles/designTokens";
 
 interface LoanWithRelations extends Loan {
   reservations: (Reservation & {
@@ -108,10 +102,8 @@ export default function LoanEditView({
 
   const [reservations, setReservations] = useState(loan.reservations);
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
-
-  const toast = useToast();
 
   const { data: session } = useSession();
 
@@ -165,45 +157,58 @@ export default function LoanEditView({
 
   return (
     <Container maxW={containerMaxWidth} {...spacing.containerPadding}>
-      <AlertDialog
-        isOpen={isOpen}
+      <Dialog.Root
+        role="alertdialog"
+        isOpen={open}
         leastDestructiveRef={cancelRef}
         onClose={onClose}
       >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header fontSize="lg" fontWeight="bold">
               Päivitä Laina
-            </AlertDialogHeader>
+            </Dialog.Header>
 
-            <AlertDialogBody>
+            <Dialog.Body>
               Oletko täysin varma? Systeemi voi mennä ihan vitun solmuun, jos
               tiedot ei ole kunnolla tarkistettuja.{" "}
-            </AlertDialogBody>
+            </Dialog.Body>
 
-            <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose} colorScheme={buttonColors.secondary}>
+            <Dialog.Footer>
+              <Button
+                ref={cancelRef}
+                onClick={onClose}
+                colorScheme={buttonColors.secondary}
+              >
                 Peruuta
               </Button>
-              <Button colorScheme={buttonColors.success} ml={spacing.elementSpacing} onClick={() => updateLoan()}>
+              <Button
+                colorScheme={buttonColors.success}
+                ml={spacing.elementSpacing}
+                onClick={() => updateLoan()}
+              >
                 Vahvista
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
-      <VStack spacing={spacing.sectionSpacing} align="stretch">
+      <VStack gap={spacing.sectionSpacing} align="stretch">
         <Heading size={headingSizes.pageTitle}>Muokkaa lainaa</Heading>
 
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <Box>
-              <Text fontSize="sm" color="gray.600" fontWeight="medium">Id:</Text>
+              <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                Id:
+              </Text>
               <Text>{loan.id}</Text>
             </Box>
             <Box>
-              <Text fontSize="sm" color="gray.600" fontWeight="medium">Lainaaja:</Text>
+              <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                Lainaaja:
+              </Text>
               <Text>{loan.user.name}</Text>
               <Text>{loan.user.email}</Text>
             </Box>
@@ -211,7 +216,7 @@ export default function LoanEditView({
         </Box>
 
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <Heading size={headingSizes.sectionTitle}>Kuvaus</Heading>
             <Stack gap={spacing.tightSpacing} direction="row">
               <Textarea
@@ -239,12 +244,12 @@ export default function LoanEditView({
         </Box>
 
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <Heading size={headingSizes.sectionTitle}>Päivämäärät</Heading>
 
-            <FormControl>
+            <Field.Root>
               <FormLabel>Aloitus</FormLabel>
-              <Stack direction="row" spacing={spacing.tightSpacing}>
+              <Stack direction="row" gap={spacing.tightSpacing}>
                 <Input
                   borderColor={
                     startDate != loan.startTime.toString().split(".")[0]
@@ -252,7 +257,9 @@ export default function LoanEditView({
                       : "gray.300"
                   }
                   borderWidth={
-                    startDate != loan.startTime.toString().split(".")[0] ? "2px" : "1px"
+                    startDate != loan.startTime.toString().split(".")[0]
+                      ? "2px"
+                      : "1px"
                   }
                   onChange={handleStartDateChange}
                   maxW="300px"
@@ -262,7 +269,9 @@ export default function LoanEditView({
                 <IconButton
                   aria-label="Reset"
                   icon={<FaHistory />}
-                  onClick={() => setStartDate(loan.startTime.toString().split(".")[0])}
+                  onClick={() =>
+                    setStartDate(loan.startTime.toString().split(".")[0])
+                  }
                 />
               </Stack>
               {startDate != loan.startTime.toString().split(".")[0] ? (
@@ -270,11 +279,11 @@ export default function LoanEditView({
                   Muokattu
                 </Text>
               ) : null}
-            </FormControl>
+            </Field.Root>
 
-            <FormControl>
+            <Field.Root>
               <FormLabel>Lopetus</FormLabel>
-              <Stack direction="row" spacing={spacing.tightSpacing}>
+              <Stack direction="row" gap={spacing.tightSpacing}>
                 <Input
                   borderColor={
                     endDate != loan.endTime.toString().split(".")[0]
@@ -282,7 +291,9 @@ export default function LoanEditView({
                       : "gray.300"
                   }
                   borderWidth={
-                    endDate != loan.endTime.toString().split(".")[0] ? "2px" : "1px"
+                    endDate != loan.endTime.toString().split(".")[0]
+                      ? "2px"
+                      : "1px"
                   }
                   onChange={handleEndDateChange}
                   maxW="300px"
@@ -292,7 +303,9 @@ export default function LoanEditView({
                 <IconButton
                   aria-label="Reset"
                   icon={<FaHistory />}
-                  onClick={() => setEndDate(loan.endTime.toString().split(".")[0])}
+                  onClick={() =>
+                    setEndDate(loan.endTime.toString().split(".")[0])
+                  }
                 />
               </Stack>
               {endDate != loan.endTime.toString().split(".")[0] ? (
@@ -300,12 +313,12 @@ export default function LoanEditView({
                   Muokattu
                 </Text>
               ) : null}
-            </FormControl>
+            </Field.Root>
           </VStack>
         </Box>
 
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <Heading size={headingSizes.sectionTitle}>Varaukset</Heading>
 
             <HStack justify="space-between" mb={spacing.tightSpacing}>
@@ -319,31 +332,34 @@ export default function LoanEditView({
                 }}
                 size="sm"
               />
+              '
             </HStack>
-            <TableContainer>
-              <Table>
-                <Thead>
-                  <Tr>
-                    <Th>Kama</Th>
-                    <Th>Määrä</Th>
-                    <Th>Toiminnot</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
+            <Table.ScrollArea>
+              '
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeader>Kama</Table.ColumnHeader>
+                    <Table.ColumnHeader>Määrä</Table.ColumnHeader>
+                    <Table.ColumnHeader>Toiminnot</Table.ColumnHeader>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {reservations.map((reservation) => {
                     return (
-                      <Tr key={reservation.id}>
-                        <Td
+                      <Table.Row key={reservation.id}>
+                        <Table.Cell
                           color={
-                            loan.reservations.filter((r) => r.id == reservation.id)
-                              .length > 0
+                            loan.reservations.filter(
+                              (r) => r.id == reservation.id
+                            ).length > 0
                               ? "gray.900"
                               : "orange.500"
                           }
                         >
                           {reservation.item.name}
-                        </Td>
-                        <Td>
+                        </Table.Cell>
+                        <Table.Cell>
                           <InputGroup size="sm" maxW="150px">
                             <InputLeftAddon p={0}>
                               <IconButton
@@ -415,34 +431,40 @@ export default function LoanEditView({
                               />
                             </InputRightAddon>
                           </InputGroup>
-                        </Td>
-                        <Td>
+                        </Table.Cell>
+                        <Table.Cell>
                           <IconButton
                             aria-label="Poista varaus"
                             icon={<FaTrash />}
                             onClick={() => {
                               setReservations(
-                                reservations.filter((r) => r.id != reservation.id)
+                                reservations.filter(
+                                  (r) => r.id != reservation.id
+                                )
                               );
                             }}
                             colorScheme={buttonColors.danger}
                             size="sm"
                             variant="ghost"
                           />
-                        </Td>
-                      </Tr>
+                        </Table.Cell>
+                      </Table.Row>
                     );
                   })}
-                </Tbody>
-              </Table>
-            </TableContainer>
+                </Table.Body>
+              </Table.Root>
+            </Table.ScrollArea>
           </VStack>
         </Box>
 
         <Box {...cardStyles.base}>
-          <VStack spacing={spacing.elementSpacing} align="stretch">
+          <VStack gap={spacing.elementSpacing} align="stretch">
             <Heading size={headingSizes.subsection}>Lisää kama</Heading>
-            <Stack direction={"row"} spacing={spacing.elementSpacing} flexWrap="wrap">
+            <Stack
+              direction={"row"}
+              gap={spacing.elementSpacing}
+              flexWrap="wrap"
+            >
               <Select
                 value={selectedItem}
                 onChange={(e) => {
@@ -466,7 +488,9 @@ export default function LoanEditView({
                   setSelectedItemAmount(value);
                 }}
                 min={0}
-                max={items.find((item) => item.id === selectedItem)?.amount ?? 99}
+                max={
+                  items.find((item) => item.id === selectedItem)?.amount ?? 99
+                }
                 maxW="150px"
               >
                 <NumberInputField />
@@ -493,7 +517,7 @@ export default function LoanEditView({
                   setReservations(newReservations);
                   setSelectedItemAmount(0);
                 }}
-                isDisabled={selectedItemAmount === 0}
+                disabled={selectedItemAmount === 0}
                 colorScheme={buttonColors.primary}
               >
                 Lisää

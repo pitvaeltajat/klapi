@@ -12,7 +12,6 @@ import {
   NumberDecrementStepper,
   NumberInputStepper,
   Textarea,
-  useToast,
   VStack,
 } from "@chakra-ui/react";
 import { Formik, Form, Field, FormikHelpers, FieldProps } from "formik";
@@ -23,6 +22,8 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import { headingSizes, spacing, buttonColors } from "@/styles/designTokens";
 import type { NextPage } from "next";
 import type { Category, Location } from "@prisma/client";
+
+import { toaster, Toaster } from "@/components/ui/toaster";
 
 interface FormValues {
   name: string;
@@ -45,7 +46,6 @@ interface CategoryWithLabel extends Category {
 
 const CreateItem: NextPage = () => {
   const { data: session } = useSession();
-  const toast = useToast();
 
   const { data: locations, error: locationsError } = useSWR<
     LocationWithLabel[]
@@ -113,7 +113,7 @@ const CreateItem: NextPage = () => {
   };
 
   return (
-    <VStack spacing={spacing.sectionSpacing} align="stretch">
+    <VStack gap={spacing.sectionSpacing} align="stretch">
       <Heading size={headingSizes.pageTitle}>Luo uusi kama</Heading>
 
       <Formik<FormValues>
@@ -130,7 +130,7 @@ const CreateItem: NextPage = () => {
       >
         {(props) => (
           <Form onSubmit={props.handleSubmit}>
-            <VStack spacing={spacing.elementSpacing} align="stretch">
+            <VStack gap={spacing.elementSpacing} align="stretch">
               <Field name="name">
                 {({ field, form }: FieldProps<string, FormValues>) => (
                   <FormControl
@@ -148,7 +148,7 @@ const CreateItem: NextPage = () => {
                   </FormControl>
                 )}
               </Field>
-                <Field name="amount">
+              <Field name="amount">
                 {({ field, form }: FieldProps<number, FormValues>) => (
                   <FormControl
                     invalid={Boolean(form.errors.amount && form.touched.amount)}
@@ -197,7 +197,7 @@ const CreateItem: NextPage = () => {
                   </FormControl>
                 )}
               </Field>
-                <Field name="categories">
+              <Field name="categories">
                 {({
                   field,
                   form,
