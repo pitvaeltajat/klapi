@@ -11,7 +11,7 @@ import {
   Badge,
   VStack,
   HStack,
-  Divider,
+  Separator,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { useSession } from "next-auth/react";
@@ -152,7 +152,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                     )}
                   </Box>
 
-                  <Divider />
+                  <Separator />
 
                   <Box>
                     <HStack justify="space-between" mb={spacing.tightSpacing}>
@@ -173,52 +173,56 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                     ) : (
                       <Stack gap={spacing.tightSpacing}>
                         {box.loans.map((loan) => (
-                          <Link
+                          <NextLink
                             key={loan.id}
-                            as={NextLink}
                             href={`/loan/${loan.id}`}
-                            _hover={{ textDecoration: "none" }}
+                            passHref
+                            legacyBehavior
                           >
-                            <Box
-                              {...cardStyles.compact}
-                              _hover={{
-                                bg: "gray.100",
-                                borderColor: "blue.300",
-                              }}
-                              transition="all 0.2s"
-                            >
-                              <VStack
-                                align="stretch"
-                                gap={spacing.tightSpacing}
+                            <Link _hover={{ textDecoration: "none" }}>
+                              <Box
+                                {...cardStyles.compact}
+                                _hover={{
+                                  bg: "gray.100",
+                                  borderColor: "blue.300",
+                                }}
+                                transition="all 0.2s"
                               >
-                                <HStack justify="space-between">
-                                  <Text fontWeight="medium" fontSize="sm">
-                                    {loan.description || "Ei kuvausta"}
+                                <VStack
+                                  align="stretch"
+                                  gap={spacing.tightSpacing}
+                                >
+                                  <HStack justify="space-between">
+                                    <Text fontWeight="medium" fontSize="sm">
+                                      {loan.description || "Ei kuvausta"}
+                                    </Text>
+                                    <Badge
+                                      colorScheme={getStatusColor(loan.status)}
+                                      fontSize="xs"
+                                    >
+                                      {getStatusText(loan.status)}
+                                    </Badge>
+                                  </HStack>
+                                  <Text fontSize="xs" color="gray.600">
+                                    {loan.reservations
+                                      .map(
+                                        (r) => `${r.item.name} (${r.amount})`
+                                      )
+                                      .join(", ")}
                                   </Text>
-                                  <Badge
-                                    colorScheme={getStatusColor(loan.status)}
-                                    fontSize="xs"
-                                  >
-                                    {getStatusText(loan.status)}
-                                  </Badge>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.600">
-                                  {loan.reservations
-                                    .map((r) => `${r.item.name} (${r.amount})`)
-                                    .join(", ")}
-                                </Text>
-                                <Text fontSize="xs" color="gray.500">
-                                  {new Date(loan.startTime).toLocaleDateString(
-                                    "fi-FI"
-                                  )}{" "}
-                                  -{" "}
-                                  {new Date(loan.endTime).toLocaleDateString(
-                                    "fi-FI"
-                                  )}
-                                </Text>
-                              </VStack>
-                            </Box>
-                          </Link>
+                                  <Text fontSize="xs" color="gray.500">
+                                    {new Date(
+                                      loan.startTime
+                                    ).toLocaleDateString("fi-FI")}{" "}
+                                    -{" "}
+                                    {new Date(loan.endTime).toLocaleDateString(
+                                      "fi-FI"
+                                    )}
+                                  </Text>
+                                </VStack>
+                              </Box>
+                            </Link>
+                          </NextLink>
                         ))}
                       </Stack>
                     )}

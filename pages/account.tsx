@@ -1,5 +1,5 @@
 import Auth from "./auth";
-import { Heading, Stack, Box, Text, Divider, VStack } from "@chakra-ui/react";
+import { Heading, Stack, Box, Text, Separator, VStack } from "@chakra-ui/react";
 import { useSession, getSession } from "next-auth/react";
 import prisma from "../utils/prisma";
 import { LoanCard } from "./loan";
@@ -83,7 +83,7 @@ export default function Account({ loans }: AccountProps) {
                 : "Admin"}
             </Text>
           </VStack>
-          <Divider my={spacing.elementSpacing} />
+          <Separator my={spacing.elementSpacing} />
           <Auth />
         </Box>
 

@@ -1,15 +1,6 @@
 import React from "react";
 
-import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Link,
-} from "@chakra-ui/react";
+import { Table, Link } from "@chakra-ui/react";
 
 import NextLink from "next/link";
 
@@ -29,29 +20,29 @@ interface Loan {
 
 export default function ReservationTableLoanView({ loan }: { loan: Loan }) {
   return (
-    <TableContainer>
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>Tuote</Th>
-            <Th>Määrä</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
+    <Table.ScrollArea>
+      <Table.Root variant="line">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Tuote</Table.ColumnHeader>
+            <Table.ColumnHeader>Määrä</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {loan.reservations.map((reservation) => {
             return (
-              <Tr key={reservation.id}>
-                <Td>
-                  <Link as={NextLink} href={`/item/${reservation.itemId}`}>
-                    {reservation.item.name}
-                  </Link>
-                </Td>
-                <Td>{reservation.amount}</Td>
-              </Tr>
+              <Table.Row key={reservation.id}>
+                <Table.Cell>
+                  <NextLink href={`/item/${reservation.itemId}`} passHref legacyBehavior>
+                    <Link>{reservation.item.name}</Link>
+                  </NextLink>
+                </Table.Cell>
+                <Table.Cell>{reservation.amount}</Table.Cell>
+              </Table.Row>
             );
           })}
-        </Tbody>
-      </Table>
-    </TableContainer>
+        </Table.Body>
+      </Table.Root>
+    </Table.ScrollArea>
   );
 }

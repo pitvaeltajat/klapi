@@ -6,9 +6,11 @@ export default function NotAuthenticated() {
   return (
     <>
       <Heading>Ei käyttöoikeutta</Heading>
-      <Link as={NextLink} href="/">
-        <Button>Palaa etusivulle</Button>
-      </Link>
+      <NextLink href="/" passHref legacyBehavior>
+        <Link>
+          <Button>Palaa etusivulle</Button>
+        </Link>
+      </NextLink>
     </>
   );
 }

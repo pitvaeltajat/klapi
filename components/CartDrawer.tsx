@@ -1,11 +1,6 @@
 import {
   Button,
   Drawer,
-  DrawerBody,
-  DrawerOverlay,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerContent,
   DrawerCloseButton,
   Stack,
   Box,
@@ -101,21 +96,21 @@ export default function CartDrawer({
       return null;
     }
     return (
-      <Drawer
+      <Drawer.Root
         open={isOpen}
-        placement="right"
+        placement="end"
         size={{ base: "full", md: "md" }}
-        onOpenChange={(e) => !e.open && onClose()}
+        onOpenChange={(e: any) => !e.open && onClose()}
       >
-        <DrawerOverlay />
-        <DrawerContent>
+        <Drawer.Backdrop />
+        <Drawer.Content>
           <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
-          <DrawerBody>
+          <Drawer.Header borderBottomWidth="1px">Ostoskori</Drawer.Header>
+          <Drawer.Body>
             <LoadingSpinner fullWidth />
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+          </Drawer.Body>
+        </Drawer.Content>
+      </Drawer.Root>
     );
   }
 
@@ -134,24 +129,24 @@ export default function CartDrawer({
   const isDescriptionValid = cart.description.trim().length > 0;
 
   return (
-    <Drawer
+    <Drawer.Root
       open={isOpen}
-      placement="right"
+      placement="end"
       size={{ base: "full", md: "md" }}
       initialFocusEl={() => firstField.current}
-      onOpenChange={(e) => !e.open && onClose()}
+      onOpenChange={(e: any) => !e.open && onClose()}
     >
-      <DrawerOverlay />
-      <DrawerContent height="100%">
+      <Drawer.Backdrop />
+      <Drawer.Content height="100%">
         <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
+        <Drawer.Header borderBottomWidth="1px">Ostoskori</Drawer.Header>
 
-          <DrawerBody>
-            <SubmitConfirmation
-              isOpen={ConfirmationDialog.isOpen}
-              onClose={ConfirmationDialog.onClose}
-              closeDrawer={onClose}
-            />
+        <Drawer.Body>
+          <SubmitConfirmation
+            isOpen={ConfirmationDialog.isOpen}
+            onClose={ConfirmationDialog.onClose}
+            closeDrawer={onClose}
+          />
           <Stack gap={spacing.elementSpacing}>
             <Box>
               <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
@@ -201,7 +196,10 @@ export default function CartDrawer({
           </Stack>
 
           {cart.items.length > 0 ? (
-            <Stack gap={spacing.tightSpacing} marginTop={spacing.sectionSpacing}>
+            <Stack
+              gap={spacing.tightSpacing}
+              marginTop={spacing.sectionSpacing}
+            >
               <Heading as="h3" size={headingSizes.subsection}>
                 Valitut tavarat
               </Heading>
@@ -250,10 +248,14 @@ export default function CartDrawer({
               Ostoskori on tyhjä
             </Heading>
           )}
-        </DrawerBody>
+        </Drawer.Body>
 
-        <DrawerFooter borderTopWidth="1px">
-          <Button variant="outline" mr={spacing.elementSpacing} onClick={onClose}>
+        <Drawer.Footer borderTopWidth="1px">
+          <Button
+            variant="outline"
+            mr={spacing.elementSpacing}
+            onClick={onClose}
+          >
             Sulje
           </Button>
           <Button
@@ -263,8 +265,8 @@ export default function CartDrawer({
           >
             Varaa
           </Button>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        </Drawer.Footer>
+      </Drawer.Content>
+    </Drawer.Root>
   );
 }

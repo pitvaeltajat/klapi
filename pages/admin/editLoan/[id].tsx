@@ -132,7 +132,7 @@ export default function LoanEditView({
     })
       .then((res) => res.json())
       .then(() => {
-        toast({
+        toaster.create({
           title: "Laina päivitetty",
           description: "Laina päivitetty onnistuneesti",
           status: "success",
@@ -145,7 +145,7 @@ export default function LoanEditView({
         router.push("/loan");
       })
       .catch(() => {
-        toast({
+        toaster.create({
           title: "Error",
           description: "Joku meni vituiks",
           status: "error",

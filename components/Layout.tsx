@@ -9,14 +9,14 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
 
   return (
     <>
       <TopBar>
-        <CartButton onOpen={onOpen} onClose={onClose} isOpen={isOpen} />
+        <CartButton onOpen={onOpen} onClose={onClose} isOpen={open} />
       </TopBar>
-      <CartDrawer isOpen={isOpen} onClose={onClose} />
+      <CartDrawer isOpen={open} onClose={onClose} />
       <Container as="main" maxW="container.xl" px={4} py={8} mt={20}>
         {children}
       </Container>

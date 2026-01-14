@@ -265,7 +265,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
 
       if (response.ok) {
         const result = await response.json();
-        toast({
+        toaster.create({
           title: "Palautus onnistui!",
           description: "Laina on merkitty palautetuksi.",
           status: "success",
@@ -283,7 +283,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
         throw new Error("Palautus epäonnistui");
       }
     } catch {
-      toast({
+      toaster.create({
         title: "Virhe",
         description: "Palautus epäonnistui. Yritä uudelleen.",
         status: "error",

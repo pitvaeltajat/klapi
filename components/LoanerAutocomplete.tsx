@@ -1,15 +1,5 @@
-import {
-  Box,
-  Input,
-  InputGroup,
-  InputRightElement,
-  List,
-  ListItem,
-  Text,
-  useOutsideClick,
-} from "@chakra-ui/react";
+import { Box, Input, InputGroup, List, ListItem, Text } from "@chakra-ui/react";
 import React, { useState, useRef, useEffect } from "react";
-import { FaChevronDown } from "react-icons/fa";
 
 interface User {
   id: string;
@@ -42,11 +32,6 @@ export default function LoanerAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useOutsideClick({
-    ref: dropdownRef,
-    handler: () => setShowDropdown(false),
-  });
 
   useEffect(() => {
     // Fetch users on component mount
@@ -86,13 +71,10 @@ export default function LoanerAutocomplete({
           required={isRequired}
           autoFocus={autoFocus}
         />
-        <InputRightElement>
-          <FaChevronDown color="gray.500" />
-        </InputRightElement>
       </InputGroup>
 
       {showDropdown && filteredUsers.length > 0 && (
-        <List
+        <List.Root
           position="absolute"
           top="100%"
           left={0}
@@ -107,7 +89,7 @@ export default function LoanerAutocomplete({
           zIndex={10}
         >
           {filteredUsers.map((user) => (
-            <ListItem
+            <List.Item
               key={user.id}
               px={4}
               py={3}
@@ -123,13 +105,17 @@ export default function LoanerAutocomplete({
                   {user.name}
                 </Text>
               )}
-            </ListItem>
+            </List.Item>
           ))}
-        </List>
+        </List.Root>
       )}
 
       {showValidationFeedback && (
-        <Text fontSize="sm" mt={1} color={selectedUserId ? "green.600" : "gray.600"}>
+        <Text
+          fontSize="sm"
+          mt={1}
+          color={selectedUserId ? "green.600" : "gray.600"}
+        >
           {selectedUserId
             ? "✓ Käyttäjä valittu. Varaus yhdistetään tähän tiliin."
             : "Valitse sähköposti listalta tai kirjoita vapaamuotoinen nimi."}

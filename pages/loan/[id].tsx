@@ -285,9 +285,11 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             )}
             {isAdmin && (
               <>
-                <Link as={NextLink} href={`/admin/editLoan/${loan.id}`}>
-                  <Button colorScheme={buttonColors.secondary}>Muokkaa</Button>
-                </Link>
+                <NextLink href={`/admin/editLoan/${loan.id}`} passHref legacyBehavior>
+                  <Link>
+                    <Button colorScheme={buttonColors.secondary}>Muokkaa</Button>
+                  </Link>
+                </NextLink>
                 <Button
                   colorScheme={buttonColors.success}
                   onClick={approveLoan}
@@ -325,7 +327,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             <Dialog.Content>
               <Dialog.Header>
                 <Dialog.Title>Hylätäänkö varaus?</Dialog.Title>
-                <Dialog.CloseTrigger />
+                pnpm <Dialog.CloseTrigger />
               </Dialog.Header>
               <Dialog.Body>Varaushakemus hylätään. Oletko varma?</Dialog.Body>
 

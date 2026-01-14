@@ -105,9 +105,9 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
         <HStack justifyContent="space-between" alignItems="start">
           <VStack align="start" gap={1} flex={1}>
             <Heading size={headingSizes.subsection}>
-              <Link as={NextLink} href={`/loan/${loan.id}`}>
-                {loan.description || loan.user.name}
-              </Link>
+              <NextLink href={`/loan/${loan.id}`} passHref legacyBehavior>
+                <Link>{loan.description || loan.user.name}</Link>
+              </NextLink>
             </Heading>
             <Text fontSize="sm" color="gray.600">
               Varaaja: {loan.user.name}
@@ -177,9 +177,11 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
     return (
       <Box>
         <Heading>Ei varauksia</Heading>
-        <Link as={NextLink} href="/">
-          <Button>Luo varaus etusivulla</Button>
-        </Link>
+        <NextLink href="/" passHref legacyBehavior>
+          <Link>
+            <Button>Luo varaus etusivulla</Button>
+          </Link>
+        </NextLink>
       </Box>
     );
   }

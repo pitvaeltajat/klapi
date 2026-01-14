@@ -4,23 +4,16 @@ import {
   Box,
   IconButton,
   Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerOverlay,
-  TableContainer,
   Table,
-  Tbody,
-  Tr,
-  Td,
   Link,
   Container,
   Circle,
   Button,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { FaBars } from "react-icons/fa";
 import NextLink from "next/link";
 import { useSession } from "next-auth/react";
-import { useDisclosure } from "@chakra-ui/react";
 import { ReactNode } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "next/router";
@@ -28,7 +21,7 @@ import { useRouter } from "next/router";
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const role = session?.user?.group;
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const router = useRouter();
 
   const {
@@ -57,7 +50,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 aria-label="open menu"
                 icon={<FaBars />}
                 colorScheme="whiteAlpha"
-                onClick={isOpen ? onClose : onOpen}
+                onClick={open ? onClose : onOpen}
                 display={["block", "block", "none"]}
                 variant="ghost"
                 color="white"
@@ -66,28 +59,26 @@ export default function TopBar({ children }: { children: ReactNode }) {
               />
 
               <Box>
-                <Link
-                  as={NextLink}
-                  href="/"
-                  _hover={{ textDecoration: "none" }}
-                >
-                  <Heading size="lg">KLAPI</Heading>
-                </Link>
+                <NextLink href="/" passHref legacyBehavior>
+                  <Link _hover={{ textDecoration: "none" }}>
+                    <Heading size="lg">KLAPI</Heading>
+                  </Link>
+                </NextLink>
               </Box>
             </Flex>
 
             <Flex gap={6} align="center" display={["none", "none", "flex"]}>
               {role === "ADMIN" && (
                 <>
-                  <Link as={NextLink} href="/loan" fontWeight="medium">
-                    Varaukset
-                  </Link>
-                  <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
-                    Laatikot
-                  </Link>
-                  <Link as={NextLink} href="/admin" fontWeight="medium">
-                    Admin
-                  </Link>
+                  <NextLink href="/loan" passHref legacyBehavior>
+                    <Link fontWeight="medium">Varaukset</Link>
+                  </NextLink>
+                  <NextLink href="/admin/boxes" passHref legacyBehavior>
+                    <Link fontWeight="medium">Laatikot</Link>
+                  </NextLink>
+                  <NextLink href="/admin" passHref legacyBehavior>
+                    <Link fontWeight="medium">Admin</Link>
+                  </NextLink>
                 </>
               )}
               {role === "KIOSK" && (
@@ -99,9 +90,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   Palauta
                 </Button>
               )}
-              <Link as={NextLink} href="/account" fontWeight="medium">
-                Oma tili
-              </Link>
+              <NextLink href="/account" passHref legacyBehavior>
+                <Link fontWeight="medium">Oma tili</Link>
+              </NextLink>
               <Box position="relative">
                 {children}
                 {totalItems > 0 && (
@@ -151,49 +142,45 @@ export default function TopBar({ children }: { children: ReactNode }) {
         </Container>
       </Box>
       <Box h="4rem" />
-      <Drawer
+      <Drawer.Root
         placement="top"
-        onOpenChange={(e) => !e.open && onClose()}
-        open={isOpen}
+        onOpenChange={(e: any) => !e.open && onClose()}
+        open={open}
       >
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerBody pt="4rem">
-            <TableContainer>
-              <Table variant="simple">
-                <Tbody>
+        <Drawer.Backdrop />
+        <Drawer.Content>
+          <Drawer.Body pt="4rem">
+            <Table.ScrollArea>
+              <Table.Root variant="line">
+                <Table.Body>
                   {role === "ADMIN" && (
                     <>
-                      <Tr>
-                        <Td>
-                          <Link as={NextLink} href="/loan" onClick={onClose}>
-                            Varaukset
-                          </Link>
-                        </Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Link
-                            as={NextLink}
-                            href="/admin/boxes"
-                            onClick={onClose}
-                          >
-                            Laatikot
-                          </Link>
-                        </Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Link as={NextLink} href="/admin" onClick={onClose}>
-                            Admin
-                          </Link>
-                        </Td>
-                      </Tr>
+                      <Table.Row>
+                        <Table.Cell>
+                          <NextLink href="/loan" passHref legacyBehavior>
+                            <Link onClick={onClose}>Varaukset</Link>
+                          </NextLink>
+                        </Table.Cell>
+                      </Table.Row>
+                      <Table.Row>
+                        <Table.Cell>
+                          <NextLink href="/admin/boxes" passHref legacyBehavior>
+                            <Link onClick={onClose}>Laatikot</Link>
+                          </NextLink>
+                        </Table.Cell>
+                      </Table.Row>
+                      <Table.Row>
+                        <Table.Cell>
+                          <NextLink href="/admin" passHref legacyBehavior>
+                            <Link onClick={onClose}>Admin</Link>
+                          </NextLink>
+                        </Table.Cell>
+                      </Table.Row>
                     </>
                   )}
                   {role === "KIOSK" && (
-                    <Tr>
-                      <Td>
+                    <Table.Row>
+                      <Table.Cell>
                         <Button
                           colorScheme="green"
                           size="sm"
@@ -204,22 +191,22 @@ export default function TopBar({ children }: { children: ReactNode }) {
                         >
                           Palauta
                         </Button>
-                      </Td>
-                    </Tr>
+                      </Table.Cell>
+                    </Table.Row>
                   )}
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/account" onClick={onClose}>
-                        Oma tili
-                      </Link>
-                    </Td>
-                  </Tr>
-                </Tbody>
-              </Table>
-            </TableContainer>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+                  <Table.Row>
+                    <Table.Cell>
+                      <NextLink href="/account" passHref legacyBehavior>
+                        <Link onClick={onClose}>Oma tili</Link>
+                      </NextLink>
+                    </Table.Cell>
+                  </Table.Row>
+                </Table.Body>
+              </Table.Root>
+            </Table.ScrollArea>
+          </Drawer.Body>
+        </Drawer.Content>
+      </Drawer.Root>
     </>
   );
 }

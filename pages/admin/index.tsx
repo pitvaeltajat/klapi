@@ -180,15 +180,17 @@ const Admin: NextPage = () => {
       {/* Header */}
       <Flex justifyContent="space-between" alignItems="center">
         <Heading size={headingSizes.pageTitle}>Admin</Heading>
-        <Link as={NextLink} href="/admin/createItem">
-          <Button
-            leftIcon={<FaPlus />}
-            colorScheme={buttonColors.success}
-            size="lg"
-          >
-            Luo uusi kama
-          </Button>
-        </Link>
+        <NextLink href="/admin/createItem" passHref legacyBehavior>
+          <Link>
+            <Button
+              leftIcon={<FaPlus />}
+              colorScheme={buttonColors.success}
+              size="lg"
+            >
+              Luo uusi kama
+            </Button>
+          </Link>
+        </NextLink>
       </Flex>
 
       {/* User Management Section */}

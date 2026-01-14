@@ -3,11 +3,8 @@ import {
   Button,
   Heading,
   VStack,
-  FormControl,
-  FormLabel,
-  FormHelperText,
+  Field,
   Text,
-  useColorModeValue,
   HStack,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
@@ -22,8 +19,6 @@ export default function KioskModeSelector() {
   const { setLoaner: setCartLoaner, setUserId: setCartUserId } = useCart();
   const { setStartDate, setEndDate, setDatesSet } = useDates();
   const router = useRouter();
-  const bgColor = useColorModeValue("blue.50", "blue.900");
-  const borderColor = useColorModeValue("blue.200", "blue.700");
 
   const handleLoanerChange = (value: string, userId?: string) => {
     setLoaner(value);
@@ -54,15 +49,14 @@ export default function KioskModeSelector() {
       <VStack gap={6} align="stretch">
         <Heading mb={3}>Tervetuloa kalustoon!</Heading>
         <Box
-          bg={bgColor}
+          bg="blue.50"
           borderWidth="1px"
-          borderColor={borderColor}
+          borderColor="blue.200"
           borderRadius="lg"
           p={5}
           shadow="sm"
           fontSize="md"
           lineHeight="tall"
-          color={useColorModeValue("gray.700", "gray.200")}
         >
           <Text mb={3}>
             Merkkaa Klapiin jokainen tavara jonka lainaat. Jos tavara ei löydy
@@ -77,8 +71,8 @@ export default function KioskModeSelector() {
           </Text>
         </Box>
 
-        <FormControl required>
-          <FormLabel>Lainaajan nimi</FormLabel>
+        <Field.Root required>
+          <Field.Label>Lainaajan nimi</Field.Label>
           <LoanerAutocomplete
             value={loaner}
             onChange={handleLoanerChange}
@@ -92,13 +86,11 @@ export default function KioskModeSelector() {
               }
             }}
           />
-          <FormHelperText>
-            <Text>
-              Laina alkaa heti ja voit valita palautuspäivän seuraavassa
-              vaiheessa.
-            </Text>
-          </FormHelperText>
-        </FormControl>
+          <Field.HelperText>
+            Laina alkaa heti ja voit valita palautuspäivän seuraavassa
+            vaiheessa.
+          </Field.HelperText>
+        </Field.Root>
 
         <HStack gap={4}>
           <Button

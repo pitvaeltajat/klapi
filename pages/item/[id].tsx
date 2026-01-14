@@ -101,7 +101,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
       });
 
       if (response.ok) {
-        toast({
+        toaster.create({
           title: "Success",
           description: "Item deleted",
           status: "success",
@@ -114,7 +114,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
         throw new Error("Failed to delete item");
       }
     } catch (err) {
-      toast({
+      toaster.create({
         title: "Error",
         description: err instanceof Error ? err.message : "An error occurred",
         status: "error",

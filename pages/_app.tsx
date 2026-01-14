@@ -42,7 +42,6 @@ export default function App({
               <Provider>
                 <Layout>
                   <Component {...pageProps} />
-                  <Toaster />
                 </Layout>
               </Provider>
             </CartProvider>

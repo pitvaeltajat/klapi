@@ -157,7 +157,7 @@ export default function EditItem({
 
     if (response.ok) {
       setIsSubmitting(false);
-      toast({
+      toaster.create({
         title: "Kama päivitetty",
         status: "success",
         duration: 5000,
@@ -166,7 +166,7 @@ export default function EditItem({
       router.replace(router.asPath);
     } else {
       setIsSubmitting(false);
-      toast({
+      toaster.create({
         title: "Virhe kaman päivityksessä",
         status: "error",
         duration: 5000,

@@ -5,7 +5,6 @@ import {
   Image,
   Link,
   AspectRatio,
-  useColorModeValue,
   Circle,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
@@ -50,13 +49,10 @@ const ItemCard = memo(function ItemCard({
       duration: 1500,
       isClosable: true,
     });
-  }, [addToCart, item.id, item.name, amountInCart, toaster]);
-
-  const bgColor = useColorModeValue("white", "gray.800");
+  }, [addToCart, item.id, item.name, amountInCart]);
 
   return (
     <Box
-      bg={bgColor}
       maxW="sm"
       {...cardStyles.compact}
       position="relative"
@@ -85,15 +81,14 @@ const ItemCard = memo(function ItemCard({
             fontWeight="semibold"
             as="h4"
             lineHeight="tight"
-            truncated
+            truncate
             overflow="hidden"
-            noOfLines={1}
             title={item.name}
             _hover={{ textDecoration: "underline" }}
           >
-            <Link as={NextLink} href={"/item/" + item.id}>
-              {item.name}
-            </Link>
+            <NextLink href={"/item/" + item.id} passHref legacyBehavior>
+              <Link>{item.name}</Link>
+            </NextLink>
           </Box>
         </Flex>
 

@@ -86,7 +86,7 @@ const CreateItem: NextPage = () => {
         body: JSON.stringify(values),
       });
 
-      toast({
+      toaster.create({
         title: "Item created",
         description: "Item created successfully",
         status: "success",
@@ -99,7 +99,7 @@ const CreateItem: NextPage = () => {
     } catch (error) {
       if (error instanceof Error) {
         setErrors({ submit: error.message });
-        toast({
+        toaster.create({
           title: "Error",
           description: error.message,
           status: "error",

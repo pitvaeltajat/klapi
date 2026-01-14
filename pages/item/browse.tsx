@@ -5,7 +5,6 @@ import {
   Input,
   InputGroup,
   InputRightElement,
-  useColorModeValue,
   Box,
   Flex,
   Image,
@@ -93,7 +92,7 @@ export default function BrowseItems({
     return (
       <Box w="full" alignItems="center" justifyContent="center" key={item.id}>
         <Box
-          bg={useColorModeValue("white", "gray.800")}
+          bg="white"
           maxW="sm"
           {...cardStyles.compact}
           position="relative"
@@ -128,9 +127,9 @@ export default function BrowseItems({
                 title={item.name}
                 _hover={{ textDecoration: "underline" }}
               >
-                <Link as={NextLink} href={"/item/" + item.id}>
-                  {item.name}
-                </Link>
+                <NextLink href={"/item/" + item.id} passHref legacyBehavior>
+                  <Link>{item.name}</Link>
+                </NextLink>
               </Box>
             </Flex>
             <Box fontSize="md" fontWeight="semibold" as="h5" mt={2}>
