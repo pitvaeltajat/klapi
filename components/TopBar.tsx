@@ -86,7 +86,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                     Laatikot
                   </Link>
                   <Link as={NextLink} href="/admin" fontWeight="medium">
-                    Hallinta
+                    Admin
                   </Link>
                 </>
               )}
@@ -169,7 +169,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       </Tr>
                       <Tr>
                         <Td>
-                          <Link as={NextLink} href="/admin/boxes" onClick={onClose}>
+                          <Link
+                            as={NextLink}
+                            href="/admin/boxes"
+                            onClick={onClose}
+                          >
                             Laatikot
                           </Link>
                         </Td>
@@ -177,7 +181,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       <Tr>
                         <Td>
                           <Link as={NextLink} href="/admin" onClick={onClose}>
-                            Hallinta
+                            Admin
                           </Link>
                         </Td>
                       </Tr>
