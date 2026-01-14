@@ -6,7 +6,10 @@ import "dotenv/config";
 async function sendNewLoanEmail(loanCreator: string, id: string) {
   const adminEmails = (
     await prisma.user.findMany({
-      where: { group: "ADMIN" },
+      where: {
+        group: "ADMIN",
+        emailNewLoanNotification: true,
+      },
       select: { email: true },
     })
   )

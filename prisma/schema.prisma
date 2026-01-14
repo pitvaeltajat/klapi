@@ -40,17 +40,19 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  username      String?   @unique
-  password      String?
-  group         Group     @default(USER)
-  accounts      Account[]
-  sessions      Session[]
-  loans         Loan[]
+  id                        String    @id @default(cuid())
+  name                      String?
+  email                     String?   @unique
+  emailVerified             DateTime?
+  image                     String?
+  username                  String?   @unique
+  password                  String?
+  group                     Group     @default(USER)
+  accounts                  Account[]
+  sessions                  Session[]
+  loans                     Loan[]
+  emailWeeklyReminder       Boolean   @default(true)
+  emailNewLoanNotification  Boolean   @default(true)
 }
 
 enum Group {

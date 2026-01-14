@@ -6,7 +6,6 @@ import {
   Container,
   Heading,
   Link,
-  Select,
   Stack,
   Tag,
   Text,
@@ -14,6 +13,7 @@ import {
   WrapItem,
   HStack,
   VStack,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { useSession } from "next-auth/react";
@@ -99,11 +99,11 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
       borderRadius="lg"
       overflow="hidden"
       p={4}
-      mb={4}
       bg="white"
       boxShadow="sm"
+      height="100%"
     >
-      <VStack spacing={3} align="stretch">
+      <VStack spacing={3} align="stretch" height="100%">
         <HStack justifyContent="space-between" alignItems="start">
           <VStack align="start" spacing={1} flex={1}>
             <Heading size="md">
@@ -115,12 +115,12 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
               Varaaja: {loan.user.name}
             </Text>
           </VStack>
-          <Tag colorScheme={getColor(loan.status)} size="md">
+          <Tag colorScheme={getColor(loan.status)} size="md" flexShrink={0}>
             {loan.status}
           </Tag>
         </HStack>
 
-        <HStack spacing={4} fontSize="sm" color="gray.600">
+        <VStack spacing={2} fontSize="sm" color="gray.600" align="stretch">
           <Text>
             <Text as="span" fontWeight="medium">
               Alku:
@@ -133,7 +133,7 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
             </Text>{" "}
             {formatDate(loan.endTime)}
           </Text>
-        </HStack>
+        </VStack>
 
         {loan.reservations.length > 0 && (
           <Box>
@@ -163,9 +163,20 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
   );
 };
 
+const statusLabels: Record<LoanStatus | "ALL", string> = {
+  ALL: "Kaikki",
+  ACCEPTED: "Hyväksytyt",
+  REJECTED: "Hylätyt",
+  INUSE: "Käytössä",
+  IN_BOX: "Laatikossa",
+  RETURNED: "Palautetut",
+};
+
 export default function LoanList({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
-  const [loanCategory, setLoanCategory] = useState<LoanStatus | "ALL">("ALL");
+  const [selectedStatuses, setSelectedStatuses] = useState<
+    Set<LoanStatus | "ALL">
+  >(new Set([LoanStatus.IN_BOX, LoanStatus.INUSE]));
 
   loans = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime))
@@ -186,32 +197,79 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
     );
   }
 
+  const toggleStatus = (status: LoanStatus | "ALL") => {
+    const newStatuses = new Set(selectedStatuses);
+
+    if (status === "ALL") {
+      if (newStatuses.has("ALL")) {
+        newStatuses.clear();
+        newStatuses.add(LoanStatus.IN_BOX);
+        newStatuses.add(LoanStatus.INUSE);
+      } else {
+        newStatuses.clear();
+        newStatuses.add("ALL");
+      }
+    } else {
+      if (newStatuses.has("ALL")) {
+        newStatuses.clear();
+      }
+
+      if (newStatuses.has(status)) {
+        newStatuses.delete(status);
+        if (newStatuses.size === 0) {
+          newStatuses.add("ALL");
+        }
+      } else {
+        newStatuses.add(status);
+      }
+    }
+
+    setSelectedStatuses(newStatuses);
+  };
+
+  const filteredLoans = loans.filter((loan) => {
+    if (selectedStatuses.has("ALL")) {
+      return true;
+    }
+    return selectedStatuses.has(loan.status);
+  });
+
   return (
     <Container maxW="container.xl" py={8}>
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Varaukset</Heading>
-          <Select
-            value={loanCategory}
-            onChange={(e) =>
-              setLoanCategory(e.target.value as LoanStatus | "ALL")
-            }
-            mb={4}
-          >
-            <option value="ALL">Kaikki</option>
-            <option value={LoanStatus.ACCEPTED}>Hyväksytyt</option>
-            <option value={LoanStatus.REJECTED}>Hylätyt</option>
-            <option value={LoanStatus.INUSE}>Käytössä</option>
-            <option value={LoanStatus.IN_BOX}>Laatikossa</option>
-            <option value={LoanStatus.RETURNED}>Palautetut</option>
-          </Select>
-          {loans
-            .filter(
-              (loan) => loanCategory === "ALL" || loan.status === loanCategory
-            )
-            .map((loan) => (
+          <Box padding="2em" paddingLeft={0}>
+            <Wrap padding="4px">
+              <WrapItem key="all">
+                <Button
+                  onClick={() => toggleStatus("ALL")}
+                  variant={selectedStatuses.has("ALL") ? "solid" : "outline"}
+                  colorScheme={selectedStatuses.has("ALL") ? "blue" : "gray"}
+                >
+                  {statusLabels.ALL}
+                </Button>
+              </WrapItem>
+              {Object.values(LoanStatus).map((status) => (
+                <WrapItem key={status}>
+                  <Button
+                    onClick={() => toggleStatus(status)}
+                    variant={selectedStatuses.has(status) ? "solid" : "outline"}
+                    colorScheme={
+                      selectedStatuses.has(status) ? "blue" : "gray"
+                    }
+                  >
+                    {statusLabels[status]}
+                  </Button>
+                </WrapItem>
+              ))}
+            </Wrap>
+          </Box>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            {filteredLoans.map((loan) => (
               <LoanCard key={loan.id} loan={loan} />
             ))}
+          </SimpleGrid>
         </Box>
       </Stack>
     </Container>

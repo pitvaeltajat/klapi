@@ -1,10 +1,19 @@
 import Auth from "./auth";
-import { Heading, Stack, Box, Text, Divider, VStack } from "@chakra-ui/react";
+import {
+  Heading,
+  Stack,
+  Box,
+  Text,
+  VStack,
+  HStack,
+  Switch,
+} from "@chakra-ui/react";
 import { useSession, getSession } from "next-auth/react";
 import prisma from "../utils/prisma";
 import { LoanCard } from "./loan";
 import type { GetServerSideProps } from "next";
 import type { Loan, User } from "@prisma/client";
+import { useState } from "react";
 
 interface LoanWithUser extends Loan {
   user: User;
@@ -19,6 +28,10 @@ interface LoanWithUser extends Loan {
 
 interface AccountProps {
   loans: LoanWithUser[];
+  userEmailPreferences: {
+    emailWeeklyReminder: boolean;
+    emailNewLoanNotification: boolean;
+  };
 }
 
 export const getServerSideProps: GetServerSideProps<AccountProps> = async (
@@ -44,9 +57,22 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (
     },
   });
 
+  // Get user email preferences
+  const user = await prisma.user.findUnique({
+    where: { id: session?.user?.id },
+    select: {
+      emailWeeklyReminder: true,
+      emailNewLoanNotification: true,
+    },
+  });
+
   return {
     props: {
       loans,
+      userEmailPreferences: {
+        emailWeeklyReminder: user?.emailWeeklyReminder ?? true,
+        emailNewLoanNotification: user?.emailNewLoanNotification ?? true,
+      },
     },
   };
 };
@@ -55,12 +81,60 @@ function compareDates(dateA: Date, dateB: Date) {
   return dateB.getTime() - dateA.getTime();
 }
 
-export default function Account({ loans }: AccountProps) {
+export default function Account({ loans, userEmailPreferences }: AccountProps) {
   const { data: session } = useSession();
+  const [emailWeeklyReminder, setEmailWeeklyReminder] = useState(
+    userEmailPreferences.emailWeeklyReminder
+  );
+  const [emailNewLoanNotification, setEmailNewLoanNotification] = useState(
+    userEmailPreferences.emailNewLoanNotification
+  );
+  const [isSaving, setIsSaving] = useState(false);
 
   const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime))
   );
+
+  const handleEmailPreferenceChange = async (
+    preference: "weekly" | "newLoan",
+    value: boolean
+  ) => {
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/user/updateEmailPreferences", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          emailWeeklyReminder:
+            preference === "weekly" ? value : emailWeeklyReminder,
+          emailNewLoanNotification:
+            preference === "newLoan" ? value : emailNewLoanNotification,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update preferences");
+      }
+
+      if (preference === "weekly") {
+        setEmailWeeklyReminder(value);
+      } else {
+        setEmailNewLoanNotification(value);
+      }
+    } catch (error) {
+      console.error("Error updating email preferences:", error);
+      // Revert the change on error
+      if (preference === "weekly") {
+        setEmailWeeklyReminder(!value);
+      } else {
+        setEmailNewLoanNotification(!value);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (session) {
     return (
@@ -87,13 +161,54 @@ export default function Account({ loans }: AccountProps) {
                 : "Admin"}
             </Text>
           </VStack>
-          <Divider my={4} />
+          <Box my={4} h="1px" bg="gray.200" />
           <Auth />
         </Box>
 
+        {session?.user?.group === "ADMIN" && (
+          <Box
+            bg="white"
+            p={6}
+            borderRadius="md"
+            boxShadow="sm"
+            borderWidth="1px"
+            borderColor="gray.200"
+          >
+            <Heading size="md" mb={4}>
+              Sähköposti-ilmoitukset
+            </Heading>
+            <VStack align="start" spacing={4}>
+              <HStack justify="space-between" w="full">
+                <Text fontSize="sm">
+                  Viikottainen muistutus bokseissa olevista varauksista
+                </Text>
+                <Switch
+                  isChecked={emailWeeklyReminder}
+                  isDisabled={isSaving}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleEmailPreferenceChange("weekly", e.target.checked)
+                  }
+                  colorScheme="blue"
+                />
+              </HStack>
+              <HStack justify="space-between" w="full">
+                <Text fontSize="sm">Uudet varaushakemukset</Text>
+                <Switch
+                  isChecked={emailNewLoanNotification}
+                  isDisabled={isSaving}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleEmailPreferenceChange("newLoan", e.target.checked)
+                  }
+                  colorScheme="blue"
+                />
+              </HStack>
+            </VStack>
+          </Box>
+        )}
+
         <Box>
           <Heading size="md" mb={4}>
-            Omat varaukset:
+            Oma varaushistoria
           </Heading>
           {loansSorted.length > 0 ? (
             <Stack spacing={4}>
