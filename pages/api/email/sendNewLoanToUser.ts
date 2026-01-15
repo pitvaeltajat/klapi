@@ -1,8 +1,8 @@
-import { sendEmail } from "./ses-client";
-import type { NextApiRequest, NextApiResponse } from "next";
+import { sendEmail } from './ses-client';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 async function sendCreatedEmail(recipientEmail: string, id: string) {
-  const html = `
+    const html = `
     <h1>Uusi varaushakemus luotu</h1>
     <p>
       Varaushakemuksesi on luotu onnistuneesti.<br /><br />
@@ -17,23 +17,20 @@ async function sendCreatedEmail(recipientEmail: string, id: string) {
     </p>
     `;
 
-  const subject = `Varaushakemus ${id} luotu`;
-  await sendEmail([recipientEmail], subject, html);
+    const subject = `Varaushakemus ${id} luotu`;
+    await sendEmail([recipientEmail], subject, html);
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { email, id } = req.body;
-  try {
-    await sendCreatedEmail(email, id);
-    res.status(200).json({ message: "Email sent" });
-  } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: "Unknown error" });
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    const { email, id } = req.body;
+    try {
+        await sendCreatedEmail(email, id);
+        res.status(200).json({ message: 'Email sent' });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+        } else {
+            res.status(500).json({ message: 'Unknown error' });
+        }
     }
-  }
 }

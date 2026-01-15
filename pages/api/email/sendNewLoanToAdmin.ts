@@ -1,22 +1,22 @@
-import { sendEmail } from "./ses-client";
-import prisma from "../../../utils/prisma";
-import type { NextApiRequest, NextApiResponse } from "next";
-import "dotenv/config";
+import { sendEmail } from './ses-client';
+import prisma from '../../../utils/prisma';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import 'dotenv/config';
 
 async function sendNewLoanEmail(loanCreator: string, id: string) {
-  const adminEmails = (
-    await prisma.user.findMany({
-      where: {
-        group: "ADMIN",
-        emailNewLoanNotification: true,
-      },
-      select: { email: true },
-    })
-  )
-    .map((user) => user.email)
-    .filter((email): email is string => email !== null);
+    const adminEmails = (
+        await prisma.user.findMany({
+            where: {
+                group: 'ADMIN',
+                emailNewLoanNotification: true,
+            },
+            select: { email: true },
+        })
+    )
+        .map((user) => user.email)
+        .filter((email): email is string => email !== null);
 
-  const html = `
+    const html = `
     <h1>Uusi varaushakemus vastaanotettu.</h1>
     <p>
       Varaushakemus on vastaanotettu ja odottaa hyväksyntää.<br />
@@ -24,23 +24,20 @@ async function sendNewLoanEmail(loanCreator: string, id: string) {
     </p>
     `;
 
-  const subject = `Uusi varaushakemus henkilöltä ${loanCreator}`;
-  await sendEmail(adminEmails, subject, html);
+    const subject = `Uusi varaushakemus henkilöltä ${loanCreator}`;
+    await sendEmail(adminEmails, subject, html);
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { loanCreator, id } = req.body;
-  try {
-    await sendNewLoanEmail(loanCreator, id);
-    res.status(200).json({ message: "Email sent" });
-  } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: "Unknown error" });
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    const { loanCreator, id } = req.body;
+    try {
+        await sendNewLoanEmail(loanCreator, id);
+        res.status(200).json({ message: 'Email sent' });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+        } else {
+            res.status(500).json({ message: 'Unknown error' });
+        }
     }
-  }
 }

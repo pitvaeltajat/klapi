@@ -1,41 +1,38 @@
-import { LoanStatus } from "@prisma/client";
-import prisma from "../../../utils/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
-import type { NextApiRequest, NextApiResponse } from "next";
+import { LoanStatus } from '@prisma/client';
+import prisma from '../../../utils/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (session?.user?.group !== "ADMIN") {
-    res.status(401).json({
-      message: "Sinulla ei ole oikeutta tähän toimintoon",
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    const session = await getServerSession(req, res, authOptions);
+    if (session?.user?.group !== 'ADMIN') {
+        res.status(401).json({
+            message: 'Sinulla ei ole oikeutta tähän toimintoon',
+        });
+        return;
+    }
+
+    const { id } = req.body;
+
+    // Get the loan
+    const loan = await prisma.loan.findUnique({
+        where: { id },
     });
-    return;
-  }
 
-  const { id } = req.body;
+    if (!loan) {
+        res.status(404).json({ message: 'Loan not found' });
+        return;
+    }
 
-  // Get the loan
-  const loan = await prisma.loan.findUnique({
-    where: { id },
-  });
+    // Update loan status to RETURNED and remove it from its box
+    const result = await prisma.loan.update({
+        where: { id },
+        data: {
+            status: LoanStatus.RETURNED,
+            boxId: null,
+        },
+    });
 
-  if (!loan) {
-    res.status(404).json({ message: "Loan not found" });
-    return;
-  }
-
-  // Update loan status to RETURNED and remove it from its box
-  const result = await prisma.loan.update({
-    where: { id },
-    data: {
-      status: LoanStatus.RETURNED,
-      boxId: null,
-    },
-  });
-
-  res.status(200).json(result);
+    res.status(200).json(result);
 }
