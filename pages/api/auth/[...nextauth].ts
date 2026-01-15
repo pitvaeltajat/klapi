@@ -20,6 +20,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     group: 'ADMIN' | 'USER' | 'KIOSK';
+    userId?: string;
   }
 }
 
@@ -87,7 +88,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub as string;
+        session.user.id = token.userId as string;
         session.user.group = token.group || 'USER';
       }
       return session;
@@ -95,6 +96,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         token.group = user.group;
+        token.userId = user.id;
       }
 
       if (account?.provider === 'google' && token.email) {
@@ -103,6 +105,7 @@ export const authOptions: NextAuthOptions = {
         });
         if (dbUser) {
           token.group = dbUser.group;
+          token.userId = dbUser.id;
         } else {
           token.group = 'USER';
         }
