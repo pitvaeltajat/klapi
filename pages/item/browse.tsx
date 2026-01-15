@@ -50,7 +50,7 @@ export default function BrowseItems({
 
   return (
     <>
-      <Heading as="h1" size="2xl">
+      <Heading as="h1" size="xl" mb={6}>
         Kaikki kamat
       </Heading>
       <ItemBrowser

@@ -1,7 +1,6 @@
 import React from "react";
 import prisma from "../../utils/prisma";
 import {
-  Container,
   Heading,
   SimpleGrid,
   Box,
@@ -99,7 +98,7 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
   };
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       <Heading as="h1" size="xl" mb={6}>
         Laatikot
       </Heading>
@@ -223,6 +222,6 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
           })}
         </SimpleGrid>
       )}
-    </Container>
+    </>
   );
 }

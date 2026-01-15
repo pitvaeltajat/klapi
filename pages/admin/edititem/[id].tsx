@@ -12,7 +12,6 @@ import {
   NumberDecrementStepper,
   Button,
   useToast,
-  Container,
   VStack,
   FormControl,
   FormLabel,
@@ -171,7 +170,7 @@ export default function EditItem({
   }
 
   return (
-    <Container maxW="container.md" py={6}>
+    <>
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size="md">
           Muokkaa kamaa
@@ -271,10 +270,15 @@ export default function EditItem({
           <Input type="file" accept="image/*" onChange={handleImageChange} />
         </FormControl>
 
-        <Button onClick={updateItem} isLoading={isSubmitting} colorScheme="blue" size="lg">
+        <Button
+          onClick={updateItem}
+          isLoading={isSubmitting}
+          colorScheme="blue"
+          size="lg"
+        >
           Tallenna
         </Button>
       </VStack>
-    </Container>
+    </>
   );
 }

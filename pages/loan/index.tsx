@@ -3,7 +3,6 @@ import prisma from "../../utils/prisma";
 import {
   Box,
   Button,
-  Container,
   Heading,
   Link,
   Stack,
@@ -19,7 +18,10 @@ import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import NotAuthenticated from "../../components/NotAuthenticated";
-import { getLoanStatusLabel, getLoanStatusColor } from "../../utils/loanHelpers";
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+} from "../../utils/loanHelpers";
 
 interface LoanType {
   id: string;
@@ -99,7 +101,11 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
               Varaaja: {loan.user.name}
             </Text>
           </VStack>
-          <Tag colorScheme={getLoanStatusColor(loan.status)} size="md" flexShrink={0}>
+          <Tag
+            colorScheme={getLoanStatusColor(loan.status)}
+            size="md"
+            flexShrink={0}
+          >
             {getLoanStatusLabel(loan.status)}
           </Tag>
         </HStack>
@@ -223,7 +229,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
   });
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Varaukset</Heading>
@@ -243,9 +249,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
                   <Button
                     onClick={() => toggleStatus(status)}
                     variant={selectedStatuses.has(status) ? "solid" : "outline"}
-                    colorScheme={
-                      selectedStatuses.has(status) ? "blue" : "gray"
-                    }
+                    colorScheme={selectedStatuses.has(status) ? "blue" : "gray"}
                   >
                     {getStatusFilterLabel(status)}
                   </Button>
@@ -260,6 +264,6 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
           </SimpleGrid>
         </Box>
       </Stack>
-    </Container>
+    </>
   );
 }

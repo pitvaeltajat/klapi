@@ -16,7 +16,6 @@ import {
   ModalCloseButton,
   useDisclosure,
   Link,
-  Container,
   Text,
   Tag,
 } from "@chakra-ui/react";
@@ -34,7 +33,10 @@ import {
   Box as BoxType,
 } from "@prisma/client";
 import { GetServerSideProps } from "next";
-import { getLoanStatusLabel, getLoanStatusColor } from "../../utils/loanHelpers";
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+} from "../../utils/loanHelpers";
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -202,26 +204,27 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   }
 
   // Determine which buttons to show based on loan status and user role
-  const canReject = (isAdmin || session?.user?.id === loan.user.id) &&
-                    loan.status !== "REJECTED" &&
-                    loan.status !== "INUSE" &&
-                    loan.status !== "RETURNED";
+  const canReject =
+    (isAdmin || session?.user?.id === loan.user.id) &&
+    loan.status !== "REJECTED" &&
+    loan.status !== "INUSE" &&
+    loan.status !== "RETURNED";
 
-  const canEdit = isAdmin &&
-                  loan.status !== "INUSE" &&
-                  loan.status !== "RETURNED";
+  const canEdit =
+    isAdmin && loan.status !== "INUSE" && loan.status !== "RETURNED";
 
-  const canApprove = isAdmin &&
-                     loan.status !== "ACCEPTED" &&
-                     loan.status !== "INUSE" &&
-                     loan.status !== "RETURNED";
+  const canApprove =
+    isAdmin &&
+    loan.status !== "ACCEPTED" &&
+    loan.status !== "INUSE" &&
+    loan.status !== "RETURNED";
 
-  const canMarkReturned = isAdmin &&
-                          (loan.status === "INUSE" || loan.status === "IN_BOX");
+  const canMarkReturned =
+    isAdmin && (loan.status === "INUSE" || loan.status === "IN_BOX");
 
   // list reservations and show loan basic information and user information
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       <Stack spacing={6}>
         <Heading as="h1" mb={4}>
           Varaus: {loan.description || "Ei kuvausta"}
@@ -250,7 +253,10 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
             {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
             <Box>
-              <Tag colorScheme={getLoanStatusColor(loan.status)} width="fit-content">
+              <Tag
+                colorScheme={getLoanStatusColor(loan.status)}
+                width="fit-content"
+              >
                 {getLoanStatusLabel(loan.status)}
               </Tag>
             </Box>
@@ -266,7 +272,13 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
         {/* Action buttons */}
         {loan.status === "RETURNED" ? (
-          <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
+          <Box
+            bg="green.50"
+            p={6}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="green.200"
+          >
             <Heading as="h2" size="md" color="green.700">
               ✓ Lainaustapahtuma suoritettu loppuun
             </Heading>
@@ -296,27 +308,23 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                 </Heading>
                 <Stack direction={{ base: "column", md: "row" }} spacing={3}>
                   {canReject && (
-                    <Button
-                      colorScheme="red"
-                      onClick={onOpen}
-                      flex="1"
-                    >
+                    <Button colorScheme="red" onClick={onOpen} flex="1">
                       Hylkää
                     </Button>
                   )}
                   {canEdit && (
-                    <Link as={NextLink} href={`/admin/editLoan/${loan.id}`} flex="1">
+                    <Link
+                      as={NextLink}
+                      href={`/admin/editLoan/${loan.id}`}
+                      flex="1"
+                    >
                       <Button colorScheme="yellow" width="full">
                         Muokkaa
                       </Button>
                     </Link>
                   )}
                   {canApprove && (
-                    <Button
-                      colorScheme="green"
-                      onClick={approveLoan}
-                      flex="1"
-                    >
+                    <Button colorScheme="green" onClick={approveLoan} flex="1">
                       Hyväksy
                     </Button>
                   )}
@@ -344,6 +352,6 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </ModalContent>
         </Modal>
       </Stack>
-    </Container>
+    </>
   );
 }

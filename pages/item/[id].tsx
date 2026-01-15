@@ -17,7 +17,6 @@ import {
   ModalCloseButton,
   useDisclosure,
   useToast,
-  Container,
   VStack,
   Text,
   HStack,
@@ -127,7 +126,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
   };
 
   return (
-    <Container maxW="container.lg" py={6}>
+    <>
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size={{ base: "lg", md: "xl" }}>
           {item.name}
@@ -221,6 +220,6 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Container>
+    </>
   );
 }
