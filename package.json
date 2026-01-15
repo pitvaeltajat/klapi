@@ -5,11 +5,8 @@
         "build": "prisma migrate deploy && next build",
         "start": "next start",
         "postinstall": "prisma generate",
-        "cypress": "cypress open",
-        "cypress-headless": "cypress run",
         "lint": "eslint .",
-        "type-check": "tsc --noEmit",
-        "type-check:watch": "tsc --noEmit --watch"
+        "type-check": "tsc --noEmit"
     },
     "packageManager": "pnpm@10.5.2",
     "dependencies": {
