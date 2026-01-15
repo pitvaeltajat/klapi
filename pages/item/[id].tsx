@@ -1,9 +1,9 @@
 // get item by id and return it
-import prisma from "../../utils/prisma";
-import { Item, Category, Reservation, LoanStatus } from "@prisma/client";
+import prisma from '../../utils/prisma';
+import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
 
-import React from "react";
-import { useRouter } from "next/router";
+import React from 'react';
+import { useRouter } from 'next/router';
 import {
   Image,
   Heading,
@@ -30,57 +30,57 @@ import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
 
 interface ItemWithRelations extends Item {
-  categories: Category[];
-  reservations: (Reservation & {
-    loan: {
-      id: string;
-      description: string | null;
-      status: LoanStatus;
-      startTime: Date;
-      endTime: Date;
-      userId: string;
-    };
-    item: {
-      name: string;
-    };
-  })[];
+	categories: Category[];
+	reservations: (Reservation & {
+		loan: {
+			id: string;
+			description: string | null;
+			status: LoanStatus;
+			startTime: Date;
+			endTime: Date;
+			userId: string;
+		};
+		item: {
+			name: string;
+		};
+	})[];
 }
 
 export const getServerSideProps: GetServerSideProps<{
-  item: ItemWithRelations;
+	item: ItemWithRelations;
 }> = async ({ params }) => {
-  if (!params?.id || typeof params.id !== "string") {
-    return { notFound: true };
-  }
+	if (!params?.id || typeof params.id !== 'string') {
+		return { notFound: true };
+	}
 
-  const item = await prisma.item.findUnique({
-    where: {
-      id: params.id,
-    },
-    include: {
-      categories: true,
-      reservations: {
-        include: {
-          loan: true,
-          item: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  });
+	const item = await prisma.item.findUnique({
+		where: {
+			id: params.id,
+		},
+		include: {
+			categories: true,
+			reservations: {
+				include: {
+					loan: true,
+					item: {
+						select: {
+							name: true,
+						},
+					},
+				},
+			},
+		},
+	});
 
-  if (!item) {
-    return { notFound: true };
-  }
+	if (!item) {
+		return { notFound: true };
+	}
 
-  return {
-    props: {
-      item: JSON.parse(JSON.stringify(item)),
-    },
-  };
+	return {
+		props: {
+			item: JSON.parse(JSON.stringify(item)),
+		},
+	};
 };
 
 export default function ItemView({ item }: { item: ItemWithRelations }) {
