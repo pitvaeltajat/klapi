@@ -121,7 +121,7 @@ const CreateItem: NextPage = () => {
 							name: values.name,
 							description: values.description,
 							amount: values.amount,
-							image: `https://klapi-item-photos.s3.eu-north-1.amazonaws.com/${itemId}`,
+							image: `${process.env.NEXT_PUBLIC_AWS_ITEM_PHOTOS_URL}/${itemId}`,
 							categories: values.categories.map((c) => ({ id: c.value, name: c.label })),
 						}),
 					});
