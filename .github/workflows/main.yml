@@ -2,34 +2,36 @@ name: klapi
 on: push
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        services:
-            postgres:
-                image: postgres
-                env:
-                    POSTGRES_USER: postgres
-                    POSTGRES_PASSWORD: postgres
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 5432:5432
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
         env:
-            DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klapi
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: '20'
-                  cache: 'pnpm'
-            - name: Install dependencies
-              run: pnpm install
-            - name: Lint
-              run: pnpm lint
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klapi
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Lint
+        run: pnpm lint
+      - name: Run tests
+        run: pnpm test

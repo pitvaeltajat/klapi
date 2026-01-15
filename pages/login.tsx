@@ -5,21 +5,21 @@ import { Heading } from '@chakra-ui/react';
 import type { NextPage } from 'next';
 
 const Login: NextPage = () => {
-    const { data: session } = useSession();
+  const { data: session } = useSession();
 
-    if (session) {
-        const from = Array.isArray(Router.query.from) ? Router.query.from[0] : Router.query.from;
-        Router.push((from && decodeURIComponent(from)) || '/');
-    }
+  if (session) {
+    const from = Array.isArray(Router.query.from) ? Router.query.from[0] : Router.query.from;
+    Router.push((from && decodeURIComponent(from)) || '/');
+  }
 
-    return (
-        <>
-            <Heading>Kirjaudu sisään</Heading>
-            <p>Käyttääksesi Klapia sinun tulee kirjautua palveluun.</p>
-            <br />
-            <Auth />
-        </>
-    );
+  return (
+    <>
+      <Heading>Kirjaudu sisään</Heading>
+      <p>Käyttääksesi Klapia sinun tulee kirjautua palveluun.</p>
+      <br />
+      <Auth />
+    </>
+  );
 };
 
 export default Login;

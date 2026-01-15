@@ -9,85 +9,85 @@ import { useEffect } from 'react';
 import { Item, Category } from '@prisma/client';
 
 interface ItemWithCategories extends Item {
-    categories: Category[];
+  categories: Category[];
 }
 
 interface Availability {
-    available: number;
+  available: number;
 }
 
 interface AvailabilityResponse {
-    availabilities: Record<string, Availability>;
+  availabilities: Record<string, Availability>;
 }
 
 interface AllItemsProps {
-    items: ItemWithCategories[];
-    categories: Category[];
+  items: ItemWithCategories[];
+  categories: Category[];
 }
 
 export default function AllItems({ items }: AllItemsProps) {
-    const {
-        state: { startDate, endDate },
-    } = useDates();
+  const {
+    state: { startDate, endDate },
+  } = useDates();
 
-    const [data, setData] = useState<AvailabilityResponse | null>(null);
-    const [loading, setLoading] = useState(true);
-    const showLoading = useDelayedLoading(loading);
+  const [data, setData] = useState<AvailabilityResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const showLoading = useDelayedLoading(loading);
 
-    useEffect(() => {
-        setLoading(true);
+  useEffect(() => {
+    setLoading(true);
 
-        fetch('/api/availability/getAvailabilities', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                StartDate: startDate,
-                EndDate: endDate,
-            }),
-        })
-            .then((response) => response.json())
-            .then((data: AvailabilityResponse) => {
-                setData(data);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.log(error);
-                setLoading(false);
-            });
-    }, [startDate, endDate]);
+    fetch('/api/availability/getAvailabilities', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        StartDate: startDate,
+        EndDate: endDate,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data: AvailabilityResponse) => {
+        setData(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setLoading(false);
+      });
+  }, [startDate, endDate]);
 
-    const availabilities = data?.availabilities;
+  const availabilities = data?.availabilities;
 
-    if (loading) {
-        if (!showLoading) {
-            return null;
-        }
-        return <LoadingSpinner minHeight="30vh" />;
+  if (loading) {
+    if (!showLoading) {
+      return null;
     }
+    return <LoadingSpinner minHeight="30vh" />;
+  }
 
-    return (
-        <>
-            <SimpleGrid columns={[1, 2, 2, 3, 4]} spacing={[4, 6, 8, 10]}>
-                {items.map((item) => (
-                    <ItemCard
-                        key={item.id}
-                        item={{
-                            id: item.id,
-                            name: item.name,
-                            description: item.description || undefined,
-                            amount: item.amount,
-                            image: item.image || undefined,
-                            categories: item.categories.map((cat) => ({
-                                id: cat.id,
-                                name: cat.name,
-                            })),
-                        }}
-                        availableAmount={availabilities?.[item.id]?.available ?? 0}
-                    />
-                ))}
-            </SimpleGrid>
-        </>
-    );
+  return (
+    <>
+      <SimpleGrid columns={[1, 2, 2, 3, 4]} spacing={[4, 6, 8, 10]}>
+        {items.map((item) => (
+          <ItemCard
+            key={item.id}
+            item={{
+              id: item.id,
+              name: item.name,
+              description: item.description || undefined,
+              amount: item.amount,
+              image: item.image || undefined,
+              categories: item.categories.map((cat) => ({
+                id: cat.id,
+                name: cat.name,
+              })),
+            }}
+            availableAmount={availabilities?.[item.id]?.available ?? 0}
+          />
+        ))}
+      </SimpleGrid>
+    </>
+  );
 }

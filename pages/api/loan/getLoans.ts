@@ -3,13 +3,13 @@ import { getSession } from 'next-auth/react';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req });
-    if (session?.user?.group !== 'ADMIN') {
-        res.status(401).json({
-            message: 'Sinulla ei ole oikeutta tähän toimintoon',
-        });
-    }
+  const session = await getSession({ req });
+  if (session?.user?.group !== 'ADMIN') {
+    res.status(401).json({
+      message: 'Sinulla ei ole oikeutta tähän toimintoon',
+    });
+  }
 
-    const loans = await prisma.loan.findMany();
-    res.json(loans);
+  const loans = await prisma.loan.findMany();
+  res.json(loans);
 }
