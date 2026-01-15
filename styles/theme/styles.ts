@@ -1,19 +1,19 @@
 const styles = {
-  global: {
-    a: {
-      _hover: {
-        textDecoration: "none",
-      },
+    global: {
+        a: {
+            _hover: {
+                textDecoration: 'none',
+            },
+        },
+        button: {
+            _hover: {
+                textDecoration: 'none',
+            },
+        },
+        main: {
+            paddingTop: '100px',
+        },
     },
-    button: {
-      _hover: {
-        textDecoration: "none",
-      },
-    },
-    main: {
-      paddingTop: "100px",
-    },
-  },
 };
 
 export default styles;
