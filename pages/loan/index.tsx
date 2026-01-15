@@ -3,7 +3,6 @@ import prisma from "../../utils/prisma";
 import {
   Box,
   Button,
-  Container,
   Heading,
   Link,
   Stack,
@@ -19,6 +18,10 @@ import NextLink from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import NotAuthenticated from "../../components/NotAuthenticated";
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+} from "../../utils/loanHelpers";
 
 interface LoanType {
   id: string;
@@ -61,23 +64,6 @@ export async function getServerSideProps() {
   return { props: { loans } };
 }
 
-export const getColor = (status: LoanStatus): string => {
-  switch (status) {
-    case LoanStatus.ACCEPTED:
-      return "green";
-    case LoanStatus.REJECTED:
-      return "red";
-    case LoanStatus.INUSE:
-      return "blue";
-    case LoanStatus.IN_BOX:
-      return "purple";
-    case LoanStatus.RETURNED:
-      return "gray";
-    default:
-      return "gray";
-  }
-};
-
 function compareDates(dateA: Date, dateB: Date) {
   return dateB.getTime() - dateA.getTime();
 }
@@ -115,8 +101,12 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
               Varaaja: {loan.user.name}
             </Text>
           </VStack>
-          <Tag colorScheme={getColor(loan.status)} size="md" flexShrink={0}>
-            {loan.status}
+          <Tag
+            colorScheme={getLoanStatusColor(loan.status)}
+            size="md"
+            flexShrink={0}
+          >
+            {getLoanStatusLabel(loan.status)}
           </Tag>
         </HStack>
 
@@ -163,13 +153,17 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
   );
 };
 
-const statusLabels: Record<LoanStatus | "ALL", string> = {
-  ALL: "Kaikki",
-  ACCEPTED: "Hyväksytyt",
-  REJECTED: "Hylätyt",
-  INUSE: "Käytössä",
-  IN_BOX: "Laatikossa",
-  RETURNED: "Palautetut",
+const getStatusFilterLabel = (status: LoanStatus | "ALL"): string => {
+  if (status === "ALL") {
+    return "Kaikki";
+  }
+  // Use plural form for filter labels
+  const label = getLoanStatusLabel(status);
+  // Add plural suffix for Finnish
+  if (label === "Hyväksytty") return "Hyväksytyt";
+  if (label === "Hylätty") return "Hylätyt";
+  if (label === "Palautettu") return "Palautetut";
+  return label; // "Käytössä" and "Laatikossa" don't need plural form
 };
 
 export default function LoanList({ loans }: { loans: LoanType[] }) {
@@ -235,7 +229,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
   });
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Varaukset</Heading>
@@ -247,7 +241,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
                   variant={selectedStatuses.has("ALL") ? "solid" : "outline"}
                   colorScheme={selectedStatuses.has("ALL") ? "blue" : "gray"}
                 >
-                  {statusLabels.ALL}
+                  {getStatusFilterLabel("ALL")}
                 </Button>
               </WrapItem>
               {Object.values(LoanStatus).map((status) => (
@@ -255,11 +249,9 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
                   <Button
                     onClick={() => toggleStatus(status)}
                     variant={selectedStatuses.has(status) ? "solid" : "outline"}
-                    colorScheme={
-                      selectedStatuses.has(status) ? "blue" : "gray"
-                    }
+                    colorScheme={selectedStatuses.has(status) ? "blue" : "gray"}
                   >
-                    {statusLabels[status]}
+                    {getStatusFilterLabel(status)}
                   </Button>
                 </WrapItem>
               ))}
@@ -272,6 +264,6 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
           </SimpleGrid>
         </Box>
       </Stack>
-    </Container>
+    </>
   );
 }

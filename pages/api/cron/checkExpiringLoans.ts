@@ -28,7 +28,7 @@ export default async function handler(
           lte: dayAfterTomorrow,
         },
         status: {
-          in: ["INUSE", "IN_BOX"],
+          in: ["INUSE"],
         },
       },
       include: {
@@ -56,6 +56,7 @@ export default async function handler(
             body: JSON.stringify({
               email: loan.user.email,
               id: loan.id,
+              description: loan.description,
               endTime: loan.endTime.toLocaleString("fi-FI", {
                 dateStyle: "short",
                 timeStyle: "short",
@@ -136,10 +137,7 @@ export default async function handler(
 
           console.log(`Sent admin reminder email to ${admin.email}`);
         } catch (error) {
-          console.error(
-            `Error sending admin email to ${admin.email}:`,
-            error
-          );
+          console.error(`Error sending admin email to ${admin.email}:`, error);
         }
       });
     }
