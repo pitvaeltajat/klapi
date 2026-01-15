@@ -65,6 +65,7 @@ export default function DateSelector() {
                 startDate={startDate}
                 endDate={endDate}
                 selectsRange
+                swapRange
                 inline
                 minDate={new Date()}
                 dateFormat="dd.MM.yyyy"
@@ -133,6 +134,7 @@ export default function DateSelector() {
                   startDate={dates.startDate}
                   endDate={dates.endDate}
                   selectsRange
+                  swapRange
                   inline
                   minDate={new Date()}
                   dateFormat="dd.MM.yyyy"
