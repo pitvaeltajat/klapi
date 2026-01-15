@@ -5,30 +5,29 @@ import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
 import React from 'react';
 import { useRouter } from 'next/router';
 import {
-	Image,
-	Heading,
-	Button,
-	Modal,
-	ModalOverlay,
-	ModalContent,
-	ModalHeader,
-	ModalFooter,
-	ModalBody,
-	ModalCloseButton,
-	useDisclosure,
-	useToast,
-	Container,
-	VStack,
-	Text,
-	HStack,
-	Box,
-	Badge,
-	Divider,
-	SimpleGrid,
-} from '@chakra-ui/react';
-import ReservationTable from '../../components/ReservationTable';
-import { useSession } from 'next-auth/react';
-import { GetServerSideProps } from 'next';
+  Image,
+  Heading,
+  Button,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  useToast,
+  VStack,
+  Text,
+  HStack,
+  Box,
+  Badge,
+  Divider,
+  SimpleGrid,
+} from "@chakra-ui/react";
+import ReservationTable from "../../components/ReservationTable";
+import { useSession } from "next-auth/react";
+import { GetServerSideProps } from "next";
 
 interface ItemWithRelations extends Item {
 	categories: Category[];
@@ -85,139 +84,142 @@ export const getServerSideProps: GetServerSideProps<{
 };
 
 export default function ItemView({ item }: { item: ItemWithRelations }) {
-	const router = useRouter();
-	const toast = useToast();
+  const router = useRouter();
+  const toast = useToast();
 
-	const { data: session } = useSession();
+  const { data: session } = useSession();
 
-	const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
-	const deleteItem = async () => {
-		try {
-			const response = await fetch('/api/item/deleteItem', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(item.id),
-			});
+  const deleteItem = async () => {
+    try {
+      const response = await fetch("/api/item/deleteItem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(item.id),
+      });
 
-			if (response.ok) {
-				toast({
-					title: 'Success',
-					description: 'Item deleted',
-					status: 'success',
-					duration: 5000,
-					isClosable: true,
-				});
-				onClose();
-				router.push('/');
-			} else {
-				throw new Error('Failed to delete item');
-			}
-		} catch (err) {
-			toast({
-				title: 'Error',
-				description: err instanceof Error ? err.message : 'An error occurred',
-				status: 'error',
-				duration: 5000,
-				isClosable: true,
-			});
-		}
-	};
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Item deleted",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+        onClose();
+        router.push("/");
+      } else {
+        throw new Error("Failed to delete item");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "An error occurred",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
-	return (
-		<Container maxW='container.lg' py={6}>
-			<VStack spacing={6} align='stretch'>
-				<Heading as='h1' size={{ base: 'lg', md: 'xl' }}>
-					{item.name}
-				</Heading>
+  return (
+    <>
+      <VStack spacing={6} align="stretch">
+        <Heading as="h1" size={{ base: "lg", md: "xl" }}>
+          {item.name}
+        </Heading>
 
-				{item.description && (
-					<Text fontSize={{ base: 'md', md: 'lg' }} color='gray.700'>
-						{item.description}
-					</Text>
-				)}
+        {item.description && (
+          <Text fontSize={{ base: "md", md: "lg" }} color="gray.700">
+            {item.description}
+          </Text>
+        )}
 
-				<SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-					<Box>
-						<Text fontSize='sm' color='gray.600' fontWeight='semibold'>
-							Määrä:
-						</Text>
-						<Text fontSize='lg' fontWeight='bold'>
-							{item.amount} kpl
-						</Text>
-					</Box>
-					{item.categories && item.categories.length > 0 && (
-						<Box>
-							<Text fontSize='sm' color='gray.600' fontWeight='semibold' mb={2}>
-								Kategoriat:
-							</Text>
-							<HStack spacing={2} flexWrap='wrap'>
-								{item.categories.map((category) => (
-									<Badge key={category.id} colorScheme='blue' fontSize='sm'>
-										{category.name}
-									</Badge>
-								))}
-							</HStack>
-						</Box>
-					)}
-				</SimpleGrid>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+          <Box>
+            <Text fontSize="sm" color="gray.600" fontWeight="semibold">
+              Määrä:
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {item.amount} kpl
+            </Text>
+          </Box>
+          {item.categories && item.categories.length > 0 && (
+            <Box>
+              <Text fontSize="sm" color="gray.600" fontWeight="semibold" mb={2}>
+                Kategoriat:
+              </Text>
+              <HStack spacing={2} flexWrap="wrap">
+                {item.categories.map((category) => (
+                  <Badge key={category.id} colorScheme="blue" fontSize="sm">
+                    {category.name}
+                  </Badge>
+                ))}
+              </HStack>
+            </Box>
+          )}
+        </SimpleGrid>
 
-				<Divider />
+        <Divider />
 
-				{item.image && (
-					<Box>
-						<Image
-							src={item.image}
-							alt={item.name}
-							fallbackSrc='https://placehold.co/500x300'
-							maxW='full'
-							maxH={{ base: '300px', md: '500px' }}
-							objectFit='contain'
-							borderRadius='md'
-						/>
-					</Box>
-				)}
+        {item.image && (
+          <Box>
+            <Image
+              src={item.image}
+              alt={item.name}
+              fallbackSrc="https://placehold.co/500x300"
+              maxW="full"
+              maxH={{ base: "300px", md: "500px" }}
+              objectFit="contain"
+              borderRadius="md"
+            />
+          </Box>
+        )}
 
-				{session?.user?.group === 'ADMIN' && (
-					<HStack spacing={3}>
-						<Button colorScheme='blue' onClick={() => router.push(`/admin/edititem/${item.id}`)}>
-							Muokkaa
-						</Button>
-						<Button colorScheme='red' onClick={onOpen}>
-							Poista
-						</Button>
-					</HStack>
-				)}
+        {session?.user?.group === "ADMIN" && (
+          <HStack spacing={3}>
+            <Button
+              colorScheme="blue"
+              onClick={() => router.push(`/admin/edititem/${item.id}`)}
+            >
+              Muokkaa
+            </Button>
+            <Button colorScheme="red" onClick={onOpen}>
+              Poista
+            </Button>
+          </HStack>
+        )}
 
-				<Box mt={4}>
-					<Heading size='md' mb={4}>
-						Varaushistoria
-					</Heading>
-					<ReservationTable reservations={item.reservations} />
-				</Box>
-			</VStack>
+        <Box mt={4}>
+          <Heading size="md" mb={4}>
+            Varaushistoria
+          </Heading>
+          <ReservationTable reservations={item.reservations} />
+        </Box>
+      </VStack>
 
-			<Modal isOpen={isOpen} onClose={onClose}>
-				<ModalOverlay />
-				<ModalContent mx={4}>
-					<ModalHeader>Poistetaanko kama?</ModalHeader>
-					<ModalCloseButton />
-					<ModalBody>
-						<strong>{item.name}</strong> poistetaan. Oletko varma?
-					</ModalBody>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent mx={4}>
+          <ModalHeader>Poistetaanko kama?</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <strong>{item.name}</strong> poistetaan. Oletko varma?
+          </ModalBody>
 
-					<ModalFooter>
-						<Button colorScheme='blue' mr={3} onClick={deleteItem}>
-							Poista
-						</Button>
-						<Button colorScheme='gray' onClick={onClose}>
-							Peruuta
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
-		</Container>
-	);
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={deleteItem}>
+              Poista
+            </Button>
+            <Button colorScheme="gray" onClick={onClose}>
+              Peruuta
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
 }

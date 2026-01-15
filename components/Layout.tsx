@@ -17,7 +17,7 @@ export default function Layout({ children }: LayoutProps) {
         <CartButton onOpen={onOpen} onClose={onClose} isOpen={isOpen} />
       </TopBar>
       <CartDrawer isOpen={isOpen} onClose={onClose} />
-      <Container as="main" maxW="container.xl" px={4} py={10} mt={20}>
+      <Container as="main" maxW="container.xl" px={4} py={10}>
         {children}
       </Container>
     </>

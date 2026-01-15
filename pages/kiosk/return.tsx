@@ -3,7 +3,6 @@ import prisma from "../../utils/prisma";
 import {
   Box,
   Button,
-  Container,
   Heading,
   Stack,
   Tag,
@@ -83,7 +82,9 @@ const LoanReturnCard = ({
   onReturnComplete,
 }: {
   loan: LoanType;
-  onReturn: (id: string) => Promise<{ name: string; description: string | null } | null>;
+  onReturn: (
+    id: string
+  ) => Promise<{ name: string; description: string | null } | null>;
   onReturnComplete: () => void;
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -211,8 +212,8 @@ const LoanReturnCard = ({
               >
                 <Text fontSize="md" lineHeight="tall">
                   Vahvistamalla palautuksen otat vastuun siitä, että kaikki
-                  tavarat ovat mukana, puhtaita ja toimivassa kunnossa.
-                  Palauta tavarat oikeaan lokeroon.
+                  tavarat ovat mukana, puhtaita ja toimivassa kunnossa. Palauta
+                  tavarat oikeaan lokeroon.
                 </Text>
               </Box>
 
@@ -359,7 +360,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
   }
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Palauta lainoja</Heading>
@@ -385,6 +386,6 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
           )}
         </Box>
       </Stack>
-    </Container>
+    </>
   );
 }

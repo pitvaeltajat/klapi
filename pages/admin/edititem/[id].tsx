@@ -1,28 +1,27 @@
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../../components/NotAuthenticated';
 import {
-	Heading,
-	Input,
-	Image,
-	Textarea,
-	NumberInput,
-	NumberInputField,
-	NumberInputStepper,
-	NumberIncrementStepper,
-	NumberDecrementStepper,
-	Button,
-	useToast,
-	Container,
-	VStack,
-	FormControl,
-	FormLabel,
-} from '@chakra-ui/react';
-import { useState } from 'react';
-import { CreatableSelect, MultiValue } from 'chakra-react-select';
-import { useRouter } from 'next/router';
-import prisma from '../../../utils/prisma';
-import { Item, Category } from '@prisma/client';
-import { GetServerSideProps } from 'next';
+  Heading,
+  Input,
+  Image,
+  Textarea,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Button,
+  useToast,
+  VStack,
+  FormControl,
+  FormLabel,
+} from "@chakra-ui/react";
+import { useState } from "react";
+import { CreatableSelect, MultiValue } from "chakra-react-select";
+import { useRouter } from "next/router";
+import prisma from "../../../utils/prisma";
+import { Item, Category } from "@prisma/client";
+import { GetServerSideProps } from "next";
 
 interface ItemWithRelations extends Item {
 	categories: Category[];
@@ -160,12 +159,12 @@ export default function EditItem({ item, categories }: { item: ItemWithRelations
 		return <NotAuthenticated />;
 	}
 
-	return (
-		<Container maxW='container.md' py={6}>
-			<VStack spacing={6} align='stretch'>
-				<Heading as='h1' size='md'>
-					Muokkaa kamaa
-				</Heading>
+  return (
+    <>
+      <VStack spacing={6} align="stretch">
+        <Heading as="h1" size="md">
+          Muokkaa kamaa
+        </Heading>
 
 				<FormControl>
 					<FormLabel>Nimi:</FormLabel>
@@ -252,10 +251,15 @@ export default function EditItem({ item, categories }: { item: ItemWithRelations
 					<Input type='file' accept='image/*' onChange={handleImageChange} />
 				</FormControl>
 
-				<Button onClick={updateItem} isLoading={isSubmitting} colorScheme='blue' size='lg'>
-					Tallenna
-				</Button>
-			</VStack>
-		</Container>
-	);
+        <Button
+          onClick={updateItem}
+          isLoading={isSubmitting}
+          colorScheme="blue"
+          size="lg"
+        >
+          Tallenna
+        </Button>
+      </VStack>
+    </>
+  );
 }

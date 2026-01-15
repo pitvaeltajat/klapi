@@ -149,8 +149,16 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
     }
   };
 
-  if (session) {
-    return (
+  if (!session) {
+    return null;
+  }
+
+  return (
+    <>
+      <Heading as="h1" size="xl" mb={6}>
+        Oma tili
+      </Heading>
+
       <VStack spacing={6} align="stretch">
         <Box
           bg="white"
@@ -236,22 +244,6 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
           )}
         </Box>
       </VStack>
-    );
-  } else {
-    return (
-      <Box
-        bg="white"
-        p={6}
-        borderRadius="md"
-        boxShadow="sm"
-        borderWidth="1px"
-        borderColor="gray.200"
-      >
-        <VStack spacing={4} align="start">
-          <Heading size="lg">Ei kirjautunut sisään</Heading>
-          <Auth />
-        </VStack>
-      </Box>
-    );
-  }
+    </>
+  );
 }
