@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useReducer } from 'react';
 import { CartState, CartItem } from '../types';
 
-const initialState: CartState = {
+export const initialCartState: CartState = {
   items: [],
   description: '',
   loaner: undefined,
   userId: undefined,
 };
 
-type CartAction =
+export type CartAction =
   | { type: 'ADD_TO_CART'; payload: CartItem }
   | { type: 'INCREMENT_AMOUNT'; payload: string }
   | { type: 'DECREMENT_AMOUNT'; payload: string }
@@ -18,7 +18,7 @@ type CartAction =
   | { type: 'SET_LOANER'; payload: string }
   | { type: 'SET_USER_ID'; payload: string | undefined };
 
-function cartReducer(state: CartState, action: CartAction): CartState {
+export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD_TO_CART': {
       const existingItem = state.items.find((item) => item.id === action.payload.id);
@@ -68,7 +68,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       };
     case 'CLEAR_CART':
       return {
-        ...initialState,
+        ...initialCartState,
         loaner: state.loaner, // Preserve loaner when clearing cart
         userId: state.userId, // Preserve userId when clearing cart
       };
@@ -92,7 +92,7 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [state, dispatch] = useReducer(cartReducer, initialCartState);
 
   const value = {
     state,

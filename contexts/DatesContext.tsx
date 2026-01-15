@@ -1,20 +1,20 @@
 import React, { createContext, useContext, useReducer } from 'react';
 import { DatesState } from '../types';
 
-const initialState: DatesState = {
+export const initialDatesState: DatesState = {
   startDate: new Date(),
   endDate: new Date(),
   datesSet: false,
   selectedUserId: null,
 };
 
-type DatesAction =
+export type DatesAction =
   | { type: 'SET_START_DATE'; payload: Date }
   | { type: 'SET_END_DATE'; payload: Date }
   | { type: 'SET_DATES_SET'; payload: boolean }
   | { type: 'SET_SELECTED_USER_ID'; payload: string | null };
 
-function datesReducer(state: DatesState, action: DatesAction): DatesState {
+export function datesReducer(state: DatesState, action: DatesAction): DatesState {
   switch (action.type) {
     case 'SET_START_DATE':
       return { ...state, startDate: action.payload };
@@ -40,7 +40,7 @@ type DatesContextType = {
 const DatesContext = createContext<DatesContextType | undefined>(undefined);
 
 export function DatesProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(datesReducer, initialState);
+  const [state, dispatch] = useReducer(datesReducer, initialDatesState);
 
   const value = {
     state,

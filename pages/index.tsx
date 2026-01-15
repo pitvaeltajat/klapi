@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '../utils/prisma';
+import { visibleItemsWhere, itemsWithRelationsInclude } from '../utils/itemQueries';
 import DateSelector from '../components/DateSelector';
 import KioskModeSelector from '../components/KioskModeSelector';
 import KioskDateSelector from '../components/KioskDateSelector';
@@ -22,10 +23,8 @@ interface IndexProps {
 
 export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
   const items = await prisma.item.findMany({
-    include: {
-      categories: true,
-      reservations: { include: { loan: true } },
-    },
+    where: visibleItemsWhere,
+    include: itemsWithRelationsInclude,
     orderBy: { name: 'asc' },
   });
   const categories = await prisma.category.findMany({

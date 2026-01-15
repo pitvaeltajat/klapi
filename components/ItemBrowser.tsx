@@ -16,12 +16,11 @@ import {
 } from '@chakra-ui/react';
 import { FaSearch, FaInfoCircle } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
-import { Item, Category, Loan, Reservation, ItemType } from '@prisma/client';
+import { Item, Category, Loan, Reservation } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
-  type: ItemType;
   reservations?: (Reservation & { loan: Loan })[];
 }
 
@@ -29,7 +28,6 @@ interface ItemBrowserProps {
   items: ItemWithRelations[];
   categories: Category[];
   showCustomItemLink?: boolean;
-  filterByType?: boolean;
   renderItems?: (items: ItemWithRelations[]) => React.ReactNode;
 }
 
@@ -37,7 +35,6 @@ export default function ItemBrowser({
   items,
   categories,
   showCustomItemLink = false,
-  filterByType = true,
   renderItems,
 }: ItemBrowserProps) {
   const [search, setSearch] = React.useState('');
@@ -48,7 +45,7 @@ export default function ItemBrowser({
     setSearch(e.target.value);
   };
 
-  let filteredItems = items
+  const filteredItems = items
     .filter((item) => {
       return item.name.toLowerCase().includes(search.toLowerCase());
     })
@@ -59,12 +56,6 @@ export default function ItemBrowser({
         return item.categories.some((cat) => cat.name === category);
       }
     });
-
-  if (filterByType) {
-    filteredItems = filteredItems.filter((item) => {
-      return item.type == ItemType.normal;
-    });
-  }
 
   return (
     <>
@@ -92,7 +83,7 @@ export default function ItemBrowser({
               Kaikki
             </Button>
           </WrapItem>
-          {categories.map((cat) => (
+          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
             <WrapItem key={cat.id}>
               <Button
                 onClick={() => setCategory(cat.name)}
