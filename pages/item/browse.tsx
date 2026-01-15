@@ -1,9 +1,9 @@
-import { Heading, SimpleGrid } from '@chakra-ui/react';
-import prisma from '../../utils/prisma';
-import { visibleItemsWhere } from '../../utils/itemQueries';
+import { Heading, SimpleGrid, Text } from '@chakra-ui/react';
 import { Item, Category, Loan, Reservation } from '@prisma/client';
 import ItemBrowser from '../../components/ItemBrowser';
 import BrowseItemCard from '../../components/BrowseItemCard';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import useSWR from 'swr';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -11,44 +11,26 @@ interface ItemWithRelations extends Item {
   reservations: (Reservation & { loan: Loan })[];
 }
 
-export async function getServerSideProps() {
-  const items = await prisma.item.findMany({
-    where: visibleItemsWhere,
-    include: {
-      categories: true,
-      location: true,
-      reservations: { include: { loan: true } },
-    },
-  });
-
-  const categories = await prisma.category.findMany({
-    include: {
-      items: true,
-    },
-  });
-
-  return {
-    props: {
-      items: JSON.parse(JSON.stringify(items)),
-      categories: JSON.parse(JSON.stringify(categories)),
-    },
-  };
-}
-
-export default function BrowseItems({
-  items,
-  categories,
-}: {
+interface BrowseData {
   items: ItemWithRelations[];
   categories: Category[];
-}) {
-  const sortedItems = items.sort((a, b) => {
-    return a.name.localeCompare(b.name);
-  });
+}
 
-  const sortedCategories = categories.sort((a, b) => {
-    return a.name.localeCompare(b.name);
-  });
+export default function BrowseItems() {
+  const { data, error, isLoading } = useSWR<BrowseData>('/api/item/getBrowseItems');
+
+  if (isLoading) {
+    return <LoadingSpinner fullWidth />;
+  }
+
+  if (error || !data) {
+    return <Text color="red.500">Virhe ladattaessa kamoja</Text>;
+  }
+
+  const { items, categories } = data;
+
+  const sortedItems = [...items].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <>

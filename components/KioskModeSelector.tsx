@@ -83,7 +83,7 @@ export default function KioskModeSelector() {
             size="lg"
             isRequired
             showValidationFeedback
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSubmit();
               }

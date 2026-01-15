@@ -16,6 +16,7 @@ import {
   Circle,
   Button,
   useBreakpointValue,
+  Progress,
 } from '@chakra-ui/react';
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
@@ -28,11 +29,14 @@ import { useRouter } from 'next/router';
 export default function TopBar({ children }: { children: ReactNode }) {
   const [titleHover, setTitleHover] = useState(false);
   const [revealWords, setRevealWords] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const revealDelayRef = useRef<number | null>(null);
   const { data: session } = useSession();
   const role = session?.user?.group;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
+
+  const router = useRouter();
 
   useEffect(() => {
     if (!isDesktop) {
@@ -41,7 +45,21 @@ export default function TopBar({ children }: { children: ReactNode }) {
       setRevealWords(false);
     }
   }, [isDesktop]);
-  const router = useRouter();
+
+  useEffect(() => {
+    const handleStart = () => setIsNavigating(true);
+    const handleComplete = () => setIsNavigating(false);
+
+    router.events.on('routeChangeStart', handleStart);
+    router.events.on('routeChangeComplete', handleComplete);
+    router.events.on('routeChangeError', handleComplete);
+
+    return () => {
+      router.events.off('routeChangeStart', handleStart);
+      router.events.off('routeChangeComplete', handleComplete);
+      router.events.off('routeChangeError', handleComplete);
+    };
+  }, [router]);
 
   const {
     state: { items },
@@ -253,6 +271,18 @@ export default function TopBar({ children }: { children: ReactNode }) {
           </Flex>
         </Container>
       </Box>
+      {isNavigating && (
+        <Progress
+          size="xs"
+          isIndeterminate
+          position="fixed"
+          top="4rem"
+          left={0}
+          right={0}
+          zIndex={999}
+          colorScheme="blue"
+        />
+      )}
       <Box h="4rem" />{' '}
       <Drawer placement="top" onClose={onClose} isOpen={isOpen}>
         <DrawerOverlay />
