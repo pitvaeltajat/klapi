@@ -4,27 +4,27 @@ import { authOptions } from '../auth/[...nextauth]';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getServerSession(req, res, authOptions);
-    if (session?.user?.group !== 'ADMIN') {
-        res.status(401).json({
-            message: 'Sinulla ei ole oikeutta tähän toimintoon',
-        });
-        return;
-    }
-
-    const { name, description } = req.body;
-
-    if (!name) {
-        res.status(400).json({ message: 'Box name is required' });
-        return;
-    }
-
-    const box = await prisma.box.create({
-        data: {
-            name,
-            description,
-        },
+  const session = await getServerSession(req, res, authOptions);
+  if (session?.user?.group !== 'ADMIN') {
+    res.status(401).json({
+      message: 'Sinulla ei ole oikeutta tähän toimintoon',
     });
+    return;
+  }
 
-    res.status(200).json(box);
+  const { name, description } = req.body;
+
+  if (!name) {
+    res.status(400).json({ message: 'Box name is required' });
+    return;
+  }
+
+  const box = await prisma.box.create({
+    data: {
+      name,
+      description,
+    },
+  });
+
+  res.status(200).json(box);
 }

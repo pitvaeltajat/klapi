@@ -5,44 +5,44 @@ import { Table, Thead, Tbody, Tr, Th, Td, TableContainer, Link } from '@chakra-u
 import NextLink from 'next/link';
 
 interface Reservation {
-    id: string;
-    itemId: string;
-    amount: number;
-    item: {
-        name: string;
-    };
+  id: string;
+  itemId: string;
+  amount: number;
+  item: {
+    name: string;
+  };
 }
 
 interface Loan {
-    id: string;
-    reservations: Reservation[];
+  id: string;
+  reservations: Reservation[];
 }
 
 export default function ReservationTableLoanView({ loan }: { loan: Loan }) {
-    return (
-        <TableContainer>
-            <Table variant="simple">
-                <Thead>
-                    <Tr>
-                        <Th>Tuote</Th>
-                        <Th>Määrä</Th>
-                    </Tr>
-                </Thead>
-                <Tbody>
-                    {loan.reservations.map((reservation) => {
-                        return (
-                            <Tr key={reservation.id}>
-                                <Td>
-                                    <Link as={NextLink} href={`/item/${reservation.itemId}`}>
-                                        {reservation.item.name}
-                                    </Link>
-                                </Td>
-                                <Td>{reservation.amount}</Td>
-                            </Tr>
-                        );
-                    })}
-                </Tbody>
-            </Table>
-        </TableContainer>
-    );
+  return (
+    <TableContainer>
+      <Table variant="simple">
+        <Thead>
+          <Tr>
+            <Th>Tuote</Th>
+            <Th>Määrä</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {loan.reservations.map((reservation) => {
+            return (
+              <Tr key={reservation.id}>
+                <Td>
+                  <Link as={NextLink} href={`/item/${reservation.itemId}`}>
+                    {reservation.item.name}
+                  </Link>
+                </Td>
+                <Td>{reservation.amount}</Td>
+              </Tr>
+            );
+          })}
+        </Tbody>
+      </Table>
+    </TableContainer>
+  );
 }
