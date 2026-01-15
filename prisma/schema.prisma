@@ -2,11 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// generator erd {
-//   provider = "prisma-erd-generator"
-//   output   = "ERD.svg"
-// }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -18,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -40,25 +34,19 @@ model Session {
 }
 
 model User {
-  id                        String    @id @default(cuid())
-  name                      String?
-  email                     String?   @unique
-  emailVerified             DateTime?
-  image                     String?
-  username                  String?   @unique
-  password                  String?
-  group                     Group     @default(USER)
-  accounts                  Account[]
-  sessions                  Session[]
-  loans                     Loan[]
-  emailWeeklyReminder       Boolean   @default(true)
-  emailNewLoanNotification  Boolean   @default(true)
-}
-
-enum Group {
-  ADMIN
-  USER
-  KIOSK
+  id                       String    @id @default(cuid())
+  name                     String?
+  email                    String?   @unique
+  emailVerified            DateTime?
+  image                    String?
+  group                    Group     @default(USER)
+  password                 String?
+  username                 String?   @unique
+  emailNewLoanNotification Boolean   @default(true)
+  emailWeeklyReminder      Boolean   @default(true)
+  accounts                 Account[]
+  loans                    Loan[]
+  sessions                 Session[]
 }
 
 model VerificationToken {
@@ -75,22 +63,17 @@ model Item {
   description  String?
   image        String?
   amount       Int
-  type         ItemType      @default(normal)
-  categories   Category[]
-  reservations Reservation[]
-  location     Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
   locationId   String?
-}
-
-enum ItemType {
-  normal
-  temporary
+  type         ItemType      @default(normal)
+  location     Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  categories   Category[]    @relation("CategoryToItem")
 }
 
 model Location {
-  id          String  @id @default(cuid())
   name        String
   description String?
+  id          String  @id @default(cuid())
   items       Item[]
 }
 
@@ -98,39 +81,50 @@ model Box {
   id          String   @id @default(cuid())
   name        String
   description String?
-  loans       Loan[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  loans       Loan[]
 }
 
 model Category {
   id          String  @id @default(cuid())
   name        String
   description String?
-  items       Item[]
+  items       Item[]  @relation("CategoryToItem")
 }
 
 model Reservation {
   id     String @id @default(cuid())
-  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
   amount Int
-  loan   Loan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
   itemId String
   loanId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  loan   Loan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
 }
 
 model Loan {
   id           String        @id @default(cuid())
   status       LoanStatus    @default(ACCEPTED)
-  description  String? @db.VarChar(100)
-  reservations Reservation[]
   startTime    DateTime
   endTime      DateTime
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
+  description  String?       @db.VarChar(100)
   loaner       String?
-  box          Box?          @relation(fields: [boxId], references: [id], onDelete: SetNull)
   boxId        String?
+  box          Box?          @relation(fields: [boxId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+}
+
+enum Group {
+  ADMIN
+  USER
+  KIOSK
+}
+
+enum ItemType {
+  normal
+  temporary
 }
 
 enum LoanStatus {
