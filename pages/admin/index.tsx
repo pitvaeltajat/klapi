@@ -73,7 +73,7 @@ const RoleSwitch: React.FC<RoleSwitchProps> = ({ user }) => {
       });
 
       mutate("/api/user/getUsers");
-    } catch (error) {
+    } catch {
       toast({
         title: "Virhe",
         description: "Roolin päivitys epäonnistui",
@@ -132,7 +132,7 @@ const Admin: NextPage = () => {
 
       mutate("/api/user/getUsers");
       onClose();
-    } catch (error) {
+    } catch {
       toast({
         title: "Virhe",
         description: "Käyttäjän poisto epäonnistui",

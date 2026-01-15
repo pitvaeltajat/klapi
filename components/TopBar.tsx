@@ -1,5 +1,4 @@
 import {
-  Heading,
   Flex,
   Box,
   IconButton,

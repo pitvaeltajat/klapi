@@ -328,7 +328,7 @@ async function main() {
   const loanCount = 20 + Math.floor(Math.random() * 11);
   for (let i = 0; i < loanCount; i++) {
     // Pick random status based on probability
-    let randomValue = Math.random();
+    const randomValue = Math.random();
     let cumulativeProbability = 0;
     let selectedStatus: "ACCEPTED" | "REJECTED" | "INUSE" | "IN_BOX" | "RETURNED" = "ACCEPTED";
 

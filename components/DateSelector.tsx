@@ -13,14 +13,12 @@ import "react-datepicker/dist/react-datepicker.css";
 
 import React from "react";
 import { useState } from "react";
-import { useRouter } from "next/router";
 import { useDates } from "@/contexts/DatesContext";
 import { useCart } from "@/contexts/CartContext";
 
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
   const { clearCart } = useCart();
-  const router = useRouter();
 
   // Combine the date states into a single array
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([

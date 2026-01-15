@@ -24,14 +24,7 @@ import NotAuthenticated from "../../components/NotAuthenticated";
 import NextLink from "next/link";
 import ReservationTableLoanView from "../../components/ReservationTableLoanView";
 import { useSession } from "next-auth/react";
-import {
-  Loan,
-  User,
-  Reservation,
-  Item,
-  LoanStatus,
-  Box as BoxType,
-} from "@prisma/client";
+import { Loan, User, Reservation, Item, Box as BoxType } from "@prisma/client";
 import { GetServerSideProps } from "next";
 import {
   getLoanStatusLabel,
