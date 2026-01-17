@@ -25,7 +25,7 @@ interface LoanerAutocompleteProps {
   isRequired?: boolean;
   showValidationFeedback?: boolean;
   autoFocus?: boolean;
-  onKeyPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 export default function LoanerAutocomplete({
@@ -36,7 +36,7 @@ export default function LoanerAutocomplete({
   isRequired = false,
   showValidationFeedback = false,
   autoFocus = false,
-  onKeyPress,
+  onKeyDown,
 }: LoanerAutocompleteProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -72,6 +72,13 @@ export default function LoanerAutocomplete({
     onChange(newValue, undefined);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && filteredUsers.length === 1) {
+      e.preventDefault();
+      handleUserSelect(filteredUsers[0]);
+    }
+  };
+
   return (
     <Box position="relative" ref={dropdownRef}>
       <InputGroup size={size}>
@@ -80,7 +87,10 @@ export default function LoanerAutocomplete({
           value={value}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowDropdown(true)}
-          onKeyPress={onKeyPress}
+          onKeyDown={(e) => {
+            handleKeyDown(e);
+            onKeyDown?.(e);
+          }}
           bg={selectedUserId ? 'green.50' : 'white'}
           borderColor={selectedUserId ? 'green.300' : undefined}
           isRequired={isRequired}

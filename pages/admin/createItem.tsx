@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FormControl,
-  FormErrorMessage,
   FormLabel,
   Input,
   Image,
@@ -15,9 +14,7 @@ import {
   Textarea,
   useToast,
 } from '@chakra-ui/react';
-import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { Formik, Form, Field, FormikHelpers, FieldProps } from 'formik';
 import { CreatableSelect } from 'chakra-react-select';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
@@ -25,13 +22,9 @@ import NotAuthenticated from '../../components/NotAuthenticated';
 import type { NextPage } from 'next';
 import type { Category, Location } from '@prisma/client';
 
-interface FormValues {
-  name: string;
-  amount: number;
-  description: string;
-  locationId: { value: string; label: string } | undefined;
-  categories: Array<{ value: string; label: string }>;
-  submit?: string; // Add submit field for error handling
+interface SelectOption {
+  value: string;
+  label: string;
 }
 
 interface LocationWithLabel extends Location {
@@ -47,6 +40,7 @@ interface CategoryWithLabel extends Category {
 const CreateItem: NextPage = () => {
   const { data: session } = useSession();
   const toast = useToast();
+  const router = useRouter();
 
   const { data: locations, error: locationsError } = useSWR<LocationWithLabel[]>(
     '/api/location/getLocations',
@@ -56,9 +50,14 @@ const CreateItem: NextPage = () => {
     '/api/category/getCategories',
   );
 
-  const router = useRouter();
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState(1);
+  const [description, setDescription] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<SelectOption[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<SelectOption | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -67,30 +66,29 @@ const CreateItem: NextPage = () => {
     else setPreviewUrl(null);
   };
 
-  if (session?.user?.group !== 'ADMIN') {
-    return <NotAuthenticated />;
-  }
+  const resetForm = () => {
+    setName('');
+    setAmount(1);
+    setDescription('');
+    setSelectedCategories([]);
+    setSelectedLocation(null);
+    setImage(null);
+    setPreviewUrl(null);
+  };
 
-  if (locationsError || categoriesError) return <div>failed to load</div>;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  if (!categories || !locations) return <div>loading...</div>;
-
-  locations.forEach((location) => {
-    location.label = location.name;
-    location.value = location.id;
-  });
-
-  categories.forEach((category) => {
-    category.label = category.name;
-    category.value = category.id;
-  });
-
-  const handleSubmit = async (
-    values: FormValues,
-    { setSubmitting, setErrors, resetForm }: FormikHelpers<FormValues>,
-  ) => {
     try {
-      // create item
+      const values = {
+        name,
+        amount,
+        description,
+        categories: selectedCategories,
+        locationId: selectedLocation,
+      };
+
       const createResp = await fetch('/api/item/createItem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,7 +100,6 @@ const CreateItem: NextPage = () => {
       const created = await createResp.json();
       const itemId = created.id;
 
-      // upload image if provided
       if (image) {
         const uploadResp = await fetch('/api/item/uploadImage', {
           method: 'POST',
@@ -125,11 +122,11 @@ const CreateItem: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: itemId,
-              name: values.name,
-              description: values.description,
-              amount: values.amount,
+              name,
+              description,
+              amount,
               image: `${process.env.NEXT_PUBLIC_AWS_ITEM_PHOTOS_URL}/${itemId}`,
-              categories: values.categories.map((c) => ({
+              categories: selectedCategories.map((c) => ({
                 id: c.value,
                 name: c.label,
               })),
@@ -145,15 +142,10 @@ const CreateItem: NextPage = () => {
         duration: 5000,
         isClosable: true,
       });
-      setSubmitting(false);
       resetForm();
-      setImage(null);
-
-      // redirect to edit page
       router.push(`/admin/edititem/${itemId}`);
     } catch (error) {
       if (error instanceof Error) {
-        setErrors({ submit: error.message });
         toast({
           title: 'Error',
           description: error.message,
@@ -162,136 +154,110 @@ const CreateItem: NextPage = () => {
           isClosable: true,
         });
       }
-      setSubmitting(false);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (session?.user?.group !== 'ADMIN') {
+    return <NotAuthenticated />;
+  }
+
+  if (locationsError || categoriesError) return <div>failed to load</div>;
+
+  if (!categories || !locations) return <div>loading...</div>;
+
+  const locationOptions = locations.map((location) => ({
+    ...location,
+    label: location.name,
+    value: location.id,
+  }));
+
+  const categoryOptions = categories.map((category) => ({
+    ...category,
+    label: category.name,
+    value: category.id,
+  }));
 
   return (
     <>
       <Heading>Luo uusi kama</Heading>
 
-      <Formik<FormValues>
-        initialValues={{
-          name: '',
-          amount: 1,
-          description: '',
-          locationId: undefined,
-          categories: [],
-        }}
-        onSubmit={async (values, actions) => {
-          await handleSubmit(values, actions);
-        }}
-      >
-        {(props) => (
-          <Form onSubmit={props.handleSubmit}>
-            <Field name="name">
-              {({ field, form }: FieldProps<string, FormValues>) => (
-                <FormControl isInvalid={Boolean(form.errors.name && form.touched.name)} isRequired>
-                  <FormLabel htmlFor="name">Nimi</FormLabel>
-                  <Input {...field} id="name" placeholder="PJ-teltta" value={form.values.name} />
-                  <FormErrorMessage>{form.errors.name}</FormErrorMessage>
-                </FormControl>
-              )}
-            </Field>
-            <Field name="amount">
-              {({ field, form }: FieldProps<number, FormValues>) => (
-                <FormControl
-                  isInvalid={Boolean(form.errors.amount && form.touched.amount)}
-                  isRequired
-                >
-                  <FormLabel htmlFor="amount">Määrä</FormLabel>
-                  <NumberInput
-                    id="amount"
-                    {...field}
-                    min={1}
-                    value={form.values.amount}
-                    onChange={(val) => form.setFieldValue(field.name, Number(val))}
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
-                  <FormErrorMessage>{form.errors.amount}</FormErrorMessage>
-                </FormControl>
-              )}
-            </Field>
-            <Field name="description">
-              {({ field, form }: FieldProps<string, FormValues>) => (
-                <FormControl
-                  isInvalid={Boolean(form.errors.description && form.touched.description)}
-                >
-                  <FormLabel htmlFor="description">Kuvaus</FormLabel>
-                  <Textarea
-                    id="description"
-                    {...field}
-                    value={form.values.description}
-                    onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-                    placeholder="Kamaa käytetään..."
-                  />
-                  <FormErrorMessage>{String(form.errors.description)}</FormErrorMessage>
-                </FormControl>
-              )}
-            </Field>
-            <Field name="categories">
-              {({
-                field,
-                form,
-              }: FieldProps<Array<{ value: string; label: string }>, FormValues>) => (
-                <FormControl isInvalid={Boolean(form.errors.categories && form.touched.categories)}>
-                  <FormLabel htmlFor="categories">Kategoriat</FormLabel>
-                  <CreatableSelect
-                    id="categories"
-                    isMulti
-                    options={categories}
-                    name={field.name}
-                    placeholder="Retkikeittimet"
-                    value={form.values.categories}
-                    onChange={(option) => form.setFieldValue(field.name, option)}
-                    isClearable
-                    backspaceRemovesValue
-                    onBlur={field.onBlur}
-                  />
-                  <FormErrorMessage>{String(form.errors.categories)}</FormErrorMessage>
-                </FormControl>
-              )}
-            </Field>
-            <Field name="locationId">
-              {({
-                field,
-                form,
-              }: FieldProps<{ value: string; label: string } | undefined, FormValues>) => (
-                <FormControl
-                  isInvalid={Boolean(form.errors.locationId && form.touched.locationId)}
-                  isRequired
-                >
-                  <FormLabel htmlFor="locationId">Sijainti</FormLabel>
-                  <CreatableSelect
-                    options={locations}
-                    id="locationId"
-                    name={field.name}
-                    placeholder="Kolon vessa"
-                    value={form.values.locationId}
-                    onChange={(option) => form.setFieldValue(field.name, option)}
-                    onBlur={field.onBlur}
-                    isClearable
-                  />
-                  <FormErrorMessage>{String(form.errors.locationId)}</FormErrorMessage>
-                </FormControl>
-              )}
-            </Field>
-            <FormControl marginTop={4}>
-              <FormLabel>Kuva</FormLabel>
-              <Input type="file" accept="image/*" onChange={handleImageChange} />
-              {previewUrl ? <Image src={previewUrl} alt="Preview" mt={2} maxW="300px" /> : null}
-            </FormControl>
-            <Button mt={4} colorScheme="teal" isLoading={props.isSubmitting} type="submit">
-              Luo kama
-            </Button>
-          </Form>
-        )}
-      </Formik>
+      <form onSubmit={handleSubmit}>
+        <FormControl isRequired>
+          <FormLabel htmlFor="name">Nimi</FormLabel>
+          <Input
+            id="name"
+            placeholder="PJ-teltta"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </FormControl>
+
+        <FormControl isRequired>
+          <FormLabel htmlFor="amount">Määrä</FormLabel>
+          <NumberInput
+            id="amount"
+            min={1}
+            value={amount}
+            onChange={(val) => setAmount(Number(val))}
+          >
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel htmlFor="description">Kuvaus</FormLabel>
+          <Textarea
+            id="description"
+            placeholder="Kamaa käytetään..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </FormControl>
+
+        <FormControl>
+          <FormLabel htmlFor="categories">Kategoriat</FormLabel>
+          <CreatableSelect
+            id="categories"
+            isMulti
+            options={categoryOptions}
+            name="categories"
+            placeholder="Retkikeittimet"
+            value={selectedCategories}
+            onChange={(option) => setSelectedCategories([...option])}
+            isClearable
+            backspaceRemovesValue
+          />
+        </FormControl>
+
+        <FormControl isRequired>
+          <FormLabel htmlFor="locationId">Sijainti</FormLabel>
+          <CreatableSelect
+            options={locationOptions}
+            id="locationId"
+            name="locationId"
+            placeholder="Kolon vessa"
+            value={selectedLocation}
+            onChange={(option) => setSelectedLocation(option)}
+            isClearable
+          />
+        </FormControl>
+
+        <FormControl marginTop={4}>
+          <FormLabel>Kuva</FormLabel>
+          <Input type="file" accept="image/*" onChange={handleImageChange} />
+          {previewUrl ? <Image src={previewUrl} alt="Preview" mt={2} maxW="300px" /> : null}
+        </FormControl>
+
+        <Button mt={4} colorScheme="teal" isLoading={isSubmitting} type="submit">
+          Luo kama
+        </Button>
+      </form>
     </>
   );
 };

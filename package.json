@@ -9,7 +9,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest"
   },
-  "packageManager": "pnpm@10.5.2",
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.970.0",
     "@aws-sdk/client-ses": "^3.970.0",
@@ -17,11 +17,9 @@
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/client": "^6.19.2",
     "bcrypt": "^6.0.0",
     "chakra-react-select": "^4.10.1",
-    "formik": "^2.4.9",
     "next": "15.5.9",
     "next-auth": "^4.24.13",
     "next-superjson": "^1.0.8",

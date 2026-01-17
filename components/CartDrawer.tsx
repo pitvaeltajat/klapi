@@ -18,13 +18,12 @@ import {
   Heading,
   useDisclosure,
 } from '@chakra-ui/react';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoadingSpinner from './LoadingSpinner';
 import LoanerAutocomplete from './LoanerAutocomplete';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
@@ -35,6 +34,7 @@ interface AvailabilityData {
 
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const firstField = useRef<HTMLInputElement>(null);
+  const { data: session } = useSession();
   const {
     state: cart,
     incrementAmount,
@@ -57,6 +57,22 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [data, setData] = useState<AvailabilityData | null>(null);
   const [loading, setLoading] = useState(true);
   const showLoading = useDelayedLoading(loading);
+
+  const isAdmin = session?.user?.group === 'ADMIN';
+  const isKiosk = session?.user?.group === 'KIOSK';
+
+  const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
+
+  // Pre-fill loaner with current user's info (locked for regular users, editable for admins)
+  // Only set once on initial load
+  useEffect(() => {
+    if (!isKiosk && session?.user && !hasInitializedLoaner) {
+      const userDisplayName = session.user.email || session.user.name || '';
+      setLoaner(userDisplayName);
+      setUserId(session.user.id);
+      setHasInitializedLoaner(true);
+    }
+  }, [session, isKiosk, setLoaner, setUserId, hasInitializedLoaner]);
 
   useEffect(() => {
     setLoading(true);
@@ -140,15 +156,24 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <Stack spacing={1}>
             <Box>
               <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
-              <LoanerAutocomplete
-                value={cart.loaner || ''}
-                onChange={(value, userId) => {
-                  setLoaner(value);
-                  setUserId(userId);
-                }}
-                placeholder="Lainaajan nimi tai sähköposti"
-                size="md"
-              />
+              {isAdmin || isKiosk ? (
+                <LoanerAutocomplete
+                  value={cart.loaner || ''}
+                  onChange={(value, userId) => {
+                    setLoaner(value);
+                    setUserId(userId);
+                  }}
+                  placeholder="Lainaajan nimi tai sähköposti"
+                  size="md"
+                />
+              ) : (
+                <Input
+                  id="loaner"
+                  value={cart.loaner || ''}
+                  isDisabled
+                  bg="gray.100"
+                />
+              )}
             </Box>
             <Box>
               <FormLabel htmlFor="description">
@@ -188,12 +213,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     <Box key={item.id}>
                       <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
                       <InputGroup size="md">
-                        <InputLeftAddon width="8%" padding={0}>
+                        <InputLeftAddon padding={0}>
                           <IconButton
                             icon={<FaMinus />}
                             aria-label="decrement"
                             onClick={() => decrementAmount(item.id)}
-                            width="100%"
+                            minW="40px"
                           />
                         </InputLeftAddon>
                         <Input
@@ -202,12 +227,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                           readOnly
                           textAlign="center"
                         />
-                        <InputRightAddon width="8%" padding={0}>
+                        <InputRightAddon padding={0}>
                           <IconButton
                             icon={<FaPlus />}
                             aria-label="increment"
                             onClick={() => incrementAmount(item.id)}
-                            width="100%"
+                            minW="40px"
                             isDisabled={
                               !availabilities[item.id] ||
                               getCartAmount(item.id) >= availabilities[item.id].available

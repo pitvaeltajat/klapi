@@ -1,5 +1,4 @@
 import { LoanStatus } from '@prisma/client';
-import prisma from '../../utils/prisma';
 import {
   Box,
   Button,
@@ -17,7 +16,9 @@ import {
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
+import useSWR from 'swr';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 
 interface LoanType {
@@ -38,31 +39,6 @@ interface LoanType {
       image: string | null;
     };
   }[];
-}
-
-export async function getServerSideProps() {
-  const loans = await prisma.loan.findMany({
-    include: {
-      user: true,
-      reservations: {
-        include: {
-          item: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  return { props: { loans } };
-}
-
-function compareDates(dateA: Date, dateB: Date) {
-  return dateB.getTime() - dateA.getTime();
 }
 
 export const LoanCard = ({ loan }: { loan: LoanType }) => {
@@ -150,28 +126,37 @@ const getStatusFilterLabel = (status: LoanStatus | 'ALL'): string => {
   if (status === 'ALL') {
     return 'Kaikki';
   }
-  // Use plural form for filter labels
   const label = getLoanStatusLabel(status);
-  // Add plural suffix for Finnish
   if (label === 'Hyväksytty') return 'Hyväksytyt';
   if (label === 'Hylätty') return 'Hylätyt';
   if (label === 'Palautettu') return 'Palautetut';
-  return label; // "Käytössä" and "Laatikossa" don't need plural form
+  return label;
 };
 
-export default function LoanList({ loans }: { loans: LoanType[] }) {
+function compareDates(dateA: Date, dateB: Date) {
+  return dateB.getTime() - dateA.getTime();
+}
+
+export default function LoanList() {
   const { data: session } = useSession();
+  const { data: loans, error, isLoading } = useSWR<LoanType[]>('/api/loan/getLoansClient');
   const [selectedStatuses, setSelectedStatuses] = useState<Set<LoanStatus | 'ALL'>>(
     new Set([LoanStatus.IN_BOX, LoanStatus.INUSE]),
   );
-
-  loans = loans.sort((a, b) => compareDates(new Date(a.startTime), new Date(b.startTime)));
 
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
   }
 
-  if (loans.length === 0) {
+  if (isLoading) {
+    return <LoadingSpinner fullWidth />;
+  }
+
+  if (error) {
+    return <Text color="red.500">Virhe ladattaessa varauksia</Text>;
+  }
+
+  if (!loans || loans.length === 0) {
     return (
       <Box>
         <Heading>Ei varauksia</Heading>
@@ -181,6 +166,10 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
       </Box>
     );
   }
+
+  const sortedLoans = [...loans].sort((a, b) =>
+    compareDates(new Date(a.startTime), new Date(b.startTime)),
+  );
 
   const toggleStatus = (status: LoanStatus | 'ALL') => {
     const newStatuses = new Set(selectedStatuses);
@@ -212,7 +201,7 @@ export default function LoanList({ loans }: { loans: LoanType[] }) {
     setSelectedStatuses(newStatuses);
   };
 
-  const filteredLoans = loans.filter((loan) => {
+  const filteredLoans = sortedLoans.filter((loan) => {
     if (selectedStatuses.has('ALL')) {
       return true;
     }
