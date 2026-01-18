@@ -1,7 +1,7 @@
 import { sendEmail } from './ses-client';
 import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getEmailStyles, renderItemCard, renderLoanDetails, formatDate } from '../../../utils/emailHelpers';
+import { getEmailStyles, renderItemCard, renderLoanDetails } from '../../../utils/emailHelpers';
 
 async function sendCreatedEmail(recipientEmail: string, loanId: string) {
   const loan = await prisma.loan.findUnique({

@@ -2,7 +2,7 @@ import { sendEmail } from './ses-client';
 import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import 'dotenv/config';
-import { getEmailStyles, renderItemCard, renderLoanDetails, formatDate } from '../../../utils/emailHelpers';
+import { getEmailStyles, renderItemCard, renderLoanDetails } from '../../../utils/emailHelpers';
 
 async function sendNewLoanEmail(loanCreator: string, loanId: string) {
   const adminEmails = (

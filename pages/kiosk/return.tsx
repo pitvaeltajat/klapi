@@ -106,6 +106,12 @@ const LoanReturnCard = ({
     description: string | null;
   } | null>(null);
 
+  // Move useColorModeValue calls to top level of component
+  const itemBg = useColorModeValue('gray.50', 'gray.700');
+  const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const infoBg = useColorModeValue('blue.50', 'blue.900');
+  const successBg = useColorModeValue('green.50', 'green.900');
+
   const handleConfirmReturn = async () => {
     const box = await onReturn(loan.id);
     if (box) {
@@ -172,10 +178,10 @@ const LoanReturnCard = ({
                   <HStack
                     key={reservation.id}
                     p={4}
-                    bg={useColorModeValue('gray-50', 'gray-150')}
+                    bg={itemBg}
                     borderRadius="lg"
                     borderWidth="2px"
-                    borderColor={useColorModeValue('gray-200', 'gray-50')}
+                    borderColor={itemBorderColor}
                     spacing={4}
                   >
                     {getCompressedImageUrl(reservation.item.id) ? (
@@ -212,7 +218,7 @@ const LoanReturnCard = ({
                 ))}
               </VStack>
 
-              <Box p={6} bg={useColorModeValue('blue-50', 'blue-200')} borderRadius="lg" borderWidth="2px" borderColor="blue.200">
+              <Box p={6} bg={infoBg} borderRadius="lg" borderWidth="2px" borderColor="blue.200">
                 <Text fontSize="md" lineHeight="tall">
                   Vahvistamalla palautuksen otat vastuun siitä, että kaikki tavarat ovat mukana,
                   puhtaita ja toimivassa kunnossa. Palauta tavarat oikeaan lokeroon.
@@ -249,7 +255,7 @@ const LoanReturnCard = ({
             <VStack spacing={6}>
               <Box
                 p={8}
-                bg={useColorModeValue('blue-50', 'blue-200')}
+                bg={infoBg}
                 borderRadius="lg"
                 width="100%"
                 textAlign="center"
@@ -266,7 +272,7 @@ const LoanReturnCard = ({
               {boxInfo?.description && (
                 <Box
                   p={5}
-                  bg={useColorModeValue('blue-50', 'blue-200')}
+                  bg={infoBg}
                   borderRadius="md"
                   width="100%"
                   borderWidth="1px"
@@ -278,7 +284,7 @@ const LoanReturnCard = ({
                   <Text fontSize="md">{boxInfo.description}</Text>
                 </Box>
               )}
-              <Box p={5} bg={useColorModeValue('green-50', 'green-200')} borderRadius="md" width="100%" textAlign="center">
+              <Box p={5} bg={successBg} borderRadius="md" width="100%" textAlign="center">
                 <Text color="green.700" fontSize="md" fontWeight="medium">
                   Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan lokeroon.
                 </Text>
