@@ -20,7 +20,6 @@ function BrowseModeHeader({ onExitBrowseMode }: { onExitBrowseMode: () => void }
       <Box>
         <Heading size="lg" mb={2}>
           <HStack>
-            <Icon as={FaEye} />
             <Text>Selaa katalogia</Text>
           </HStack>
         </Heading>
@@ -73,7 +72,23 @@ export default function Index({ items, categories }: IndexProps) {
       <Head>
         <title>Etusivu | Klapi</title>
       </Head>
-      {isKioskMode ? (
+      {dates.browseMode ? (
+        <>
+          <BrowseModeHeader onExitBrowseMode={() => setBrowseMode(false)} />
+          <ItemBrowser
+            items={items}
+            categories={categories}
+            showCustomItemLink={false}
+            renderItems={(filteredItems) => (
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }} gap={[4, 6, 8, 10]}>
+                {filteredItems.map((item) => (
+                  <BrowseItemCard key={item.id} item={item} />
+                ))}
+              </SimpleGrid>
+            )}
+          />
+        </>
+      ) : isKioskMode ? (
         <>
           {!dates.datesSet ? (
             <KioskModeSelector />
@@ -86,23 +101,7 @@ export default function Index({ items, categories }: IndexProps) {
         </>
       ) : (
         <>
-          {dates.browseMode ? (
-            <>
-              <BrowseModeHeader onExitBrowseMode={() => setBrowseMode(false)} />
-              <ItemBrowser
-                items={items}
-                categories={categories}
-                showCustomItemLink={false}
-                renderItems={(filteredItems) => (
-                  <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }} gap={[4, 6, 8, 10]}>
-                    {filteredItems.map((item) => (
-                      <BrowseItemCard key={item.id} item={item} />
-                    ))}
-                  </SimpleGrid>
-                )}
-              />
-            </>
-          ) : dates.datesSet ? (
+          {dates.datesSet ? (
             <>
               <DateSelector />
               <ItemBrowser items={items} categories={categories} showCustomItemLink={true} />

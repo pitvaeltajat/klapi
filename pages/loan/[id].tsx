@@ -194,11 +194,6 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       });
   };
 
-
-  const startLoan = async () => {
-    
-  }
-
   const isKiosk = session?.user?.group === 'KIOSK';
 
   // Derive the loan status from reservations
@@ -234,9 +229,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'RETURNED';
 
-
-  const canStartUse = 
-    derivedStatus === 'ACCEPTED';
+  const canStartUse = derivedStatus === 'ACCEPTED';
 
   const canMarkReturned = isAdmin && (derivedStatus === 'INUSE' || derivedStatus === 'IN_BOX');
 
@@ -292,7 +285,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         {derivedStatus === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Heading as="h2" size="md" color="green.700">
-              ✓ Lainaustapahtuma suoritettu loppuun
+              Lainaustapahtuma suoritettu loppuun
             </Heading>
           </Box>
         ) : canMarkReturned ? (
@@ -332,7 +325,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                     </Button>
                   )}
                   {canStartUse && (
-                    <Button colorScheme="green" onClick={startLoan} flex="1">
+                    <Button colorScheme="blue" onClick={onStartLoanOpen} flex="1">
                       Aloita lainaus
                     </Button>
                   )}
@@ -359,6 +352,12 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             </ModalFooter>
           </ModalContent>
         </Modal>
+
+        <StartLoanConfirmation
+          isOpen={isStartLoanOpen}
+          onClose={onStartLoanClose}
+          loan={loan}
+        />
       </Stack>
     </>
   );
