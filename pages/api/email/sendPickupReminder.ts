@@ -1,39 +1,19 @@
 import { sendEmail } from './ses-client';
 import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import 'dotenv/config';
 import { getEmailStyles, renderItemCard, renderLoanDetails, formatDate } from '../../../utils/emailHelpers';
 
-async function sendNewLoanEmail(loanCreator: string, loanId: string) {
-  const adminEmails = (
-    await prisma.user.findMany({
-      where: {
-        group: 'ADMIN',
-        emailNewLoanNotification: true,
-      },
-      select: { email: true },
-    })
-  )
-    .map((user) => user.email)
-    .filter((email): email is string => email !== null);
-
-  if (adminEmails.length === 0) {
-    return;
-  }
-
+async function sendPickupReminderEmail(
+  recipientEmail: string,
+  loanId: string,
+  startTime: string,
+) {
   const loan = await prisma.loan.findUnique({
     where: { id: loanId },
     select: {
-      status: true,
+      description: true,
       startTime: true,
       endTime: true,
-      description: true,
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
       reservations: {
         include: {
           item: {
@@ -52,8 +32,6 @@ async function sendNewLoanEmail(loanCreator: string, loanId: string) {
     throw new Error(`Loan ${loanId} not found`);
   }
 
-  const isKioskLoan = loan.status === 'INUSE';
-
   const itemsHtml = loan.reservations
     .map((reservation) => renderItemCard({ id: reservation.item.id, name: reservation.item.name, amount: reservation.amount }))
     .join('');
@@ -71,28 +49,24 @@ async function sendNewLoanEmail(loanCreator: string, loanId: string) {
     </head>
     <body>
       <div class="email-container">
-        <h1>📨 Uusi varaus luotu</h1>
+        <h1>📦 Muistutus: Varauksesi nouto alkaa huomenna</h1>
         
-        <p>Hei admin!</p>
+        <p>Hei!</p>
         
-        <p>Uusi varaus on luotu järjestelmään${isKioskLoan ? ' kiosk-käytön kautta' : ''} ja se on automaattisesti hyväksytty.</p>
-        
-        <div class="info-box">
-          <strong>👤 Varaaja:</strong> ${loan.user.name || loan.user.email || 'Tuntematon'}<br />
-          <strong>📧 Sähköposti:</strong> ${loan.user.email || 'Ei sähköpostia'}<br />
-          <strong>📋 Varaustunnus:</strong> ${loanId}<br />
-          <strong>✅ Tila:</strong> ${isKioskLoan ? 'Käytössä (kiosk)' : 'Hyväksytty'}
-        </div>
+        <p>Varauksesi nouto alkaa <strong>${formatDate(startTime)}</strong>. Muistathan noutaa varatut tavarat ilmoittamaasi aikaan.</p>
         
         ${loanDetailsHtml}
         
-        <h2>Varatut tavarat</h2>
+        <h2>Noudettavat tavarat</h2>
         <div class="item-grid">
           ${itemsHtml}
         </div>
         
         <div class="info-box">
-          <strong>ℹ️ Tiedoksi:</strong> Varaus on automaattisesti hyväksytty. Voit tarkastella varausta alla olevasta linkistä.
+          <strong>📋 Varaustunnus:</strong> ${loanId}<br />
+          <strong>📅 Nouto:</strong> ${formatDate(startTime)}<br />
+          <br />
+          <strong>⚠️ Muistathan:</strong> Nouda varatut tavarat ilmoittamaasi noutoajankohtaan mennessä.
         </div>
         
         <a href="${loanUrl}" class="button">Tarkastele varausta</a>
@@ -106,15 +80,15 @@ async function sendNewLoanEmail(loanCreator: string, loanId: string) {
     </html>
   `;
 
-  const subject = `Uusi varaus "${subjectText}" henkilöltä ${loanCreator}`;
-  await sendEmail(adminEmails, subject, html);
+  const subject = `Muistutus: Varaus "${subjectText}" nouto alkaa huomenna`;
+  await sendEmail([recipientEmail], subject, html);
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { loanCreator, id } = req.body;
+  const { email, id, startTime } = req.body;
   try {
-    await sendNewLoanEmail(loanCreator, id);
-    res.status(200).json({ message: 'Email sent' });
+    await sendPickupReminderEmail(email, id, startTime);
+    res.status(200).json({ message: 'Pickup reminder email sent' });
   } catch (error) {
     if (error instanceof Error) {
       res.status(500).json({ message: error.message });

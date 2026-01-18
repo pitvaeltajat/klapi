@@ -17,6 +17,82 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const dayAfterTomorrow = new Date(now.getTime() + 25 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+    // Find loans that start in 24-25 hours and have ACCEPTED reservations (not picked up yet)
+    // A loan hasn't been picked up if all reservations are still ACCEPTED (none are INUSE)
+    const allLoansStartingTomorrow = await prisma.loan.findMany({
+      where: {
+        startTime: {
+          gte: tomorrow,
+          lte: dayAfterTomorrow,
+        },
+      },
+      include: {
+        user: true,
+        reservations: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    // Filter to only loans where all reservations are still ACCEPTED (not picked up)
+    const upcomingPickupLoans = allLoansStartingTomorrow.filter((loan) => {
+      return (
+        loan.reservations.length > 0 &&
+        loan.reservations.every((res) => res.status === ReservationStatus.ACCEPTED)
+      );
+    });
+
+    console.log(`Found ${upcomingPickupLoans.length} upcoming pickup loans`);
+
+    // Send pickup reminder emails to users
+    const pickupReminderPromises = upcomingPickupLoans.map(async (loan) => {
+      if (!loan.user.email) {
+        console.log(`Loan ${loan.id} has no user email`);
+        return;
+      }
+
+      // Check if user wants reminder emails
+      const user = await prisma.user.findUnique({
+        where: { id: loan.userId },
+        select: { emailWeeklyReminder: true },
+      });
+
+      if (!user?.emailWeeklyReminder) {
+        console.log(`User ${loan.userId} has disabled reminder emails`);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendPickupReminder`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: loan.user.email,
+              id: loan.id,
+              startTime: loan.startTime.toLocaleString('fi-FI', {
+                dateStyle: 'short',
+                timeStyle: 'short',
+              }),
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to send pickup reminder email for loan ${loan.id}`);
+        }
+
+        console.log(`Sent pickup reminder email for loan ${loan.id}`);
+      } catch (error) {
+        console.error(`Error sending pickup reminder email for loan ${loan.id}:`, error);
+      }
+    });
+
     // Find loans that expire in the next 24-25 hours and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
       where: {
@@ -37,10 +113,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`Found ${expiringLoans.length} expiring loans`);
 
-    // Send reminder emails to users
+    // Send reminder emails to users (only if they have emailWeeklyReminder enabled)
     const userEmailPromises = expiringLoans.map(async (loan) => {
       if (!loan.user.email) {
         console.log(`Loan ${loan.id} has no user email`);
+        return;
+      }
+
+      // Check if user wants reminder emails
+      const user = await prisma.user.findUnique({
+        where: { id: loan.userId },
+        select: { emailWeeklyReminder: true },
+      });
+
+      if (!user?.emailWeeklyReminder) {
+        console.log(`User ${loan.userId} has disabled reminder emails`);
         return;
       }
 
@@ -145,10 +232,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    await Promise.all([...userEmailPromises, ...adminEmailPromises]);
+    await Promise.all([...pickupReminderPromises, ...userEmailPromises, ...adminEmailPromises]);
 
     res.status(200).json({
       message: 'Cron job completed',
+      upcomingPickupLoansChecked: upcomingPickupLoans.length,
       expiringLoansChecked: expiringLoans.length,
       oldBoxLoansChecked: oldBoxLoans.length,
     });

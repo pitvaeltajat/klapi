@@ -95,29 +95,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    // Only send emails for non-kiosk loans (ACCEPTED status)
-    // Kiosk loans (INUSE) are immediate and don't need approval notifications
-    if (loanStatus === 'ACCEPTED') {
-      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http')
-        ? process.env.NEXT_PUBLIC_VERCEL_URL
-        : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http')
+      ? process.env.NEXT_PUBLIC_VERCEL_URL
+      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
 
-      try {
-        await fetch(`${baseUrl}/api/email/sendNewLoanToUser`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: result.id,
-            email: user.email,
-          }),
+    // Send emails for ACCEPTED loans (regular user loans)
+    if (loanStatus === 'ACCEPTED') {
+      // Send email to user only if they have emailNewLoanNotification enabled
+      if (user.email && user.group !== 'ADMIN') {
+        const userPrefs = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { emailNewLoanNotification: true },
         });
-      } catch (error) {
-        console.error('Failed to send user email:', error);
-        // Continue execution even if email fails
+
+        if (userPrefs?.emailNewLoanNotification !== false) {
+          try {
+            await fetch(`${baseUrl}/api/email/sendNewLoanToUser`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: result.id,
+                email: user.email,
+              }),
+            });
+          } catch (error) {
+            console.error('Failed to send user email:', error);
+            // Continue execution even if email fails
+          }
+        }
       }
 
+      // Send admin notification for regular loans
       try {
         await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
           method: 'POST',
@@ -131,6 +141,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       } catch (error) {
         console.error('Failed to send admin email:', error);
+        // Continue execution even if email fails
+      }
+    }
+
+    // Send admin notification for kiosk loans (INUSE status)
+    if (loanStatus === 'INUSE' && session.user.group === 'KIOSK') {
+      try {
+        await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: result.id,
+            loanCreator: user.name || 'Kiosk-käyttäjä',
+          }),
+        });
+      } catch (error) {
+        console.error('Failed to send admin email for kiosk loan:', error);
         // Continue execution even if email fails
       }
     }
