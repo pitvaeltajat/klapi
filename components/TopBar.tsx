@@ -95,35 +95,47 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 _active={{ bg: 'whiteAlpha.400' }}
               />
 
-              <Box>
+              <Box
+                onMouseEnter={() => {
+                  if (!isDesktop) return;
+                  setTitleHover(true);
+                  if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
+                  revealDelayRef.current = window.setTimeout(() => {
+                    setRevealWords(true);
+                  }, 2000);
+                }}
+                onMouseLeave={() => {
+                  if (!isDesktop) return;
+                  setTitleHover(false);
+                  if (revealDelayRef.current) {
+                    window.clearTimeout(revealDelayRef.current);
+                    revealDelayRef.current = null;
+                  }
+                  setRevealWords(false);
+                }}
+                onFocus={() => {
+                  if (!isDesktop) return;
+                  setTitleHover(true);
+                  if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
+                  revealDelayRef.current = window.setTimeout(() => {
+                    setRevealWords(true);
+                  }, 2000);
+                }}
+                onBlur={() => {
+                  if (!isDesktop) return;
+                  setTitleHover(false);
+                  if (revealDelayRef.current) {
+                    window.clearTimeout(revealDelayRef.current);
+                    revealDelayRef.current = null;
+                  }
+                  setRevealWords(false);
+                }}
+              >
                 <Link
                   as={NextLink}
                   href="/"
                   _hover={{ textDecoration: 'none' }}
-                  onMouseEnter={() => {
-                    if (!isDesktop) return;
-                    setTitleHover(true);
-                    if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                    revealDelayRef.current = window.setTimeout(() => setRevealWords(true), 180);
-                  }}
-                  onMouseLeave={() => {
-                    if (!isDesktop) return;
-                    setTitleHover(false);
-                    if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                    setRevealWords(false);
-                  }}
-                  onFocus={() => {
-                    if (!isDesktop) return;
-                    setTitleHover(true);
-                    if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                    revealDelayRef.current = window.setTimeout(() => setRevealWords(true), 180);
-                  }}
-                  onBlur={() => {
-                    if (!isDesktop) return;
-                    setTitleHover(false);
-                    if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                    setRevealWords(false);
-                  }}
+                  
                   aria-label={
                     titleHover || revealWords
                       ? 'Kaluston Lainaus Applikaatio Pitvalaisten Ilmeiseen tarpeeseen'
@@ -138,13 +150,13 @@ export default function TopBar({ children }: { children: ReactNode }) {
                     as="span"
                     fontSize="lg"
                   >
-                    {!titleHover && !revealWords ? (
+                    {!revealWords ? (
                       <Box
                         as="span"
                         display="inline-block"
                         fontWeight="semibold"
                         lineHeight="1"
-                        fontSize={revealWords ? 'lg' : '2xl'}
+                        fontSize="2xl"
                         letterSpacing="0.02em"
                       >
                         KLAPI
@@ -157,11 +169,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                         'Pitvalaisten',
                         'Ilmeiseen tarpeeseen',
                       ].map((word, idx) => {
-                        const letter = word[0];
-                        const collapsed = '1.4ch';
-                        const gapWidth = '3ch';
                         const expanded = `${Math.max(word.length + 1, 5)}ch`;
-                        const width = revealWords ? expanded : titleHover ? gapWidth : collapsed;
                         return (
                           <Box
                             as="span"
@@ -169,14 +177,14 @@ export default function TopBar({ children }: { children: ReactNode }) {
                             overflow="hidden"
                             whiteSpace="nowrap"
                             transition="width 220ms cubic-bezier(.2,.8,.2,1), opacity 160ms"
-                            width={width}
-                            minW={collapsed}
+                            width={expanded}
+                            minW={'1.4ch'}
                             display="inline-flex"
                             alignItems="center"
                             justifyContent="flex-start"
                             textAlign="left"
                             fontWeight="semibold"
-                            px={revealWords ? 2 : 0}
+                            px={2}
                             letterSpacing="0.02em"
                           >
                             <Box
@@ -184,10 +192,10 @@ export default function TopBar({ children }: { children: ReactNode }) {
                               display="inline-block"
                               transformOrigin="left center"
                               transition="transform 220ms"
-                              fontSize={revealWords ? 'lg' : '2xl'}
+                              fontSize={'lg'}
                               lineHeight="1"
                             >
-                              {revealWords ? word : letter}
+                              {word}
                             </Box>
                           </Box>
                         );
