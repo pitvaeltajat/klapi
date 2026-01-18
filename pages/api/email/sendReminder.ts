@@ -1,24 +1,87 @@
 import { sendEmail } from './ses-client';
+import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getEmailStyles, renderItemCard, renderLoanDetails, formatDate } from '../../../utils/emailHelpers';
 
 async function sendReminderEmail(
   recipientEmail: string,
-  id: string,
-  description: string,
+  loanId: string,
+  description: string | null,
   endTime: string,
 ) {
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    select: {
+      description: true,
+      startTime: true,
+      endTime: true,
+      reservations: {
+        include: {
+          item: {
+            select: {
+              id: true,
+              name: true,
+              amount: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!loan) {
+    throw new Error(`Loan ${loanId} not found`);
+  }
+
+  const itemsHtml = loan.reservations
+    .map((reservation) => renderItemCard({ id: reservation.item.id, name: reservation.item.name, amount: reservation.amount }))
+    .join('');
+
+  const loanDetailsHtml = renderLoanDetails(loan.startTime, loan.endTime, loan.description);
+  const loanUrl = `${process.env.NEXT_PUBLIC_VERCEL_URL}/loan/${loanId}`;
+  const subjectText = loan.description || `Varaus ${loanId}`;
+
   const html = `
-    <h1>Muistutus: Varauksesi päättyy pian</h1>
-    <p>
-      Varauksesi ${description} päättyy ${endTime}.<br /><br />
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      ${getEmailStyles()}
+    </head>
+    <body>
+      <div class="email-container">
+        <h1>⏰ Muistutus: Varauksesi päättyy pian</h1>
+        
+        <p>Hei!</p>
+        
+        <p>Varauksesi päättyy <strong>${formatDate(endTime)}</strong>. Muistathan palauttaa varaamasi tavarat ajoissa.</p>
+        
+        ${loanDetailsHtml}
+        
+        <h2>Palautettavat tavarat</h2>
+        <div class="item-grid">
+          ${itemsHtml}
+        </div>
+        
+        <div class="info-box">
+          <strong>📋 Varaustunnus:</strong> ${loanId}<br />
+          <strong>⏰ Palautus:</strong> ${formatDate(endTime)}<br />
+          <br />
+          <strong>⚠️ Muistathan:</strong> Palauta kaikki varatut tavarat ilmoittamaasi palautusajankohtaan mennessä.
+        </div>
+        
+        <a href="${loanUrl}" class="button">Tarkastele varausta</a>
+        
+        <div class="footer">
+          <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
+          <p>Klapi - Kaluston lainausjärjestelmä</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 
-      Muistathan palauttaa varaamasi tavarat ajoissa.<br /><br />
-
-      Voit tarkastella hakemuksen tietoja osoitteessa ${process.env.NEXT_PUBLIC_VERCEL_URL}/loan/${id}.<br /><br />
-    </p>
-    `;
-
-  const subject = `Muistutus: Varauksesi ${id} päättyy pian`;
+  const subject = `Muistutus: Varaus "${subjectText}" päättyy pian`;
   await sendEmail([recipientEmail], subject, html);
 }
 

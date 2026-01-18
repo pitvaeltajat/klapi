@@ -37,10 +37,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`Found ${expiringLoans.length} expiring loans`);
 
-    // Send reminder emails to users
+    // Send reminder emails to users (only if they have emailWeeklyReminder enabled)
     const userEmailPromises = expiringLoans.map(async (loan) => {
       if (!loan.user.email) {
         console.log(`Loan ${loan.id} has no user email`);
+        return;
+      }
+
+      // Check if user wants reminder emails
+      const user = await prisma.user.findUnique({
+        where: { id: loan.userId },
+        select: { emailWeeklyReminder: true },
+      });
+
+      if (!user?.emailWeeklyReminder) {
+        console.log(`User ${loan.userId} has disabled reminder emails`);
         return;
       }
 

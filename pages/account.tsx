@@ -174,21 +174,28 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
           <Auth />
         </Box>
 
-        {session?.user?.group === 'ADMIN' && (
-          <Box
-            bg="white"
-            p={6}
-            borderRadius="md"
-            boxShadow="sm"
-            borderWidth="1px"
-            borderColor="gray.200"
-          >
-            <Heading size="md" mb={4}>
-              Sähköposti-ilmoitukset
-            </Heading>
-            <VStack align="start" spacing={4}>
+        <Box
+          bg="white"
+          p={6}
+          borderRadius="md"
+          boxShadow="sm"
+          borderWidth="1px"
+          borderColor="gray.200"
+        >
+          <Heading size="md" mb={4}>
+            Sähköposti-ilmoitukset
+          </Heading>
+          <VStack align="start" spacing={4}>
+            {session?.user?.group === 'ADMIN' && (
               <HStack justify="space-between" w="full">
-                <Text fontSize="sm">Viikottainen muistutus bokseissa olevista varauksista</Text>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    Viikottainen muistutus bokseissa olevista varauksista
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Vain admin-käyttäjille
+                  </Text>
+                </VStack>
                 <Switch
                   isChecked={emailWeeklyReminder}
                   isDisabled={isSaving}
@@ -198,8 +205,17 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                   colorScheme="blue"
                 />
               </HStack>
+            )}
+            {session?.user?.group === 'ADMIN' && (
               <HStack justify="space-between" w="full">
-                <Text fontSize="sm">Uudet varaushakemukset</Text>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    Uudet varaukset
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Ilmoitukset uusista varauksista (myös kiosk-käytöstä)
+                  </Text>
+                </VStack>
                 <Switch
                   isChecked={emailNewLoanNotification}
                   isDisabled={isSaving}
@@ -209,9 +225,49 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                   colorScheme="blue"
                 />
               </HStack>
-            </VStack>
-          </Box>
-        )}
+            )}
+            {session?.user?.group !== 'ADMIN' && (
+              <>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Ilmoitukset uusista varauksista
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Sähköpostit kun luot uuden varauksen
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailNewLoanNotification}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('newLoan', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Muistutukset varauksista
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Muistutukset varauksiesi päättymisestä
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailWeeklyReminder}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('weekly', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+              </>
+            )}
+          </VStack>
+        </Box>
 
         {session?.user?.group !== 'KIOSK' && (
           <Box>
