@@ -17,9 +17,12 @@ import {
   IconButton,
   Heading,
   useDisclosure,
+  Textarea,
+  Text,
 } from '@chakra-ui/react';
 import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
+import { IoMdAlert } from 'react-icons/io';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoadingSpinner from './LoadingSpinner';
 import LoanerAutocomplete from './LoanerAutocomplete';
@@ -62,6 +65,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isKiosk = session?.user?.group === 'KIOSK';
 
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
+
+  const [reportContent, setReportContent] = useState('');
 
   // Pre-fill loaner with current user's info (locked for regular users, editable for admins)
   // Only set once on initial load
@@ -152,10 +157,14 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             isOpen={ConfirmationDialog.isOpen}
             onClose={ConfirmationDialog.onClose}
             closeDrawer={onClose}
+            reportContent={reportContent}
+            setReportContent={setReportContent}
           />
           <Stack spacing={1}>
             <Box>
-              <FormLabel htmlFor="loaner">Lainaaja</FormLabel>
+              <FormLabel htmlFor="loaner">
+                Lainaaja <span style={{ color: 'red' }}>*</span>
+              </FormLabel>
               {isAdmin || isKiosk ? (
                 <LoanerAutocomplete
                   value={cart.loaner || ''}
@@ -167,12 +176,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   size="md"
                 />
               ) : (
-                <Input
-                  id="loaner"
-                  value={cart.loaner || ''}
-                  isDisabled
-                  bg="gray.100"
-                />
+                <Input id="loaner" value={cart.loaner || ''} isDisabled bg="gray.100" />
               )}
             </Box>
             <Box>
@@ -201,6 +205,31 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               <Input id="endTime" value={timeStringWithoutTimeZone(endTime)} readOnly />
             </Box>
           </Stack>
+
+          <Box mt={4}>
+            <span style={{ color: 'red' }}>*</span> Pakollinen kenttä
+          </Box>
+
+          <Box mt={6} bg="gray.50" borderRadius="lg" borderWidth="2px" borderColor="gray.200" p={4}>
+            <Text fontSize="md" lineHeight="tall">
+              Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja mahdolliset
+              vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat, reikä laavussa
+              tms.)
+            </Text>
+            <Text fontSize="md" lineHeight="tall" mt={2} color={'red.600'}>
+              <IoMdAlert style={{ display: 'inline', marginRight: '8px' }} />
+              Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
+              havaitsemiasi puutteita tai vahinkoja.
+            </Text>
+            <Textarea
+              placeholder="Kirjoita raportti tähän..."
+              value={reportContent}
+              onChange={(e) => setReportContent(e.target.value)}
+              mt={3}
+              size="sm"
+              minH="100px"
+            />
+          </Box>
 
           {cart.items.length > 0 ? (
             <Stack spacing={2} marginTop="20px">

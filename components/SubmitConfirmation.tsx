@@ -21,15 +21,20 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
+import { report } from 'process';
 
 export default function SubmitConfirmation({
   isOpen,
   onClose,
   closeDrawer,
+  setReportContent,
+  reportContent,
 }: {
   isOpen: boolean;
   onClose: () => void;
   closeDrawer: () => void;
+  setReportContent: React.Dispatch<React.SetStateAction<string>>;
+  reportContent?: string;
 }) {
   const { state: dates } = useDates();
   const { state: cart, clearCart } = useCart();
@@ -98,8 +103,24 @@ export default function SubmitConfirmation({
       },
       body: JSON.stringify(body),
     });
+    const responseData = await response.json();
 
     if (response.ok) {
+      if (reportContent && reportContent.trim().length > 0) {
+        await fetch('/api/loan/createReport', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: reportContent,
+            loanId: responseData.id,
+            created: 'BEFORE_LOAN',
+          }),
+        });
+      }
+
+      setReportContent('');
       clearCart();
       successToast();
       router.push('/account');
