@@ -1,4 +1,5 @@
 import React from 'react';
+import Head from 'next/head';
 import prisma from '../../utils/prisma';
 import {
   Heading,
@@ -97,6 +98,9 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
 
   return (
     <>
+      <Head>
+        <title>Laatikot | Klapi</title>
+      </Head>
       <Heading as="h1" size="xl" mb={6}>
         Laatikot
       </Heading>

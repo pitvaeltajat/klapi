@@ -3,6 +3,7 @@ import prisma from '../../utils/prisma';
 import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
 
 import React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import {
   Image,
@@ -127,6 +128,9 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
   return (
     <>
+      <Head>
+        <title>{item.name} | Klapi</title>
+      </Head>
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size={{ base: 'lg', md: 'xl' }}>
           {item.name}

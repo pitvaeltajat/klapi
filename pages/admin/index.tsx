@@ -1,4 +1,5 @@
 import NextLink from 'next/link';
+import Head from 'next/head';
 import {
   Box,
   Button,
@@ -171,10 +172,14 @@ const Admin: NextPage = () => {
   }
 
   return (
-    <VStack spacing={6} align="stretch">
-      {/* Header */}
-      <Flex justifyContent="space-between" alignItems="center">
-        <Heading size="xl">Admin</Heading>
+    <>
+      <Head>
+        <title>Admin | Klapi</title>
+      </Head>
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
+        <Flex justifyContent="space-between" alignItems="center">
+          <Heading size="xl">Admin</Heading>
         <Link as={NextLink} href="/admin/createItem">
           <Button leftIcon={<FaPlus />} colorScheme="green" size="lg">
             Luo uusi kama
@@ -259,7 +264,8 @@ const Admin: NextPage = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-    </VStack>
+      </VStack>
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import Head from 'next/head';
 import prisma from '../utils/prisma';
 import { visibleItemsWhere, itemsWithRelationsInclude } from '../utils/itemQueries';
 import DateSelector from '../components/DateSelector';
@@ -43,6 +44,9 @@ export default function Index({ items, categories }: IndexProps) {
 
   return (
     <>
+      <Head>
+        <title>Etusivu | Klapi</title>
+      </Head>
       {isKioskMode ? (
         <>
           {!dates.datesSet ? (

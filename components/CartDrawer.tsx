@@ -143,11 +143,11 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       onClose={onClose}
     >
       <DrawerOverlay />
-      <DrawerContent height="100%">
+      <DrawerContent>
         <DrawerCloseButton />
         <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
 
-        <DrawerBody>
+        <DrawerBody overflow="auto" flex="1">
           <SubmitConfirmation
             isOpen={ConfirmationDialog.isOpen}
             onClose={ConfirmationDialog.onClose}

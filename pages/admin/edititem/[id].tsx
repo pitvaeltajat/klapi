@@ -1,4 +1,5 @@
 import { useSession } from 'next-auth/react';
+import Head from 'next/head';
 import NotAuthenticated from '../../../components/NotAuthenticated';
 import {
   Heading,
@@ -167,6 +168,9 @@ export default function EditItem({
 
   return (
     <>
+      <Head>
+        <title>Muokkaa kamaa: {item.name} | Klapi</title>
+      </Head>
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size="md">
           Muokkaa kamaa

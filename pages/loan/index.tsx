@@ -1,4 +1,5 @@
 import { LoanStatus } from '@prisma/client';
+import Head from 'next/head';
 import {
   Box,
   Button,
@@ -210,6 +211,9 @@ export default function LoanList() {
 
   return (
     <>
+      <Head>
+        <title>Varaukset | Klapi</title>
+      </Head>
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Varaukset</Heading>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Head from 'next/head';
 import {
   FormControl,
   FormLabel,
@@ -58,6 +59,7 @@ const CreateItem: NextPage = () => {
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitAction, setSubmitAction] = useState<'redirect' | 'createAnother'>('redirect');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -136,14 +138,16 @@ const CreateItem: NextPage = () => {
       }
 
       toast({
-        title: 'Item created',
-        description: 'Item created successfully',
+        title: 'Kama luotu',
+        description: `"${name}" luotu onnistuneesti`,
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
       resetForm();
-      router.push(`/admin/edititem/${itemId}`);
+      if (submitAction === 'redirect') {
+        router.push('/admin');
+      }
     } catch (error) {
       if (error instanceof Error) {
         toast({
@@ -181,6 +185,9 @@ const CreateItem: NextPage = () => {
 
   return (
     <>
+      <Head>
+        <title>Luo uusi kama | Klapi</title>
+      </Head>
       <Heading>Luo uusi kama</Heading>
 
       <form onSubmit={handleSubmit}>
@@ -254,8 +261,25 @@ const CreateItem: NextPage = () => {
           {previewUrl ? <Image src={previewUrl} alt="Preview" mt={2} maxW="300px" /> : null}
         </FormControl>
 
-        <Button mt={4} colorScheme="teal" isLoading={isSubmitting} type="submit">
+        <Button
+          mt={4}
+          colorScheme="teal"
+          isLoading={isSubmitting && submitAction === 'redirect'}
+          type="submit"
+          onClick={() => setSubmitAction('redirect')}
+        >
           Luo kama
+        </Button>
+        <Button
+          mt={4}
+          ml={2}
+          colorScheme="blue"
+          variant="outline"
+          isLoading={isSubmitting && submitAction === 'createAnother'}
+          type="submit"
+          onClick={() => setSubmitAction('createAnother')}
+        >
+          Luo ja lisää toinen
         </Button>
       </form>
     </>

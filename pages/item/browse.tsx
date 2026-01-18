@@ -1,3 +1,4 @@
+import Head from 'next/head';
 import { Heading, SimpleGrid, Text } from '@chakra-ui/react';
 import { Item, Category, Loan, Reservation } from '@prisma/client';
 import ItemBrowser from '../../components/ItemBrowser';
@@ -34,6 +35,9 @@ export default function BrowseItems() {
 
   return (
     <>
+      <Head>
+        <title>Kaikki kamat | Klapi</title>
+      </Head>
       <Heading as="h1" size="xl" mb={6}>
         Kaikki kamat
       </Heading>
