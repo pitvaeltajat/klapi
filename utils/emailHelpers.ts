@@ -75,7 +75,9 @@ export function getEmailStyles(): string {
       }
       .item-image {
         width: 100%;
-        height: 100px;
+        max-width: 500px;
+        height: auto;
+        aspect-ratio: 5 / 3;
         object-fit: cover;
         border-radius: 4px;
         margin-bottom: 8px;
@@ -140,9 +142,10 @@ export function getEmailStyles(): string {
 
 export function renderItemCard(item: { id: string; name: string; amount: number }): string {
   const imageUrl = getCompressedImageUrl(item.id);
+  const imageStyle = 'width: 100%; max-width: 500px; height: auto; aspect-ratio: 5 / 3; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background-color: #f3f4f6;';
   return `
     <div class="item-card">
-      ${imageUrl ? `<img src="${imageUrl}" alt="${item.name}" class="item-image" />` : '<div class="item-image" style="display: flex; align-items: center; justify-content: center; color: #9ca3af;">Ei kuvaa</div>'}
+      ${imageUrl ? `<img src="${imageUrl}" alt="${item.name}" class="item-image" style="${imageStyle}" width="500" height="300" />` : `<div class="item-image" style="display: flex; align-items: center; justify-content: center; color: #9ca3af; ${imageStyle}">Ei kuvaa</div>`}
       <div class="item-name">${item.name}</div>
       <div class="item-amount">${item.amount} kpl</div>
     </div>
