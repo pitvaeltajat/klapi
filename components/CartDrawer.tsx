@@ -216,42 +216,45 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               <Heading as="h3" size="md">
                 Valitut tavarat
               </Heading>
-              {cart.items.map(
-                (item) =>
-                  item.amount > 0 && (
-                    <Box key={item.id}>
-                      <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
-                      <InputGroup size="md">
-                        <InputLeftAddon padding={0}>
-                          <IconButton
-                            icon={<FaMinus />}
-                            aria-label="decrement"
-                            onClick={() => decrementAmount(item.id)}
-                            minW="40px"
-                          />
-                        </InputLeftAddon>
-                        <Input
-                          id={`item-${item.id}`}
-                          value={item.amount}
-                          readOnly
-                          textAlign="center"
+              {cart.items.map((item) => {
+                if (item.amount <= 0) return null;
+                const isCustomItem = item.id.startsWith('custom-');
+                const isIncrementDisabled = isCustomItem
+                  ? false
+                  : !availabilities[item.id] ||
+                    getCartAmount(item.id) >= availabilities[item.id].available;
+
+                return (
+                  <Box key={item.id}>
+                    <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
+                    <InputGroup size="md">
+                      <InputLeftAddon padding={0}>
+                        <IconButton
+                          icon={<FaMinus />}
+                          aria-label="decrement"
+                          onClick={() => decrementAmount(item.id)}
+                          minW="40px"
                         />
-                        <InputRightAddon padding={0}>
-                          <IconButton
-                            icon={<FaPlus />}
-                            aria-label="increment"
-                            onClick={() => incrementAmount(item.id)}
-                            minW="40px"
-                            isDisabled={
-                              !availabilities[item.id] ||
-                              getCartAmount(item.id) >= availabilities[item.id].available
-                            }
-                          />
-                        </InputRightAddon>
-                      </InputGroup>
-                    </Box>
-                  ),
-              )}
+                      </InputLeftAddon>
+                      <Input
+                        id={`item-${item.id}`}
+                        value={item.amount}
+                        readOnly
+                        textAlign="center"
+                      />
+                      <InputRightAddon padding={0}>
+                        <IconButton
+                          icon={<FaPlus />}
+                          aria-label="increment"
+                          onClick={() => incrementAmount(item.id)}
+                          minW="40px"
+                          isDisabled={isIncrementDisabled}
+                        />
+                      </InputRightAddon>
+                    </InputGroup>
+                  </Box>
+                );
+              })}
             </Stack>
           ) : (
             <Heading as="h3" size="md">
