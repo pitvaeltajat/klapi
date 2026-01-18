@@ -17,6 +17,7 @@ import {
   useBreakpointValue,
   Progress,
   useColorModeValue,
+  Divider,
 } from '@chakra-ui/react';
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
@@ -153,7 +154,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   as={NextLink}
                   href="/"
                   _hover={{ textDecoration: 'none' }}
-                  
+
                   aria-label={
                     titleHover || revealWords
                       ? 'Kaluston Lainaus Applikaatio Pitvalaisten Ilmeiseen tarpeeseen'
@@ -225,10 +226,14 @@ export default function TopBar({ children }: { children: ReactNode }) {
             </Flex>
 
             {session && (
-              <Flex gap={6} align="center" display={['none', 'none', 'flex']}>
+              <Flex gap={6} align="center" display={['none', 'none', 'flex']} height="30%">
                 <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
                   Varaa
                 </Link>
+                <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
+                  Palauta
+                </Link>
+                <Divider orientation='vertical' />
                 <Link
                   as={router.pathname === '/' ? 'button' : NextLink}
                   href={router.pathname === '/' ? undefined : '/'}
@@ -251,11 +256,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       Admin
                     </Link>
                   </>
-                )}
-                {role === 'KIOSK' && (
-                  <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
-                    Palauta
-                  </Link>
                 )}
                 <Link as={NextLink} href="/account" fontWeight="medium">
                   Oma tili
@@ -347,6 +347,15 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   </Tr>
                   <Tr>
                     <Td>
+                      <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
+                        Palauta
+                      </Link>
+                    </Td>
+                  </Tr>
+
+                  <Divider />
+                  <Tr>
+                    <Td>
                       <Link
                         as={router.pathname === '/' ? 'button' : NextLink}
                         href={router.pathname === '/' ? undefined : '/'}
@@ -385,15 +394,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
                         </Td>
                       </Tr>
                     </>
-                  )}
-                  {role === 'KIOSK' && (
-                    <Tr>
-                      <Td>
-                        <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
-                          Palauta
-                        </Link>
-                      </Td>
-                    </Tr>
                   )}
                   <Tr>
                     <Td>

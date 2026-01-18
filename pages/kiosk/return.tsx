@@ -20,6 +20,7 @@ import {
   VStack,
   Image,
   HStack,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
@@ -105,6 +106,12 @@ const LoanReturnCard = ({
     description: string | null;
   } | null>(null);
 
+  // Move useColorModeValue calls to top level of component
+  const itemBg = useColorModeValue('gray.50', 'gray.700');
+  const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const infoBg = useColorModeValue('blue.50', 'blue.900');
+  const successBg = useColorModeValue('green.50', 'green.900');
+
   const handleConfirmReturn = async () => {
     const box = await onReturn(loan.id);
     if (box) {
@@ -129,7 +136,7 @@ const LoanReturnCard = ({
 
   return (
     <>
-      <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} mb={4} bg="white">
+      <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} mb={4}>
         <Stack spacing={3}>
           <Heading size="md">{loan.description || loan.loaner}</Heading>
           <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
@@ -157,8 +164,8 @@ const LoanReturnCard = ({
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} size="full">
-        <ModalOverlay bg="white" />
-        <ModalContent bg="white" m={0}>
+        <ModalOverlay />
+        <ModalContent m={0}>
           <ModalCloseButton size="lg" />
           <ModalBody p={8}>
             <VStack spacing={8} maxW="800px" mx="auto" align="stretch">
@@ -171,10 +178,10 @@ const LoanReturnCard = ({
                   <HStack
                     key={reservation.id}
                     p={4}
-                    bg="gray.50"
+                    bg={itemBg}
                     borderRadius="lg"
                     borderWidth="2px"
-                    borderColor="gray.200"
+                    borderColor={itemBorderColor}
                     spacing={4}
                   >
                     {getCompressedImageUrl(reservation.item.id) ? (
@@ -211,7 +218,7 @@ const LoanReturnCard = ({
                 ))}
               </VStack>
 
-              <Box p={6} bg="blue.50" borderRadius="lg" borderWidth="2px" borderColor="blue.200">
+              <Box p={6} bg={infoBg} borderRadius="lg" borderWidth="2px" borderColor="blue.200">
                 <Text fontSize="md" lineHeight="tall">
                   Vahvistamalla palautuksen otat vastuun siitä, että kaikki tavarat ovat mukana,
                   puhtaita ja toimivassa kunnossa. Palauta tavarat oikeaan lokeroon.
@@ -248,7 +255,7 @@ const LoanReturnCard = ({
             <VStack spacing={6}>
               <Box
                 p={8}
-                bg="blue.50"
+                bg={infoBg}
                 borderRadius="lg"
                 width="100%"
                 textAlign="center"
@@ -265,7 +272,7 @@ const LoanReturnCard = ({
               {boxInfo?.description && (
                 <Box
                   p={5}
-                  bg="gray.50"
+                  bg={infoBg}
                   borderRadius="md"
                   width="100%"
                   borderWidth="1px"
@@ -277,7 +284,7 @@ const LoanReturnCard = ({
                   <Text fontSize="md">{boxInfo.description}</Text>
                 </Box>
               )}
-              <Box p={5} bg="green.50" borderRadius="md" width="100%" textAlign="center">
+              <Box p={5} bg={successBg} borderRadius="md" width="100%" textAlign="center">
                 <Text color="green.700" fontSize="md" fontWeight="medium">
                   Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan lokeroon.
                 </Text>

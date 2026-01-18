@@ -1,7 +1,6 @@
 import React from 'react';
 import Head from 'next/head';
-import { Box, Button, Heading, Text, VStack, HStack, Icon, SimpleGrid } from '@chakra-ui/react';
-import { FaEye } from 'react-icons/fa';
+import { Box, Button, Heading, Text, VStack, HStack, SimpleGrid } from '@chakra-ui/react';
 import prisma from '../utils/prisma';
 import { visibleItemsWhere, itemsWithRelationsInclude } from '../utils/itemQueries';
 import DateSelector from '../components/DateSelector';

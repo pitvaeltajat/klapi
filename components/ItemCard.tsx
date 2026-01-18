@@ -80,12 +80,12 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     >
       <AspectRatio ratio={5 / 3}>
         <Image
-          src={getCompressedImageUrl(item.id) ?? 'https://placehold.co/500x300'}
+          src={getCompressedImageUrl(item.id) ?? 'https://placehold.co/500x300?text=Ei+kuvaa'}
           alt={`Picture of ${item.name}`}
           roundedTop="lg"
           objectFit="cover"
           objectPosition="center"
-          fallbackSrc="https://placehold.co/500x300"
+          fallbackSrc="https://placehold.co/500x300?text=Ei+kuvaa"
         />
       </AspectRatio>
 

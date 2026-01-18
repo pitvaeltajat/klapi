@@ -1,7 +1,7 @@
 import { sendEmail } from './ses-client';
 import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getEmailStyles, formatDateShort } from '../../../utils/emailHelpers';
+import { getEmailStyles } from '../../../utils/emailHelpers';
 
 interface LoanInfo {
   id: string;
