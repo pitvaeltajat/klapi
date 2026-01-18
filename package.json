@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
@@ -42,6 +42,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "aws-ses-v2-local": "^2.9.0",
     "eslint": "9.22.0",
     "eslint-config-next": "15.5.9",
     "eslint-config-prettier": "^10.1.8",

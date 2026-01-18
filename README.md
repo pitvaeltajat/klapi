@@ -79,6 +79,14 @@ pnpm dev
 
 Visit [http://localhost:3000](http://localhost:3000)
 
+## Local Email Testing
+
+To test emails locally without sending real emails, use [aws-ses-v2-local](https://github.com/domdomegg/aws-ses-v2-local). The email server is started automatically on startup.
+
+2. Open the email viewer at [http://localhost:8005](http://localhost:8005) to see sent emails.
+
+All emails sent by the application will be captured and displayed in the web interface instead of being sent to real recipients.
+
 ## Database
 
 Schema is defined in [prisma/schema.prisma](prisma/schema.prisma). After schema changes, run:

@@ -62,6 +62,22 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isKiosk = session?.user?.group === 'KIOSK';
 
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
+  const [localDescription, setLocalDescription] = useState(cart.description);
+
+  // Sync local description when cart description changes externally
+  useEffect(() => {
+    setLocalDescription(cart.description);
+  }, [cart.description]);
+
+  // Debounce description updates to context
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (localDescription !== cart.description) {
+        setDescription(localDescription);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [localDescription, cart.description, setDescription]);
 
   // Pre-fill loaner with current user's info (locked for regular users, editable for admins)
   // Only set once on initial load
@@ -132,7 +148,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
-  const isDescriptionValid = cart.description.trim().length > 0;
+  const isDescriptionValid = localDescription.trim().length > 0;
 
   return (
     <Drawer
@@ -184,10 +200,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 id="description"
                 name="description"
                 placeholder="Kuvaus (pakollinen)"
-                value={cart.description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                }}
+                value={localDescription}
+                onChange={(e) => setLocalDescription(e.target.value)}
                 isRequired
                 isInvalid={!isDescriptionValid && cart.items.length > 0}
               />
