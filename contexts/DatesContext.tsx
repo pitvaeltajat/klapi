@@ -6,13 +6,15 @@ export const initialDatesState: DatesState = {
   endDate: new Date(),
   datesSet: false,
   selectedUserId: null,
+  browseMode: false,
 };
 
 export type DatesAction =
   | { type: 'SET_START_DATE'; payload: Date }
   | { type: 'SET_END_DATE'; payload: Date }
   | { type: 'SET_DATES_SET'; payload: boolean }
-  | { type: 'SET_SELECTED_USER_ID'; payload: string | null };
+  | { type: 'SET_SELECTED_USER_ID'; payload: string | null }
+  | { type: 'SET_BROWSE_MODE'; payload: boolean };
 
 export function datesReducer(state: DatesState, action: DatesAction): DatesState {
   switch (action.type) {
@@ -24,6 +26,8 @@ export function datesReducer(state: DatesState, action: DatesAction): DatesState
       return { ...state, datesSet: action.payload };
     case 'SET_SELECTED_USER_ID':
       return { ...state, selectedUserId: action.payload };
+    case 'SET_BROWSE_MODE':
+      return { ...state, browseMode: action.payload };
     default:
       return state;
   }
@@ -35,6 +39,7 @@ type DatesContextType = {
   setEndDate: (date: Date) => void;
   setDatesSet: (set: boolean) => void;
   setSelectedUserId: (id: string | null) => void;
+  setBrowseMode: (browse: boolean) => void;
 };
 
 const DatesContext = createContext<DatesContextType | undefined>(undefined);
@@ -49,6 +54,7 @@ export function DatesProvider({ children }: { children: React.ReactNode }) {
     setDatesSet: (set: boolean) => dispatch({ type: 'SET_DATES_SET', payload: set }),
     setSelectedUserId: (id: string | null) =>
       dispatch({ type: 'SET_SELECTED_USER_ID', payload: id }),
+    setBrowseMode: (browse: boolean) => dispatch({ type: 'SET_BROWSE_MODE', payload: browse }),
   };
 
   return <DatesContext.Provider value={value}>{children}</DatesContext.Provider>;

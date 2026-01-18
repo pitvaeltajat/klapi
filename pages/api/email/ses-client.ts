@@ -1,11 +1,23 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
+const isLocal = process.env.USE_LOCAL_SES === 'true';
+
 const ses = new SESClient({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.KLAPI_AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.KLAPI_AWS_SECRET_ACCESS_KEY || '',
-  },
+  region: process.env.AWS_REGION || 'eu-north-1',
+  ...(isLocal
+    ? {
+        endpoint: 'http://localhost:8005',
+        credentials: {
+          accessKeyId: 'local',
+          secretAccessKey: 'local',
+        },
+      }
+    : {
+        credentials: {
+          accessKeyId: process.env.KLAPI_AWS_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.KLAPI_AWS_SECRET_ACCESS_KEY || '',
+        },
+      }),
 });
 
 export async function sendEmail(to: string | string[], subject: string, html: string) {

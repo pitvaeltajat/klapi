@@ -5,12 +5,13 @@ import { useSession, getSession } from 'next-auth/react';
 import prisma from '../utils/prisma';
 import { LoanCard } from './loan';
 import type { GetServerSideProps } from 'next';
-import type { Loan, User } from '@prisma/client';
+import type { Loan, User, ReservationStatus } from '@prisma/client';
 import { useState } from 'react';
 
 interface LoanWithUser extends Loan {
   user: User;
   reservations: {
+    status: ReservationStatus;
     item: {
       id: string;
       name: string;
@@ -214,22 +215,24 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
           </Box>
         )}
 
-        <Box>
-          <Heading size="md" mb={4}>
-            Oma varaushistoria
-          </Heading>
-          {loansSorted.length > 0 ? (
-            <Stack spacing={4}>
-              {loansSorted.map((loan) => (
-                <LoanCard key={loan.id} loan={loan} />
-              ))}
-            </Stack>
-          ) : (
-            <Text color="gray.500" textAlign="center" py={8}>
-              Ei varauksia
-            </Text>
-          )}
-        </Box>
+        {session?.user?.group !== 'KIOSK' && (
+          <Box>
+            <Heading size="md" mb={4}>
+              Oma varaushistoria
+            </Heading>
+            {loansSorted.length > 0 ? (
+              <Stack spacing={4}>
+                {loansSorted.map((loan) => (
+                  <LoanCard key={loan.id} loan={loan} />
+                ))}
+              </Stack>
+            ) : (
+              <Text color="gray.500" textAlign="center" py={8}>
+                Ei varauksia
+              </Text>
+            )}
+          </Box>
+        )}
       </VStack>
     </>
   );

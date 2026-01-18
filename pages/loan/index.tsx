@@ -1,4 +1,4 @@
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import Head from 'next/head';
 import {
   Box,
@@ -20,7 +20,7 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
 
 interface LoanType {
   id: string;
@@ -34,6 +34,7 @@ interface LoanType {
     email: string | null;
   };
   reservations: {
+    status: ReservationStatus;
     item: {
       id: string;
       name: string;
@@ -52,6 +53,9 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
       minute: '2-digit',
     });
   };
+
+  // Derive the loan status from reservations
+  const derivedStatus = deriveLoanStatus(loan.reservations);
 
   return (
     <Box
@@ -75,8 +79,8 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
               Varaaja: {loan.user.name}
             </Text>
           </VStack>
-          <Tag colorScheme={getLoanStatusColor(loan.status)} size="md" flexShrink={0}>
-            {getLoanStatusLabel(loan.status)}
+          <Tag colorScheme={getLoanStatusColor(derivedStatus)} size="md" flexShrink={0}>
+            {getLoanStatusLabel(derivedStatus)}
           </Tag>
         </HStack>
 
@@ -206,7 +210,9 @@ export default function LoanList() {
     if (selectedStatuses.has('ALL')) {
       return true;
     }
-    return selectedStatuses.has(loan.status);
+    // Use derived status for filtering
+    const derivedStatus = deriveLoanStatus(loan.reservations);
+    return selectedStatuses.has(derivedStatus);
   });
 
   return (

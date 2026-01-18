@@ -1,4 +1,4 @@
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '../../../utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
@@ -88,11 +88,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Update loan status to IN_BOX and assign it to the selected box
+  // Also update all reservation statuses to IN_BOX
   const result = await prisma.loan.update({
     where: { id },
     data: {
       status: LoanStatus.IN_BOX,
       boxId: selectedBox.id,
+      reservations: {
+        updateMany: {
+          where: {},
+          data: {
+            status: ReservationStatus.IN_BOX,
+          },
+        },
+      },
     },
     include: {
       box: true,

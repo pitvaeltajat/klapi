@@ -14,7 +14,6 @@ import {
   Link,
   Container,
   Circle,
-  Button,
   useBreakpointValue,
   Progress,
 } from '@chakra-ui/react';
@@ -24,6 +23,7 @@ import { useSession } from 'next-auth/react';
 import { useDisclosure } from '@chakra-ui/react';
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
 
 export default function TopBar({ children }: { children: ReactNode }) {
@@ -64,7 +64,20 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const {
     state: { items },
   } = useCart();
+  const { setBrowseMode, setDatesSet } = useDates();
   const totalItems = items.reduce((sum, item) => sum + item.amount, 0);
+
+  const handleBrowseClick = () => {
+    setBrowseMode(true);
+    setDatesSet(false);
+    if (router.pathname !== '/') {
+      router.push('/');
+    }
+  };
+
+  const handleReserveClick = () => {
+    setBrowseMode(false);
+  };
 
   return (
     <>
@@ -83,17 +96,19 @@ export default function TopBar({ children }: { children: ReactNode }) {
         <Container maxW="container.xl" px={4}>
           <Flex h="4rem" align="center" justify="space-between" color="white">
             <Flex align="center" gap={4}>
-              <IconButton
-                aria-label="open menu"
-                icon={<FaBars />}
-                colorScheme="whiteAlpha"
-                onClick={isOpen ? onClose : onOpen}
-                display={['block', 'block', 'none']}
-                variant="ghost"
-                color="white"
-                _hover={{ bg: 'whiteAlpha.300' }}
-                _active={{ bg: 'whiteAlpha.400' }}
-              />
+              {session && (
+                <IconButton
+                  aria-label="open menu"
+                  icon={<FaBars />}
+                  colorScheme="whiteAlpha"
+                  onClick={isOpen ? onClose : onOpen}
+                  display={['block', 'block', 'none']}
+                  variant="ghost"
+                  color="white"
+                  _hover={{ bg: 'whiteAlpha.300' }}
+                  _active={{ bg: 'whiteAlpha.400' }}
+                />
+              )}
 
               <Box
                 onMouseEnter={() => {
@@ -206,39 +221,73 @@ export default function TopBar({ children }: { children: ReactNode }) {
               </Box>
             </Flex>
 
-            <Flex gap={6} align="center" display={['none', 'none', 'flex']}>
-              <Link as={NextLink} href="/item/browse">
-                Selaa kamoja
-              </Link>
-              {role === 'ADMIN' && (
-                <>
-                  <Link as={NextLink} href="/loan" fontWeight="medium">
-                    Varaukset
+            {session && (
+              <Flex gap={6} align="center" display={['none', 'none', 'flex']}>
+                <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
+                  Varaa
+                </Link>
+                <Link
+                  as={router.pathname === '/' ? 'button' : NextLink}
+                  href={router.pathname === '/' ? undefined : '/'}
+                  onClick={handleBrowseClick}
+                  fontWeight="medium"
+                >
+                  Selaa kamoja
+                </Link>
+                {role === 'ADMIN' && (
+                  <>
+                    <Link as={NextLink} href="/loan" fontWeight="medium">
+                      Varaukset
+                    </Link>
+                    <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
+                      Laatikot
+                    </Link>
+                    <Link as={NextLink} href="/admin" fontWeight="medium">
+                      Admin
+                    </Link>
+                  </>
+                )}
+                {role === 'KIOSK' && (
+                  <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
+                    Palauta
                   </Link>
-                  <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
-                    Laatikot
-                  </Link>
-                  <Link as={NextLink} href="/admin" fontWeight="medium">
-                    Admin
-                  </Link>
-                </>
-              )}
-              {role === 'KIOSK' && (
-                <Button colorScheme="green" size="sm" onClick={() => router.push('/kiosk/return')}>
-                  Palauta
-                </Button>
-              )}
-              <Link as={NextLink} href="/account" fontWeight="medium">
-                Oma tili
-              </Link>
-              <Box position="relative">
+                )}
+                <Link as={NextLink} href="/account" fontWeight="medium">
+                  Oma tili
+                </Link>
+                <Box position="relative">
+                  {children}
+                  {totalItems > 0 && (
+                    <Circle
+                      position="absolute"
+                      right="-12px"
+                      top="-12px"
+                      marginTop="5px"
+                      size="24px"
+                      bg="red.500"
+                      color="white"
+                      fontSize="sm"
+                      fontWeight="bold"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      boxShadow="md"
+                    >
+                      {totalItems}
+                    </Circle>
+                  )}
+                </Box>
+              </Flex>
+            )}
+
+            {session && (
+              <Box display={['block', 'block', 'none']} position="relative">
                 {children}
                 {totalItems > 0 && (
                   <Circle
                     position="absolute"
                     right="-12px"
                     top="-12px"
-                    marginTop="5px"
                     size="24px"
                     bg="red.500"
                     color="white"
@@ -253,29 +302,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   </Circle>
                 )}
               </Box>
-            </Flex>
-
-            <Box display={['block', 'block', 'none']} position="relative">
-              {children}
-              {totalItems > 0 && (
-                <Circle
-                  position="absolute"
-                  right="-12px"
-                  top="-12px"
-                  size="24px"
-                  bg="red.500"
-                  color="white"
-                  fontSize="sm"
-                  fontWeight="bold"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  boxShadow="md"
-                >
-                  {totalItems}
-                </Circle>
-              )}
-            </Box>
+            )}
           </Flex>
         </Container>
       </Box>
@@ -299,6 +326,34 @@ export default function TopBar({ children }: { children: ReactNode }) {
             <TableContainer>
               <Table variant="simple">
                 <Tbody>
+                  <Tr>
+                    <Td>
+                      <Link
+                        as={NextLink}
+                        href="/"
+                        onClick={() => {
+                          handleReserveClick();
+                          onClose();
+                        }}
+                      >
+                        Varaa
+                      </Link>
+                    </Td>
+                  </Tr>
+                  <Tr>
+                    <Td>
+                      <Link
+                        as={router.pathname === '/' ? 'button' : NextLink}
+                        href={router.pathname === '/' ? undefined : '/'}
+                        onClick={() => {
+                          handleBrowseClick();
+                          onClose();
+                        }}
+                      >
+                        Selaa kamoja
+                      </Link>
+                    </Td>
+                  </Tr>
                   {role === 'ADMIN' && (
                     <>
                       <Tr>
@@ -327,16 +382,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   {role === 'KIOSK' && (
                     <Tr>
                       <Td>
-                        <Button
-                          colorScheme="green"
-                          size="sm"
-                          onClick={() => {
-                            router.push('/kiosk/return');
-                            onClose();
-                          }}
-                        >
+                        <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
                           Palauta
-                        </Button>
+                        </Link>
                       </Td>
                     </Tr>
                   )}

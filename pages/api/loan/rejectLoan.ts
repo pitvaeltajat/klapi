@@ -1,4 +1,4 @@
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '../../../utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
@@ -14,10 +14,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { id } = req.body;
+
+  // Update loan status and all reservation statuses to REJECTED
   const result = await prisma.loan.update({
     where: { id: id },
     data: {
       status: LoanStatus.REJECTED,
+      reservations: {
+        updateMany: {
+          where: {},
+          data: {
+            status: ReservationStatus.REJECTED,
+          },
+        },
+      },
     },
   });
   res.status(200).json(result);

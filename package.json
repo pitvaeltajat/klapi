@@ -1,13 +1,14 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "docker compose -f docker-compose.test.yml up -d && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/klapi_test pnpm prisma migrate deploy && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/klapi_test vitest run",
+    "test:ci": "pnpm prisma migrate deploy && vitest run"
   },
   "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
   "dependencies": {
@@ -42,6 +43,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "aws-ses-v2-local": "^2.9.0",
     "eslint": "9.22.0",
     "eslint-config-next": "15.5.9",
     "eslint-config-prettier": "^10.1.8",
