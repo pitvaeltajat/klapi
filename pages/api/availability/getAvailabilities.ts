@@ -60,61 +60,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let min = amount;
         availabilities[item.id] = { byDate: {}, available: 0 };
 
-        const date1 = new Date(StartDate);
-        const date2 = new Date(StartDate);
-        const endDate = new Date(EndDate);
+        const requestedStart = new Date(StartDate);
+        const requestedEnd = new Date(EndDate);
+        requestedStart.setHours(0, 0, 0, 0);
+        requestedEnd.setHours(23, 59, 59, 999);
 
-        date1.setHours(0, 0, 0, 0);
-        date2.setHours(23, 59, 59, 999);
-        endDate.setHours(23, 59, 59, 999);
-        while (date1 <= endDate) {
+        const currentDate = new Date(requestedStart);
+        while (currentDate <= requestedEnd) {
+          const dayStart = new Date(currentDate);
+          dayStart.setHours(0, 0, 0, 0);
+          const dayEnd = new Date(currentDate);
+          dayEnd.setHours(23, 59, 59, 999);
+
           let sum = 0;
-          const modReservations = itemReservations.filter((reservation) => {
-            reservation.loan.startTime = new Date(reservation.loan.startTime);
-            reservation.loan.endTime = new Date(reservation.loan.endTime);
-            // Only ACCEPTED and INUSE reservations block availability
-            // IN_BOX items are available for new loans (user will get warning when picking up from box)
-            return (
-              reservation.loan.startTime <= date2 &&
-              reservation.loan.endTime >= date1 &&
+          for (const reservation of itemReservations) {
+            const loanStart = new Date(reservation.loan.startTime);
+            const loanEnd = new Date(reservation.loan.endTime);
+            
+            const overlaps = loanStart <= dayEnd && loanEnd >= dayStart;
+            const blocksAvailability =
               reservation.status !== 'REJECTED' &&
               reservation.status !== 'RETURNED' &&
-              reservation.status !== 'IN_BOX'
-            );
-          });
-          modReservations.map((reservation) => {
-            sum += reservation.amount;
-          });
-          availabilities[item.id].byDate[date1.toISOString()] = amount - sum;
+              reservation.status !== 'IN_BOX';
+
+            if (overlaps && blocksAvailability) {
+              sum += reservation.amount;
+            }
+          }
+
+          availabilities[item.id].byDate[currentDate.toISOString()] = amount - sum;
 
           if (amount - sum < min) {
             min = amount - sum;
           }
 
-          date1.setDate(date1.getDate() + 1);
-          date2.setDate(date2.getDate() + 1);
+          currentDate.setDate(currentDate.getDate() + 1);
         }
         availabilities[item.id].available = min;
       } else {
         availabilities[item.id] = { byDate: {}, available: 0 };
         let sum = 0;
         const date = new Date(StartDate);
-        const modReservations = itemReservations.filter((reservation) => {
-          reservation.loan.startTime = new Date(reservation.loan.startTime);
-          reservation.loan.endTime = new Date(reservation.loan.endTime);
-          // Only ACCEPTED and INUSE reservations block availability
-          // IN_BOX items are available for new loans (user will get warning when picking up from box)
-          return (
-            reservation.loan.startTime <= date &&
-            reservation.loan.endTime >= date &&
+        date.setHours(0, 0, 0, 0);
+        const dateEnd = new Date(StartDate);
+        dateEnd.setHours(23, 59, 59, 999);
+
+        for (const reservation of itemReservations) {
+          const loanStart = new Date(reservation.loan.startTime);
+          const loanEnd = new Date(reservation.loan.endTime);
+          
+          const overlaps = loanStart <= dateEnd && loanEnd >= date;
+          const blocksAvailability =
             reservation.status !== 'REJECTED' &&
             reservation.status !== 'RETURNED' &&
-            reservation.status !== 'IN_BOX'
-          );
-        });
-        modReservations.map((reservation) => {
-          sum += reservation.amount;
-        });
+            reservation.status !== 'IN_BOX';
+
+          if (overlaps && blocksAvailability) {
+            sum += reservation.amount;
+          }
+        }
         availabilities[item.id].available = amount - sum;
       }
     }),
