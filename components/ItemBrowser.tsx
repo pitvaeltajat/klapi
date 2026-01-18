@@ -80,8 +80,8 @@ export default function ItemBrowser({
           </InputRightElement>
         </InputGroup>
       </Box>
-      <Box padding="2em" paddingLeft={0}>
-        <Wrap padding="4px" display={{ base: 'none', md: 'block' }}>
+      <Box padding="2em" paddingLeft={0} display={{ base: 'none', md: 'block' }}>
+        <Wrap padding="4px" >
           <WrapItem key="all">
             <Button
               onClick={() => setCategory('')}
@@ -91,7 +91,7 @@ export default function ItemBrowser({
               Kaikki
             </Button>
           </WrapItem>
-          
+
           {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
             <WrapItem key={cat.id}>
               <Button
