@@ -1,6 +1,7 @@
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import NotAuthenticated from '../../../components/NotAuthenticated';
+import { getOriginalImageUrl } from '../../../utils/imageHelpers';
 import {
   Heading,
   Input,
@@ -137,7 +138,6 @@ export default function EditItem({
         name: itemName,
         description: itemDescription,
         amount: itemAmount,
-        image: image ? `${process.env.NEXT_PUBLIC_AWS_ITEM_PHOTOS_URL}/${item.id}` : undefined,
         categories: itemCategories,
       }),
     });
@@ -255,9 +255,9 @@ export default function EditItem({
               objectFit="contain"
               mb={4}
             />
-          ) : item.image !== null ? (
+          ) : getOriginalImageUrl(item.id) ? (
             <Image
-              src={item.image}
+              src={getOriginalImageUrl(item.id)!}
               alt={item.name}
               maxW="full"
               maxH="400px"

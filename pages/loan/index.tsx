@@ -38,7 +38,6 @@ interface LoanType {
     item: {
       id: string;
       name: string;
-      image: string | null;
     };
   }[];
 }

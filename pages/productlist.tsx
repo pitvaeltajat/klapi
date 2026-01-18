@@ -7,6 +7,7 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { Item, Category } from '@prisma/client';
+import { getCompressedImageUrl } from '../utils/imageHelpers';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
@@ -78,7 +79,6 @@ export default function AllItems({ items }: AllItemsProps) {
               name: item.name,
               description: item.description || undefined,
               amount: item.amount,
-              image: item.image || undefined,
               categories: item.categories.map((cat) => ({
                 id: cat.id,
                 name: cat.name,

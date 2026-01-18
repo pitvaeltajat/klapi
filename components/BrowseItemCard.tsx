@@ -1,6 +1,7 @@
 import { Box, Flex, Image, Link, AspectRatio, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { Item, Category, ItemType } from '@prisma/client';
+import { getCompressedImageUrl } from '../utils/imageHelpers';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
@@ -30,7 +31,7 @@ export default function BrowseItemCard({ item }: BrowseItemCardProps) {
       >
         <AspectRatio ratio={5 / 3}>
           <Image
-            src={item.image ?? 'https://placehold.co/500x300'}
+            src={getCompressedImageUrl(item.id) ?? 'https://placehold.co/500x300'}
             alt={`Picture of ${item.name}`}
             roundedTop="lg"
             objectFit="cover"

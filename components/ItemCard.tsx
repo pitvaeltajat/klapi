@@ -18,6 +18,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@chakra-ui/react';
 import { useCallback, useMemo, memo } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
+import { getCompressedImageUrl } from '../utils/imageHelpers';
 
 const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps) {
   const {
@@ -79,7 +80,7 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     >
       <AspectRatio ratio={5 / 3}>
         <Image
-          src={item.image}
+          src={getCompressedImageUrl(item.id) ?? 'https://placehold.co/500x300'}
           alt={`Picture of ${item.name}`}
           roundedTop="lg"
           objectFit="cover"

@@ -127,7 +127,6 @@ const CreateItem: NextPage = () => {
               name,
               description,
               amount,
-              image: `${process.env.NEXT_PUBLIC_AWS_ITEM_PHOTOS_URL}/${itemId}`,
               categories: selectedCategories.map((c) => ({
                 id: c.value,
                 name: c.label,
