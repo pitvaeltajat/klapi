@@ -28,6 +28,7 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react';
 import ReservationTable from '../../components/ReservationTable';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 
@@ -132,6 +133,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
       <Head>
         <title>{item.name} | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: item.name }]} />
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size={{ base: 'lg', md: 'xl' }}>
           {item.name}

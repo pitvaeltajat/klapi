@@ -1,9 +1,10 @@
 import Auth from './auth';
 import Head from 'next/head';
-import { Heading, Stack, Box, Text, VStack, HStack, Switch } from '@chakra-ui/react';
+import { Heading, Stack, Box, Text, VStack, HStack, Switch, useColorModeValue } from '@chakra-ui/react';
 import { useSession, getSession } from 'next-auth/react';
 import prisma from '../utils/prisma';
 import { LoanCard } from './loan';
+import Breadcrumbs from '../components/Breadcrumbs';
 import type { GetServerSideProps } from 'next';
 import type { Loan, User, ReservationStatus } from '@prisma/client';
 import { useState } from 'react';
@@ -94,6 +95,10 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
   );
   const [isSaving, setIsSaving] = useState(false);
 
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const dividerColor = useColorModeValue('gray.200', 'gray.600');
+
   const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime)),
   );
@@ -143,18 +148,19 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
       <Head>
         <title>Oma tili | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: 'Oma tili' }]} />
       <Heading as="h1" size="xl" mb={6}>
         Oma tili
       </Heading>
 
       <VStack spacing={6} align="stretch">
         <Box
-          bg="white"
+          bg={cardBg}
           p={6}
           borderRadius="md"
           boxShadow="sm"
           borderWidth="1px"
-          borderColor="gray.200"
+          borderColor={cardBorderColor}
         >
           <VStack align="start" spacing={3}>
             <Heading size="lg">{session?.user?.name}</Heading>
@@ -170,17 +176,17 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                 : 'Admin'}
             </Text>
           </VStack>
-          <Box my={4} h="1px" bg="gray.200" />
+          <Box my={4} h="1px" bg={dividerColor} />
           <Auth />
         </Box>
 
         <Box
-          bg="white"
+          bg={cardBg}
           p={6}
           borderRadius="md"
           boxShadow="sm"
           borderWidth="1px"
-          borderColor="gray.200"
+          borderColor={cardBorderColor}
         >
           <Heading size="md" mb={4}>
             Sähköposti-ilmoitukset

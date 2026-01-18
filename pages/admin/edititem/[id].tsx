@@ -1,6 +1,7 @@
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import NotAuthenticated from '../../../components/NotAuthenticated';
+import Breadcrumbs from '../../../components/Breadcrumbs';
 import { getOriginalImageUrl } from '../../../utils/imageHelpers';
 import {
   Heading,
@@ -171,6 +172,12 @@ export default function EditItem({
       <Head>
         <title>Muokkaa kamaa: {item.name} | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: item.name, href: `/item/${item.id}` },
+          { label: 'Muokkaa' },
+        ]}
+      />
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size="md">
           Muokkaa kamaa

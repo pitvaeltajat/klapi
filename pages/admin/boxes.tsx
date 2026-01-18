@@ -16,6 +16,7 @@ import {
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReservationStatus } from '@prisma/client';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 import { GetServerSideProps } from 'next';
@@ -84,6 +85,12 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
       <Head>
         <title>Laatikot | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Laatikot' },
+        ]}
+      />
       <Heading as="h1" size="xl" mb={6}>
         Laatikot
       </Heading>

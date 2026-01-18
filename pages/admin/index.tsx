@@ -34,6 +34,7 @@ import { useSession } from 'next-auth/react';
 import { useRef, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import type { NextPage } from 'next';
 import type { User } from '@prisma/client';
 
@@ -211,6 +212,7 @@ const Admin: NextPage = () => {
       <Head>
         <title>Admin | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: 'Admin' }]} />
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Flex justifyContent="space-between" alignItems="center">

@@ -8,6 +8,7 @@ import {
   Text,
   FormControl,
   FormLabel,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -19,6 +20,13 @@ import { useCart } from '@/contexts/CartContext';
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet, setBrowseMode } = useDates();
   const { clearCart } = useCart();
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const datePickerBg = useColorModeValue('white', 'gray.700');
+  const datePickerHeaderBg = useColorModeValue('white', 'gray.700');
+  const datePickerBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const datePickerHoverBg = useColorModeValue('gray.100', 'gray.600');
+  const datePickerTextColor = useColorModeValue('gray.800', 'white');
+  const datePickerDayColor = useColorModeValue('gray.800', 'gray.100');
 
   // Combine the date states into a single array
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
@@ -52,24 +60,59 @@ export default function DateSelector() {
             <Text color="gray.600">Aloita valitsemalla kamojen nouto- ja palautusajankohdat.</Text>
           </Box>
 
-          <Box borderWidth="1px" borderRadius="lg" p={4} bg="white" boxShadow="sm">
+          <Box borderWidth="1px" borderRadius="lg" p={4} bg={cardBg} boxShadow="sm">
             <FormControl>
               <FormLabel fontWeight="bold">Valitse lainausaika</FormLabel>
-              <DatePicker
-                selected={startDate}
-                onChange={(update: [Date | null, Date | null]) => {
-                  if (update[0]) update[0] = setDefaultTime(update[0]);
-                  if (update[1]) update[1] = setDefaultTime(update[1]);
-                  setDateRange(update);
+              <Box
+                sx={{
+                  '.react-datepicker': {
+                    border: 'none',
+                    fontFamily: 'inherit',
+                    backgroundColor: datePickerBg,
+                    color: datePickerTextColor,
+                  },
+                  '.react-datepicker__header': {
+                    backgroundColor: datePickerHeaderBg,
+                    borderBottom: '1px solid',
+                    borderColor: datePickerBorderColor,
+                  },
+                  '.react-datepicker__current-month, .react-datepicker__day-name': {
+                    color: datePickerTextColor,
+                  },
+                  '.react-datepicker__day': {
+                    color: datePickerDayColor,
+                  },
+                  '.react-datepicker__day--selected, .react-datepicker__day--in-range': {
+                    backgroundColor: 'blue.500',
+                    color: 'white',
+                  },
+                  '.react-datepicker__day--keyboard-selected': {
+                    backgroundColor: 'blue.100',
+                  },
+                  '.react-datepicker__day:hover': {
+                    backgroundColor: datePickerHoverBg,
+                  },
+                  '.react-datepicker__day--disabled': {
+                    color: 'gray.400',
+                  },
                 }}
-                startDate={startDate}
-                endDate={endDate}
-                selectsRange
-                swapRange
-                inline
-                minDate={new Date()}
-                dateFormat="dd.MM.yyyy"
-              />
+              >
+                <DatePicker
+                  selected={startDate}
+                  onChange={(update: [Date | null, Date | null]) => {
+                    if (update[0]) update[0] = setDefaultTime(update[0]);
+                    if (update[1]) update[1] = setDefaultTime(update[1]);
+                    setDateRange(update);
+                  }}
+                  startDate={startDate}
+                  endDate={endDate}
+                  selectsRange
+                  swapRange
+                  inline
+                  minDate={new Date()}
+                  dateFormat="dd.MM.yyyy"
+                />
+              </Box>
               <Button
                 colorScheme="blue"
                 mt={4}
@@ -98,7 +141,7 @@ export default function DateSelector() {
             </Heading>
           </Box>
 
-          <Box borderWidth="1px" borderRadius="lg" p={4} bg="white" boxShadow="sm">
+          <Box borderWidth="1px" borderRadius="lg" p={4} bg={cardBg} boxShadow="sm">
             <VStack align="stretch" spacing={3}>
               <HStack spacing={2}>
                 <Text fontWeight="bold">Nouto:</Text>
@@ -127,26 +170,61 @@ export default function DateSelector() {
 
               <Box pt={2}>
                 <FormLabel fontWeight="bold">Muokkaa aikaa</FormLabel>
-                <DatePicker
-                  selected={dates.startDate}
-                  onChange={(update: [Date | null, Date | null]) => {
-                    if (update[0]) {
-                      update[0] = setDefaultTime(update[0]);
-                      setStartDate(update[0]);
-                    }
-                    if (update[1]) {
-                      update[1] = setDefaultTime(update[1]);
-                      setEndDate(update[1]);
-                    }
+                <Box
+                  sx={{
+                    '.react-datepicker': {
+                      border: 'none',
+                      fontFamily: 'inherit',
+                      backgroundColor: datePickerBg,
+                      color: datePickerTextColor,
+                    },
+                    '.react-datepicker__header': {
+                      backgroundColor: datePickerHeaderBg,
+                      borderBottom: '1px solid',
+                      borderColor: datePickerBorderColor,
+                    },
+                    '.react-datepicker__current-month, .react-datepicker__day-name': {
+                      color: datePickerTextColor,
+                    },
+                    '.react-datepicker__day': {
+                      color: datePickerDayColor,
+                    },
+                    '.react-datepicker__day--selected, .react-datepicker__day--in-range': {
+                      backgroundColor: 'blue.500',
+                      color: 'white',
+                    },
+                    '.react-datepicker__day--keyboard-selected': {
+                      backgroundColor: 'blue.100',
+                    },
+                    '.react-datepicker__day:hover': {
+                      backgroundColor: datePickerHoverBg,
+                    },
+                    '.react-datepicker__day--disabled': {
+                      color: 'gray.400',
+                    },
                   }}
-                  startDate={dates.startDate}
-                  endDate={dates.endDate}
-                  selectsRange
-                  swapRange
-                  inline
-                  minDate={new Date()}
-                  dateFormat="dd.MM.yyyy"
-                />
+                >
+                  <DatePicker
+                    selected={dates.startDate}
+                    onChange={(update: [Date | null, Date | null]) => {
+                      if (update[0]) {
+                        update[0] = setDefaultTime(update[0]);
+                        setStartDate(update[0]);
+                      }
+                      if (update[1]) {
+                        update[1] = setDefaultTime(update[1]);
+                        setEndDate(update[1]);
+                      }
+                    }}
+                    startDate={dates.startDate}
+                    endDate={dates.endDate}
+                    selectsRange
+                    swapRange
+                    inline
+                    minDate={new Date()}
+                    dateFormat="dd.MM.yyyy"
+                  />
+                </Box>
                 <Button
                   variant="outline"
                   mt={4}

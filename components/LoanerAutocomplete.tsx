@@ -7,6 +7,7 @@ import {
   ListItem,
   Text,
   useOutsideClick,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
@@ -42,6 +43,12 @@ export default function LoanerAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const inputBg = useColorModeValue('white', 'gray.700');
+  const selectedBg = useColorModeValue('green.50', 'green.900');
+  const dropdownBg = useColorModeValue('white', 'gray.700');
+  const hoverBg = useColorModeValue('blue.50', 'blue.900');
+  const selectedTextColor = useColorModeValue('green.600', 'green.300');
 
   useOutsideClick({
     ref: dropdownRef,
@@ -91,7 +98,7 @@ export default function LoanerAutocomplete({
             handleKeyDown(e);
             onKeyDown?.(e);
           }}
-          bg={selectedUserId ? 'green.50' : 'white'}
+          bg={selectedUserId ? selectedBg : inputBg}
           borderColor={selectedUserId ? 'green.300' : undefined}
           isRequired={isRequired}
           autoFocus={autoFocus}
@@ -108,7 +115,7 @@ export default function LoanerAutocomplete({
           left={0}
           right={0}
           mt={1}
-          bg="white"
+          bg={dropdownBg}
           borderWidth="1px"
           borderRadius="md"
           boxShadow="lg"
@@ -122,7 +129,7 @@ export default function LoanerAutocomplete({
               px={4}
               py={3}
               cursor="pointer"
-              _hover={{ bg: 'blue.50' }}
+              _hover={{ bg: hoverBg }}
               onClick={() => handleUserSelect(user)}
               borderBottomWidth="1px"
               _last={{ borderBottom: 'none' }}
@@ -139,7 +146,7 @@ export default function LoanerAutocomplete({
       )}
 
       {showValidationFeedback && (
-        <Text fontSize="sm" mt={1} color={selectedUserId ? 'green.600' : 'gray.600'}>
+        <Text fontSize="sm" mt={1} color={selectedUserId ? selectedTextColor : 'gray.600'}>
           {selectedUserId
             ? '✓ Käyttäjä valittu. Varaus yhdistetään tähän tiliin.'
             : 'Valitse sähköposti listalta tai kirjoita vapaamuotoinen nimi.'}

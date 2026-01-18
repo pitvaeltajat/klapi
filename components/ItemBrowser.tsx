@@ -13,7 +13,8 @@ import {
   useDisclosure,
   Flex,
   Icon,
-  Select
+  Select,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaSearch, FaInfoCircle } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
@@ -41,6 +42,12 @@ export default function ItemBrowser({
   const [search, setSearch] = React.useState('');
   const [category, setCategory] = React.useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const infoBg = useColorModeValue('blue.50', 'blue.900');
+  const infoBorderColor = useColorModeValue('blue.400', 'blue.500');
+  const infoIconColor = useColorModeValue('blue.500', 'blue.300');
+  const linkColor = useColorModeValue('blue.600', 'blue.300');
+  const linkHoverColor = useColorModeValue('blue.700', 'blue.200');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -119,20 +126,20 @@ export default function ItemBrowser({
             gap={3}
             padding="1em"
             marginBottom="1em"
-            bg="blue.50"
+            bg={infoBg}
             borderRadius="md"
             borderLeft="4px solid"
-            borderColor="blue.400"
+            borderColor={infoBorderColor}
           >
-            <Icon as={FaInfoCircle} color="blue.500" boxSize={5} />
+            <Icon as={FaInfoCircle} color={infoIconColor} boxSize={5} />
             <Text fontSize="sm">
               Jos haluamaasi kamaa ei löydy,{' '}
               <Link
-                color="blue.600"
+                color={linkColor}
                 fontWeight="semibold"
                 onClick={onOpen}
                 textDecoration="underline"
-                _hover={{ color: 'blue.700' }}
+                _hover={{ color: linkHoverColor }}
               >
                 klikkaa tästä
               </Link>

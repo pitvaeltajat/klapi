@@ -25,6 +25,7 @@ import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import type { GetServerSideProps } from 'next';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { useRouter } from 'next/router';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 import { getCompressedImageUrl } from '../../utils/imageHelpers';
@@ -357,6 +358,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
       <Head>
         <title>Palauta lainoja | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: 'Palauta lainoja' }]} />
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Palauta lainoja</Heading>
