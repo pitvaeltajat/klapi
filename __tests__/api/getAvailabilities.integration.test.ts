@@ -381,6 +381,24 @@ describe('getAvailabilities API integration tests', () => {
 
       const result = await getAvailabilities(startDate, endDate);
 
+      expect(result.availabilities[testItem1.id].available).toBe(2);
+    });
+
+    it('should return 0 when all items are reserved on some day', async () => {
+      const startDate = new Date('2024-02-01T18:00:00Z');
+      const endDate = new Date('2024-02-10T18:00:00Z');
+
+      await createTestLoan(
+        testUser.id,
+        [{ itemId: testItem1.id, amount: 5, status: ReservationStatus.ACCEPTED }],
+        {
+          startTime: new Date('2024-02-03T18:00:00Z'),
+          endTime: new Date('2024-02-05T18:00:00Z'),
+        },
+      );
+
+      const result = await getAvailabilities(startDate, endDate);
+
       expect(result.availabilities[testItem1.id].available).toBe(0);
     });
   });
