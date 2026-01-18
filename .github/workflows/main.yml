@@ -22,8 +22,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
       - name: Create .env file
         run: echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/klapi" > .env
       - name: Setup pnpm
