@@ -234,11 +234,13 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 >
                   Selaa kamoja
                 </Link>
+                {(role === 'ADMIN' || role === 'KIOSK') && (
+                  <Link as={NextLink} href="/loan" fontWeight="medium">
+                    Varaukset
+                  </Link>
+                )}
                 {role === 'ADMIN' && (
                   <>
-                    <Link as={NextLink} href="/loan" fontWeight="medium">
-                      Varaukset
-                    </Link>
                     <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
                       Laatikot
                     </Link>
@@ -354,15 +356,17 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       </Link>
                     </Td>
                   </Tr>
+                  {(role === 'ADMIN' || role === 'KIOSK') && (
+                    <Tr>
+                      <Td>
+                        <Link as={NextLink} href="/loan" onClick={onClose}>
+                          Varaukset
+                        </Link>
+                      </Td>
+                    </Tr>
+                  )}
                   {role === 'ADMIN' && (
                     <>
-                      <Tr>
-                        <Td>
-                          <Link as={NextLink} href="/loan" onClick={onClose}>
-                            Varaukset
-                          </Link>
-                        </Td>
-                      </Tr>
                       <Tr>
                         <Td>
                           <Link as={NextLink} href="/admin/boxes" onClick={onClose}>

@@ -64,20 +64,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
   const [localDescription, setLocalDescription] = useState(cart.description);
 
-  // Sync local description when cart description changes externally
-  useEffect(() => {
-    setLocalDescription(cart.description);
-  }, [cart.description]);
-
   // Debounce description updates to context
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (localDescription !== cart.description) {
-        setDescription(localDescription);
-      }
+      setDescription(localDescription);
     }, 300);
     return () => clearTimeout(timeout);
-  }, [localDescription, cart.description, setDescription]);
+  }, [localDescription, setDescription]);
 
   // Pre-fill loaner with current user's info (locked for regular users, editable for admins)
   // Only set once on initial load

@@ -145,10 +145,10 @@ export default function LoanList() {
   const { data: session } = useSession();
   const { data: loans, error, isLoading } = useSWR<LoanType[]>('/api/loan/getLoansClient');
   const [selectedStatuses, setSelectedStatuses] = useState<Set<LoanStatus | 'ALL'>>(
-    new Set([LoanStatus.IN_BOX, LoanStatus.INUSE]),
+    new Set([LoanStatus.ACCEPTED, LoanStatus.IN_BOX, LoanStatus.INUSE]),
   );
 
-  if (session?.user?.group !== 'ADMIN') {
+  if (!session?.user) {
     return <NotAuthenticated />;
   }
 
