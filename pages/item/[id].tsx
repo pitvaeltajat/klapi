@@ -104,8 +104,8 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
       if (response.ok) {
         toast({
-          title: 'Success',
-          description: 'Item deleted',
+          title: 'Legit',
+          description: 'Kama poistettu',
           status: 'success',
           duration: 5000,
           isClosable: true,

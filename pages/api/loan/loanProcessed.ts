@@ -1,4 +1,4 @@
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '../../../utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
@@ -26,11 +26,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Update loan status to RETURNED and remove it from its box
+  // Also update all reservation statuses to RETURNED
   const result = await prisma.loan.update({
     where: { id },
     data: {
       status: LoanStatus.RETURNED,
       boxId: null,
+      reservations: {
+        updateMany: {
+          where: {},
+          data: {
+            status: ReservationStatus.RETURNED,
+          },
+        },
+      },
     },
   });
 

@@ -94,12 +94,13 @@ model Category {
 }
 
 model Reservation {
-  id     String @id @default(cuid())
+  id     String            @id @default(cuid())
   amount Int
   itemId String
   loanId String
-  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  loan   Loan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  status ReservationStatus @default(ACCEPTED)
+  item   Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  loan   Loan              @relation(fields: [loanId], references: [id], onDelete: Cascade)
 }
 
 model Loan {
@@ -128,6 +129,14 @@ enum ItemType {
 }
 
 enum LoanStatus {
+  ACCEPTED
+  REJECTED
+  INUSE
+  IN_BOX
+  RETURNED
+}
+
+enum ReservationStatus {
   ACCEPTED
   REJECTED
   INUSE

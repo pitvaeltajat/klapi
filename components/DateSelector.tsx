@@ -17,7 +17,7 @@ import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
 
 export default function DateSelector() {
-  const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
+  const { state: dates, setStartDate, setEndDate, setDatesSet, setBrowseMode } = useDates();
   const { clearCart } = useCart();
 
   // Combine the date states into a single array
@@ -79,6 +79,14 @@ export default function DateSelector() {
               >
                 Vahvista ajankohta
               </Button>
+              <Button
+                variant="outline"
+                mt={2}
+                width="full"
+                onClick={() => setBrowseMode(true)}
+              >
+                Selaa katalogia ilman varausta
+              </Button>
             </FormControl>
           </Box>
         </>
@@ -139,6 +147,17 @@ export default function DateSelector() {
                   minDate={new Date()}
                   dateFormat="dd.MM.yyyy"
                 />
+                <Button
+                  variant="outline"
+                  mt={4}
+                  width="full"
+                  onClick={() => {
+                    clearCart();
+                    setDatesSet(false);
+                  }}
+                >
+                  Nollaa päivät
+                </Button>
               </Box>
             </VStack>
           </Box>

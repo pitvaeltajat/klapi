@@ -72,11 +72,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const modReservations = itemReservations.filter((reservation) => {
             reservation.loan.startTime = new Date(reservation.loan.startTime);
             reservation.loan.endTime = new Date(reservation.loan.endTime);
+            // Only ACCEPTED and INUSE reservations block availability
+            // IN_BOX items are available for new loans (user will get warning when picking up from box)
             return (
               reservation.loan.startTime <= date2 &&
               reservation.loan.endTime >= date1 &&
-              reservation.loan.status !== 'REJECTED' &&
-              reservation.loan.status !== 'RETURNED'
+              reservation.status !== 'REJECTED' &&
+              reservation.status !== 'RETURNED' &&
+              reservation.status !== 'IN_BOX'
             );
           });
           modReservations.map((reservation) => {
@@ -99,11 +102,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const modReservations = itemReservations.filter((reservation) => {
           reservation.loan.startTime = new Date(reservation.loan.startTime);
           reservation.loan.endTime = new Date(reservation.loan.endTime);
+          // Only ACCEPTED and INUSE reservations block availability
+          // IN_BOX items are available for new loans (user will get warning when picking up from box)
           return (
             reservation.loan.startTime <= date &&
             reservation.loan.endTime >= date &&
-            reservation.loan.status !== 'REJECTED' &&
-            reservation.loan.status !== 'RETURNED'
+            reservation.status !== 'REJECTED' &&
+            reservation.status !== 'RETURNED' &&
+            reservation.status !== 'IN_BOX'
           );
         });
         modReservations.map((reservation) => {

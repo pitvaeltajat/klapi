@@ -27,7 +27,12 @@ import ReservationTableLoanView from '../../components/ReservationTableLoanView'
 import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
 import { GetServerSideProps } from 'next';
-import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+  deriveLoanStatus,
+} from '../../utils/loanHelpers';
+import { ReservationStatus } from '@prisma/client';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -183,8 +188,16 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       });
   };
 
+  const isKiosk = session?.user?.group === 'KIOSK';
+
+  // Derive the loan status from reservations
+  const derivedStatus = deriveLoanStatus(
+    loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
+  );
+
   //Check if user is allowed to see information about this loan
-  if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id)) {
+  // KIOSK users can view all loans in read-only mode
+  if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id || isKiosk)) {
     return (
       <>
         <NotAuthenticated />
@@ -192,19 +205,25 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     );
   }
 
-  // Determine which buttons to show based on loan status and user role
+  // Determine which buttons to show based on derived status and user role
   const canReject =
     (isAdmin || session?.user?.id === loan.user.id) &&
-    loan.status !== 'REJECTED' &&
-    loan.status !== 'INUSE' &&
-    loan.status !== 'RETURNED';
+    derivedStatus !== 'REJECTED' &&
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'RETURNED';
 
-  const canEdit = isAdmin && loan.status !== 'INUSE' && loan.status !== 'RETURNED';
+  const canEdit =
+    (isAdmin || session?.user?.id === loan.user.id) &&
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'RETURNED';
 
   const canApprove =
-    isAdmin && loan.status !== 'ACCEPTED' && loan.status !== 'INUSE' && loan.status !== 'RETURNED';
+    isAdmin &&
+    derivedStatus !== 'ACCEPTED' &&
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'RETURNED';
 
-  const canMarkReturned = isAdmin && (loan.status === 'INUSE' || loan.status === 'IN_BOX');
+  const canMarkReturned = isAdmin && (derivedStatus === 'INUSE' || derivedStatus === 'IN_BOX');
 
   // list reservations and show loan basic information and user information
   return (
@@ -240,8 +259,8 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
             {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
             <Box>
-              <Tag colorScheme={getLoanStatusColor(loan.status)} width="fit-content">
-                {getLoanStatusLabel(loan.status)}
+              <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
+                {getLoanStatusLabel(derivedStatus)}
               </Tag>
             </Box>
           </Stack>
@@ -255,7 +274,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
         </Box>
 
         {/* Action buttons */}
-        {loan.status === 'RETURNED' ? (
+        {derivedStatus === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Heading as="h2" size="md" color="green.700">
               ✓ Lainaustapahtuma suoritettu loppuun

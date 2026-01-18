@@ -22,14 +22,16 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { useSession } from 'next-auth/react';
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import type { GetServerSideProps } from 'next';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import { useRouter } from 'next/router';
+import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 
 interface Reservation {
   id: string;
   amount: number;
+  status: ReservationStatus;
   item: {
     id: string;
     name: string;
@@ -53,9 +55,14 @@ interface LoanType {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
+  // Get loans that have at least one INUSE reservation
   const loans = await prisma.loan.findMany({
     where: {
-      status: LoanStatus.INUSE,
+      reservations: {
+        some: {
+          status: ReservationStatus.INUSE,
+        },
+      },
     },
     include: {
       user: true,
@@ -111,13 +118,21 @@ const LoanReturnCard = ({
     onReturnComplete();
   };
 
+  // Derive the loan status from reservations
+  const derivedStatus = deriveLoanStatus(loan.reservations);
+
+  // Only show INUSE reservations in the return flow
+  const inuseReservations = loan.reservations.filter(
+    (r) => r.status === ReservationStatus.INUSE,
+  );
+
   return (
     <>
       <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} mb={4} bg="white">
         <Stack spacing={3}>
           <Heading size="md">{loan.description || loan.loaner}</Heading>
-          <Tag colorScheme="blue" width="fit-content">
-            Käytössä
+          <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
+            {getLoanStatusLabel(derivedStatus)}
           </Tag>
           <Text>Lainaaja: {loan.loaner}</Text>
           <Text>
@@ -126,9 +141,9 @@ const LoanReturnCard = ({
           </Text>
           <Box>
             <Text fontWeight="bold" mb={2}>
-              Tavarat:
+              Tavarat (käytössä):
             </Text>
-            {loan.reservations.map((reservation) => (
+            {inuseReservations.map((reservation) => (
               <Text key={reservation.id} ml={4}>
                 • {reservation.item.name} ({reservation.amount} kpl)
               </Text>
@@ -151,7 +166,7 @@ const LoanReturnCard = ({
               </Heading>
 
               <VStack spacing={4} align="stretch">
-                {loan.reservations.map((reservation) => (
+                {inuseReservations.map((reservation) => (
                   <HStack
                     key={reservation.id}
                     p={4}

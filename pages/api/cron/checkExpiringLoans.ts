@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ReservationStatus } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const prisma = new PrismaClient();
@@ -17,15 +17,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const dayAfterTomorrow = new Date(now.getTime() + 25 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Find loans that expire in the next 24-25 hours and are active (INUSE or IN_BOX)
+    // Find loans that expire in the next 24-25 hours and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
       where: {
         endTime: {
           gte: tomorrow,
           lte: dayAfterTomorrow,
         },
-        status: {
-          in: ['INUSE'],
+        reservations: {
+          some: {
+            status: ReservationStatus.INUSE,
+          },
         },
       },
       include: {
@@ -72,12 +74,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    // Find loans that have been IN_BOX for over a week
+    // Find loans that have IN_BOX reservations for over a week
     const oldBoxLoans = await prisma.loan.findMany({
       where: {
-        status: 'IN_BOX',
         startTime: {
           lte: oneWeekAgo,
+        },
+        reservations: {
+          some: {
+            status: ReservationStatus.IN_BOX,
+          },
         },
       },
       include: {
