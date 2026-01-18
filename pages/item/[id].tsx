@@ -177,7 +177,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
             <Image
               src={getOriginalImageUrl(item.id)!}
               alt={item.name}
-              fallbackSrc="https://placehold.co/500x300"
+              fallbackSrc="https://placehold.co/500x300?text=Ei+kuvaa"
               maxW="full"
               maxH={{ base: '300px', md: '500px' }}
               objectFit="contain"
