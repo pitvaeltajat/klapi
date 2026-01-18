@@ -7,7 +7,6 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { Item, Category } from '@prisma/client';
-import { getCompressedImageUrl } from '../utils/imageHelpers';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
