@@ -40,7 +40,6 @@ export interface ItemCardProps {
     name: string;
     description?: string;
     amount: number;
-    image?: string;
     categories: {
       id: string;
       name: string;

@@ -1,6 +1,7 @@
 // get item by id and return it
 import prisma from '../../utils/prisma';
 import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
+import { getOriginalImageUrl } from '../../utils/imageHelpers';
 
 import React from 'react';
 import Head from 'next/head';
@@ -169,10 +170,10 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
         <Divider />
 
-        {item.image && (
+        {getOriginalImageUrl(item.id) && (
           <Box>
             <Image
-              src={item.image}
+              src={getOriginalImageUrl(item.id)!}
               alt={item.name}
               fallbackSrc="https://placehold.co/500x300"
               maxW="full"

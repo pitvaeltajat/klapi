@@ -27,6 +27,7 @@ import type { GetServerSideProps } from 'next';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import { useRouter } from 'next/router';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import { getCompressedImageUrl } from '../../utils/imageHelpers';
 
 interface Reservation {
   id: string;
@@ -35,7 +36,6 @@ interface Reservation {
   item: {
     id: string;
     name: string;
-    image: string | null;
   };
 }
 
@@ -176,9 +176,9 @@ const LoanReturnCard = ({
                     borderColor="gray.200"
                     spacing={4}
                   >
-                    {reservation.item.image ? (
+                    {getCompressedImageUrl(reservation.item.id) ? (
                       <Image
-                        src={reservation.item.image}
+                        src={getCompressedImageUrl(reservation.item.id)!}
                         alt={reservation.item.name}
                         boxSize="80px"
                         objectFit="cover"

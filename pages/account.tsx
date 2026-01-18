@@ -15,7 +15,6 @@ interface LoanWithUser extends Loan {
     item: {
       id: string;
       name: string;
-      image: string | null;
     };
   }[];
 }
@@ -54,7 +53,6 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
             select: {
               id: true,
               name: true,
-              image: true,
             },
           },
         },

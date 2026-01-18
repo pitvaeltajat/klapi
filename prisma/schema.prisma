@@ -62,7 +62,6 @@ model Item {
   id           String        @id @default(cuid())
   name         String
   description  String?
-  image        String?
   amount       Int
   locationId   String?
   type         ItemType      @default(normal)
