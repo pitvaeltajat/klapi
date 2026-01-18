@@ -120,10 +120,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     return (
       <Drawer isOpen={isOpen} placement="right" size={{ base: 'full', md: 'md' }} onClose={onClose}>
         <DrawerOverlay />
-        <DrawerContent>
+        <DrawerContent display="flex" flexDirection="column" maxH="100dvh">
           <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
-          <DrawerBody>
+          <DrawerHeader borderBottomWidth="1px" flexShrink={0}>
+            Ostoskori
+          </DrawerHeader>
+          <DrawerBody flex="1" minH={0}>
             <LoadingSpinner fullWidth />
           </DrawerBody>
         </DrawerContent>
@@ -154,11 +156,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       onClose={onClose}
     >
       <DrawerOverlay />
-      <DrawerContent>
+      <DrawerContent display="flex" flexDirection="column" maxH="100dvh">
         <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
+        <DrawerHeader borderBottomWidth="1px" flexShrink={0}>
+          Ostoskori
+        </DrawerHeader>
 
-        <DrawerBody overflow="auto" flex="1">
+        <DrawerBody overflow="auto" flex="1" minH={0}>
           <SubmitConfirmation
             isOpen={ConfirmationDialog.isOpen}
             onClose={ConfirmationDialog.onClose}
@@ -263,7 +267,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           )}
         </DrawerBody>
 
-        <DrawerFooter borderTopWidth="1px">
+        <DrawerFooter borderTopWidth="1px" flexShrink={0}>
           <Button variant="outline" mr={3} onClick={onClose}>
             Sulje
           </Button>
