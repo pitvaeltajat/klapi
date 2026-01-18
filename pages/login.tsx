@@ -1,4 +1,5 @@
 import Auth from './auth';
+import Head from 'next/head';
 import Router from 'next/router';
 import { useSession } from 'next-auth/react';
 import { Heading } from '@chakra-ui/react';
@@ -14,6 +15,9 @@ const Login: NextPage = () => {
 
   return (
     <>
+      <Head>
+        <title>Kirjaudu sisään | Klapi</title>
+      </Head>
       <Heading>Kirjaudu sisään</Heading>
       <p>Käyttääksesi Klapia sinun tulee kirjautua palveluun.</p>
       <br />

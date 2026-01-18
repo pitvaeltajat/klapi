@@ -1,4 +1,5 @@
 import Auth from './auth';
+import Head from 'next/head';
 import { Heading, Stack, Box, Text, VStack, HStack, Switch } from '@chakra-ui/react';
 import { useSession, getSession } from 'next-auth/react';
 import prisma from '../utils/prisma';
@@ -140,6 +141,9 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
 
   return (
     <>
+      <Head>
+        <title>Oma tili | Klapi</title>
+      </Head>
       <Heading as="h1" size="xl" mb={6}>
         Oma tili
       </Heading>

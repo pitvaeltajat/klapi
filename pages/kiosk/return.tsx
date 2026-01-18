@@ -1,4 +1,5 @@
 import React from 'react';
+import Head from 'next/head';
 import prisma from '../../utils/prisma';
 import {
   Box,
@@ -338,6 +339,9 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
 
   return (
     <>
+      <Head>
+        <title>Palauta lainoja | Klapi</title>
+      </Head>
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Palauta lainoja</Heading>

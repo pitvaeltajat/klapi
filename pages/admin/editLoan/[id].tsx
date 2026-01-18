@@ -1,4 +1,5 @@
 import React from 'react';
+import Head from 'next/head';
 import {
   Heading,
   Input,
@@ -161,9 +162,13 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
   };
 
   return (
-    <VStack spacing={6} align="stretch">
-      {/* Confirmation Dialog */}
-      <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+    <>
+      <Head>
+        <title>Muokkaa lainaa | Klapi</title>
+      </Head>
+      <VStack spacing={6} align="stretch">
+        {/* Confirmation Dialog */}
+        <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
@@ -493,6 +498,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       <Button colorScheme="green" size="lg" onClick={onOpen} width={{ base: 'full', md: 'auto' }}>
         Tallenna muutokset
       </Button>
-    </VStack>
+      </VStack>
+    </>
   );
 }

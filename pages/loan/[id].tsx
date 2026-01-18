@@ -1,5 +1,6 @@
 // single loan view
 import React from 'react';
+import Head from 'next/head';
 import prisma from '../../utils/prisma';
 import {
   Stack,
@@ -208,6 +209,9 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   // list reservations and show loan basic information and user information
   return (
     <>
+      <Head>
+        <title>Varaus: {loan.description || 'Ei kuvausta'} | Klapi</title>
+      </Head>
       <Stack spacing={6}>
         <Heading as="h1" mb={4}>
           Varaus: {loan.description || 'Ei kuvausta'}
