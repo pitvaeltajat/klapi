@@ -18,21 +18,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     // Find loans that start in 24-25 hours and have ACCEPTED reservations (not picked up yet)
-    const upcomingPickupLoans = await prisma.loan.findMany({
+    // A loan hasn't been picked up if all reservations are still ACCEPTED (none are INUSE)
+    const allLoansStartingTomorrow = await prisma.loan.findMany({
       where: {
         startTime: {
           gte: tomorrow,
           lte: dayAfterTomorrow,
-        },
-        reservations: {
-          some: {
-            status: ReservationStatus.ACCEPTED,
-          },
-          every: {
-            status: {
-              notIn: [ReservationStatus.INUSE, ReservationStatus.RETURNED],
-            },
-          },
         },
       },
       include: {
@@ -43,6 +34,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
         },
       },
+    });
+
+    // Filter to only loans where all reservations are still ACCEPTED (not picked up)
+    const upcomingPickupLoans = allLoansStartingTomorrow.filter((loan) => {
+      return (
+        loan.reservations.length > 0 &&
+        loan.reservations.every((res) => res.status === ReservationStatus.ACCEPTED)
+      );
     });
 
     console.log(`Found ${upcomingPickupLoans.length} upcoming pickup loans`);
