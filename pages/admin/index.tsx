@@ -29,6 +29,7 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
+import { MdOutlinePassword } from "react-icons/md";
 import { useSession } from 'next-auth/react';
 import { useRef, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -101,6 +102,15 @@ const Admin: NextPage = () => {
   const [userToDelete, setUserToDelete] = useState<UserWithGroup | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
+  // Kiosk password dialog state
+  const [kioskPassword, setKioskPassword] = useState<string | null>(null);
+  const {
+    isOpen: isKioskDialogOpen,
+    onOpen: openKioskDialog,
+    onClose: closeKioskDialog,
+  } = useDisclosure();
+  const kioskDialogCancelRef = useRef<HTMLButtonElement>(null);
+
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
   }
@@ -155,6 +165,31 @@ const Admin: NextPage = () => {
     return <Badge colorScheme={colors[group] || 'gray'}>{labels[group] || group}</Badge>;
   };
 
+  const getOTP = async () => {
+    try {
+      const response = await fetch('/api/user/createKioskPassword', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setKioskPassword(data.kioskPassword);
+        openKioskDialog();
+      } else {
+        throw new Error(data.message || 'Salasanan luominen epäonnistui');
+      }
+    } catch (error) {
+      toast({
+        title: 'Virhe',
+        description: error instanceof Error ? error.message : 'Salasanan luominen epäonnistui',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   if (error) {
     return (
       <Box p={6}>
@@ -186,6 +221,13 @@ const Admin: NextPage = () => {
           </Button>
         </Link>
       </Flex>
+
+      <Box>
+        <Flex justifyContent="flex-end">
+          <Button leftIcon={<MdOutlinePassword />} onClick={getOTP} colorScheme='orange'>Luo kioskikäyttäjän salasana</Button>
+        </Flex>
+      </Box>
+
 
       {/* User Management Section */}
       <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
@@ -236,6 +278,40 @@ const Admin: NextPage = () => {
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Kiosk Password AlertDialog */}
+      <AlertDialog
+        isOpen={isKioskDialogOpen}
+        leastDestructiveRef={kioskDialogCancelRef}
+        onClose={closeKioskDialog}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Kioskikäyttäjän salasana luotu
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Uusi salasana: <Text as="span" fontWeight="bold">{kioskPassword}</Text><br />
+              (voimassa 15 minuuttia)
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button colorScheme='gray' ref={kioskDialogCancelRef} onClick={closeKioskDialog}>
+                Sulje
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={() => {
+                  navigator.clipboard.writeText(kioskPassword || '');
+                  closeKioskDialog();
+                }}
+                ml={3}
+              >
+                Kopioi leikepöydälle
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
