@@ -131,7 +131,7 @@ model Report {
   content       String
   status        ReportStatus         @default(OPEN)
   createdAt     DateTime             @default(now())
-  created       reportCreated        @default(AFTER_LOAN)
+  created       ReportCreated        @default(AFTER_LOAN)
   loanId        String
   loan          Loan                 @relation(fields: [loanId], references: [id], onDelete: Cascade)
   affectedItems ReportAffectedItem[]
@@ -165,7 +165,7 @@ enum ReportStatus {
   RESOLVED
 }
 
-enum reportCreated{
+enum ReportCreated{
   BEFORE_LOAN
   AFTER_LOAN
 }

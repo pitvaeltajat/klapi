@@ -1,4 +1,4 @@
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, reportCreated, ReportStatus } from '@prisma/client';
 import Head from 'next/head';
 import {
   Box,
@@ -40,6 +40,13 @@ interface LoanType {
       image: string | null;
     };
   }[];
+  reports: {
+    id: string;
+    content: string;
+    createdAt: Date;
+    created: ReportCreated;
+    status: ReportStatus;
+  }[];
 }
 
 export const LoanCard = ({ loan }: { loan: LoanType }) => {
@@ -78,6 +85,11 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
           <Tag colorScheme={getLoanStatusColor(loan.status)} size="md" flexShrink={0}>
             {getLoanStatusLabel(loan.status)}
           </Tag>
+          {loan.reports?.length > 0 && (
+            <Tag colorScheme="red" size="md" flexShrink={0}>
+              Raportteja: {loan.reports.length}
+            </Tag>
+          )}
         </HStack>
 
         <VStack spacing={2} fontSize="sm" color="gray.600" align="stretch">

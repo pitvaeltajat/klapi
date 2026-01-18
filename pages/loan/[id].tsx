@@ -19,6 +19,16 @@ import {
   Link,
   Text,
   Tag,
+  Checkbox,
+  Textarea,
+  RadioGroup,
+  Radio,
+  Flex,
+  InputGroup,
+  InputRightAddon,
+  IconButton,
+  Input,
+  InputLeftAddon,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
@@ -28,6 +38,7 @@ import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import { FaMinus, FaPlus } from 'react-icons/fa';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -59,6 +70,12 @@ export const getServerSideProps: GetServerSideProps<{
     },
   });
 
+  const reports = await prisma.report.findMany({
+    where: {
+      loanId: req.params.id,
+    },
+  });
+
   if (!loan) {
     return { notFound: true };
   }
@@ -66,14 +83,28 @@ export const getServerSideProps: GetServerSideProps<{
   return {
     props: {
       loan: JSON.parse(JSON.stringify(loan)),
+      reports: JSON.parse(JSON.stringify(reports)),
     },
   };
 };
 
-export default function LoanView({ loan }: { loan: LoanWithRelations }) {
+export default function LoanView({
+  loan,
+  reports,
+}: {
+  loan: LoanWithRelations;
+  reports: {
+    affectedItems: any;
+    id: string;
+    content: string;
+    createdAt: Date;
+    loanId: string;
+  }[];
+}) {
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
   const { data: session } = useSession();
 
   const isAdmin = session?.user?.group === 'ADMIN';
@@ -134,7 +165,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       .then(() => {
         toast({
           title: 'Laina hylätty',
-          description: 'Laina hylätty onnituneesti',
+          description: 'Laina hylätty onnistuneesti',
           status: 'success',
           duration: 5000,
           isClosable: true,
@@ -243,9 +274,141 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
               <Tag colorScheme={getLoanStatusColor(loan.status)} width="fit-content">
                 {getLoanStatusLabel(loan.status)}
               </Tag>
+              {reports.length > 0 && (
+                <Tag colorScheme="red" size="md" flexShrink={0} ml={2}>
+                  Raportteja: {reports.length}
+                </Tag>
+              )}
             </Box>
           </Stack>
         </Box>
+
+        {reports.length > 0 ? (
+          <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+            <Heading as="h2" size="lg" mb={4}>
+              Raportit
+            </Heading>
+            <Stack spacing={4}>
+              {reports.map((report) => {
+                const expanded = expandedReportId === report.id;
+                return (
+                  <Box
+                    key={report.id}
+                    p={expanded ? 6 : 4}
+                    borderWidth="1px"
+                    borderRadius="md"
+                    bg={expanded ? 'gray.50' : 'gray.50'}
+                    boxShadow={expanded ? 'lg' : undefined}
+                  >
+                    <Text whiteSpace="pre-wrap" fontSize={expanded ? 'md' : 'sm'}>
+                      {expanded
+                        ? report.content
+                        : report.content.length < 100
+                          ? report.content
+                          : report.content.substring(0, 100) + '...'}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600" mt={2}>
+                      Luotu:{' '}
+                      {new Date(report.createdAt).toLocaleString('fi-FI', {
+                        dateStyle: 'full',
+                        timeStyle: 'short',
+                      })}
+                    </Text>
+                    {!expanded ? (
+                      <Button mt={2} size="sm" onClick={() => setExpandedReportId(report.id)}>
+                        Käsittele raportti
+                      </Button>
+                    ) : (
+                      <Box>
+                        <Box
+                          mt={4}
+                          mb={2}
+                          fontWeight="semibold"
+                          fontSize="lg"
+                          borderWidth="1px"
+                          p={4}
+                          borderRadius="md"
+                          bg="white"
+                        >
+                          <Text mb={2}>Lisää ilmoitus kamalle:</Text>
+                          <RadioGroup defaultValue="none">
+                            <Stack direction="row">
+                              {loan.reservations.map((reservation) => (
+                                <Radio value={reservation.item.id} key={reservation.item.id}>
+                                  {reservation.item.name}
+                                </Radio>
+                              ))}
+                              <Radio value="none">Ei ilmoitusta</Radio>
+                            </Stack>
+                          </RadioGroup>
+
+                          <Textarea mt={2} placeholder="Lisää kommentti" rows={3} />
+                        </Box>
+                        <Box
+                          mt={4}
+                          mb={2}
+                          fontWeight="semibold"
+                          fontSize="lg"
+                          borderWidth="1px"
+                          p={4}
+                          borderRadius="md"
+                          bg="white"
+                        >
+                          <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
+                          <RadioGroup defaultValue="none">
+                            <Stack direction="column">
+                              {loan.reservations.map((reservation) => (
+                                <Box
+                                  key={reservation.item.id}
+                                  border="1px"
+                                  p={2}
+                                  borderRadius="md"
+                                  bg="gray.50"
+                                >
+                                  <Flex justifyContent="space-between" alignItems="center">
+                                    {reservation.item.name}
+                                    <InputGroup size="md" width="100px" p={2}>
+                                      <InputLeftAddon padding={0}>
+                                        <IconButton
+                                          icon={<FaMinus />}
+                                          minW="40px"
+                                          aria-label="decrement"
+                                        />
+                                      </InputLeftAddon>
+                                      <Input readOnly textAlign="center" />
+                                      <InputRightAddon padding={0}>
+                                        <IconButton icon={<FaPlus />} aria-label="increment" />
+                                      </InputRightAddon>
+                                    </InputGroup>
+                                  </Flex>
+                                </Box>
+                              ))}
+                            </Stack>
+                          </RadioGroup>
+                        </Box>
+                        <Stack direction="row" spacing={2} mt={4}>
+                          <Button colorScheme="orange" size="sm">
+                            Ota käsittelyyn
+                          </Button>
+                          <Button colorScheme="green" size="sm">
+                            Aseta käsitellyksi
+                          </Button>
+                          <Button
+                            colorScheme="gray"
+                            size="sm"
+                            onClick={() => setExpandedReportId(null)}
+                          >
+                            Käsittele myöhemmin
+                          </Button>
+                        </Stack>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Box>
+        ) : null}
 
         <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
@@ -254,7 +417,6 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           <ReservationTableLoanView loan={loan} />
         </Box>
 
-        {/* Action buttons */}
         {loan.status === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Heading as="h2" size="md" color="green.700">

@@ -31,6 +31,7 @@ interface BoxWithLoans extends BoxType {
 
 interface BoxesPageProps {
   boxes: BoxWithLoans[];
+  reports: { id: string; content: string; createdAt: Date; loanId: string }[];
 }
 
 export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () => {
@@ -56,14 +57,17 @@ export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () =
     },
   });
 
+  const reports = await prisma.report.findMany();
+
   return {
     props: {
       boxes: JSON.parse(JSON.stringify(boxes)),
+      reports: JSON.parse(JSON.stringify(reports)),
     },
   };
 };
 
-export default function BoxesPage({ boxes }: BoxesPageProps) {
+export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
   const { data: session } = useSession();
 
   if (session?.user?.group !== 'ADMIN') {
@@ -94,6 +98,10 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
       default:
         return status;
     }
+  };
+
+  const hasReports = (loanId: string) => {
+    return reports.some((report) => report.loanId === loanId);
   };
 
   return (
@@ -184,6 +192,11 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                                     {getStatusText(loan.status)}
                                   </Badge>
                                 </HStack>
+                                {hasReports(loan.id) && (
+                                  <Badge colorScheme="red" fontSize="xs" alignSelf="flex-end">
+                                    Sisältää raportin
+                                  </Badge>
+                                )}
                                 <Text fontSize="xs" color="gray.600">
                                   {loan.reservations
                                     .map((r) => `${r.item.name} (${r.amount})`)
