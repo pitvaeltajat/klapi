@@ -2,7 +2,7 @@ import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import NotAuthenticated from '../../../components/NotAuthenticated';
 import Breadcrumbs from '../../../components/Breadcrumbs';
-import { getOriginalImageUrl } from '../../../utils/imageHelpers';
+import { useItemOriginalImage } from '../../../hooks/useItemImage';
 import {
   Heading,
   Input,
@@ -74,6 +74,7 @@ export default function EditItem({
   const { data: session } = useSession();
   const router = useRouter();
   const toast = useToast();
+  const existingImageSrc = useItemOriginalImage(item.id);
 
   const [itemName, setItemName] = useState(item.name);
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,16 +263,16 @@ export default function EditItem({
               objectFit="contain"
               mb={4}
             />
-          ) : getOriginalImageUrl(item.id) ? (
+          ) : (
             <Image
-              src={getOriginalImageUrl(item.id)!}
+              src={existingImageSrc}
               alt={item.name}
               maxW="full"
               maxH="400px"
               objectFit="contain"
               mb={4}
             />
-          ) : null}
+          )}
           <Input type="file" accept="image/*" onChange={handleImageChange} />
         </FormControl>
 

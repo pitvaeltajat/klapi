@@ -1,7 +1,7 @@
 // get item by id and return it
 import prisma from '../../utils/prisma';
 import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
-import { getOriginalImageUrl } from '../../utils/imageHelpers';
+import { useItemOriginalImage, usePlaceholder } from '../../hooks/useItemImage';
 
 import React from 'react';
 import Head from 'next/head';
@@ -94,6 +94,9 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  const imageSrc = useItemOriginalImage(item.id);
+  const placeholder = usePlaceholder();
+
   const deleteItem = async () => {
     try {
       const response = await fetch('/api/item/deleteItem', {
@@ -172,19 +175,17 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
         <Divider />
 
-        {getOriginalImageUrl(item.id) && (
-          <Box>
-            <Image
-              src={getOriginalImageUrl(item.id)!}
-              alt={item.name}
-              fallbackSrc="https://placehold.co/500x300?text=Ei+kuvaa"
-              maxW="full"
-              maxH={{ base: '300px', md: '500px' }}
-              objectFit="contain"
-              borderRadius="md"
-            />
-          </Box>
-        )}
+        <Box>
+          <Image
+            src={imageSrc}
+            alt={item.name}
+            fallbackSrc={placeholder}
+            maxW="full"
+            maxH={{ base: '300px', md: '500px' }}
+            objectFit="contain"
+            borderRadius="md"
+          />
+        </Box>
 
         {session?.user?.group === 'ADMIN' && (
           <HStack spacing={3}>
