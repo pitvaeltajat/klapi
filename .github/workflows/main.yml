@@ -1,4 +1,4 @@
-name: klapi
+name: ci
 on: push
 
 jobs:
@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
