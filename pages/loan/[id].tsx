@@ -24,6 +24,7 @@ import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import NextLink from 'next/link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
+import StartLoanConfirmation from '../../components/StartLoanConfirmation';
 import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
 import { GetServerSideProps } from 'next';
@@ -79,6 +80,11 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isStartLoanOpen,
+    onOpen: onStartLoanOpen,
+    onClose: onStartLoanClose,
+  } = useDisclosure();
   const { data: session } = useSession();
 
   const isAdmin = session?.user?.group === 'ADMIN';
@@ -139,7 +145,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       .then(() => {
         toast({
           title: 'Laina hylätty',
-          description: 'Laina hylätty onnituneesti',
+          description: 'Laina hylätty onnistuneesti',
           status: 'success',
           duration: 5000,
           isClosable: true,
@@ -188,6 +194,11 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       });
   };
 
+
+  const startLoan = async () => {
+    
+  }
+
   const isKiosk = session?.user?.group === 'KIOSK';
 
   // Derive the loan status from reservations
@@ -222,6 +233,10 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     derivedStatus !== 'ACCEPTED' &&
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'RETURNED';
+
+
+  const canStartUse = 
+    derivedStatus === 'ACCEPTED';
 
   const canMarkReturned = isAdmin && (derivedStatus === 'INUSE' || derivedStatus === 'IN_BOX');
 
@@ -292,7 +307,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             </Stack>
           </Box>
         ) : (
-          (canReject || canEdit || canApprove) && (
+          (canReject || canEdit || canApprove || canStartUse) && (
             <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
               <Stack spacing={3}>
                 <Heading as="h3" size="md" mb={2}>
@@ -314,6 +329,11 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                   {canApprove && (
                     <Button colorScheme="green" onClick={approveLoan} flex="1">
                       Hyväksy
+                    </Button>
+                  )}
+                  {canStartUse && (
+                    <Button colorScheme="green" onClick={startLoan} flex="1">
+                      Aloita lainaus
                     </Button>
                   )}
                 </Stack>

@@ -109,6 +109,7 @@ export default function KioskModeSelector() {
             size="lg"
             onClick={() => router.push('/kiosk/return')}
             flex={1}
+            isDisabled={!!selectedUserId}
           >
             Palauta
           </Button>
