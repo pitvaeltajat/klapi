@@ -13,6 +13,7 @@ import {
   useDisclosure,
   Flex,
   Icon,
+  Select
 } from '@chakra-ui/react';
 import { FaSearch, FaInfoCircle } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
@@ -73,7 +74,7 @@ export default function ItemBrowser({
         </InputGroup>
       </Box>
       <Box padding="2em" paddingLeft={0}>
-        <Wrap padding="4px">
+        <Wrap padding="4px" display={{ base: 'none', md: 'block' }}>
           <WrapItem key="all">
             <Button
               onClick={() => setCategory('')}
@@ -83,6 +84,7 @@ export default function ItemBrowser({
               Kaikki
             </Button>
           </WrapItem>
+          
           {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
             <WrapItem key={cat.id}>
               <Button
@@ -95,6 +97,20 @@ export default function ItemBrowser({
             </WrapItem>
           ))}
         </Wrap>
+      </Box>
+      <Box padding="2em" paddingLeft={0} display={{ base: 'block', md: 'none' }}>
+        <Select
+          width="100%"
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+          borderRadius="6px"
+          borderColor="gray.300"
+          placeholder="Kaikki"
+        >
+          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(cat => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
+          ))}
+        </Select>
       </Box>
       {showCustomItemLink && (
         <>
