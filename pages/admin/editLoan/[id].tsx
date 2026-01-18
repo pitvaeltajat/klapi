@@ -36,6 +36,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../../components/NotAuthenticated';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+import Breadcrumbs from '../../../components/Breadcrumbs';
 import prisma from '../../../utils/prisma';
 import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
@@ -284,6 +285,13 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       <Head>
         <title>Muokkaa lainaa | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Varaukset', href: '/loan' },
+          { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
+          { label: 'Muokkaa' },
+        ]}
+      />
       <VStack spacing={6} align="stretch">
         {/* Confirmation Dialog */}
         <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>

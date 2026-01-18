@@ -17,6 +17,7 @@ import {
   IconButton,
   Heading,
   useDisclosure,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
@@ -35,6 +36,7 @@ interface AvailabilityData {
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const firstField = useRef<HTMLInputElement>(null);
   const { data: session } = useSession();
+  const disabledInputBg = useColorModeValue('gray.100', 'gray.600');
   const {
     state: cart,
     incrementAmount,
@@ -180,7 +182,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   id="loaner"
                   value={cart.loaner || ''}
                   isDisabled
-                  bg="gray.100"
+                  bg={disabledInputBg}
                 />
               )}
             </Box>

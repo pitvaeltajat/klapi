@@ -16,6 +16,7 @@ import {
   Circle,
   useBreakpointValue,
   Progress,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
@@ -35,6 +36,8 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const role = session?.user?.group;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
+
+  const headerBg = useColorModeValue('rgba(66,131,209,0.9)', 'rgba(26,32,44,0.95)');
 
   const router = useRouter();
 
@@ -87,7 +90,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
         top={0}
         left={0}
         right={0}
-        bg="rgba(66,131,209,0.9)"
+        bg={headerBg}
         backdropFilter="auto"
         backdropBlur="4px"
         zIndex={1000}

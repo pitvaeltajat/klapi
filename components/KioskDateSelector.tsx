@@ -1,5 +1,5 @@
 import DatePicker from 'react-datepicker';
-import { Box, VStack, FormControl, FormLabel, Grid, GridItem } from '@chakra-ui/react';
+import { Box, VStack, FormControl, FormLabel, Grid, GridItem, useColorModeValue } from '@chakra-ui/react';
 import 'react-datepicker/dist/react-datepicker.css';
 
 import React from 'react';
@@ -10,6 +10,10 @@ import LoanerAutocomplete from './LoanerAutocomplete';
 export default function KioskDateSelector() {
   const { state: dates, setEndDate } = useDates();
   const { state: cart, setLoaner, setUserId } = useCart();
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const datePickerHeaderBg = useColorModeValue('white', 'gray.700');
+  const datePickerBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const datePickerHoverBg = useColorModeValue('gray.100', 'gray.600');
 
   // Helper function to set default time to 18:00
   const setDefaultTime = (date: Date): Date => {
@@ -33,7 +37,7 @@ export default function KioskDateSelector() {
     <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={4} mb={4} alignItems="start">
       {/* Left column - Loaner info */}
       <GridItem>
-        <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm" height="full">
+        <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm" height="full">
           <FormControl>
             <FormLabel fontWeight="bold" fontSize="lg" mb={4}>
               Lainaaja
@@ -51,7 +55,7 @@ export default function KioskDateSelector() {
 
       {/* Right column - Return date */}
       <GridItem>
-        <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm" height="full">
+        <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm" height="full">
           <FormControl>
             <FormLabel fontWeight="bold" fontSize="lg" mb={2}>
               Palautuspäivä
@@ -64,9 +68,9 @@ export default function KioskDateSelector() {
                     fontFamily: 'inherit',
                   },
                   '.react-datepicker__header': {
-                    backgroundColor: 'white',
+                    backgroundColor: datePickerHeaderBg,
                     borderBottom: '1px solid',
-                    borderColor: 'gray.200',
+                    borderColor: datePickerBorderColor,
                   },
                   '.react-datepicker__day--selected': {
                     backgroundColor: 'blue.500',
@@ -76,7 +80,7 @@ export default function KioskDateSelector() {
                     backgroundColor: 'blue.100',
                   },
                   '.react-datepicker__day:hover': {
-                    backgroundColor: 'gray.100',
+                    backgroundColor: datePickerHoverBg,
                   },
                 }}
               >

@@ -19,12 +19,14 @@ import {
   Link,
   Text,
   Tag,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import NextLink from 'next/link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import StartLoanConfirmation from '../../components/StartLoanConfirmation';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
 import { GetServerSideProps } from 'next';
@@ -86,6 +88,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
     onClose: onStartLoanClose,
   } = useDisclosure();
   const { data: session } = useSession();
+  const cardBg = useColorModeValue('white', 'gray.800');
 
   const isAdmin = session?.user?.group === 'ADMIN';
 
@@ -239,12 +242,18 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
       <Head>
         <title>Varaus: {loan.description || 'Ei kuvausta'} | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Varaukset', href: '/loan' },
+          { label: loan.description || 'Ei kuvausta' },
+        ]}
+      />
       <Stack spacing={6}>
         <Heading as="h1" mb={4}>
           Varaus: {loan.description || 'Ei kuvausta'}
         </Heading>
 
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
             Perustiedot
           </Heading>
@@ -274,7 +283,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </Stack>
         </Box>
 
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
             Kamat
           </Heading>
@@ -289,7 +298,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
             </Heading>
           </Box>
         ) : canMarkReturned ? (
-          <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+          <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
             <Stack spacing={3}>
               <Heading as="h3" size="md" mb={2}>
                 Toiminnot
@@ -301,7 +310,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </Box>
         ) : (
           (canReject || canEdit || canApprove || canStartUse) && (
-            <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+            <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
               <Stack spacing={3}>
                 <Heading as="h3" size="md" mb={2}>
                   Toiminnot
