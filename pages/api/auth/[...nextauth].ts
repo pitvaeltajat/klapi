@@ -51,8 +51,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+        const now = new Date();
+        const isPasswordExpired = user.passwordExpiresAt && user.passwordExpiresAt < now;
 
-        if (!isValidPassword) {
+        if (!isValidPassword || isPasswordExpired) {
           return null;
         }
 

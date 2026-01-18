@@ -41,6 +41,7 @@ model User {
   image                    String?
   group                    Group     @default(USER)
   password                 String?
+  passwordExpiresAt        DateTime?
   username                 String?   @unique
   emailNewLoanNotification Boolean   @default(true)
   emailWeeklyReminder      Boolean   @default(true)
