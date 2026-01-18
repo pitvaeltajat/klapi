@@ -5,6 +5,10 @@ import handler from '../../pages/api/availability/getAvailabilities';
 
 const prisma = new PrismaClient();
 
+interface AvailabilityResponse {
+  availabilities: Record<string, { byDate: Record<string, number>; available: number }>;
+}
+
 async function createTestUser(
   overrides: Partial<{
     id: string;
@@ -77,8 +81,8 @@ async function createTestLoan(
   });
 }
 
-async function getAvailabilities(startDate: Date, endDate: Date) {
-  return new Promise<any>((resolve, reject) => {
+async function getAvailabilities(startDate: Date, endDate: Date): Promise<AvailabilityResponse> {
+  return new Promise<AvailabilityResponse>((resolve, reject) => {
     const req = {
       method: 'POST',
       body: {
@@ -93,11 +97,11 @@ async function getAvailabilities(startDate: Date, endDate: Date) {
         statusCode = code;
         return res;
       },
-      json: (data: any) => {
+      json: (data: AvailabilityResponse | { error: string }) => {
         if (statusCode >= 400) {
           reject(new Error(`API error ${statusCode}: ${JSON.stringify(data)}`));
         } else {
-          resolve(data);
+          resolve(data as AvailabilityResponse);
         }
       },
     } as unknown as NextApiResponse;
