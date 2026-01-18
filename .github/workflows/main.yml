@@ -33,6 +33,8 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
+      - name: Create test database
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE klapi;"
       - name: Lint
         run: pnpm lint
       - name: Run tests
