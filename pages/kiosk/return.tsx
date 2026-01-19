@@ -362,10 +362,6 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Palauta lainoja</Heading>
-          <Button mb={4} onClick={() => router.push('/')} colorScheme="gray">
-            Takaisin etusivulle
-          </Button>
-
           {loans.length === 0 ? (
             <Box textAlign="center" py={8}>
               <Heading size="md" color="gray.500">
