@@ -276,7 +276,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             onClick={ConfirmationDialog.onOpen}
             isDisabled={cart.items.length === 0 || !isDescriptionValid}
           >
-            Varaa
+            Lainaa
           </Button>
         </DrawerFooter>
       </DrawerContent>

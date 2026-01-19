@@ -228,7 +228,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
             {session && (
               <Flex gap={6} align="center" display={['none', 'none', 'flex']} height="30%">
                 <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
-                  Varaa
+                  Lainaa
                 </Link>
                 <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
                   Palauta
@@ -240,7 +240,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   onClick={handleBrowseClick}
                   fontWeight="medium"
                 >
-                  Selaa kamoja
+                  Kamat
                 </Link>
                 {(role === 'ADMIN' || role === 'KIOSK') && (
                   <Link as={NextLink} href="/loan" fontWeight="medium">
@@ -341,7 +341,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                           onClose();
                         }}
                       >
-                        Varaa
+                        Lainaa
                       </Link>
                     </Td>
                   </Tr>
@@ -364,7 +364,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                           onClose();
                         }}
                       >
-                        Selaa kamoja
+                        Kamat
                       </Link>
                     </Td>
                   </Tr>
