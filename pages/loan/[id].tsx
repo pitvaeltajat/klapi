@@ -105,7 +105,7 @@ export default function LoanView({
 }: {
   loan: LoanWithRelations;
   reports: {
-    affectedItems: any;
+    affectedItems: Item[];
     id: string;
     content: string;
     createdAt: Date;
