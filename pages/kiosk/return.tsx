@@ -158,8 +158,8 @@ const LoanReturnCard = ({
           </Tag>
           <Text>Lainaaja: {loan.loaner}</Text>
           <Text>
-            Laina-aika: {new Date(loan.startTime).toLocaleDateString()} -{' '}
-            {new Date(loan.endTime).toLocaleDateString()}
+            Laina-aika: {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
+            {new Date(loan.endTime).toLocaleDateString('fi-FI')}
           </Text>
           <Box>
             <Text fontWeight="bold" mb={2}>

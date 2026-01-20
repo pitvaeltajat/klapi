@@ -16,7 +16,7 @@ import {
   Select,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { FaSearch, FaInfoCircle } from 'react-icons/fa';
+import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
 import { Item, Category, Loan, Reservation } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
@@ -76,7 +76,15 @@ export default function ItemBrowser({
             onChange={handleChange}
           />
           <InputRightElement>
-            <FaSearch />
+            {search ? (
+              <FaTimes
+                cursor="pointer"
+                onClick={() => setSearch('')}
+                aria-label="Tyhjennä haku"
+              />
+            ) : (
+              <FaSearch />
+            )}
           </InputRightElement>
         </InputGroup>
       </Box>
@@ -95,7 +103,7 @@ export default function ItemBrowser({
           {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
             <WrapItem key={cat.id}>
               <Button
-                onClick={() => setCategory(cat.name)}
+                onClick={() => setCategory(category === cat.name ? '' : cat.name)}
                 variant={category === cat.name ? 'solid' : 'outline'}
                 colorScheme={category === cat.name ? 'blue' : 'gray'}
               >
