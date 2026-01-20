@@ -29,6 +29,17 @@ import {
   IconButton,
   Input,
   InputLeftAddon,
+  CheckboxGroup,
+  NumberInputField,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputStepper,
+  Wrap,
+  WrapItem,
+  Spacer,
+  Icon,
+  Divider,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
@@ -106,6 +117,13 @@ export default function LoanView({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
   const { data: session } = useSession();
+
+  const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
+
+  const [announcement, setAnnouncement] = React.useState<{ itemId: string; content: string }>({
+    itemId: '',
+    content: '',
+  });
 
   const isAdmin = session?.user?.group === 'ADMIN';
 
@@ -237,6 +255,8 @@ export default function LoanView({
 
   const canMarkReturned = isAdmin && (loan.status === 'INUSE' || loan.status === 'IN_BOX');
 
+  const canSeeReports = isAdmin && reports.length > 0;
+
   // list reservations and show loan basic information and user information
   return (
     <>
@@ -283,7 +303,14 @@ export default function LoanView({
           </Stack>
         </Box>
 
-        {reports.length > 0 ? (
+        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+          <Heading as="h2" size="lg" mb={4}>
+            Kamat
+          </Heading>
+          <ReservationTableLoanView loan={loan} />
+        </Box>
+
+        {canSeeReports ? (
           <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
             <Heading as="h2" size="lg" mb={4}>
               Raportit
@@ -331,18 +358,43 @@ export default function LoanView({
                           bg="white"
                         >
                           <Text mb={2}>Lisää ilmoitus kamalle:</Text>
-                          <RadioGroup defaultValue="none">
-                            <Stack direction="row">
-                              {loan.reservations.map((reservation) => (
-                                <Radio value={reservation.item.id} key={reservation.item.id}>
-                                  {reservation.item.name}
-                                </Radio>
-                              ))}
-                              <Radio value="none">Ei ilmoitusta</Radio>
-                            </Stack>
-                          </RadioGroup>
 
-                          <Textarea mt={2} placeholder="Lisää kommentti" rows={3} />
+                          <RadioGroup defaultValue="none">
+                            <Wrap direction="row">
+                              {loan.reservations.map((reservation) => (
+                                <WrapItem key={reservation.item.id}>
+                                  <Box>
+                                    <Radio
+                                      value={reservation.item.id}
+                                      onChange={() =>
+                                        setAnnouncement({
+                                          itemId: reservation.item.id,
+                                          content: announcement.content,
+                                        })
+                                      }
+                                    >
+                                      {reservation.item.name}
+                                    </Radio>
+                                  </Box>
+                                </WrapItem>
+                              ))}
+                            </Wrap>
+                          </RadioGroup>
+                          <Textarea
+                            mt={2}
+                            placeholder="Kirjoita ilmoitus"
+                            rows={3}
+                            value={announcement.content}
+                            onChange={(e) =>
+                              setAnnouncement({
+                                itemId: announcement.itemId,
+                                content: e.target.value,
+                              })
+                            }
+                          />
+                          <Button mt={2} colorScheme="blue" size="sm">
+                            Lähetä ilmoitus
+                          </Button>
                         </Box>
                         <Box
                           mt={4}
@@ -355,52 +407,88 @@ export default function LoanView({
                           bg="white"
                         >
                           <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
-                          <RadioGroup defaultValue="none">
-                            <Stack direction="column">
+                          <CheckboxGroup>
+                            <Stack spacing={2} direction="column">
                               {loan.reservations.map((reservation) => (
-                                <Box
-                                  key={reservation.item.id}
-                                  border="1px"
-                                  p={2}
-                                  borderRadius="md"
-                                  bg="gray.50"
-                                >
-                                  <Flex justifyContent="space-between" alignItems="center">
-                                    {reservation.item.name}
-                                    <InputGroup size="md" width="100px" p={2}>
-                                      <InputLeftAddon padding={0}>
-                                        <IconButton
-                                          icon={<FaMinus />}
-                                          minW="40px"
-                                          aria-label="decrement"
-                                        />
-                                      </InputLeftAddon>
-                                      <Input readOnly textAlign="center" />
-                                      <InputRightAddon padding={0}>
-                                        <IconButton icon={<FaPlus />} aria-label="increment" />
-                                      </InputRightAddon>
-                                    </InputGroup>
-                                  </Flex>
-                                </Box>
+                                <>
+                                  <Divider />
+                                  <Wrap key={reservation.item.id}>
+                                    <WrapItem>
+                                      <Checkbox
+                                        value={reservation.item.id}
+                                        onChange={() =>
+                                          (e: React.ChangeEvent<HTMLInputElement>) => {
+                                            const checked = e.target.checked;
+                                            setAffectedItems((prev) => {
+                                              const newAffected = { ...prev };
+                                              if (checked) {
+                                                newAffected[reservation.item.id] =
+                                                  reservation.amount;
+                                              } else {
+                                                delete newAffected[reservation.item.id];
+                                              }
+                                              return newAffected;
+                                            });
+                                          }}
+                                      >
+                                        {reservation.item.name}
+                                      </Checkbox>
+                                    </WrapItem>
+                                    <Spacer />
+
+                                    <WrapItem>
+                                      <NumberInput
+                                        min={1}
+                                        max={reservation.item.amount}
+                                        defaultValue={reservation.amount}
+                                        size="sm"
+                                        width="60px"
+                                        borderRadius={'md'}
+                                        isDisabled={!(reservation.item.id in affectedItems)}
+                                        onChange={(_valueString, valueNumber) => {
+                                          setAffectedItems((prev) => {
+                                            const newAffected = { ...prev };
+                                            newAffected[reservation.item.id] = valueNumber;
+                                            return newAffected;
+                                          });
+                                        }}
+                                      >
+                                        <NumberInputField />
+                                        <NumberInputStepper>
+                                          <NumberIncrementStepper />
+                                          <NumberDecrementStepper />
+                                        </NumberInputStepper>
+                                      </NumberInput>
+                                      <Text ml={2}>kpl</Text>
+                                    </WrapItem>
+                                  </Wrap>
+                                </>
                               ))}
                             </Stack>
-                          </RadioGroup>
+                          </CheckboxGroup>
                         </Box>
-                        <Stack direction="row" spacing={2} mt={4}>
-                          <Button colorScheme="orange" size="sm">
-                            Ota käsittelyyn
-                          </Button>
-                          <Button colorScheme="green" size="sm">
-                            Aseta käsitellyksi
-                          </Button>
-                          <Button
-                            colorScheme="gray"
-                            size="sm"
-                            onClick={() => setExpandedReportId(null)}
-                          >
-                            Käsittele myöhemmin
-                          </Button>
-                        </Stack>
+                        <Wrap direction="row" spacing={2} mt={4}>
+                          <WrapItem>
+                            <Button colorScheme="orange" size="sm">
+                              Ota käsittelyyn
+                            </Button>
+                          </WrapItem>
+                          <WrapItem>
+                            <Button colorScheme="green" size="sm">
+                              Aseta käsitellyksi
+                            </Button>
+                          </WrapItem>
+
+                          <WrapItem>
+                            <Button
+                              colorScheme="gray"
+                              size="sm"
+                              onClick={() => setExpandedReportId(null)}
+                            >
+                              Käsittele myöhemmin
+                            </Button>
+                          </WrapItem>
+                        </Wrap>
                       </Box>
                     )}
                   </Box>
@@ -409,13 +497,6 @@ export default function LoanView({
             </Stack>
           </Box>
         ) : null}
-
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
-          <Heading as="h2" size="lg" mb={4}>
-            Kamat
-          </Heading>
-          <ReservationTableLoanView loan={loan} />
-        </Box>
 
         {loan.status === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
