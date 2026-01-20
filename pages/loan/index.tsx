@@ -30,6 +30,7 @@ interface LoanType {
   userId: string;
   status: LoanStatus;
   description: string | null;
+  loaner: string | null;
   startTime: Date;
   endTime: Date;
   user: {
@@ -76,11 +77,11 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
           <VStack align="start" spacing={1} flex={1}>
             <Heading size="md">
               <Link as={NextLink} href={`/loan/${loan.id}`}>
-                {loan.description || loan.user.name}
+                {loan.description || loan.loaner || loan.user.name}
               </Link>
             </Heading>
             <Text fontSize="sm" color="gray.600">
-              Varaaja: {loan.user.name}
+              Lainaaja: {loan.loaner || loan.user.name || loan.user.email}
             </Text>
           </VStack>
           <Tag colorScheme={getLoanStatusColor(derivedStatus)} size="md" flexShrink={0}>

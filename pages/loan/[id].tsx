@@ -272,8 +272,10 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
                 timeStyle: 'short',
               })}
             </Text>
-            <Text>Varaaja: {loan.user.name}</Text>
-            {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
+            <Text>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</Text>
+            {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
+              <Text>Tili: {loan.user.name}</Text>
+            )}
             {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
             <Box>
               <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">

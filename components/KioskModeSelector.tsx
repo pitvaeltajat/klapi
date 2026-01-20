@@ -3,50 +3,30 @@ import {
   Button,
   Heading,
   VStack,
-  FormControl,
-  FormLabel,
-  FormHelperText,
   Text,
   useColorModeValue,
   HStack,
 } from '@chakra-ui/react';
-import React, { useState } from 'react';
-import { useCart } from '@/contexts/CartContext';
+import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
-import LoanerAutocomplete from './LoanerAutocomplete';
 
 export default function KioskModeSelector() {
-  const [loaner, setLoaner] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
-  const { setLoaner: setCartLoaner, setUserId: setCartUserId } = useCart();
   const { setStartDate, setEndDate, setDatesSet } = useDates();
   const router = useRouter();
   const bgColor = useColorModeValue('blue.50', 'blue.900');
   const borderColor = useColorModeValue('blue.200', 'blue.700');
 
-  const handleLoanerChange = (value: string, userId?: string) => {
-    setLoaner(value);
-    setSelectedUserId(userId);
-  };
+  const handleLoanClick = () => {
+    // Set dates to now and one week from now as defaults for kiosk mode
+    const now = new Date();
+    const oneWeekLater = new Date();
+    oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+    oneWeekLater.setHours(18, 0, 0, 0);
 
-  const handleSubmit = () => {
-    if (loaner.trim()) {
-      // Set the loaner text in cart context
-      setCartLoaner(loaner);
-      // Set the userId if a user was selected, otherwise undefined (freeform entry)
-      setCartUserId(selectedUserId);
-
-      // Set dates to now and one week from now as defaults for kiosk mode
-      const now = new Date();
-      const oneWeekLater = new Date();
-      oneWeekLater.setDate(oneWeekLater.getDate() + 7);
-      oneWeekLater.setHours(18, 0, 0, 0);
-
-      setStartDate(now);
-      setEndDate(oneWeekLater);
-      setDatesSet(true);
-    }
+    setStartDate(now);
+    setEndDate(oneWeekLater);
+    setDatesSet(true);
   };
 
   return (
@@ -74,32 +54,11 @@ export default function KioskModeSelector() {
           </Text>
         </Box>
 
-        <FormControl isRequired>
-          <FormLabel>Lainaajan nimi</FormLabel>
-          <LoanerAutocomplete
-            value={loaner}
-            onChange={handleLoanerChange}
-            placeholder="Syötä nimesi tai valitse sähköposti"
-            size="lg"
-            isRequired
-            showValidationFeedback
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSubmit();
-              }
-            }}
-          />
-          <FormHelperText>
-            <Text>Laina alkaa heti ja voit valita palautuspäivän seuraavassa vaiheessa.</Text>
-          </FormHelperText>
-        </FormControl>
-
         <HStack spacing={4}>
           <Button
             colorScheme="blue"
             size="lg"
-            onClick={handleSubmit}
-            isDisabled={!loaner.trim()}
+            onClick={handleLoanClick}
             flex={1}
           >
             Lainaa
@@ -109,7 +68,6 @@ export default function KioskModeSelector() {
             size="lg"
             onClick={() => router.push('/kiosk/return')}
             flex={1}
-            isDisabled={!!selectedUserId}
           >
             Palauta
           </Button>

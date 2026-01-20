@@ -339,10 +339,12 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
             <Text fontWeight="medium" color="gray.600" fontSize="sm">
               Lainaaja
             </Text>
-            <Text fontWeight="medium">{loan.user.name}</Text>
-            <Text fontSize="sm" color="gray.600">
-              {loan.user.email}
-            </Text>
+            <Text fontWeight="medium">{loan.loaner || loan.user.name || loan.user.email}</Text>
+            {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
+              <Text fontSize="sm" color="gray.600">
+                Tili: {loan.user.name} ({loan.user.email})
+              </Text>
+            )}
           </Box>
         </SimpleGrid>
       </Box>
