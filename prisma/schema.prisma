@@ -2,10 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator erd {
-  provider = "prisma-erd-generator"
-  output = "../ERD.pdf"
-}
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output = "../ERD.pdf"
+// }
 
 datasource db {
   provider = "postgresql"
