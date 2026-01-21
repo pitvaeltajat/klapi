@@ -94,7 +94,7 @@ export default function LoanView({
 }) {
   const router = useRouter();
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { onOpen } = useDisclosure();
   const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
   const { data: session } = useSession();
   const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
@@ -115,15 +115,7 @@ export default function LoanView({
     router.push('/loan');
   };
 
-  const rejectLoan = async () => {
-    await fetch('/api/loan/rejectLoan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id }),
-    });
-    toast({ title: 'Laina hylätty', status: 'success', duration: 5000, isClosable: true });
-    router.push('/loan');
-  };
+  // Removed unused rejectLoan
 
   const loanProcessed = async () => {
     await fetch('/api/loan/loanProcessed', {

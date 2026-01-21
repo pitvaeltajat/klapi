@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await prisma.reportAffectedItem.deleteMany({ where: { reportId: report.id } });
       // Convert to array for DB insert
       const affectedArray = Object.entries(affectedItems)
-        .filter(([_, amount]) => Number(amount) > 0)
+        .filter(([, amount]) => Number(amount) > 0)
         .map(([itemId, amount]) => ({ reportId: report.id, itemId, amount: Number(amount) }));
       if (affectedArray.length > 0) {
         affected = await prisma.reportAffectedItem.createMany({ data: affectedArray });

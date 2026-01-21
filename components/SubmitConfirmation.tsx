@@ -21,7 +21,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
-import { report } from 'process';
 
 export default function SubmitConfirmation({
   isOpen,

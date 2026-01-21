@@ -131,7 +131,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                     <Text mb={2}>Lisää ilmoitus kamalle:</Text>
                     <RadioGroup defaultValue="none">
                       <Wrap direction="row">
-                        {loan.reservations.map((reservation: any) => (
+                        {loan.reservations.map((reservation: ReservationWithItem) => (
                           <WrapItem key={reservation.item.id}>
                             <Box>
                               <Radio
