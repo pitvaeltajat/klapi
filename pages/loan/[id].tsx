@@ -8,38 +8,10 @@ import {
   Heading,
   Box,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
   Link,
   Text,
   Tag,
-  Checkbox,
-  Textarea,
-  RadioGroup,
-  Radio,
-  Flex,
-  InputGroup,
-  InputRightAddon,
-  IconButton,
-  Input,
-  InputLeftAddon,
-  CheckboxGroup,
-  NumberInputField,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputStepper,
-  Wrap,
-  WrapItem,
-  Spacer,
-  Icon,
-  Divider,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
@@ -48,7 +20,13 @@ import ReservationTableLoanView from '../../components/ReservationTableLoanView'
 import ReportCard from '../../components/ReportCard';
 import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
-import { GetServerSideProps } from 'next';
+
+interface Report {
+  id: string;
+  content: string;
+  createdAt: string | Date;
+  status: string;
+}
 import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 
 interface LoanWithRelations extends Loan {
@@ -63,7 +41,7 @@ import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 
 export async function getServerSideProps(
   req: GetServerSidePropsContext,
-): Promise<GetServerSidePropsResult<{ loan: LoanWithRelations; reports: any[] }>> {
+): Promise<GetServerSidePropsResult<{ loan: LoanWithRelations; reports: Report[] }>> {
   if (!req.params?.id || typeof req.params.id !== 'string') {
     return { notFound: true };
   }
@@ -87,6 +65,12 @@ export async function getServerSideProps(
     where: {
       loanId: req.params.id,
     },
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      status: true,
+    },
   });
 
   if (!loan) {
@@ -101,7 +85,13 @@ export async function getServerSideProps(
   };
 }
 
-export default function LoanView({ loan, reports }: { loan: LoanWithRelations; reports: any[] }) {
+export default function LoanView({
+  loan,
+  reports,
+}: {
+  loan: LoanWithRelations;
+  reports: Report[];
+}) {
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();

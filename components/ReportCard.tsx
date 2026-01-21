@@ -21,11 +21,18 @@ import {
   Spacer,
   Tag,
 } from '@chakra-ui/react';
-import { Reservation } from '@prisma/client';
+import { Loan, Reservation } from '@prisma/client';
+
+interface Report {
+  id: string;
+  content: string;
+  createdAt: string | Date;
+  status: string;
+}
 
 interface ReportCardProps {
-  reports: any[];
-  loan: any;
+  reports: Report[];
+  loan: Loan & { reservations: ReservationWithItem[] };
   expandedReportId: string | null;
   setExpandedReportId: (id: string | null) => void;
   announcement: { itemId: string; content: string };
@@ -197,6 +204,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                                       reservation.item.id in affectedItems &&
                                       affectedItems[reservation.item.id] > 0
                                     }
+                                    isDisabled={inProgress || isResolved}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                       if (e.target.checked) {
                                         setAffectedItems({
@@ -226,6 +234,8 @@ const ReportCard: React.FC<ReportCardProps> = ({
                                     width="60px"
                                     borderRadius={'md'}
                                     isDisabled={
+                                      inProgress ||
+                                      isResolved ||
                                       !(reservation.item.id in affectedItems) ||
                                       affectedItems[reservation.item.id] === 0
                                     }

@@ -195,7 +195,13 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
                                 </HStack>
                                 {hasReports(loan.id) && (
                                   <Badge colorScheme="red" fontSize="xs" alignSelf="flex-end">
-                                    Sisältää käsittelemättömän raportin
+                                    Raportteja:{' '}
+                                    {
+                                      reports.filter(
+                                        (report) =>
+                                          report.loanId === loan.id && report.status !== 'RESOLVED',
+                                      ).length
+                                    }
                                   </Badge>
                                 )}
                                 <Text fontSize="xs" color="gray.600">
