@@ -45,11 +45,11 @@ import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import NextLink from 'next/link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
+import ReportCard from '../../components/ReportCard';
 import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
-import { FaMinus, FaPlus } from 'react-icons/fa';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -59,9 +59,11 @@ interface LoanWithRelations extends Loan {
   })[];
 }
 
-export const getServerSideProps: GetServerSideProps<{
-  loan: LoanWithRelations;
-}> = async (req) => {
+import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
+
+export async function getServerSideProps(
+  req: GetServerSidePropsContext,
+): Promise<GetServerSidePropsResult<{ loan: LoanWithRelations; reports: any[] }>> {
   if (!req.params?.id || typeof req.params.id !== 'string') {
     return { notFound: true };
   }
@@ -93,152 +95,100 @@ export const getServerSideProps: GetServerSideProps<{
 
   return {
     props: {
-      loan: JSON.parse(JSON.stringify(loan)),
-      reports: JSON.parse(JSON.stringify(reports)),
+      loan,
+      reports,
     },
   };
-};
+}
 
-export default function LoanView({
-  loan,
-  reports,
-}: {
-  loan: LoanWithRelations;
-  reports: {
-    affectedItems: Item[];
-    id: string;
-    content: string;
-    createdAt: Date;
-    loanId: string;
-  }[];
-}) {
+export default function LoanView({ loan, reports }: { loan: LoanWithRelations; reports: any[] }) {
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
   const { data: session } = useSession();
-
   const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
-
   const [announcement, setAnnouncement] = React.useState<{ itemId: string; content: string }>({
     itemId: '',
     content: '',
   });
-
   const isAdmin = session?.user?.group === 'ADMIN';
 
+  // API-funktiot
   const approveLoan = async () => {
-    const body = { id: loan.id };
     await fetch('/api/loan/approveLoan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(async () => {
-        toast({
-          title: 'Laina hyväksytty',
-          description: 'Laina hyväksytty onnistuneesti',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-
-        await fetch('/api/email/sendApproved', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: loan.user.email,
-            id: loan.id,
-          }),
-        });
-        router.push('/loan');
-      })
-      .catch((err) => {
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      });
-    // navigate to all loans view
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: loan.id }),
+    });
+    toast({ title: 'Laina hyväksytty', status: 'success', duration: 5000, isClosable: true });
+    router.push('/loan');
   };
 
   const rejectLoan = async () => {
-    const body = { id: loan.id };
     await fetch('/api/loan/rejectLoan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        toast({
-          title: 'Laina hylätty',
-          description: 'Laina hylätty onnistuneesti',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        router.push('/loan');
-      })
-      .catch((err) => {
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: loan.id }),
+    });
+    toast({ title: 'Laina hylätty', status: 'success', duration: 5000, isClosable: true });
+    router.push('/loan');
   };
 
   const loanProcessed = async () => {
-    const body = { id: loan.id };
     await fetch('/api/loan/loanProcessed', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        toast({
-          title: 'Kamat palautettu',
-          description: 'Lainaus saatettu päätökseen',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        router.push('/loan');
-      })
-      .catch((err) => {
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: loan.id }),
+    });
+    toast({ title: 'Kamat palautettu', status: 'success', duration: 5000, isClosable: true });
+    router.push('/loan');
+  };
+
+  // Raporttien API-funktiot
+  const setReportToProcessing = async (
+    reportId: string,
+    affectedItems?: { [key: string]: number },
+  ) => {
+    await fetch('/api/loan/editReport', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
+    });
+    toast({
+      title: 'Raportti otettu käsittelyyn',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    });
+    router.replace(router.asPath);
+  };
+  const resolveReport = async (reportId: string, affectedItems?: { [key: string]: number }) => {
+    await fetch('/api/loan/editReport', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
+    });
+    toast({
+      title: 'Raportti merkitty käsitellyksi',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    });
+    router.replace(router.asPath);
+  };
+  const sendAnnouncement = async (itemId: string, content: string) => {
+    await fetch('/api/item/createAnnouncement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ announcement: { itemId, message: content } }),
+    });
+    toast({ title: 'Ilmoitus lähetetty', status: 'success', duration: 5000, isClosable: true });
   };
 
   //Check if user is allowed to see information about this loan
   if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id)) {
-    return (
-      <>
-        <NotAuthenticated />
-      </>
-    );
+    return <NotAuthenticated />;
   }
 
   // Determine which buttons to show based on loan status and user role
@@ -247,17 +197,12 @@ export default function LoanView({
     loan.status !== 'REJECTED' &&
     loan.status !== 'INUSE' &&
     loan.status !== 'RETURNED';
-
   const canEdit = isAdmin && loan.status !== 'INUSE' && loan.status !== 'RETURNED';
-
   const canApprove =
     isAdmin && loan.status !== 'ACCEPTED' && loan.status !== 'INUSE' && loan.status !== 'RETURNED';
-
   const canMarkReturned = isAdmin && (loan.status === 'INUSE' || loan.status === 'IN_BOX');
-
   const canSeeReports = isAdmin && reports.length > 0;
 
-  // list reservations and show loan basic information and user information
   return (
     <>
       <Head>
@@ -267,7 +212,6 @@ export default function LoanView({
         <Heading as="h1" mb={4}>
           Varaus: {loan.description || 'Ei kuvausta'}
         </Heading>
-
         <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
             Perustiedot
@@ -302,202 +246,27 @@ export default function LoanView({
             </Box>
           </Stack>
         </Box>
-
         <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
             Kamat
           </Heading>
           <ReservationTableLoanView loan={loan} />
         </Box>
-
-        {canSeeReports ? (
-          <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
-            <Heading as="h2" size="lg" mb={4}>
-              Raportit
-            </Heading>
-            <Stack spacing={4}>
-              {reports.map((report) => {
-                const expanded = expandedReportId === report.id;
-                return (
-                  <Box
-                    key={report.id}
-                    p={expanded ? 6 : 4}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    bg={expanded ? 'gray.50' : 'gray.50'}
-                    boxShadow={expanded ? 'lg' : undefined}
-                  >
-                    <Text whiteSpace="pre-wrap" fontSize={expanded ? 'md' : 'sm'}>
-                      {expanded
-                        ? report.content
-                        : report.content.length < 100
-                          ? report.content
-                          : report.content.substring(0, 100) + '...'}
-                    </Text>
-                    <Text fontSize="sm" color="gray.600" mt={2}>
-                      Luotu:{' '}
-                      {new Date(report.createdAt).toLocaleString('fi-FI', {
-                        dateStyle: 'full',
-                        timeStyle: 'short',
-                      })}
-                    </Text>
-                    {!expanded ? (
-                      <Button mt={2} size="sm" onClick={() => setExpandedReportId(report.id)}>
-                        Käsittele raportti
-                      </Button>
-                    ) : (
-                      <Box>
-                        <Box
-                          mt={4}
-                          mb={2}
-                          fontWeight="semibold"
-                          fontSize="lg"
-                          borderWidth="1px"
-                          p={4}
-                          borderRadius="md"
-                          bg="white"
-                        >
-                          <Text mb={2}>Lisää ilmoitus kamalle:</Text>
-
-                          <RadioGroup defaultValue="none">
-                            <Wrap direction="row">
-                              {loan.reservations.map((reservation) => (
-                                <WrapItem key={reservation.item.id}>
-                                  <Box>
-                                    <Radio
-                                      value={reservation.item.id}
-                                      onChange={() =>
-                                        setAnnouncement({
-                                          itemId: reservation.item.id,
-                                          content: announcement.content,
-                                        })
-                                      }
-                                    >
-                                      {reservation.item.name}
-                                    </Radio>
-                                  </Box>
-                                </WrapItem>
-                              ))}
-                            </Wrap>
-                          </RadioGroup>
-                          <Textarea
-                            mt={2}
-                            placeholder="Kirjoita ilmoitus"
-                            rows={3}
-                            value={announcement.content}
-                            onChange={(e) =>
-                              setAnnouncement({
-                                itemId: announcement.itemId,
-                                content: e.target.value,
-                              })
-                            }
-                          />
-                          <Button mt={2} colorScheme="blue" size="sm">
-                            Lähetä ilmoitus
-                          </Button>
-                        </Box>
-                        <Box
-                          mt={4}
-                          mb={2}
-                          fontWeight="semibold"
-                          fontSize="lg"
-                          borderWidth="1px"
-                          p={4}
-                          borderRadius="md"
-                          bg="white"
-                        >
-                          <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
-                          <CheckboxGroup>
-                            <Stack spacing={2} direction="column">
-                              {loan.reservations.map((reservation) => (
-                                <>
-                                  <Divider />
-                                  <Wrap key={reservation.item.id}>
-                                    <WrapItem>
-                                      <Checkbox
-                                        value={reservation.item.id}
-                                        onChange={() =>
-                                          (e: React.ChangeEvent<HTMLInputElement>) => {
-                                            const checked = e.target.checked;
-                                            setAffectedItems((prev) => {
-                                              const newAffected = { ...prev };
-                                              if (checked) {
-                                                newAffected[reservation.item.id] =
-                                                  reservation.amount;
-                                              } else {
-                                                delete newAffected[reservation.item.id];
-                                              }
-                                              return newAffected;
-                                            });
-                                          }}
-                                      >
-                                        {reservation.item.name}
-                                      </Checkbox>
-                                    </WrapItem>
-                                    <Spacer />
-
-                                    <WrapItem>
-                                      <NumberInput
-                                        min={1}
-                                        max={reservation.item.amount}
-                                        defaultValue={reservation.amount}
-                                        size="sm"
-                                        width="60px"
-                                        borderRadius={'md'}
-                                        isDisabled={!(reservation.item.id in affectedItems)}
-                                        onChange={(_valueString, valueNumber) => {
-                                          setAffectedItems((prev) => {
-                                            const newAffected = { ...prev };
-                                            newAffected[reservation.item.id] = valueNumber;
-                                            return newAffected;
-                                          });
-                                        }}
-                                      >
-                                        <NumberInputField />
-                                        <NumberInputStepper>
-                                          <NumberIncrementStepper />
-                                          <NumberDecrementStepper />
-                                        </NumberInputStepper>
-                                      </NumberInput>
-                                      <Text ml={2}>kpl</Text>
-                                    </WrapItem>
-                                  </Wrap>
-                                </>
-                              ))}
-                            </Stack>
-                          </CheckboxGroup>
-                        </Box>
-                        <Wrap direction="row" spacing={2} mt={4}>
-                          <WrapItem>
-                            <Button colorScheme="orange" size="sm">
-                              Ota käsittelyyn
-                            </Button>
-                          </WrapItem>
-                          <WrapItem>
-                            <Button colorScheme="green" size="sm">
-                              Aseta käsitellyksi
-                            </Button>
-                          </WrapItem>
-
-                          <WrapItem>
-                            <Button
-                              colorScheme="gray"
-                              size="sm"
-                              onClick={() => setExpandedReportId(null)}
-                            >
-                              Käsittele myöhemmin
-                            </Button>
-                          </WrapItem>
-                        </Wrap>
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Box>
-        ) : null}
-
+        {canSeeReports && (
+          <ReportCard
+            reports={reports}
+            loan={loan}
+            expandedReportId={expandedReportId}
+            setExpandedReportId={setExpandedReportId}
+            announcement={announcement}
+            setAnnouncement={setAnnouncement}
+            affectedItems={affectedItems}
+            setAffectedItems={setAffectedItems}
+            onSetProcessing={setReportToProcessing}
+            onSetResolved={resolveReport}
+            onSendAnnouncement={sendAnnouncement}
+          />
+        )}
         {loan.status === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Heading as="h2" size="md" color="green.700">
@@ -545,24 +314,6 @@ export default function LoanView({
             </Box>
           )
         )}
-
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Hylätäänkö varaus?</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>Varaushakemus hylätään. Oletko varma?</ModalBody>
-
-            <ModalFooter>
-              <Button colorScheme="red" mr={3} onClick={rejectLoan}>
-                Hylkää
-              </Button>
-              <Button colorScheme="gray" onClick={onClose}>
-                Peruuta
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
       </Stack>
     </>
   );
