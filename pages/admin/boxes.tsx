@@ -31,7 +31,7 @@ interface BoxWithLoans extends BoxType {
 
 interface BoxesPageProps {
   boxes: BoxWithLoans[];
-  reports: { id: string; content: string; createdAt: Date; loanId: string }[];
+  reports: { id: string; content: string; createdAt: Date; loanId: string; status: string }[];
 }
 
 export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () => {
@@ -100,8 +100,9 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
     }
   };
 
+  // Only count unresolved reports
   const hasReports = (loanId: string) => {
-    return reports.some((report) => report.loanId === loanId);
+    return reports.some((report) => report.loanId === loanId && report.status !== 'RESOLVED');
   };
 
   return (
@@ -194,7 +195,7 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
                                 </HStack>
                                 {hasReports(loan.id) && (
                                   <Badge colorScheme="red" fontSize="xs" alignSelf="flex-end">
-                                    Sisältää raportin
+                                    Sisältää käsittelemättömän raportin
                                   </Badge>
                                 )}
                                 <Text fontSize="xs" color="gray.600">

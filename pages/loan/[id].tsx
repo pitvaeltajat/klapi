@@ -240,7 +240,8 @@ export default function LoanView({ loan, reports }: { loan: LoanWithRelations; r
               </Tag>
               {reports.length > 0 && (
                 <Tag colorScheme="red" size="md" flexShrink={0} ml={2}>
-                  Raportteja: {reports.length}
+                  Käsittelemättömiä raportteja:{' '}
+                  {reports.filter((r) => r.status !== 'RESOLVED').length}
                 </Tag>
               )}
             </Box>

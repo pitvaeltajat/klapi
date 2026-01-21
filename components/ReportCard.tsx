@@ -19,6 +19,7 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Spacer,
+  Tag,
 } from '@chakra-ui/react';
 import { Reservation } from '@prisma/client';
 
@@ -57,14 +58,22 @@ const ReportCard: React.FC<ReportCardProps> = ({
   onSetResolved,
   onSendAnnouncement,
 }) => {
+  // Filter out resolved reports for count
+  const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED');
   return (
     <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
       <Heading as="h2" size="lg" mb={4}>
-        Raportit
+        Raportit {unresolvedReports.length > 0 ? `(${unresolvedReports.length})` : ''}
       </Heading>
       <Stack spacing={4}>
         {reports.map((report) => {
           const expanded = expandedReportId === report.id;
+          const inProgress = report.status === 'IN_PROGRESS';
+          const isResolved = report.status === 'RESOLVED';
+          const resetSelections = () => {
+            setAnnouncement({ itemId: '', content: '' });
+            setAffectedItems({});
+          };
           return (
             <Box
               key={report.id}
@@ -88,8 +97,16 @@ const ReportCard: React.FC<ReportCardProps> = ({
                   timeStyle: 'short',
                 })}
               </Text>
-              {!expanded ? (
-                <Button mt={2} size="sm" onClick={() => setExpandedReportId(report.id)}>
+              {isResolved ? (
+                <Tag mt={2} colorScheme="green" size="sm">
+                  Ratkaistu
+                </Tag>
+              ) : !expanded ? (
+                <Button
+                  mt={2}
+                  size="sm"
+                  onClick={() => !isResolved && setExpandedReportId(report.id)}
+                >
                   Käsittele raportti
                 </Button>
               ) : (
@@ -112,6 +129,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                             <Box>
                               <Radio
                                 value={reservation.item.id}
+                                isDisabled={inProgress}
                                 onChange={() =>
                                   setAnnouncement({
                                     itemId: reservation.item.id,
@@ -131,6 +149,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                       placeholder="Kirjoita ilmoitus"
                       rows={3}
                       value={announcement.content}
+                      isDisabled={inProgress}
                       onChange={(e) =>
                         setAnnouncement({
                           itemId: announcement.itemId,
@@ -145,97 +164,103 @@ const ReportCard: React.FC<ReportCardProps> = ({
                       onClick={() => {
                         if (announcement.itemId && announcement.content) {
                           onSendAnnouncement(announcement.itemId, announcement.content);
-                          setAnnouncement({ itemId: '', content: '' });
+                          resetSelections();
                         }
                       }}
-                      isDisabled={!announcement.itemId || !announcement.content}
+                      isDisabled={!announcement.itemId || !announcement.content || inProgress}
                     >
                       Lähetä ilmoitus
                     </Button>
                   </Box>
-                  <Box
-                    mt={4}
-                    mb={2}
-                    fontWeight="semibold"
-                    fontSize="lg"
-                    borderWidth="1px"
-                    p={4}
-                    borderRadius="md"
-                    bg="white"
-                  >
-                    <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
-                    <CheckboxGroup>
-                      <Stack spacing={2} direction="column">
-                        {loan.reservations.map((reservation: ReservationWithItem) => (
-                          <React.Fragment key={reservation.item.id}>
-                            <Divider />
-                            <Wrap>
-                              <WrapItem>
-                                <Checkbox
-                                  value={reservation.item.id}
-                                  isChecked={
-                                    reservation.item.id in affectedItems &&
-                                    affectedItems[reservation.item.id] > 0
-                                  }
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    if (e.target.checked) {
-                                      setAffectedItems({
-                                        ...affectedItems,
-                                        [reservation.item.id]: reservation.amount,
-                                      });
-                                    } else {
-                                      setAffectedItems({
-                                        ...affectedItems,
-                                        [reservation.item.id]: 0,
-                                      });
+                  {!inProgress && (
+                    <Box
+                      mt={4}
+                      mb={2}
+                      fontWeight="semibold"
+                      fontSize="lg"
+                      borderWidth="1px"
+                      p={4}
+                      borderRadius="md"
+                      bg="white"
+                    >
+                      <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
+                      <CheckboxGroup>
+                        <Stack spacing={2} direction="column">
+                          {loan.reservations.map((reservation: ReservationWithItem) => (
+                            <React.Fragment key={reservation.item.id}>
+                              <Divider />
+                              <Wrap>
+                                <WrapItem>
+                                  <Checkbox
+                                    value={reservation.item.id}
+                                    isChecked={
+                                      reservation.item.id in affectedItems &&
+                                      affectedItems[reservation.item.id] > 0
                                     }
-                                  }}
-                                >
-                                  {reservation.item.name}
-                                  {affectedItems[reservation.item.id] > 0 &&
-                                    ` - ${affectedItems[reservation.item.id]} kpl`}
-                                </Checkbox>
-                              </WrapItem>
-                              <Spacer />
-                              <WrapItem>
-                                <NumberInput
-                                  min={1}
-                                  max={reservation.item.amount}
-                                  value={affectedItems[reservation.item.id] || 0}
-                                  size="sm"
-                                  width="60px"
-                                  borderRadius={'md'}
-                                  isDisabled={
-                                    !(reservation.item.id in affectedItems) ||
-                                    affectedItems[reservation.item.id] === 0
-                                  }
-                                  onChange={(_valueString: string, valueNumber: number) => {
-                                    setAffectedItems({
-                                      ...affectedItems,
-                                      [reservation.item.id]: valueNumber,
-                                    });
-                                  }}
-                                >
-                                  <NumberInputField />
-                                  <NumberInputStepper>
-                                    <NumberIncrementStepper />
-                                    <NumberDecrementStepper />
-                                  </NumberInputStepper>
-                                </NumberInput>
-                                <Text ml={2}>kpl</Text>
-                              </WrapItem>
-                            </Wrap>
-                          </React.Fragment>
-                        ))}
-                      </Stack>
-                    </CheckboxGroup>
-                  </Box>
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                      if (e.target.checked) {
+                                        setAffectedItems({
+                                          ...affectedItems,
+                                          [reservation.item.id]: reservation.amount,
+                                        });
+                                      } else {
+                                        setAffectedItems({
+                                          ...affectedItems,
+                                          [reservation.item.id]: 0,
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    {reservation.item.name}
+                                    {affectedItems[reservation.item.id] > 0 &&
+                                      ` - ${affectedItems[reservation.item.id]} kpl`}
+                                  </Checkbox>
+                                </WrapItem>
+                                <Spacer />
+                                <WrapItem>
+                                  <NumberInput
+                                    min={1}
+                                    max={reservation.item.amount}
+                                    value={affectedItems[reservation.item.id] || 0}
+                                    size="sm"
+                                    width="60px"
+                                    borderRadius={'md'}
+                                    isDisabled={
+                                      !(reservation.item.id in affectedItems) ||
+                                      affectedItems[reservation.item.id] === 0
+                                    }
+                                    onChange={(_valueString: string, valueNumber: number) => {
+                                      setAffectedItems({
+                                        ...affectedItems,
+                                        [reservation.item.id]: valueNumber,
+                                      });
+                                    }}
+                                  >
+                                    <NumberInputField />
+                                    <NumberInputStepper>
+                                      <NumberIncrementStepper />
+                                      <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                  </NumberInput>
+                                  <Text ml={2}>kpl</Text>
+                                </WrapItem>
+                              </Wrap>
+                            </React.Fragment>
+                          ))}
+                        </Stack>
+                      </CheckboxGroup>
+                    </Box>
+                  )}
                   <Wrap direction="row" spacing={2} mt={4}>
                     <WrapItem>
                       <Button
                         colorScheme="orange"
                         size="sm"
-                        onClick={() => onSetProcessing(report.id, affectedItems)}
+                        isDisabled={inProgress}
+                        onClick={() => {
+                          onSetProcessing(report.id, affectedItems);
+                          resetSelections();
+                        }}
                       >
                         Ota käsittelyyn
                       </Button>
@@ -244,8 +269,14 @@ const ReportCard: React.FC<ReportCardProps> = ({
                       <Button
                         colorScheme="green"
                         size="sm"
-                        isDisabled={Object.values(affectedItems).filter((v) => v > 0).length !== 0}
-                        onClick={() => onSetResolved(report.id, affectedItems)}
+                        isDisabled={
+                          Object.values(affectedItems).filter((v) => v > 0).length !== 0 ||
+                          isResolved
+                        }
+                        onClick={() => {
+                          onSetResolved(report.id, affectedItems);
+                          resetSelections();
+                        }}
                       >
                         Aseta käsitellyksi
                       </Button>
@@ -254,7 +285,10 @@ const ReportCard: React.FC<ReportCardProps> = ({
                       <Button
                         colorScheme="gray"
                         size="sm"
-                        onClick={() => setExpandedReportId(null)}
+                        onClick={() => {
+                          setExpandedReportId(null);
+                          resetSelections();
+                        }}
                       >
                         Käsittele myöhemmin
                       </Button>

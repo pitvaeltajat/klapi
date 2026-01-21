@@ -1,4 +1,4 @@
-import { LoanStatus, reportCreated, ReportStatus } from '@prisma/client';
+import { LoanStatus, ReportCreated, ReportStatus } from '@prisma/client';
 import Head from 'next/head';
 import {
   Box,
@@ -60,6 +60,8 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
     });
   };
 
+  // Only count unresolved reports
+  const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
   return (
     <Box
       borderWidth="1px"
@@ -85,9 +87,9 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
           <Tag colorScheme={getLoanStatusColor(loan.status)} size="md" flexShrink={0}>
             {getLoanStatusLabel(loan.status)}
           </Tag>
-          {loan.reports?.length > 0 && (
+          {unresolvedReports.length > 0 && (
             <Tag colorScheme="red" size="md" flexShrink={0}>
-              Raportteja: {loan.reports.length}
+              Raportteja: {unresolvedReports.length}
             </Tag>
           )}
         </HStack>
