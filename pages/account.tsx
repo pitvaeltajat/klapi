@@ -5,8 +5,16 @@ import { useSession, getSession } from 'next-auth/react';
 import prisma from '../utils/prisma';
 import { LoanCard } from './loan';
 import type { GetServerSideProps } from 'next';
-import type { Loan, User } from '@prisma/client';
+import type { Loan, User, ReportCreated, ReportStatus } from '@prisma/client';
 import { useState } from 'react';
+
+interface Report {
+  id: string;
+  content: string;
+  createdAt: Date;
+  created: ReportCreated;
+  status: ReportStatus;
+}
 
 interface LoanWithUser extends Loan {
   user: User;
@@ -17,6 +25,7 @@ interface LoanWithUser extends Loan {
       image: string | null;
     };
   }[];
+  reports: Report[];
 }
 
 interface AccountProps {
@@ -43,7 +52,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
     };
   }
 
-  const loans = await prisma.loan.findMany({
+  const rawLoans = await prisma.loan.findMany({
     where: { user: { id: session.user.id } },
     include: {
       user: true,
@@ -58,8 +67,27 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
           },
         },
       },
+      reports: {
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          created: true,
+          status: true,
+        },
+      },
     },
   });
+
+  // Map reports to correct enum types
+  const loans = rawLoans.map((loan) => ({
+    ...loan,
+    reports: loan.reports.map((report) => ({
+      ...report,
+      created: report.created as ReportCreated,
+      status: report.status as ReportStatus,
+    })),
+  }));
 
   // Get user email preferences
   const user = await prisma.user.findUnique({
@@ -167,8 +195,8 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
               {session?.user?.group === 'USER'
                 ? 'Käyttäjä'
                 : session?.user?.group === 'KIOSK'
-                ? 'Kaluston kone'
-                : 'Admin'}
+                  ? 'Kaluston kone'
+                  : 'Admin'}
             </Text>
           </VStack>
           <Box my={4} h="1px" bg="gray.200" />
