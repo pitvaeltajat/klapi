@@ -29,20 +29,26 @@ interface Report {
 import StartLoanConfirmation from '../../components/StartLoanConfirmation';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
-import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
+import { Loan, User, Reservation, Item, Box as BoxType, ReservationStatus } from '@prisma/client';
 import { GetServerSideProps } from 'next';
+import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
+
 import {
-  getLoanStatusLabel,
-  getLoanStatusColor,
-  deriveLoanStatus,
-} from '../../utils/loanHelpers';
-import { ReservationStatus } from '@prisma/client';
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+} from '@chakra-ui/react';
 
 interface LoanWithRelations extends Loan {
   user: User;
   box: BoxType | null;
   reservations: (Reservation & {
     item: Item;
+    status: ReservationStatus;
   })[];
 }
 
@@ -64,6 +70,14 @@ export async function getServerSideProps(
       box: true,
       reservations: {
         include: {
+          item: true,
+        },
+        select: {
+          id: true,
+          amount: true,
+          itemId: true,
+          loanId: true,
+          status: true,
           item: true,
         },
       },
@@ -216,9 +230,7 @@ export default function LoanView({
   const isKiosk = session?.user?.group === 'KIOSK';
 
   // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(
-    loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
-  );
+  const derivedStatus = deriveLoanStatus(loan.reservations.map((r) => ({ status: r.status })));
 
   //Check if user is allowed to see information about this loan
   // KIOSK users can view all loans in read-only mode
@@ -311,7 +323,18 @@ export default function LoanView({
           <Heading as="h2" size="lg" mb={4}>
             Kamat
           </Heading>
-          <ReservationTableLoanView loan={loan} />
+          <ReservationTableLoanView
+            loan={{
+              id: loan.id,
+              reservations: loan.reservations.map((r) => ({
+                id: r.id,
+                itemId: r.itemId,
+                amount: r.amount,
+                status: r.status,
+                item: { name: r.item.name },
+              })),
+            }}
+          />
         </Box>
         {canSeeReports && (
           <ReportCard
@@ -399,11 +422,7 @@ export default function LoanView({
           </ModalContent>
         </Modal>
 
-        <StartLoanConfirmation
-          isOpen={isStartLoanOpen}
-          onClose={onStartLoanClose}
-          loan={loan}
-        />
+        <StartLoanConfirmation isOpen={isStartLoanOpen} onClose={onStartLoanClose} loan={loan} />
       </Stack>
     </>
   );

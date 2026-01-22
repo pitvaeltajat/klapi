@@ -177,7 +177,7 @@ export default function SubmitConfirmation({
       successToast();
       // Kiosk users are redirected to the loan page, others to account
       if (session?.user?.group === 'KIOSK') {
-        router.push(`/loan/${result.id}`);
+        router.push(`/loan/${responseData.id}`);
       } else {
         router.push('/account');
       }
