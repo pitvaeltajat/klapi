@@ -20,8 +20,11 @@ import {
   VStack,
   Image,
   HStack,
+  Checkbox,
+  Textarea,
   useColorModeValue,
 } from '@chakra-ui/react';
+import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import type { GetServerSideProps } from 'next';
@@ -120,6 +123,9 @@ const LoanReturnCard = ({
     description: string | null;
   } | null>(null);
 
+  const [termsAccepted, setTermsAccepted] = React.useState(false);
+
+  const [reportContent, setReportContent] = React.useState('');
   // Move useColorModeValue calls to top level of component
   const itemBg = useColorModeValue('gray.50', 'gray.700');
   const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
@@ -132,6 +138,24 @@ const LoanReturnCard = ({
       setBoxInfo(box);
       onClose();
       onBoxInstructionsOpen();
+    }
+
+    if (reportContent.trim() !== '') {
+      try {
+        await fetch('/api/loan/createReport', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            loanId: loan.id,
+            content: reportContent,
+            created: 'AFTER_LOAN',
+          }),
+        });
+      } catch (error) {
+        console.error('Virhe raportin lähettämisessä:', error);
+      }
     }
   };
 
@@ -211,11 +235,43 @@ const LoanReturnCard = ({
                 ))}
               </VStack>
 
+              <Box p={6} bg="gray.50" borderRadius="lg" borderWidth="2px" borderColor="gray.200">
+                <Text fontSize="md" lineHeight="tall">
+                  Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
+                  siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden vahinkojen
+                  osalta et ole lähtökohtaisesti korvausvastuussa kunhan raportoit niistä.
+                </Text>
+                <Text fontSize="md" lineHeight="tall" mt={2} fontWeight="bold" color={'red.600'}>
+                  <IoMdAlert style={{ display: 'inline', marginRight: '8px' }} />
+                  Huomio: Tapahtuneiden vahinkojen ilmoittamatta jättäminen johtaa automaattisesti
+                  kaluston lainauskieltoon sekä korvausvastuuseen vahingoittuneen kaluston koko
+                  arvoon asti.
+                </Text>
+                <Textarea
+                  placeholder="Kirjoita raportti tähän..."
+                  value={reportContent}
+                  onChange={(e) => setReportContent(e.target.value)}
+                  size="lg"
+                  resize="vertical"
+                  minHeight="120px"
+                />
+              </Box>
+
               <Box p={6} bg={infoBg} borderRadius="lg" borderWidth="2px" borderColor="blue.200">
                 <Text fontSize="md" lineHeight="tall">
                   Vahvistamalla palautuksen otat vastuun siitä, että kaikki tavarat ovat mukana,
-                  puhtaita ja toimivassa kunnossa. Palauta tavarat oikeaan lokeroon.
+                  puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna. Palauta
+                  tavarat oikeaan laatikkoon.
                 </Text>
+
+                <Checkbox
+                  mt={4}
+                  isRequired
+                  isChecked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                >
+                  Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.
+                </Checkbox>
               </Box>
 
               <Button
@@ -224,6 +280,7 @@ const LoanReturnCard = ({
                 onClick={handleConfirmReturn}
                 height="60px"
                 fontSize="xl"
+                isDisabled={!termsAccepted}
               >
                 Vahvista palautus
               </Button>

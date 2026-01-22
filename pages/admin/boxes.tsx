@@ -33,6 +33,7 @@ interface BoxWithLoans extends BoxType {
 
 interface BoxesPageProps {
   boxes: BoxWithLoans[];
+  reports: { id: string; content: string; createdAt: Date; loanId: string; status: string }[];
 }
 
 export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () => {
@@ -61,14 +62,17 @@ export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () =
     },
   });
 
+  const reports = await prisma.report.findMany();
+
   return {
     props: {
       boxes: JSON.parse(JSON.stringify(boxes)),
+      reports: JSON.parse(JSON.stringify(reports)),
     },
   };
 };
 
-export default function BoxesPage({ boxes }: BoxesPageProps) {
+export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
   const { data: session } = useSession();
 
   if (session?.user?.group !== 'ADMIN') {
@@ -78,6 +82,11 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
   // Helper to get derived status for a loan
   const getDerivedStatus = (loan: LoanWithReservations) => {
     return deriveLoanStatus(loan.reservations);
+  };
+
+  // Only count unresolved reports
+  const hasReports = (loanId: string) => {
+    return reports.some((report) => report.loanId === loanId && report.status !== 'RESOLVED');
   };
 
   return (
@@ -177,6 +186,17 @@ export default function BoxesPage({ boxes }: BoxesPageProps) {
                                     {getLoanStatusLabel(getDerivedStatus(loan))}
                                   </Badge>
                                 </HStack>
+                                {hasReports(loan.id) && (
+                                  <Badge colorScheme="red" fontSize="xs" alignSelf="flex-end">
+                                    Raportteja:{' '}
+                                    {
+                                      reports.filter(
+                                        (report) =>
+                                          report.loanId === loan.id && report.status !== 'RESOLVED',
+                                      ).length
+                                    }
+                                  </Badge>
+                                )}
                                 <Text fontSize="xs" color="gray.600">
                                   {loan.reservations
                                     .filter((r) => r.status === ReservationStatus.IN_BOX)

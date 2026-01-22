@@ -2,6 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output = "../ERD.pdf"
+// }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -50,24 +55,27 @@ model User {
   sessions                 Session[]
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
+model Item {
+  id                  String               @id @default(cuid())
+  name                String
+  description         String?
+  amount              Int
+  locationId          String?
+  type                ItemType             @default(normal)
+  location            Location?            @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservations        Reservation[]
+  categories          Category[]           @relation("CategoryToItem")
+  announcements       Announcement[]
+  reportAffectedItems ReportAffectedItem[]
 }
 
-model Item {
-  id           String        @id @default(cuid())
-  name         String
-  description  String?
-  amount       Int
-  locationId   String?
-  type         ItemType      @default(normal)
-  location     Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
-  categories   Category[]    @relation("CategoryToItem")
+model Announcement {
+  id        String    @id @default(cuid())
+  message   String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String?
 }
 
 model Location {
@@ -115,6 +123,29 @@ model Loan {
   box          Box?          @relation(fields: [boxId], references: [id])
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  reports      Report[]
+}
+
+model Report {
+  id            String               @id @default(cuid())
+  content       String
+  status        ReportStatus         @default(OPEN)
+  createdAt     DateTime             @default(now())
+  created       ReportCreated        @default(AFTER_LOAN)
+  loanId        String
+  loan          Loan                 @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  affectedItems ReportAffectedItem[]
+}
+
+model ReportAffectedItem {
+  id       String @id @default(cuid())
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId String
+  item     Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId   String
+  amount   Int
+
+  @@unique([reportId, itemId])
 }
 
 enum Group {
@@ -126,6 +157,17 @@ enum Group {
 enum ItemType {
   normal
   temporary
+}
+
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum ReportCreated{
+  BEFORE_LOAN
+  AFTER_LOAN
 }
 
 enum LoanStatus {

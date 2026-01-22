@@ -8,13 +8,6 @@ import {
   Heading,
   Box,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
   Link,
   Text,
@@ -25,29 +18,45 @@ import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import NextLink from 'next/link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
+import ReportCard from '../../components/ReportCard';
+
+interface Report {
+  id: string;
+  content: string;
+  createdAt: string | Date;
+  status: string;
+}
 import StartLoanConfirmation from '../../components/StartLoanConfirmation';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
-import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
+import { Loan, User, Reservation, Item, Box as BoxType, ReservationStatus } from '@prisma/client';
 import { GetServerSideProps } from 'next';
+import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
+
 import {
-  getLoanStatusLabel,
-  getLoanStatusColor,
-  deriveLoanStatus,
-} from '../../utils/loanHelpers';
-import { ReservationStatus } from '@prisma/client';
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+} from '@chakra-ui/react';
 
 interface LoanWithRelations extends Loan {
   user: User;
   box: BoxType | null;
   reservations: (Reservation & {
     item: Item;
+    status: ReservationStatus;
   })[];
 }
 
-export const getServerSideProps: GetServerSideProps<{
-  loan: LoanWithRelations;
-}> = async (req) => {
+import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
+
+export async function getServerSideProps(
+  req: GetServerSidePropsContext,
+): Promise<GetServerSidePropsResult<{ loan: LoanWithRelations; reports: Report[] }>> {
   if (!req.params?.id || typeof req.params.id !== 'string') {
     return { notFound: true };
   }
@@ -63,7 +72,27 @@ export const getServerSideProps: GetServerSideProps<{
         include: {
           item: true,
         },
+        select: {
+          id: true,
+          amount: true,
+          itemId: true,
+          loanId: true,
+          status: true,
+          item: true,
+        },
       },
+    },
+  });
+
+  const reports = await prisma.report.findMany({
+    where: {
+      loanId: req.params.id,
+    },
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      status: true,
     },
   });
 
@@ -73,14 +102,27 @@ export const getServerSideProps: GetServerSideProps<{
 
   return {
     props: {
-      loan: JSON.parse(JSON.stringify(loan)),
+      loan,
+      reports,
     },
   };
-};
+}
 
-export default function LoanView({ loan }: { loan: LoanWithRelations }) {
+export default function LoanView({
+  loan,
+  reports,
+}: {
+  loan: LoanWithRelations;
+  reports: Report[];
+}) {
   const router = useRouter();
   const toast = useToast();
+  const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
+  const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
+  const [announcement, setAnnouncement] = React.useState<{ itemId: string; content: string }>({
+    itemId: '',
+    content: '',
+  });
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isStartLoanOpen,
@@ -92,47 +134,15 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
 
   const isAdmin = session?.user?.group === 'ADMIN';
 
+  // API-funktiot
   const approveLoan = async () => {
-    const body = { id: loan.id };
     await fetch('/api/loan/approveLoan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(async () => {
-        toast({
-          title: 'Laina hyväksytty',
-          description: 'Laina hyväksytty onnistuneesti',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-
-        await fetch('/api/email/sendApproved', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: loan.user.email,
-            id: loan.id,
-          }),
-        });
-        router.push('/loan');
-      })
-      .catch((err) => {
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      });
-    // navigate to all loans view
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: loan.id }),
+    });
+    toast({ title: 'Laina hyväksytty', status: 'success', duration: 5000, isClosable: true });
+    router.push('/loan');
   };
 
   const rejectLoan = async () => {
@@ -167,42 +177,60 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   };
 
   const loanProcessed = async () => {
-    const body = { id: loan.id };
     await fetch('/api/loan/loanProcessed', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        toast({
-          title: 'Kamat palautettu',
-          description: 'Lainaus saatettu päätökseen',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        router.push('/loan');
-      })
-      .catch((err) => {
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: loan.id }),
+    });
+    toast({ title: 'Kamat palautettu', status: 'success', duration: 5000, isClosable: true });
+    router.push('/loan');
+  };
+
+  // Raporttien API-funktiot
+  const setReportToProcessing = async (
+    reportId: string,
+    affectedItems?: { [key: string]: number },
+  ) => {
+    await fetch('/api/loan/editReport', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
+    });
+    toast({
+      title: 'Raportti otettu käsittelyyn',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    });
+    router.replace(router.asPath);
+  };
+  const resolveReport = async (reportId: string, affectedItems?: { [key: string]: number }) => {
+    await fetch('/api/loan/editReport', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
+    });
+    toast({
+      title: 'Raportti merkitty käsitellyksi',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    });
+    router.replace(router.asPath);
+  };
+  const sendAnnouncement = async (itemId: string, content: string) => {
+    await fetch('/api/item/createAnnouncement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ announcement: { itemId, message: content } }),
+    });
+    toast({ title: 'Ilmoitus lähetetty', status: 'success', duration: 5000, isClosable: true });
   };
 
   const isKiosk = session?.user?.group === 'KIOSK';
 
   // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(
-    loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
-  );
+  const derivedStatus = deriveLoanStatus(loan.reservations.map((r) => ({ status: r.status })));
 
   //Check if user is allowed to see information about this loan
   // KIOSK users can view all loans in read-only mode
@@ -235,8 +263,8 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
   const canStartUse = derivedStatus === 'ACCEPTED';
 
   const canMarkReturned = isAdmin && (derivedStatus === 'INUSE' || derivedStatus === 'IN_BOX');
+  const canSeeReports = isAdmin && reports.length > 0;
 
-  // list reservations and show loan basic information and user information
   return (
     <>
       <Head>
@@ -281,6 +309,12 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
               <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
                 {getLoanStatusLabel(derivedStatus)}
               </Tag>
+              {reports.length > 0 && (
+                <Tag colorScheme="red" size="md" flexShrink={0} ml={2}>
+                  Käsittelemättömiä raportteja:{' '}
+                  {reports.filter((r) => r.status !== 'RESOLVED').length}
+                </Tag>
+              )}
             </Box>
           </Stack>
         </Box>
@@ -289,10 +323,34 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           <Heading as="h2" size="lg" mb={4}>
             Kamat
           </Heading>
-          <ReservationTableLoanView loan={loan} />
+          <ReservationTableLoanView
+            loan={{
+              id: loan.id,
+              reservations: loan.reservations.map((r) => ({
+                id: r.id,
+                itemId: r.itemId,
+                amount: r.amount,
+                status: r.status,
+                item: { name: r.item.name },
+              })),
+            }}
+          />
         </Box>
-
-        {/* Action buttons */}
+        {canSeeReports && (
+          <ReportCard
+            reports={reports}
+            loan={loan}
+            expandedReportId={expandedReportId}
+            setExpandedReportId={setExpandedReportId}
+            announcement={announcement}
+            setAnnouncement={setAnnouncement}
+            affectedItems={affectedItems}
+            setAffectedItems={setAffectedItems}
+            onSetProcessing={setReportToProcessing}
+            onSetResolved={resolveReport}
+            onSendAnnouncement={sendAnnouncement}
+          />
+        )}
         {derivedStatus === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Heading as="h2" size="md" color="green.700">
@@ -364,11 +422,7 @@ export default function LoanView({ loan }: { loan: LoanWithRelations }) {
           </ModalContent>
         </Modal>
 
-        <StartLoanConfirmation
-          isOpen={isStartLoanOpen}
-          onClose={onStartLoanClose}
-          loan={loan}
-        />
+        <StartLoanConfirmation isOpen={isStartLoanOpen} onClose={onStartLoanClose} loan={loan} />
       </Stack>
     </>
   );

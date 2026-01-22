@@ -36,10 +36,14 @@ export default function SubmitConfirmation({
   isOpen,
   onClose,
   closeDrawer,
+  setReportContent,
+  reportContent,
 }: {
   isOpen: boolean;
   onClose: () => void;
   closeDrawer: () => void;
+  setReportContent: React.Dispatch<React.SetStateAction<string>>;
+  reportContent?: string;
 }) {
   const { state: dates } = useDates();
   const { state: cart, clearCart } = useCart();
@@ -151,14 +155,29 @@ export default function SubmitConfirmation({
       },
       body: JSON.stringify(body),
     });
+    const responseData = await response.json();
 
     if (response.ok) {
-      const result = await response.json();
+      if (reportContent && reportContent.trim().length > 0) {
+        await fetch('/api/loan/createReport', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: reportContent,
+            loanId: responseData.id,
+            created: 'BEFORE_LOAN',
+          }),
+        });
+      }
+
+      setReportContent('');
       clearCart();
       successToast();
       // Kiosk users are redirected to the loan page, others to account
       if (session?.user?.group === 'KIOSK') {
-        router.push(`/loan/${result.id}`);
+        router.push(`/loan/${responseData.id}`);
       } else {
         router.push('/account');
       }

@@ -1,4 +1,4 @@
-import { LoanStatus, ReservationStatus } from '@prisma/client';
+import { LoanStatus, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import Head from 'next/head';
 import {
   Box,
@@ -44,6 +44,13 @@ interface LoanType {
       name: string;
     };
   }[];
+  reports: {
+    id: string;
+    content: string;
+    createdAt: Date;
+    created: ReportCreated;
+    status: ReportStatus;
+  }[];
 }
 
 export const LoanCard = ({ loan }: { loan: LoanType }) => {
@@ -59,6 +66,8 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
     });
   };
 
+  // Only count unresolved reports
+  const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
   // Derive the loan status from reservations
   const derivedStatus = deriveLoanStatus(loan.reservations);
 
@@ -87,6 +96,11 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
           <Tag colorScheme={getLoanStatusColor(derivedStatus)} size="md" flexShrink={0}>
             {getLoanStatusLabel(derivedStatus)}
           </Tag>
+          {unresolvedReports.length > 0 && (
+            <Tag colorScheme="red" size="md" flexShrink={0}>
+              Raportteja: {unresolvedReports.length}
+            </Tag>
+          )}
         </HStack>
 
         <VStack spacing={2} fontSize="sm" color="gray.600" align="stretch">

@@ -40,12 +40,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const items = await prisma.item.findMany({});
-  const reservations = await prisma.reservation.findMany({
-    include: {
-      item: true,
-      loan: true,
-    },
-  });
+  let reservations;
+  try {
+    reservations = await prisma.reservation.findMany({
+      include: {
+        item: true,
+        loan: true,
+      },
+    });
+  } catch (e) {
+    // Try to log all reservation IDs and their loanId for debugging
+    const allReservations = await prisma.reservation.findMany({});
+    console.error(
+      'Reservation error! All reservation IDs and loanIds:',
+      allReservations.map((r) => ({ id: r.id, loanId: r.loanId })),
+    );
+    throw e;
+  }
 
   const availabilities: Record<string, { byDate: Record<string, number>; available: number }> = {};
 
@@ -76,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           for (const reservation of itemReservations) {
             const loanStart = new Date(reservation.loan.startTime);
             const loanEnd = new Date(reservation.loan.endTime);
-            
+
             const overlaps = loanStart <= dayEnd && loanEnd >= dayStart;
             const blocksAvailability =
               reservation.status !== 'REJECTED' &&
@@ -108,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         for (const reservation of itemReservations) {
           const loanStart = new Date(reservation.loan.startTime);
           const loanEnd = new Date(reservation.loan.endTime);
-          
+
           const overlaps = loanStart <= dateEnd && loanEnd >= date;
           const blocksAvailability =
             reservation.status !== 'REJECTED' &&

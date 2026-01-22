@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.1",
     "@types/bcrypt": "^6.0.0",
@@ -49,6 +50,8 @@
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^27.4.0",
     "prisma": "^6.19.2",
+    "prisma-erd-generator": "^2.4.2",
+    "puppeteer": "^24.35.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.0",
