@@ -72,14 +72,6 @@ export async function getServerSideProps(
         include: {
           item: true,
         },
-        select: {
-          id: true,
-          amount: true,
-          itemId: true,
-          loanId: true,
-          status: true,
-          item: true,
-        },
       },
     },
   });
