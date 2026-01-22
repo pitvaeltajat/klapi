@@ -1,11 +1,12 @@
 import Auth from './auth';
 import Head from 'next/head';
-import { Heading, Stack, Box, Text, VStack, HStack, Switch } from '@chakra-ui/react';
+import { Heading, Stack, Box, Text, VStack, HStack, Switch, useColorModeValue } from '@chakra-ui/react';
 import { useSession, getSession } from 'next-auth/react';
 import prisma from '../utils/prisma';
 import { LoanCard } from './loan';
+import Breadcrumbs from '../components/Breadcrumbs';
 import type { GetServerSideProps } from 'next';
-import type { Loan, User, ReportCreated, ReportStatus } from '@prisma/client';
+import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import { useState } from 'react';
 
 interface Report {
@@ -19,10 +20,10 @@ interface Report {
 interface LoanWithUser extends Loan {
   user: User;
   reservations: {
+    status: ReservationStatus;
     item: {
       id: string;
       name: string;
-      image: string | null;
     };
   }[];
   reports: Report[];
@@ -62,7 +63,6 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
             select: {
               id: true,
               name: true,
-              image: true,
             },
           },
         },
@@ -123,6 +123,10 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
   );
   const [isSaving, setIsSaving] = useState(false);
 
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const dividerColor = useColorModeValue('gray.200', 'gray.600');
+
   const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime)),
   );
@@ -172,18 +176,19 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
       <Head>
         <title>Oma tili | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: 'Oma tili' }]} />
       <Heading as="h1" size="xl" mb={6}>
         Oma tili
       </Heading>
 
       <VStack spacing={6} align="stretch">
         <Box
-          bg="white"
+          bg={cardBg}
           p={6}
           borderRadius="md"
           boxShadow="sm"
           borderWidth="1px"
-          borderColor="gray.200"
+          borderColor={cardBorderColor}
         >
           <VStack align="start" spacing={3}>
             <Heading size="lg">{session?.user?.name}</Heading>
@@ -199,25 +204,32 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                   : 'Admin'}
             </Text>
           </VStack>
-          <Box my={4} h="1px" bg="gray.200" />
+          <Box my={4} h="1px" bg={dividerColor} />
           <Auth />
         </Box>
 
-        {session?.user?.group === 'ADMIN' && (
-          <Box
-            bg="white"
-            p={6}
-            borderRadius="md"
-            boxShadow="sm"
-            borderWidth="1px"
-            borderColor="gray.200"
-          >
-            <Heading size="md" mb={4}>
-              Sähköposti-ilmoitukset
-            </Heading>
-            <VStack align="start" spacing={4}>
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="md"
+          boxShadow="sm"
+          borderWidth="1px"
+          borderColor={cardBorderColor}
+        >
+          <Heading size="md" mb={4}>
+            Sähköposti-ilmoitukset
+          </Heading>
+          <VStack align="start" spacing={4}>
+            {session?.user?.group === 'ADMIN' && (
               <HStack justify="space-between" w="full">
-                <Text fontSize="sm">Viikottainen muistutus bokseissa olevista varauksista</Text>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    Viikottainen muistutus bokseissa olevista varauksista
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Vain admin-käyttäjille
+                  </Text>
+                </VStack>
                 <Switch
                   isChecked={emailWeeklyReminder}
                   isDisabled={isSaving}
@@ -227,8 +239,17 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                   colorScheme="blue"
                 />
               </HStack>
+            )}
+            {session?.user?.group === 'ADMIN' && (
               <HStack justify="space-between" w="full">
-                <Text fontSize="sm">Uudet varaushakemukset</Text>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    Uudet varaukset
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Ilmoitukset uusista varauksista (myös kiosk-käytöstä)
+                  </Text>
+                </VStack>
                 <Switch
                   isChecked={emailNewLoanNotification}
                   isDisabled={isSaving}
@@ -238,26 +259,68 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                   colorScheme="blue"
                 />
               </HStack>
-            </VStack>
+            )}
+            {session?.user?.group !== 'ADMIN' && (
+              <>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Ilmoitukset uusista varauksista
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Sähköpostit kun luot uuden varauksen
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailNewLoanNotification}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('newLoan', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Muistutukset varauksista
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Muistutukset varauksiesi päättymisestä
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailWeeklyReminder}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('weekly', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+              </>
+            )}
+          </VStack>
+        </Box>
+
+        {session?.user?.group !== 'KIOSK' && (
+          <Box>
+            <Heading size="md" mb={4}>
+              Oma varaushistoria
+            </Heading>
+            {loansSorted.length > 0 ? (
+              <Stack spacing={4}>
+                {loansSorted.map((loan) => (
+                  <LoanCard key={loan.id} loan={loan} />
+                ))}
+              </Stack>
+            ) : (
+              <Text color="gray.500" textAlign="center" py={8}>
+                Ei varauksia
+              </Text>
+            )}
           </Box>
         )}
-
-        <Box>
-          <Heading size="md" mb={4}>
-            Oma varaushistoria
-          </Heading>
-          {loansSorted.length > 0 ? (
-            <Stack spacing={4}>
-              {loansSorted.map((loan) => (
-                <LoanCard key={loan.id} loan={loan} />
-              ))}
-            </Stack>
-          ) : (
-            <Text color="gray.500" textAlign="center" py={8}>
-              Ei varauksia
-            </Text>
-          )}
-        </Box>
       </VStack>
     </>
   );

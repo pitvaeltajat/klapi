@@ -22,7 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       name: req.body.name,
       description: req.body.description,
       amount: req.body.amount,
-      image: req.body.image ? req.body.image : undefined,
       categories: {
         connectOrCreate: req.body.categories.map((category: Category) => ({
           create: { name: category.name },

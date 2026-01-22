@@ -16,7 +16,9 @@ import {
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
-import { Box as BoxType, Item, Reservation, Loan } from '@prisma/client';
+import Breadcrumbs from '../../components/Breadcrumbs';
+import { Box as BoxType, Item, Reservation, Loan, ReservationStatus } from '@prisma/client';
+import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 import { GetServerSideProps } from 'next';
 
 interface LoanWithReservations extends Loan {
@@ -46,8 +48,11 @@ export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () =
           },
         },
         where: {
-          status: {
-            in: ['IN_BOX'],
+          // Get loans that have at least one IN_BOX reservation
+          reservations: {
+            some: {
+              status: ReservationStatus.IN_BOX,
+            },
           },
         },
       },
@@ -74,30 +79,9 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
     return <NotAuthenticated />;
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACCEPTED':
-        return 'green';
-      case 'INUSE':
-        return 'blue';
-      case 'IN_BOX':
-        return 'purple';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'ACCEPTED':
-        return 'Hyväksytty';
-      case 'INUSE':
-        return 'Käytössä';
-      case 'IN_BOX':
-        return 'Laatikossa';
-      default:
-        return status;
-    }
+  // Helper to get derived status for a loan
+  const getDerivedStatus = (loan: LoanWithReservations) => {
+    return deriveLoanStatus(loan.reservations);
   };
 
   // Only count unresolved reports
@@ -110,6 +94,12 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
       <Head>
         <title>Laatikot | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Laatikot' },
+        ]}
+      />
       <Heading as="h1" size="xl" mb={6}>
         Laatikot
       </Heading>
@@ -189,8 +179,11 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
                                   <Text fontWeight="medium" fontSize="sm">
                                     {loan.description || 'Ei kuvausta'}
                                   </Text>
-                                  <Badge colorScheme={getStatusColor(loan.status)} fontSize="xs">
-                                    {getStatusText(loan.status)}
+                                  <Badge
+                                    colorScheme={getLoanStatusColor(getDerivedStatus(loan))}
+                                    fontSize="xs"
+                                  >
+                                    {getLoanStatusLabel(getDerivedStatus(loan))}
                                   </Badge>
                                 </HStack>
                                 {hasReports(loan.id) && (
@@ -206,6 +199,7 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
                                 )}
                                 <Text fontSize="xs" color="gray.600">
                                   {loan.reservations
+                                    .filter((r) => r.status === ReservationStatus.IN_BOX)
                                     .map((r) => `${r.item.name} (${r.amount})`)
                                     .join(', ')}
                                 </Text>

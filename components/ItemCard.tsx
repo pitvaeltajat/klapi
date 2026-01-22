@@ -18,6 +18,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@chakra-ui/react';
 import { useCallback, useMemo, memo } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
+import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 
 const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps) {
   const {
@@ -27,6 +28,8 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     state: { items: cartItems },
   } = useCart();
   const toast = useToast();
+  const imageSrc = useItemImage(item.id);
+  const placeholder = usePlaceholder();
 
   const amountInCart = useMemo(
     () => cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0,
@@ -79,12 +82,12 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     >
       <AspectRatio ratio={5 / 3}>
         <Image
-          src={item.image}
+          src={imageSrc}
           alt={`Picture of ${item.name}`}
           roundedTop="lg"
           objectFit="cover"
           objectPosition="center"
-          fallbackSrc="https://placehold.co/500x300"
+          fallbackSrc={placeholder}
         />
       </AspectRatio>
 

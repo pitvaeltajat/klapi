@@ -17,6 +17,7 @@ export interface DatesState {
   endDate: Date;
   datesSet: boolean;
   selectedUserId: string | null;
+  browseMode: boolean;
 }
 
 export interface CartItem {
@@ -39,7 +40,6 @@ export interface ItemCardProps {
     name: string;
     description?: string;
     amount: number;
-    image?: string;
     categories: {
       id: string;
       name: string;

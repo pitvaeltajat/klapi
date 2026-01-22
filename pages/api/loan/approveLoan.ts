@@ -1,4 +1,4 @@
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '../../../utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
@@ -14,22 +14,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { id } = req.body;
-  await prisma.loan.findMany({
-    where: { id: id },
-    include: {
-      user: true,
-      reservations: {
-        include: {
-          item: true,
-        },
-      },
-    },
-  });
 
+  // Update loan status and all reservation statuses to INUSE
   const result = await prisma.loan.update({
     where: { id: id },
     data: {
-      status: LoanStatus.ACCEPTED,
+      status: LoanStatus.INUSE,
+      reservations: {
+        updateMany: {
+          where: {},
+          data: {
+            status: ReservationStatus.INUSE,
+          },
+        },
+      },
     },
   });
   res.status(200).json(result);

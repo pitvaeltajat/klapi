@@ -2,6 +2,7 @@ import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
+import { ReservationStatus } from '@prisma/client';
 import 'dotenv/config';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -25,7 +26,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
     // Check the session user's group (who is creating the loan), not the target user's group
-    const status = session.user.group === 'KIOSK' ? 'INUSE' : 'ACCEPTED';
+    const loanStatus = session.user.group === 'KIOSK' ? 'INUSE' : 'ACCEPTED';
+    const reservationStatus: ReservationStatus =
+      session.user.group === 'KIOSK' ? ReservationStatus.INUSE : ReservationStatus.ACCEPTED;
 
     // Ensure referenced items exist; for custom items (client-generated ids)
     // create temporary Item records and replace itemId accordingly.
@@ -52,9 +55,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       processedReservations.push({ itemId, amount: r.amount });
     }
 
+    // Find any IN_BOX reservations for the items being reserved
+    // These need to be marked as RETURNED since the items are being taken from the box
+    const itemIds = processedReservations.map((r) => r.itemId);
+    const inBoxReservations = await prisma.reservation.findMany({
+      where: {
+        itemId: { in: itemIds },
+        status: ReservationStatus.IN_BOX,
+      },
+    });
+
+    // Mark IN_BOX reservations as RETURNED (items are being picked up from box)
+    if (inBoxReservations.length > 0) {
+      await prisma.reservation.updateMany({
+        where: {
+          id: { in: inBoxReservations.map((r) => r.id) },
+        },
+        data: {
+          status: ReservationStatus.RETURNED,
+        },
+      });
+    }
+
     const createReservations = processedReservations.map((r) => ({
       amount: r.amount,
       item: { connect: { id: r.itemId } },
+      status: reservationStatus,
     }));
 
     const result = await prisma.loan.create({
@@ -65,33 +91,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         user: { connect: { id: userId } },
         description,
         loaner,
-        status,
+        status: loanStatus,
       },
     });
 
-    // Only send emails for non-kiosk loans (ACCEPTED status)
-    // Kiosk loans (INUSE) are immediate and don't need approval notifications
-    if (status === 'ACCEPTED') {
-      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http')
-        ? process.env.NEXT_PUBLIC_VERCEL_URL
-        : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http')
+      ? process.env.NEXT_PUBLIC_VERCEL_URL
+      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
 
-      try {
-        await fetch(`${baseUrl}/api/email/sendNewLoanToUser`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: result.id,
-            email: user.email,
-          }),
+    // Send emails for ACCEPTED loans (regular user loans)
+    if (loanStatus === 'ACCEPTED') {
+      // Send email to user only if they have emailNewLoanNotification enabled
+      if (user.email && user.group !== 'ADMIN') {
+        const userPrefs = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { emailNewLoanNotification: true },
         });
-      } catch (error) {
-        console.error('Failed to send user email:', error);
-        // Continue execution even if email fails
+
+        if (userPrefs?.emailNewLoanNotification !== false) {
+          try {
+            await fetch(`${baseUrl}/api/email/sendNewLoanToUser`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: result.id,
+                email: user.email,
+              }),
+            });
+          } catch (error) {
+            console.error('Failed to send user email:', error);
+            // Continue execution even if email fails
+          }
+        }
       }
 
+      // Send admin notification for regular loans
       try {
         await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
           method: 'POST',
@@ -105,6 +141,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       } catch (error) {
         console.error('Failed to send admin email:', error);
+        // Continue execution even if email fails
+      }
+    }
+
+    // Send admin notification for kiosk loans (INUSE status)
+    if (loanStatus === 'INUSE' && session.user.group === 'KIOSK') {
+      try {
+        await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: result.id,
+            loanCreator: user.name || 'Kiosk-käyttäjä',
+          }),
+        });
+      } catch (error) {
+        console.error('Failed to send admin email for kiosk loan:', error);
         // Continue execution even if email fails
       }
     }

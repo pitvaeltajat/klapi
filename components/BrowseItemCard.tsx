@@ -1,6 +1,7 @@
 import { Box, Flex, Image, Link, AspectRatio, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { Item, Category, ItemType } from '@prisma/client';
+import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
@@ -12,6 +13,9 @@ interface BrowseItemCardProps {
 }
 
 export default function BrowseItemCard({ item }: BrowseItemCardProps) {
+  const imageSrc = useItemImage(item.id);
+  const placeholder = usePlaceholder();
+
   return (
     <Box w="full" alignItems="center" justifyContent="center" key={item.id}>
       <Box
@@ -30,12 +34,12 @@ export default function BrowseItemCard({ item }: BrowseItemCardProps) {
       >
         <AspectRatio ratio={5 / 3}>
           <Image
-            src={item.image ?? 'https://placehold.co/500x300'}
+            src={imageSrc}
             alt={`Picture of ${item.name}`}
             roundedTop="lg"
             objectFit="cover"
             objectPosition="center"
-            fallbackSrc="https://placehold.co/500x300"
+            fallbackSrc={placeholder}
           />
         </AspectRatio>
 

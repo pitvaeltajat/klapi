@@ -13,9 +13,10 @@ import {
   useDisclosure,
   Flex,
   Icon,
-  Select
+  Select,
+  useColorModeValue,
 } from '@chakra-ui/react';
-import { FaSearch, FaInfoCircle } from 'react-icons/fa';
+import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
 import { Item, Category, Loan, Reservation } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
@@ -41,6 +42,12 @@ export default function ItemBrowser({
   const [search, setSearch] = React.useState('');
   const [category, setCategory] = React.useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const infoBg = useColorModeValue('blue.50', 'blue.900');
+  const infoBorderColor = useColorModeValue('blue.400', 'blue.500');
+  const infoIconColor = useColorModeValue('blue.500', 'blue.300');
+  const linkColor = useColorModeValue('blue.600', 'blue.300');
+  const linkHoverColor = useColorModeValue('blue.700', 'blue.200');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -69,12 +76,20 @@ export default function ItemBrowser({
             onChange={handleChange}
           />
           <InputRightElement>
-            <FaSearch />
+            {search ? (
+              <FaTimes
+                cursor="pointer"
+                onClick={() => setSearch('')}
+                aria-label="Tyhjennä haku"
+              />
+            ) : (
+              <FaSearch />
+            )}
           </InputRightElement>
         </InputGroup>
       </Box>
-      <Box padding="2em" paddingLeft={0}>
-        <Wrap padding="4px" display={{ base: 'none', md: 'block' }}>
+      <Box padding="2em" paddingLeft={0} display={{ base: 'none', md: 'block' }}>
+        <Wrap padding="4px" >
           <WrapItem key="all">
             <Button
               onClick={() => setCategory('')}
@@ -84,11 +99,11 @@ export default function ItemBrowser({
               Kaikki
             </Button>
           </WrapItem>
-          
+
           {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
             <WrapItem key={cat.id}>
               <Button
-                onClick={() => setCategory(cat.name)}
+                onClick={() => setCategory(category === cat.name ? '' : cat.name)}
                 variant={category === cat.name ? 'solid' : 'outline'}
                 colorScheme={category === cat.name ? 'blue' : 'gray'}
               >
@@ -119,20 +134,20 @@ export default function ItemBrowser({
             gap={3}
             padding="1em"
             marginBottom="1em"
-            bg="blue.50"
+            bg={infoBg}
             borderRadius="md"
             borderLeft="4px solid"
-            borderColor="blue.400"
+            borderColor={infoBorderColor}
           >
-            <Icon as={FaInfoCircle} color="blue.500" boxSize={5} />
+            <Icon as={FaInfoCircle} color={infoIconColor} boxSize={5} />
             <Text fontSize="sm">
               Jos haluamaasi kamaa ei löydy,{' '}
               <Link
-                color="blue.600"
+                color={linkColor}
                 fontWeight="semibold"
                 onClick={onOpen}
                 textDecoration="underline"
-                _hover={{ color: 'blue.700' }}
+                _hover={{ color: linkHoverColor }}
               >
                 klikkaa tästä
               </Link>

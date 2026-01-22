@@ -1,4 +1,4 @@
-name: klapi
+name: ci
 on: push
 
 jobs:
@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Create .env file
+        run: echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/klapi" > .env
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
@@ -31,7 +33,9 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
+      - name: Create test database
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE klapi;"
       - name: Lint
         run: pnpm lint
       - name: Run tests
-        run: pnpm test
+        run: pnpm test:ci

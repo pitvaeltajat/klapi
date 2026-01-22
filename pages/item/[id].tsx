@@ -1,6 +1,7 @@
 // get item by id and return it
 import prisma from '../../utils/prisma';
 import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
+import { useItemOriginalImage, usePlaceholder } from '../../hooks/useItemImage';
 
 import React from 'react';
 import Head from 'next/head';
@@ -27,6 +28,7 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react';
 import ReservationTable from '../../components/ReservationTable';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 
@@ -92,6 +94,9 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  const imageSrc = useItemOriginalImage(item.id);
+  const placeholder = usePlaceholder();
+
   const deleteItem = async () => {
     try {
       const response = await fetch('/api/item/deleteItem', {
@@ -104,8 +109,8 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
       if (response.ok) {
         toast({
-          title: 'Success',
-          description: 'Item deleted',
+          title: 'Legit',
+          description: 'Kama poistettu',
           status: 'success',
           duration: 5000,
           isClosable: true,
@@ -131,6 +136,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
       <Head>
         <title>{item.name} | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: item.name }]} />
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size={{ base: 'lg', md: 'xl' }}>
           {item.name}
@@ -169,19 +175,17 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
 
         <Divider />
 
-        {item.image && (
-          <Box>
-            <Image
-              src={item.image}
-              alt={item.name}
-              fallbackSrc="https://placehold.co/500x300"
-              maxW="full"
-              maxH={{ base: '300px', md: '500px' }}
-              objectFit="contain"
-              borderRadius="md"
-            />
-          </Box>
-        )}
+        <Box>
+          <Image
+            src={imageSrc}
+            alt={item.name}
+            fallbackSrc={placeholder}
+            maxW="full"
+            maxH={{ base: '300px', md: '500px' }}
+            objectFit="contain"
+            borderRadius="md"
+          />
+        </Box>
 
         {session?.user?.group === 'ADMIN' && (
           <HStack spacing={3}>

@@ -19,6 +19,7 @@ import {
   useDisclosure,
   Textarea,
   Text,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
@@ -38,6 +39,7 @@ interface AvailabilityData {
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const firstField = useRef<HTMLInputElement>(null);
   const { data: session } = useSession();
+  const disabledInputBg = useColorModeValue('gray.100', 'gray.600');
   const {
     state: cart,
     incrementAmount,
@@ -65,6 +67,15 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isKiosk = session?.user?.group === 'KIOSK';
 
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
+  const [localDescription, setLocalDescription] = useState(cart.description);
+
+  // Debounce description updates to context
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDescription(localDescription);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [localDescription, setDescription]);
 
   const [reportContent, setReportContent] = useState('');
 
@@ -114,10 +125,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     return (
       <Drawer isOpen={isOpen} placement="right" size={{ base: 'full', md: 'md' }} onClose={onClose}>
         <DrawerOverlay />
-        <DrawerContent>
+        <DrawerContent display="flex" flexDirection="column" maxH="100dvh">
           <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
-          <DrawerBody>
+          <DrawerHeader borderBottomWidth="1px" flexShrink={0}>
+            Ostoskori
+          </DrawerHeader>
+          <DrawerBody flex="1" minH={0}>
             <LoadingSpinner fullWidth />
           </DrawerBody>
         </DrawerContent>
@@ -137,7 +150,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
-  const isDescriptionValid = cart.description.trim().length > 0;
+  const isDescriptionValid = localDescription.trim().length > 0;
 
   return (
     <Drawer
@@ -148,11 +161,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       onClose={onClose}
     >
       <DrawerOverlay />
-      <DrawerContent>
+      <DrawerContent display="flex" flexDirection="column" maxH="100dvh">
         <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px">Ostoskori</DrawerHeader>
+        <DrawerHeader borderBottomWidth="1px" flexShrink={0}>
+          Ostoskori
+        </DrawerHeader>
 
-        <DrawerBody overflow="auto" flex="1">
+        <DrawerBody overflow="auto" flex="1" minH={0}>
           <SubmitConfirmation
             isOpen={ConfirmationDialog.isOpen}
             onClose={ConfirmationDialog.onClose}
@@ -176,7 +191,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   size="md"
                 />
               ) : (
-                <Input id="loaner" value={cart.loaner || ''} isDisabled bg="gray.100" />
+                <Input
+                  id="loaner"
+                  value={cart.loaner || ''}
+                  isDisabled
+                  bg={disabledInputBg}
+                />
               )}
             </Box>
             <Box>
@@ -188,10 +208,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 id="description"
                 name="description"
                 placeholder="Kuvaus (pakollinen)"
-                value={cart.description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                }}
+                value={localDescription}
+                onChange={(e) => setLocalDescription(e.target.value)}
                 isRequired
                 isInvalid={!isDescriptionValid && cart.items.length > 0}
               />
@@ -236,42 +254,45 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               <Heading as="h3" size="md">
                 Valitut tavarat
               </Heading>
-              {cart.items.map(
-                (item) =>
-                  item.amount > 0 && (
-                    <Box key={item.id}>
-                      <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
-                      <InputGroup size="md">
-                        <InputLeftAddon padding={0}>
-                          <IconButton
-                            icon={<FaMinus />}
-                            aria-label="decrement"
-                            onClick={() => decrementAmount(item.id)}
-                            minW="40px"
-                          />
-                        </InputLeftAddon>
-                        <Input
-                          id={`item-${item.id}`}
-                          value={item.amount}
-                          readOnly
-                          textAlign="center"
+              {cart.items.map((item) => {
+                if (item.amount <= 0) return null;
+                const isCustomItem = item.id.startsWith('custom-');
+                const isIncrementDisabled = isCustomItem
+                  ? false
+                  : !availabilities[item.id] ||
+                    getCartAmount(item.id) >= availabilities[item.id].available;
+
+                return (
+                  <Box key={item.id}>
+                    <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
+                    <InputGroup size="md">
+                      <InputLeftAddon padding={0}>
+                        <IconButton
+                          icon={<FaMinus />}
+                          aria-label="decrement"
+                          onClick={() => decrementAmount(item.id)}
+                          minW="40px"
                         />
-                        <InputRightAddon padding={0}>
-                          <IconButton
-                            icon={<FaPlus />}
-                            aria-label="increment"
-                            onClick={() => incrementAmount(item.id)}
-                            minW="40px"
-                            isDisabled={
-                              !availabilities[item.id] ||
-                              getCartAmount(item.id) >= availabilities[item.id].available
-                            }
-                          />
-                        </InputRightAddon>
-                      </InputGroup>
-                    </Box>
-                  ),
-              )}
+                      </InputLeftAddon>
+                      <Input
+                        id={`item-${item.id}`}
+                        value={item.amount}
+                        readOnly
+                        textAlign="center"
+                      />
+                      <InputRightAddon padding={0}>
+                        <IconButton
+                          icon={<FaPlus />}
+                          aria-label="increment"
+                          onClick={() => incrementAmount(item.id)}
+                          minW="40px"
+                          isDisabled={isIncrementDisabled}
+                        />
+                      </InputRightAddon>
+                    </InputGroup>
+                  </Box>
+                );
+              })}
             </Stack>
           ) : (
             <Heading as="h3" size="md">
@@ -280,7 +301,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           )}
         </DrawerBody>
 
-        <DrawerFooter borderTopWidth="1px">
+        <DrawerFooter borderTopWidth="1px" flexShrink={0}>
           <Button variant="outline" mr={3} onClick={onClose}>
             Sulje
           </Button>
@@ -289,7 +310,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             onClick={ConfirmationDialog.onOpen}
             isDisabled={cart.items.length === 0 || !isDescriptionValid}
           >
-            Varaa
+            Lainaa
           </Button>
         </DrawerFooter>
       </DrawerContent>

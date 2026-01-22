@@ -10,12 +10,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const session = await getServerSession(req, res, authOptions);
-  if (session?.user?.group !== 'ADMIN') {
+  if (!session?.user) {
     res.status(401).json({ message: 'Unauthorized' });
     return;
   }
 
+  const isAdminOrKiosk = session.user.group === 'ADMIN' || session.user.group === 'KIOSK';
+
   const loans = await prisma.loan.findMany({
+    where: isAdminOrKiosk ? {} : { userId: session.user.id },
     include: {
       user: true,
       reservations: {
@@ -24,7 +27,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             select: {
               id: true,
               name: true,
-              image: true,
             },
           },
         },

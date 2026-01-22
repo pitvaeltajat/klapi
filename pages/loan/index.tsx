@@ -1,8 +1,9 @@
-import { LoanStatus, ReportCreated, ReportStatus } from '@prisma/client';
+import { LoanStatus, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import Head from 'next/head';
 import {
   Box,
   Button,
+  Checkbox,
   Heading,
   Link,
   Stack,
@@ -13,6 +14,7 @@ import {
   HStack,
   VStack,
   SimpleGrid,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -20,13 +22,15 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import Breadcrumbs from '../../components/Breadcrumbs';
+import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
 
 interface LoanType {
   id: string;
   userId: string;
   status: LoanStatus;
   description: string | null;
+  loaner: string | null;
   startTime: Date;
   endTime: Date;
   user: {
@@ -34,10 +38,10 @@ interface LoanType {
     email: string | null;
   };
   reservations: {
+    status: ReservationStatus;
     item: {
       id: string;
       name: string;
-      image: string | null;
     };
   }[];
   reports: {
@@ -50,6 +54,8 @@ interface LoanType {
 }
 
 export const LoanCard = ({ loan }: { loan: LoanType }) => {
+  const cardBg = useColorModeValue('white', 'gray.800');
+
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleString('fi-FI', {
       day: 'numeric',
@@ -62,13 +68,16 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
 
   // Only count unresolved reports
   const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
+  // Derive the loan status from reservations
+  const derivedStatus = deriveLoanStatus(loan.reservations);
+
   return (
     <Box
       borderWidth="1px"
       borderRadius="lg"
       overflow="hidden"
       p={4}
-      bg="white"
+      bg={cardBg}
       boxShadow="sm"
       height="100%"
     >
@@ -77,15 +86,15 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
           <VStack align="start" spacing={1} flex={1}>
             <Heading size="md">
               <Link as={NextLink} href={`/loan/${loan.id}`}>
-                {loan.description || loan.user.name}
+                {loan.description || loan.loaner || loan.user.name}
               </Link>
             </Heading>
             <Text fontSize="sm" color="gray.600">
-              Varaaja: {loan.user.name}
+              Lainaaja: {loan.loaner || loan.user.name || loan.user.email}
             </Text>
           </VStack>
-          <Tag colorScheme={getLoanStatusColor(loan.status)} size="md" flexShrink={0}>
-            {getLoanStatusLabel(loan.status)}
+          <Tag colorScheme={getLoanStatusColor(derivedStatus)} size="md" flexShrink={0}>
+            {getLoanStatusLabel(derivedStatus)}
           </Tag>
           {unresolvedReports.length > 0 && (
             <Tag colorScheme="red" size="md" flexShrink={0}>
@@ -137,10 +146,7 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
   );
 };
 
-const getStatusFilterLabel = (status: LoanStatus | 'ALL'): string => {
-  if (status === 'ALL') {
-    return 'Kaikki';
-  }
+const getStatusFilterLabel = (status: LoanStatus): string => {
   const label = getLoanStatusLabel(status);
   if (label === 'Hyväksytty') return 'Hyväksytyt';
   if (label === 'Hylätty') return 'Hylätyt';
@@ -155,11 +161,15 @@ function compareDates(dateA: Date, dateB: Date) {
 export default function LoanList() {
   const { data: session } = useSession();
   const { data: loans, error, isLoading } = useSWR<LoanType[]>('/api/loan/getLoansClient');
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<LoanStatus | 'ALL'>>(
-    new Set([LoanStatus.IN_BOX, LoanStatus.INUSE]),
+  const allStatuses = Object.values(LoanStatus);
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<LoanStatus>>(
+    new Set([LoanStatus.ACCEPTED, LoanStatus.IN_BOX, LoanStatus.INUSE]),
   );
 
-  if (session?.user?.group !== 'ADMIN') {
+  const allChecked = selectedStatuses.size === allStatuses.length;
+  const isIndeterminate = selectedStatuses.size > 0 && !allChecked;
+
+  if (!session?.user) {
     return <NotAuthenticated />;
   }
 
@@ -186,41 +196,31 @@ export default function LoanList() {
     compareDates(new Date(a.startTime), new Date(b.startTime)),
   );
 
-  const toggleStatus = (status: LoanStatus | 'ALL') => {
-    const newStatuses = new Set(selectedStatuses);
-
-    if (status === 'ALL') {
-      if (newStatuses.has('ALL')) {
-        newStatuses.clear();
-        newStatuses.add(LoanStatus.IN_BOX);
-        newStatuses.add(LoanStatus.INUSE);
-      } else {
-        newStatuses.clear();
-        newStatuses.add('ALL');
-      }
+  const toggleAllStatuses = () => {
+    if (allChecked || isIndeterminate) {
+      setSelectedStatuses(new Set());
     } else {
-      if (newStatuses.has('ALL')) {
-        newStatuses.clear();
-      }
-
-      if (newStatuses.has(status)) {
-        newStatuses.delete(status);
-        if (newStatuses.size === 0) {
-          newStatuses.add('ALL');
-        }
-      } else {
-        newStatuses.add(status);
-      }
+      setSelectedStatuses(new Set(allStatuses));
     }
+  };
 
+  const toggleStatus = (status: LoanStatus) => {
+    const newStatuses = new Set(selectedStatuses);
+    if (newStatuses.has(status)) {
+      newStatuses.delete(status);
+    } else {
+      newStatuses.add(status);
+    }
     setSelectedStatuses(newStatuses);
   };
 
   const filteredLoans = sortedLoans.filter((loan) => {
-    if (selectedStatuses.has('ALL')) {
+    if (selectedStatuses.size === 0) {
       return true;
     }
-    return selectedStatuses.has(loan.status);
+    // Use derived status for filtering
+    const derivedStatus = deriveLoanStatus(loan.reservations);
+    return selectedStatuses.has(derivedStatus);
   });
 
   return (
@@ -228,32 +228,34 @@ export default function LoanList() {
       <Head>
         <title>Varaukset | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: 'Varaukset' }]} />
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Varaukset</Heading>
-          <Box padding="2em" paddingLeft={0}>
-            <Wrap padding="4px">
-              <WrapItem key="all">
-                <Button
-                  onClick={() => toggleStatus('ALL')}
-                  variant={selectedStatuses.has('ALL') ? 'solid' : 'outline'}
-                  colorScheme={selectedStatuses.has('ALL') ? 'blue' : 'gray'}
-                >
-                  {getStatusFilterLabel('ALL')}
-                </Button>
-              </WrapItem>
-              {Object.values(LoanStatus).map((status) => (
-                <WrapItem key={status}>
-                  <Button
-                    onClick={() => toggleStatus(status)}
-                    variant={selectedStatuses.has(status) ? 'solid' : 'outline'}
-                    colorScheme={selectedStatuses.has(status) ? 'blue' : 'gray'}
+          <Box py={4}>
+            <Stack spacing={3}>
+              <Checkbox
+                isChecked={allChecked}
+                isIndeterminate={isIndeterminate}
+                onChange={toggleAllStatuses}
+                colorScheme="blue"
+                fontWeight="medium"
+              >
+                Kaikki
+              </Checkbox>
+              <Stack pl={6} spacing={2}>
+                {allStatuses.map((status) => (
+                  <Checkbox
+                    key={status}
+                    isChecked={selectedStatuses.has(status)}
+                    onChange={() => toggleStatus(status)}
+                    colorScheme="blue"
                   >
                     {getStatusFilterLabel(status)}
-                  </Button>
-                </WrapItem>
-              ))}
-            </Wrap>
+                  </Checkbox>
+                ))}
+              </Stack>
+            </Stack>
           </Box>
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
             {filteredLoans.map((loan) => (

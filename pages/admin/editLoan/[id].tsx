@@ -32,13 +32,20 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { FaMinus, FaPlus, FaTrash, FaHistory } from 'react-icons/fa';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../../components/NotAuthenticated';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import Breadcrumbs from '../../../components/Breadcrumbs';
 import prisma from '../../../utils/prisma';
 import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
-import { Loan, Item, User, Reservation } from '@prisma/client';
+import { Loan, Item, User, Reservation, ReservationStatus } from '@prisma/client';
+import { deriveLoanStatus } from '../../../utils/loanHelpers';
+
+interface AvailabilityData {
+  availabilities: Record<string, { available: number }>;
+}
 
 interface LoanWithRelations extends Loan {
   reservations: (Reservation & {
@@ -101,50 +108,151 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
 
   const router = useRouter();
 
-  if (session?.user?.group !== 'ADMIN') {
+  // Availability state
+  const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(true);
+
+  // Fetch availability when dates change
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      setLoadingAvailability(true);
+      try {
+        const response = await fetch('/api/availability/getAvailabilities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            StartDate: new Date(startDate),
+            EndDate: new Date(endDate),
+          }),
+        });
+        const data = await response.json();
+        setAvailabilityData(data);
+      } catch (error) {
+        console.error('Failed to fetch availability:', error);
+      }
+      setLoadingAvailability(false);
+    };
+
+    fetchAvailability();
+  }, [startDate, endDate]);
+
+  // Calculate effective availability for an item
+  // This adds back the original reservation amounts since they're already "ours"
+  const getEffectiveAvailability = (itemId: string): number => {
+    if (!availabilityData?.availabilities?.[itemId]) {
+      return 0;
+    }
+
+    const baseAvailability = availabilityData.availabilities[itemId].available;
+
+    // Add back amounts from the ORIGINAL loan reservations (not current edits)
+    // because those are already allocated to this loan
+    const originalReservation = loan.reservations.find((r) => r.item.id === itemId);
+    const originalAmount = originalReservation?.amount ?? 0;
+
+    return baseAvailability + originalAmount;
+  };
+
+  // Get current total for an item in reservations (including any being edited)
+  const getCurrentReservationAmount = (itemId: string): number => {
+    return reservations.filter((r) => r.item.id === itemId).reduce((sum, r) => sum + r.amount, 0);
+  };
+
+  // Calculate max allowed for a specific reservation row
+  const getMaxForReservation = (reservation: (typeof reservations)[0]): number => {
+    const effectiveAvail = getEffectiveAvailability(reservation.item.id);
+    const currentInOtherRows = reservations
+      .filter((r) => r.item.id === reservation.item.id && r.id !== reservation.id)
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    return Math.max(0, effectiveAvail - currentInOtherRows);
+  };
+
+  // Calculate max allowed when adding a new item
+  const getMaxForNewItem = (itemId: string): number => {
+    const effectiveAvail = getEffectiveAvailability(itemId);
+    const currentTotal = getCurrentReservationAmount(itemId);
+
+    return Math.max(0, effectiveAvail - currentTotal);
+  };
+
+  // Allow edit if user is admin OR if user owns this loan and status allows editing
+  const isAdmin = session?.user?.group === 'ADMIN';
+  const isOwner = session?.user?.id === loan.user.id;
+
+  // Use derived status from reservations for edit permission check
+  const derivedStatus = deriveLoanStatus(
+    loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
+  );
+  const statusAllowsEdit = derivedStatus !== 'INUSE' && derivedStatus !== 'RETURNED';
+
+  if (!session?.user || (!isAdmin && !isOwner)) {
+    return <NotAuthenticated />;
+  }
+
+  // User can only edit their own loans if status allows
+  if (!isAdmin && !statusAllowsEdit) {
     return <NotAuthenticated />;
   }
 
   async function updateLoan() {
-    await fetch(`/api/loan/updateLoan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: loan.id,
-        description,
-        startTime: new Date(startDate),
-        endTime: new Date(endDate),
-        reservations: reservations.map((r) => ({
-          amount: r.amount,
-          item: { connect: { id: r.item.id } },
-        })),
-      }),
-    })
-      .then((res) => res.json())
-      .then(() => {
+    try {
+      const response = await fetch(`/api/loan/updateLoan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: loan.id,
+          description,
+          startTime: new Date(startDate),
+          endTime: new Date(endDate),
+          reservations: reservations.map((r) => ({
+            amount: r.amount,
+            item: { connect: { id: r.item.id } },
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle specific error cases
+        let errorDescription = data.message || 'Joku meni vituiks';
+        if (data.details && Array.isArray(data.details)) {
+          errorDescription = data.details.join('\n');
+        }
+
         toast({
-          title: 'Laina päivitetty',
-          description: 'Laina päivitetty onnistuneesti',
-          status: 'success',
-          duration: 9000,
-          isClosable: true,
-        });
-      })
-      .then(onClose)
-      .then(() => {
-        router.push('/loan');
-      })
-      .catch(() => {
-        toast({
-          title: 'Error',
-          description: 'Joku meni vituiks',
+          title: data.message || 'Virhe',
+          description: errorDescription,
           status: 'error',
           duration: 9000,
           isClosable: true,
         });
+        onClose();
+        return;
+      }
+
+      toast({
+        title: 'Laina päivitetty',
+        description: 'Laina päivitetty onnistuneesti',
+        status: 'success',
+        duration: 9000,
+        isClosable: true,
       });
+      onClose();
+      router.push('/loan');
+    } catch {
+      toast({
+        title: 'Virhe',
+        description: 'Yhteysvirhe - yritä uudelleen',
+        status: 'error',
+        duration: 9000,
+        isClosable: true,
+      });
+      onClose();
+    }
   }
 
   const isDescriptionModified = description !== loan.description;
@@ -161,11 +269,29 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
     return !loan.reservations.find((r) => r.id === reservation.id);
   };
 
+  if (loadingAvailability) {
+    return (
+      <>
+        <Head>
+          <title>Muokkaa lainaa | Klapi</title>
+        </Head>
+        <LoadingSpinner />
+      </>
+    );
+  }
+
   return (
     <>
       <Head>
         <title>Muokkaa lainaa | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Varaukset', href: '/loan' },
+          { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
+          { label: 'Muokkaa' },
+        ]}
+      />
       <VStack spacing={6} align="stretch">
         {/* Confirmation Dialog */}
         <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
@@ -213,10 +339,12 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
             <Text fontWeight="medium" color="gray.600" fontSize="sm">
               Lainaaja
             </Text>
-            <Text fontWeight="medium">{loan.user.name}</Text>
-            <Text fontSize="sm" color="gray.600">
-              {loan.user.email}
-            </Text>
+            <Text fontWeight="medium">{loan.loaner || loan.user.name || loan.user.email}</Text>
+            {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
+              <Text fontSize="sm" color="gray.600">
+                Tili: {loan.user.name} ({loan.user.email})
+              </Text>
+            )}
           </Box>
         </SimpleGrid>
       </Box>
@@ -357,8 +485,11 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
                   align={{ base: 'stretch', sm: 'center' }}
                   spacing={3}
                 >
-                  <HStack flex={1}>
+                  <HStack flex={1} flexWrap="wrap">
                     <Text fontWeight="medium">{reservation.item.name}</Text>
+                    <Badge colorScheme="gray" fontSize="xs">
+                      max: {getMaxForReservation(reservation)}
+                    </Badge>
                     {isNewReservation(reservation) && (
                       <Badge colorScheme="green" fontSize="xs">
                         Uusi
@@ -405,7 +536,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
                           ),
                         );
                       }}
-                      isDisabled={reservation.amount >= reservation.item.amount}
+                      isDisabled={reservation.amount >= getMaxForReservation(reservation)}
                     />
                     <IconButton
                       aria-label="Poista varaus"
@@ -449,7 +580,9 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
           </FormControl>
 
           <FormControl flex={1}>
-            <FormLabel>Määrä</FormLabel>
+            <FormLabel>
+              Määrä (vapaana: {getMaxForNewItem(selectedItem)})
+            </FormLabel>
             <NumberInput
               value={selectedItemAmount}
               onChange={(valueString) => {
@@ -457,7 +590,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
                 setSelectedItemAmount(value);
               }}
               min={0}
-              max={items.find((item) => item.id === selectedItem)?.amount ?? 99}
+              max={getMaxForNewItem(selectedItem)}
             >
               <NumberInputField />
               <NumberInputStepper>
@@ -474,11 +607,14 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
                 const selectedItemObj = items.find((item) => item.id === selectedItem);
                 if (!selectedItemObj) return;
 
+                // New reservations get the same status as existing ones (or ACCEPTED if none)
+                const existingStatus = loan.reservations[0]?.status || ReservationStatus.ACCEPTED;
                 newReservations.push({
                   id: Math.random().toString(),
                   amount: selectedItemAmount,
                   itemId: selectedItem,
                   loanId: loan.id,
+                  status: existingStatus,
                   item: selectedItemObj,
                 });
                 setReservations(newReservations);

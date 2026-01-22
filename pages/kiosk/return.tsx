@@ -22,22 +22,40 @@ import {
   HStack,
   Checkbox,
   Textarea,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import type { GetServerSideProps } from 'next';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { useRouter } from 'next/router';
+import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import { useItemImage } from '../../hooks/useItemImage';
 
 interface Reservation {
   id: string;
   amount: number;
+  status: ReservationStatus;
   item: {
     id: string;
     name: string;
-    image: string | null;
   };
+}
+
+// Helper component to use hooks inside map
+function ReservationItemImage({ itemId, itemName }: { itemId: string; itemName: string }) {
+  const imageSrc = useItemImage(itemId);
+  return (
+    <Image
+      src={imageSrc}
+      alt={itemName}
+      boxSize="80px"
+      objectFit="cover"
+      borderRadius="md"
+    />
+  );
 }
 
 interface LoanType {
@@ -56,9 +74,14 @@ interface LoanType {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
+  // Get loans that have at least one INUSE reservation
   const loans = await prisma.loan.findMany({
     where: {
-      status: LoanStatus.INUSE,
+      reservations: {
+        some: {
+          status: ReservationStatus.INUSE,
+        },
+      },
     },
     include: {
       user: true,
@@ -103,6 +126,11 @@ const LoanReturnCard = ({
   const [termsAccepted, setTermsAccepted] = React.useState(false);
 
   const [reportContent, setReportContent] = React.useState('');
+  // Move useColorModeValue calls to top level of component
+  const itemBg = useColorModeValue('gray.50', 'gray.700');
+  const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const infoBg = useColorModeValue('blue.50', 'blue.900');
+  const successBg = useColorModeValue('green.50', 'green.900');
 
   const handleConfirmReturn = async () => {
     const box = await onReturn(loan.id);
@@ -136,24 +164,32 @@ const LoanReturnCard = ({
     onReturnComplete();
   };
 
+  // Derive the loan status from reservations
+  const derivedStatus = deriveLoanStatus(loan.reservations);
+
+  // Only show INUSE reservations in the return flow
+  const inuseReservations = loan.reservations.filter(
+    (r) => r.status === ReservationStatus.INUSE,
+  );
+
   return (
     <>
-      <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} mb={4} bg="white">
+      <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} mb={4}>
         <Stack spacing={3}>
           <Heading size="md">{loan.description || loan.loaner}</Heading>
-          <Tag colorScheme="blue" width="fit-content">
-            Käytössä
+          <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
+            {getLoanStatusLabel(derivedStatus)}
           </Tag>
           <Text>Lainaaja: {loan.loaner}</Text>
           <Text>
-            Laina-aika: {new Date(loan.startTime).toLocaleDateString()} -{' '}
-            {new Date(loan.endTime).toLocaleDateString()}
+            Laina-aika: {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
+            {new Date(loan.endTime).toLocaleDateString('fi-FI')}
           </Text>
           <Box>
             <Text fontWeight="bold" mb={2}>
-              Tavarat:
+              Tavarat (käytössä):
             </Text>
-            {loan.reservations.map((reservation) => (
+            {inuseReservations.map((reservation) => (
               <Text key={reservation.id} ml={4}>
                 • {reservation.item.name} ({reservation.amount} kpl)
               </Text>
@@ -166,8 +202,8 @@ const LoanReturnCard = ({
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} size="full">
-        <ModalOverlay bg="white" />
-        <ModalContent bg="white" m={0}>
+        <ModalOverlay />
+        <ModalContent m={0}>
           <ModalCloseButton size="lg" />
           <ModalBody p={8}>
             <VStack spacing={8} maxW="800px" mx="auto" align="stretch">
@@ -176,38 +212,17 @@ const LoanReturnCard = ({
               </Heading>
 
               <VStack spacing={4} align="stretch">
-                {loan.reservations.map((reservation) => (
+                {inuseReservations.map((reservation) => (
                   <HStack
                     key={reservation.id}
                     p={4}
-                    bg="gray.50"
+                    bg={itemBg}
                     borderRadius="lg"
                     borderWidth="2px"
-                    borderColor="gray.200"
+                    borderColor={itemBorderColor}
                     spacing={4}
                   >
-                    {reservation.item.image ? (
-                      <Image
-                        src={reservation.item.image}
-                        alt={reservation.item.name}
-                        boxSize="80px"
-                        objectFit="cover"
-                        borderRadius="md"
-                      />
-                    ) : (
-                      <Box
-                        boxSize="80px"
-                        bg="gray.200"
-                        borderRadius="md"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        <Text fontSize="sm" color="gray.500">
-                          Ei kuvaa
-                        </Text>
-                      </Box>
-                    )}
+                    <ReservationItemImage itemId={reservation.item.id} itemName={reservation.item.name} />
                     <VStack align="start" spacing={1} flex={1}>
                       <Text fontSize="lg" fontWeight="bold">
                         {reservation.item.name}
@@ -242,7 +257,7 @@ const LoanReturnCard = ({
                 />
               </Box>
 
-              <Box p={6} bg="blue.50" borderRadius="lg" borderWidth="2px" borderColor="blue.200">
+              <Box p={6} bg={infoBg} borderRadius="lg" borderWidth="2px" borderColor="blue.200">
                 <Text fontSize="md" lineHeight="tall">
                   Vahvistamalla palautuksen otat vastuun siitä, että kaikki tavarat ovat mukana,
                   puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna. Palauta
@@ -290,7 +305,7 @@ const LoanReturnCard = ({
             <VStack spacing={6}>
               <Box
                 p={8}
-                bg="blue.50"
+                bg={infoBg}
                 borderRadius="lg"
                 width="100%"
                 textAlign="center"
@@ -307,7 +322,7 @@ const LoanReturnCard = ({
               {boxInfo?.description && (
                 <Box
                   p={5}
-                  bg="gray.50"
+                  bg={infoBg}
                   borderRadius="md"
                   width="100%"
                   borderWidth="1px"
@@ -319,7 +334,7 @@ const LoanReturnCard = ({
                   <Text fontSize="md">{boxInfo.description}</Text>
                 </Box>
               )}
-              <Box p={5} bg="green.50" borderRadius="md" width="100%" textAlign="center">
+              <Box p={5} bg={successBg} borderRadius="md" width="100%" textAlign="center">
                 <Text color="green.700" fontSize="md" fontWeight="medium">
                   Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan lokeroon.
                 </Text>
@@ -400,13 +415,10 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
       <Head>
         <title>Palauta lainoja | Klapi</title>
       </Head>
+      <Breadcrumbs items={[{ label: 'Palauta lainoja' }]} />
       <Stack spacing={8}>
         <Box>
           <Heading mb={4}>Palauta lainoja</Heading>
-          <Button mb={4} onClick={() => router.push('/')} colorScheme="gray">
-            Takaisin etusivulle
-          </Button>
-
           {loans.length === 0 ? (
             <Box textAlign="center" py={8}>
               <Heading size="md" color="gray.500">

@@ -20,6 +20,7 @@ import { CreatableSelect } from 'chakra-react-select';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import type { NextPage } from 'next';
 import type { Category, Location } from '@prisma/client';
 
@@ -127,7 +128,6 @@ const CreateItem: NextPage = () => {
               name,
               description,
               amount,
-              image: `${process.env.NEXT_PUBLIC_AWS_ITEM_PHOTOS_URL}/${itemId}`,
               categories: selectedCategories.map((c) => ({
                 id: c.value,
                 name: c.label,
@@ -188,6 +188,12 @@ const CreateItem: NextPage = () => {
       <Head>
         <title>Luo uusi kama | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Luo uusi kama' },
+        ]}
+      />
       <Heading>Luo uusi kama</Heading>
 
       <form onSubmit={handleSubmit}>

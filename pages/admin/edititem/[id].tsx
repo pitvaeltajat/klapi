@@ -1,6 +1,8 @@
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import NotAuthenticated from '../../../components/NotAuthenticated';
+import Breadcrumbs from '../../../components/Breadcrumbs';
+import { useItemOriginalImage } from '../../../hooks/useItemImage';
 import {
   Heading,
   Input,
@@ -72,6 +74,7 @@ export default function EditItem({
   const { data: session } = useSession();
   const router = useRouter();
   const toast = useToast();
+  const existingImageSrc = useItemOriginalImage(item.id);
 
   const [itemName, setItemName] = useState(item.name);
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,7 +140,6 @@ export default function EditItem({
         name: itemName,
         description: itemDescription,
         amount: itemAmount,
-        image: image ? `${process.env.NEXT_PUBLIC_AWS_ITEM_PHOTOS_URL}/${item.id}` : undefined,
         categories: itemCategories,
       }),
     });
@@ -171,6 +173,12 @@ export default function EditItem({
       <Head>
         <title>Muokkaa kamaa: {item.name} | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: item.name, href: `/item/${item.id}` },
+          { label: 'Muokkaa' },
+        ]}
+      />
       <VStack spacing={6} align="stretch">
         <Heading as="h1" size="md">
           Muokkaa kamaa
@@ -255,16 +263,16 @@ export default function EditItem({
               objectFit="contain"
               mb={4}
             />
-          ) : item.image !== null ? (
+          ) : (
             <Image
-              src={item.image}
+              src={existingImageSrc}
               alt={item.name}
               maxW="full"
               maxH="400px"
               objectFit="contain"
               mb={4}
             />
-          ) : null}
+          )}
           <Input type="file" accept="image/*" onChange={handleImageChange} />
         </FormControl>
 

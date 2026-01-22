@@ -14,6 +14,11 @@ import {
   Td,
   TableContainer,
   useToast,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Box,
 } from '@chakra-ui/react';
 import React from 'react';
 import { CartItem } from '../types';
@@ -21,6 +26,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
+
+interface InBoxItem {
+  itemId: string;
+  itemName: string;
+}
 
 export default function SubmitConfirmation({
   isOpen,
@@ -43,8 +53,51 @@ export default function SubmitConfirmation({
   const { data: session } = useSession();
 
   const [isLoading, setIsLoading] = React.useState(false);
+  const [inBoxItems, setInBoxItems] = React.useState<InBoxItem[]>([]);
+  const [isCheckingBox, setIsCheckingBox] = React.useState(false);
 
   const toast = useToast();
+
+  // Check if any items are currently in a box when dialog opens
+  React.useEffect(() => {
+    const checkInBoxItems = async () => {
+      if (!isOpen || cart.items.length === 0) {
+        setInBoxItems([]);
+        return;
+      }
+
+      setIsCheckingBox(true);
+      try {
+        const itemIds = cart.items
+          .filter((item) => !item.id.startsWith('custom-'))
+          .map((item) => item.id);
+
+        if (itemIds.length === 0) {
+          setInBoxItems([]);
+          return;
+        }
+
+        const response = await fetch('/api/reservation/checkInBox', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ itemIds }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setInBoxItems(data.inBoxItems || []);
+        }
+      } catch (error) {
+        console.error('Failed to check in-box items:', error);
+      } finally {
+        setIsCheckingBox(false);
+      }
+    };
+
+    checkInBoxItems();
+  }, [isOpen, cart.items]);
 
   const successToast = () => {
     toast({
@@ -122,7 +175,12 @@ export default function SubmitConfirmation({
       setReportContent('');
       clearCart();
       successToast();
-      router.push('/account');
+      // Kiosk users are redirected to the loan page, others to account
+      if (session?.user?.group === 'KIOSK') {
+        router.push(`/loan/${result.id}`);
+      } else {
+        router.push('/account');
+      }
     } else {
       errorToast();
     }
@@ -140,6 +198,19 @@ export default function SubmitConfirmation({
             Tarkista varauksen tiedot:
           </AlertDialogHeader>
           <AlertDialogBody>
+            {inBoxItems.length > 0 && (
+              <Alert status="warning" mb={4} borderRadius="md">
+                <AlertIcon />
+                <Box>
+                  <AlertTitle>Huomio: Kamoja laatikossa</AlertTitle>
+                  <AlertDescription fontSize="sm">
+                    Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat
+                    täyden vastuun tarkistaa kamojen kunnon noudettaessa.
+                  </AlertDescription>
+                </Box>
+              </Alert>
+            )}
+
             <p>
               <b>Lainaaja: </b>
               {cart.loaner || session?.user?.name || session?.user?.email || 'Ei määritelty'}
@@ -194,7 +265,12 @@ export default function SubmitConfirmation({
             <Button ref={cancelRef} onClick={onClose}>
               Peruuta
             </Button>
-            <Button colorScheme="green" onClick={handleSubmit} ml={3} isLoading={isLoading}>
+            <Button
+              colorScheme="green"
+              onClick={handleSubmit}
+              ml={3}
+              isLoading={isLoading || isCheckingBox}
+            >
               Lähetä varaus
             </Button>
           </AlertDialogFooter>

@@ -21,7 +21,7 @@ const Auth: FC = () => {
         isLoading={status === 'loading'}
         loadingText="Kirjaudutaan..."
       >
-        Kirjaudu sisään
+        Kirjaudu
       </Button>
     </>
   );

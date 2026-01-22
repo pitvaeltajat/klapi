@@ -12,14 +12,13 @@ import {
   Link,
   Text,
   Tag,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import NextLink from 'next/link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import ReportCard from '../../components/ReportCard';
-import { useSession } from 'next-auth/react';
-import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
 
 interface Report {
   id: string;
@@ -27,7 +26,17 @@ interface Report {
   createdAt: string | Date;
   status: string;
 }
-import { getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import StartLoanConfirmation from '../../components/StartLoanConfirmation';
+import Breadcrumbs from '../../components/Breadcrumbs';
+import { useSession } from 'next-auth/react';
+import { Loan, User, Reservation, Item, Box as BoxType } from '@prisma/client';
+import { GetServerSideProps } from 'next';
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+  deriveLoanStatus,
+} from '../../utils/loanHelpers';
+import { ReservationStatus } from '@prisma/client';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -94,14 +103,21 @@ export default function LoanView({
 }) {
   const router = useRouter();
   const toast = useToast();
-  const { onOpen } = useDisclosure();
   const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
-  const { data: session } = useSession();
   const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
   const [announcement, setAnnouncement] = React.useState<{ itemId: string; content: string }>({
     itemId: '',
     content: '',
   });
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isStartLoanOpen,
+    onOpen: onStartLoanOpen,
+    onClose: onStartLoanClose,
+  } = useDisclosure();
+  const { data: session } = useSession();
+  const cardBg = useColorModeValue('white', 'gray.800');
+
   const isAdmin = session?.user?.group === 'ADMIN';
 
   // API-funktiot
@@ -115,7 +131,36 @@ export default function LoanView({
     router.push('/loan');
   };
 
-  // Removed unused rejectLoan
+  const rejectLoan = async () => {
+    const body = { id: loan.id };
+    await fetch('/api/loan/rejectLoan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        toast({
+          title: 'Laina hylätty',
+          description: 'Laina hylätty onnistuneesti',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+        router.push('/loan');
+      })
+      .catch((err) => {
+        toast({
+          title: 'Error',
+          description: err.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      });
+  };
 
   const loanProcessed = async () => {
     await fetch('/api/loan/loanProcessed', {
@@ -168,21 +213,44 @@ export default function LoanView({
     toast({ title: 'Ilmoitus lähetetty', status: 'success', duration: 5000, isClosable: true });
   };
 
+  const isKiosk = session?.user?.group === 'KIOSK';
+
+  // Derive the loan status from reservations
+  const derivedStatus = deriveLoanStatus(
+    loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
+  );
+
   //Check if user is allowed to see information about this loan
-  if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id)) {
-    return <NotAuthenticated />;
+  // KIOSK users can view all loans in read-only mode
+  if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id || isKiosk)) {
+    return (
+      <>
+        <NotAuthenticated />
+      </>
+    );
   }
 
-  // Determine which buttons to show based on loan status and user role
+  // Determine which buttons to show based on derived status and user role
   const canReject =
     (isAdmin || session?.user?.id === loan.user.id) &&
-    loan.status !== 'REJECTED' &&
-    loan.status !== 'INUSE' &&
-    loan.status !== 'RETURNED';
-  const canEdit = isAdmin && loan.status !== 'INUSE' && loan.status !== 'RETURNED';
+    derivedStatus !== 'REJECTED' &&
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'RETURNED';
+
+  const canEdit =
+    (isAdmin || session?.user?.id === loan.user.id) &&
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'RETURNED';
+
   const canApprove =
-    isAdmin && loan.status !== 'ACCEPTED' && loan.status !== 'INUSE' && loan.status !== 'RETURNED';
-  const canMarkReturned = isAdmin && (loan.status === 'INUSE' || loan.status === 'IN_BOX');
+    isAdmin &&
+    derivedStatus !== 'ACCEPTED' &&
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'RETURNED';
+
+  const canStartUse = derivedStatus === 'ACCEPTED';
+
+  const canMarkReturned = isAdmin && (derivedStatus === 'INUSE' || derivedStatus === 'IN_BOX');
   const canSeeReports = isAdmin && reports.length > 0;
 
   return (
@@ -190,11 +258,18 @@ export default function LoanView({
       <Head>
         <title>Varaus: {loan.description || 'Ei kuvausta'} | Klapi</title>
       </Head>
+      <Breadcrumbs
+        items={[
+          { label: 'Varaukset', href: '/loan' },
+          { label: loan.description || 'Ei kuvausta' },
+        ]}
+      />
       <Stack spacing={6}>
         <Heading as="h1" mb={4}>
           Varaus: {loan.description || 'Ei kuvausta'}
         </Heading>
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+
+        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
             Perustiedot
           </Heading>
@@ -213,12 +288,14 @@ export default function LoanView({
                 timeStyle: 'short',
               })}
             </Text>
-            <Text>Varaaja: {loan.user.name}</Text>
-            {loan.loaner && <Text>Lainaaja: {loan.loaner}</Text>}
+            <Text>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</Text>
+            {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
+              <Text>Tili: {loan.user.name}</Text>
+            )}
             {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
             <Box>
-              <Tag colorScheme={getLoanStatusColor(loan.status)} width="fit-content">
-                {getLoanStatusLabel(loan.status)}
+              <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
+                {getLoanStatusLabel(derivedStatus)}
               </Tag>
               {reports.length > 0 && (
                 <Tag colorScheme="red" size="md" flexShrink={0} ml={2}>
@@ -229,7 +306,8 @@ export default function LoanView({
             </Box>
           </Stack>
         </Box>
-        <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+
+        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
           <Heading as="h2" size="lg" mb={4}>
             Kamat
           </Heading>
@@ -250,14 +328,14 @@ export default function LoanView({
             onSendAnnouncement={sendAnnouncement}
           />
         )}
-        {loan.status === 'RETURNED' ? (
+        {derivedStatus === 'RETURNED' ? (
           <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Heading as="h2" size="md" color="green.700">
-              ✓ Lainaustapahtuma suoritettu loppuun
+              Lainaustapahtuma suoritettu loppuun
             </Heading>
           </Box>
         ) : canMarkReturned ? (
-          <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+          <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
             <Stack spacing={3}>
               <Heading as="h3" size="md" mb={2}>
                 Toiminnot
@@ -268,8 +346,8 @@ export default function LoanView({
             </Stack>
           </Box>
         ) : (
-          (canReject || canEdit || canApprove) && (
-            <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+          (canReject || canEdit || canApprove || canStartUse) && (
+            <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
               <Stack spacing={3}>
                 <Heading as="h3" size="md" mb={2}>
                   Toiminnot
@@ -292,11 +370,40 @@ export default function LoanView({
                       Hyväksy
                     </Button>
                   )}
+                  {canStartUse && (
+                    <Button colorScheme="blue" onClick={onStartLoanOpen} flex="1">
+                      Aloita lainaus
+                    </Button>
+                  )}
                 </Stack>
               </Stack>
             </Box>
           )
         )}
+
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Hylätäänkö varaus?</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>Varaushakemus hylätään. Oletko varma?</ModalBody>
+
+            <ModalFooter>
+              <Button colorScheme="red" mr={3} onClick={rejectLoan}>
+                Hylkää
+              </Button>
+              <Button colorScheme="gray" onClick={onClose}>
+                Peruuta
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        <StartLoanConfirmation
+          isOpen={isStartLoanOpen}
+          onClose={onStartLoanClose}
+          loan={loan}
+        />
       </Stack>
     </>
   );
