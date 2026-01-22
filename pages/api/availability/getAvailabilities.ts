@@ -40,23 +40,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const items = await prisma.item.findMany({});
-  let reservations;
-  try {
-    reservations = await prisma.reservation.findMany({
-      include: {
-        item: true,
-        loan: true,
-      },
-    });
-  } catch (e) {
-    // Try to log all reservation IDs and their loanId for debugging
-    const allReservations = await prisma.reservation.findMany({});
-    console.error(
-      'Reservation error! All reservation IDs and loanIds:',
-      allReservations.map((r) => ({ id: r.id, loanId: r.loanId })),
-    );
-    throw e;
-  }
+  const reservations = await prisma.reservation.findMany({
+    include: {
+      item: true,
+      loan: true,
+    },
+  });
 
   const availabilities: Record<string, { byDate: Record<string, number>; available: number }> = {};
 
