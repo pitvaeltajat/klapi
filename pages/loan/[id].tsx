@@ -301,7 +301,7 @@ export default function LoanView({
               <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
                 {getLoanStatusLabel(derivedStatus)}
               </Tag>
-              {reports.length > 0 && (
+              {reports.filter((r) => r.status !== 'RESOLVED').length > 0 && (
                 <Tag colorScheme="red" size="md" flexShrink={0} ml={2}>
                   Käsittelemättömiä raportteja:{' '}
                   {reports.filter((r) => r.status !== 'RESOLVED').length}

@@ -165,7 +165,7 @@ enum ReportStatus {
   RESOLVED
 }
 
-enum ReportCreated{
+enum ReportCreated {
   BEFORE_LOAN
   AFTER_LOAN
 }
