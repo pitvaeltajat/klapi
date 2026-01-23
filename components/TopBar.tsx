@@ -23,16 +23,13 @@ import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useDisclosure } from '@chakra-ui/react';
-import { ReactNode, useState, useRef, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
 
 export default function TopBar({ children }: { children: ReactNode }) {
-  const [titleHover, setTitleHover] = useState(false);
-  const [revealWords, setRevealWords] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const revealDelayRef = useRef<number | null>(null);
   const { data: session } = useSession();
   const role = session?.user?.group;
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -41,14 +38,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const headerBg = useColorModeValue('rgba(66,131,209,0.9)', 'rgba(26,32,44,0.95)');
 
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isDesktop) {
-      setTitleHover(false);
-      if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-      setRevealWords(false);
-    }
-  }, [isDesktop]);
 
   useEffect(() => {
     const handleStart = () => setIsNavigating(true);
@@ -114,111 +103,23 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 />
               )}
 
-              <Box
-                onMouseEnter={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(true);
-                  if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                  revealDelayRef.current = window.setTimeout(() => {
-                    setRevealWords(true);
-                  }, 2000);
-                }}
-                onMouseLeave={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(false);
-                  if (revealDelayRef.current) {
-                    window.clearTimeout(revealDelayRef.current);
-                    revealDelayRef.current = null;
-                  }
-                  setRevealWords(false);
-                }}
-                onFocus={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(true);
-                  if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                  revealDelayRef.current = window.setTimeout(() => {
-                    setRevealWords(true);
-                  }, 2000);
-                }}
-                onBlur={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(false);
-                  if (revealDelayRef.current) {
-                    window.clearTimeout(revealDelayRef.current);
-                    revealDelayRef.current = null;
-                  }
-                  setRevealWords(false);
-                }}
-              >
+              <Box>
                 <Link
                   as={NextLink}
                   href="/"
                   _hover={{ textDecoration: 'none' }}
-                  aria-label={
-                    titleHover || revealWords
-                      ? 'Kaluston Lainaus Applikaatio Pitvalaisten Ilmeiseen tarpeeseen'
-                      : 'KLAPI'
-                  }
+                  aria-label="KLAPI"
                   tabIndex={0}
                 >
                   <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={revealWords ? '0.4ch' : '0.8ch'}
                     as="span"
-                    fontSize="lg"
+                    display="inline-block"
+                    fontWeight="semibold"
+                    lineHeight="1"
+                    fontSize="2xl"
+                    letterSpacing="0.02em"
                   >
-                    {!revealWords ? (
-                      <Box
-                        as="span"
-                        display="inline-block"
-                        fontWeight="semibold"
-                        lineHeight="1"
-                        fontSize="2xl"
-                        letterSpacing="0.02em"
-                      >
-                        KLAPI
-                      </Box>
-                    ) : (
-                      [
-                        'Kaluston',
-                        'Lainaus',
-                        'Applikaatio',
-                        'Pitvalaisten',
-                        'Ilmeiseen tarpeeseen',
-                      ].map((word, idx) => {
-                        const expanded = `${Math.max(word.length + 1, 5)}ch`;
-                        return (
-                          <Box
-                            as="span"
-                            key={idx}
-                            overflow="hidden"
-                            whiteSpace="nowrap"
-                            transition="width 220ms cubic-bezier(.2,.8,.2,1), opacity 160ms"
-                            width={expanded}
-                            minW={'1.4ch'}
-                            display="inline-flex"
-                            alignItems="center"
-                            justifyContent="flex-start"
-                            textAlign="left"
-                            fontWeight="semibold"
-                            px={2}
-                            letterSpacing="0.02em"
-                          >
-                            <Box
-                              as="span"
-                              display="inline-block"
-                              transformOrigin="left center"
-                              transition="transform 220ms"
-                              fontSize={'lg'}
-                              lineHeight="1"
-                            >
-                              {word}
-                            </Box>
-                          </Box>
-                        );
-                      })
-                    )}
+                    KLAPI
                   </Box>
                 </Link>
               </Box>
