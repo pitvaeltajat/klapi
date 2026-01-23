@@ -14,4 +14,5 @@ export const visibleItemsWhere: Prisma.ItemWhereInput = {
 export const itemsWithRelationsInclude = {
   categories: true,
   reservations: { include: { loan: true } },
+  announcements: { orderBy: { createdAt: 'desc' } },
 } as const;

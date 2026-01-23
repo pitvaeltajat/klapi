@@ -1,11 +1,13 @@
-import { Box, Flex, Image, Link, AspectRatio, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, Image, Link, AspectRatio, useColorModeValue, Text } from '@chakra-ui/react';
 import NextLink from 'next/link';
-import { Item, Category, ItemType } from '@prisma/client';
+import { Item, Category, ItemType, Announcement } from '@prisma/client';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
+import { LuTriangleAlert } from 'react-icons/lu';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
   type: ItemType;
+  announcements: Announcement[];
 }
 
 interface BrowseItemCardProps {
@@ -67,6 +69,23 @@ export default function BrowseItemCard({ item }: BrowseItemCardProps) {
           <Box fontSize="l" fontWeight="semibold" as="h5">
             {item.categories.map((cat) => cat.name).join(', ')}
           </Box>
+
+          {Array.isArray(item.announcements) &&
+            item.announcements.length > 0 &&
+            item.announcements.map((announcement: Announcement) => (
+              <Box key={announcement.id} fontSize="md" fontWeight="semibold" color="red.500" mt={2}>
+                <Link
+                  as={NextLink}
+                  href={'/item/announcements'}
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
+                  <LuTriangleAlert style={{ marginRight: '0.4em' }} />
+                  Sisältää ilmoituksen
+                </Link>
+              </Box>
+            ))}
         </Box>
       </Box>
     </Box>

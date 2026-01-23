@@ -6,10 +6,11 @@ import { useDates } from '@/contexts/DatesContext';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { Item, Category } from '@prisma/client';
+import { Item, Category, Announcement } from '@prisma/client';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
+  announcements: Announcement[];
 }
 
 interface Availability {
@@ -82,6 +83,7 @@ export default function AllItems({ items }: AllItemsProps) {
                 id: cat.id,
                 name: cat.name,
               })),
+              announcements: item.announcements || null,
             }}
             availableAmount={availabilities?.[item.id]?.available ?? 0}
           />
