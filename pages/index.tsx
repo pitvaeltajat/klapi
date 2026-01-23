@@ -7,7 +7,7 @@ import DateSelector from '../components/DateSelector';
 import KioskModeSelector from '../components/KioskModeSelector';
 import KioskDateSelector from '../components/KioskDateSelector';
 import type { GetServerSideProps } from 'next';
-import { Item, Category, Loan, Reservation, ItemType } from '@prisma/client';
+import { Item, Category, Loan, Reservation, ItemType, Announcement } from '@prisma/client';
 import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
 import ItemBrowser from '../components/ItemBrowser';
@@ -39,6 +39,7 @@ interface ItemWithRelations extends Item {
   categories: Category[];
   type: ItemType;
   reservations: (Reservation & { loan: Loan })[];
+  announcements: Announcement[];
 }
 
 interface IndexProps {
@@ -74,8 +75,14 @@ export default function Index({ items, categories }: IndexProps) {
       {dates.browseMode ? (
         <>
           <BrowseModeHeader onExitBrowseMode={() => setBrowseMode(false)} />
+
           <ItemBrowser
-            items={items}
+            items={items.map((item) => ({
+              ...item,
+              announcements: item.announcements.filter(
+                (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
+              ),
+            }))}
             categories={categories}
             showCustomItemLink={false}
             renderItems={(filteredItems) => (
@@ -94,7 +101,16 @@ export default function Index({ items, categories }: IndexProps) {
           ) : (
             <>
               <KioskDateSelector />
-              <ItemBrowser items={items} categories={categories} showCustomItemLink={true} />
+              <ItemBrowser
+                items={items.map((item) => ({
+                  ...item,
+                  announcements: item.announcements.filter(
+                    (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
+                  ),
+                }))}
+                categories={categories}
+                showCustomItemLink={true}
+              />
             </>
           )}
         </>
@@ -103,7 +119,16 @@ export default function Index({ items, categories }: IndexProps) {
           {dates.datesSet ? (
             <>
               <DateSelector />
-              <ItemBrowser items={items} categories={categories} showCustomItemLink={true} />
+              <ItemBrowser
+                items={items.map((item) => ({
+                  ...item,
+                  announcements: item.announcements.filter(
+                    (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
+                  ),
+                }))}
+                categories={categories}
+                showCustomItemLink={true}
+              />
             </>
           ) : (
             <DateSelector />

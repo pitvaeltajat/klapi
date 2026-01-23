@@ -11,6 +11,7 @@ import {
   InputLeftAddon,
   InputRightAddon,
   Input,
+  Text,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { ItemCardProps } from '../types';
@@ -18,6 +19,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@chakra-ui/react';
 import { useCallback, useMemo, memo } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
+import { LuTriangleAlert } from 'react-icons/lu';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 
 const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps) {
@@ -117,6 +119,23 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
         <Box fontSize="l" fontWeight="semibold" as="h5">
           {item.categories.map((cat) => cat.name).join(', ')}
         </Box>
+
+        {Array.isArray(item.announcements) &&
+          item.announcements.length > 0 &&
+          item.announcements.map((announcement) => (
+            <Box key={announcement.id} fontSize="md" fontWeight="semibold" color="red.500" mt={2}>
+              <Link
+                as={NextLink}
+                href={'/item/announcements'}
+                display="flex"
+                alignItems="center"
+                gap={1}
+              >
+                <LuTriangleAlert style={{ marginRight: '0.4em' }} />
+                Sisältää ilmoituksen
+              </Link>
+            </Box>
+          ))}
 
         {amountInCart > 0 ? (
           <InputGroup size="md" mt={4}>

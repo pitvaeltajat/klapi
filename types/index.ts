@@ -1,4 +1,4 @@
-import { User } from '@prisma/client';
+import { Announcement, User } from '@prisma/client';
 import { DefaultSession } from 'next-auth';
 
 // Extend next-auth session types
@@ -44,6 +44,7 @@ export interface ItemCardProps {
       id: string;
       name: string;
     }[];
+    announcements: Announcement[];
   };
   availableAmount: number;
 }

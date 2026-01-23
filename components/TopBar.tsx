@@ -142,6 +142,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 >
                   Kamat
                 </Link>
+                <Link as={NextLink} href="/item/announcements" fontWeight="medium">
+                  Ilmoitukset
+                </Link>
                 {(role === 'ADMIN' || role === 'KIOSK') && (
                   <Link as={NextLink} href="/loan" fontWeight="medium">
                     Varaukset
@@ -151,6 +154,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   <>
                     <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
                       Laatikot
+                    </Link>
+                    <Link as={NextLink} href="/admin/reports" fontWeight="medium">
+                      Raportit
                     </Link>
                     <Link as={NextLink} href="/admin" fontWeight="medium">
                       Admin
@@ -268,6 +274,13 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       </Link>
                     </Td>
                   </Tr>
+                  <Tr>
+                    <Td>
+                      <Link as={NextLink} href="/item/announcements" onClick={onClose}>
+                        Ilmoitukset
+                      </Link>
+                    </Td>
+                  </Tr>
                   {(role === 'ADMIN' || role === 'KIOSK') && (
                     <Tr>
                       <Td>
@@ -283,6 +296,13 @@ export default function TopBar({ children }: { children: ReactNode }) {
                         <Td>
                           <Link as={NextLink} href="/admin/boxes" onClick={onClose}>
                             Laatikot
+                          </Link>
+                        </Td>
+                      </Tr>
+                      <Tr>
+                        <Td>
+                          <Link as={NextLink} href="/admin/reports" onClick={onClose}>
+                            Raportit
                           </Link>
                         </Td>
                       </Tr>

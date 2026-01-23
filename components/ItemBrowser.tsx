@@ -18,12 +18,13 @@ import {
 } from '@chakra-ui/react';
 import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
-import { Item, Category, Loan, Reservation } from '@prisma/client';
+import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
   reservations?: (Reservation & { loan: Loan })[];
+  announcements: Announcement[];
 }
 
 interface ItemBrowserProps {
@@ -77,11 +78,7 @@ export default function ItemBrowser({
           />
           <InputRightElement>
             {search ? (
-              <FaTimes
-                cursor="pointer"
-                onClick={() => setSearch('')}
-                aria-label="Tyhjennä haku"
-              />
+              <FaTimes cursor="pointer" onClick={() => setSearch('')} aria-label="Tyhjennä haku" />
             ) : (
               <FaSearch />
             )}
@@ -89,7 +86,7 @@ export default function ItemBrowser({
         </InputGroup>
       </Box>
       <Box padding="2em" paddingLeft={0} display={{ base: 'none', md: 'block' }}>
-        <Wrap padding="4px" >
+        <Wrap padding="4px">
           <WrapItem key="all">
             <Button
               onClick={() => setCategory('')}
@@ -100,31 +97,37 @@ export default function ItemBrowser({
             </Button>
           </WrapItem>
 
-          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
-            <WrapItem key={cat.id}>
-              <Button
-                onClick={() => setCategory(category === cat.name ? '' : cat.name)}
-                variant={category === cat.name ? 'solid' : 'outline'}
-                colorScheme={category === cat.name ? 'blue' : 'gray'}
-              >
-                {cat.name}
-              </Button>
-            </WrapItem>
-          ))}
+          {[...categories]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((cat) => (
+              <WrapItem key={cat.id}>
+                <Button
+                  onClick={() => setCategory(category === cat.name ? '' : cat.name)}
+                  variant={category === cat.name ? 'solid' : 'outline'}
+                  colorScheme={category === cat.name ? 'blue' : 'gray'}
+                >
+                  {cat.name}
+                </Button>
+              </WrapItem>
+            ))}
         </Wrap>
       </Box>
       <Box padding="2em" paddingLeft={0} display={{ base: 'block', md: 'none' }}>
         <Select
           width="100%"
           value={category}
-          onChange={e => setCategory(e.target.value)}
+          onChange={(e) => setCategory(e.target.value)}
           borderRadius="6px"
           borderColor="gray.300"
           placeholder="Kaikki"
         >
-          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(cat => (
-            <option key={cat.id} value={cat.name}>{cat.name}</option>
-          ))}
+          {[...categories]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((cat) => (
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
+              </option>
+            ))}
         </Select>
       </Box>
       {showCustomItemLink && (
