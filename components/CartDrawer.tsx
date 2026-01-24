@@ -191,12 +191,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   size="md"
                 />
               ) : (
-                <Input
-                  id="loaner"
-                  value={cart.loaner || ''}
-                  isDisabled
-                  bg={disabledInputBg}
-                />
+                <Input id="loaner" value={cart.loaner || ''} isDisabled bg={disabledInputBg} />
               )}
             </Box>
             <Box>
@@ -227,28 +222,35 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <Box mt={4}>
             <span style={{ color: 'red' }}>*</span> Pakollinen kenttä
           </Box>
-
-          <Box mt={6} bg="gray.50" borderRadius="lg" borderWidth="2px" borderColor="gray.200" p={4}>
-            <Text fontSize="md" lineHeight="tall">
-              Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja mahdolliset
-              vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat, reikä laavussa
-              tms.)
-            </Text>
-            <Text fontSize="md" lineHeight="tall" mt={2} color={'red.600'}>
-              <IoMdAlert style={{ display: 'inline', marginRight: '8px' }} />
-              Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
-              havaitsemiasi puutteita tai vahinkoja.
-            </Text>
-            <Textarea
-              placeholder="Kirjoita raportti tähän..."
-              value={reportContent}
-              onChange={(e) => setReportContent(e.target.value)}
-              mt={3}
-              size="sm"
-              minH="100px"
-            />
-          </Box>
-
+          {isKiosk && (
+            <Box
+              mt={6}
+              bg="gray.50"
+              borderRadius="lg"
+              borderWidth="2px"
+              borderColor="gray.200"
+              p={4}
+            >
+              <Text fontSize="md" lineHeight="tall">
+                Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja
+                mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
+                reikä laavussa tms.)
+              </Text>
+              <Text fontSize="md" lineHeight="tall" mt={2} color={'red.600'}>
+                <IoMdAlert style={{ display: 'inline', marginRight: '8px' }} />
+                Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
+                havaitsemiasi puutteita tai vahinkoja.
+              </Text>
+              <Textarea
+                placeholder="Kirjoita raportti tähän..."
+                value={reportContent}
+                onChange={(e) => setReportContent(e.target.value)}
+                mt={3}
+                size="sm"
+                minH="100px"
+              />
+            </Box>
+          )}
           {cart.items.length > 0 ? (
             <Stack spacing={2} marginTop="20px">
               <Heading as="h3" size="md">
