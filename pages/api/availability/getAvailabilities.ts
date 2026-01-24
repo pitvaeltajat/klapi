@@ -39,13 +39,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  const items = await prisma.item.findMany({});
-  const reservations = await prisma.reservation.findMany({
+  const items = await prisma.item.findMany({
     include: {
-      item: true,
-      loan: true,
+      reservations: {
+        include: {
+          loan: true,
+          item: true,
+        },
+      },
     },
   });
+  // Filter out orphaned reservations (loan === null)
+  const reservations = items.flatMap((item) => item.reservations).filter(r => r.loan !== null);
 
   const availabilities: Record<string, { byDate: Record<string, number>; available: number }> = {};
 
