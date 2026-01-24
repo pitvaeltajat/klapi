@@ -1,13 +1,32 @@
 import Auth from './auth';
 import Head from 'next/head';
-import { Heading, Stack, Box, Text, VStack, HStack, Switch, useColorModeValue } from '@chakra-ui/react';
-import { useSession, getSession } from 'next-auth/react';
+import {
+  Heading,
+  Stack,
+  Box,
+  Text,
+  VStack,
+  HStack,
+  Switch,
+  useColorModeValue,
+  Button,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure,
+} from '@chakra-ui/react';
+import { useSession, getSession, signOut } from 'next-auth/react';
 import prisma from '../utils/prisma';
 import { LoanCard } from './loan';
 import Breadcrumbs from '../components/Breadcrumbs';
 import type { GetServerSideProps } from 'next';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import { useState } from 'react';
+import React from 'react';
+import { LuTriangleAlert } from 'react-icons/lu';
 
 interface Report {
   id: string;
@@ -167,6 +186,17 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
     }
   };
 
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef(null);
+
+  const handleSignOut = () => {
+    if (session && session.user.group === 'KIOSK') {
+      onOpen();
+      return;
+    }
+    signOut();
+  };
+
   if (!session) {
     return null;
   }
@@ -180,6 +210,47 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
       <Heading as="h1" size="xl" mb={6}>
         Oma tili
       </Heading>
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => {
+          onClose();
+        }}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Kaluston koneen uloskirjautuminen
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Olet kirjautumassa ulos kaluston koneen käyttäjältä. Tätä ei yleensä pitäisi tehdä
+              jotta myös seuraava käyttäjä voi käyttää laitetta normaalisti. Haluatko varmasti
+              kirjautua ulos?
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={cancelRef}
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                Peruuta
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={() => {
+                  signOut();
+                  onClose();
+                }}
+                ml={3}
+              >
+                <LuTriangleAlert style={{ marginRight: '0.4em' }} />
+                Kirjaudu ulos
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
 
       <VStack spacing={6} align="stretch">
         <Box
@@ -205,7 +276,9 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
             </Text>
           </VStack>
           <Box my={4} h="1px" bg={dividerColor} />
-          <Auth />
+          <Button colorScheme="red" onClick={handleSignOut}>
+            Kirjaudu ulos
+          </Button>
         </Box>
 
         <Box
