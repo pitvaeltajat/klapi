@@ -92,6 +92,11 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.userId as string;
         session.user.group = token.group || 'USER';
+        // If group is KIOSK and login was via CredentialsProvider, set session expiration to one year
+        if (session.user.group === 'KIOSK' && token.provider === 'credentials') {
+          const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+          session.expires = new Date(Date.now() + oneYearMs).toISOString();
+        }
       }
       return session;
     },
@@ -99,6 +104,10 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.group = user.group;
         token.userId = user.id;
+      }
+      // Store provider in token for session expiration logic
+      if (account?.provider) {
+        token.provider = account.provider;
       }
 
       if (account?.provider === 'google' && token.email) {
