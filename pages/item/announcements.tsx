@@ -106,6 +106,15 @@ export default function Announcements({ announcements }: AnnouncementProps) {
     }
   };
 
+  const handleOravakeittoClick = () => {
+    toast({
+      title: 'Oravakeitto on herkullista!',
+      description: 'Kiitos kun kokeilit oravakeittoa.',
+      status: 'info',
+      duration: 4000,
+    });
+  };
+
   return (
     <>
       <Head>
