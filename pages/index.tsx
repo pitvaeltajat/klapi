@@ -62,10 +62,24 @@ export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
 };
 
 export default function Index({ items, categories }: IndexProps) {
-  const { state: dates, setBrowseMode } = useDates();
+  const { state: dates, setBrowseMode, setStartDate, setEndDate, setDatesSet } = useDates();
   const { data: session } = useSession();
 
   const isKioskMode = session?.user?.group === 'KIOSK';
+
+  const handleExitBrowseMode = () => {
+    setBrowseMode(false);
+    // For kiosk mode, also set default dates so it goes directly to reservation
+    if (isKioskMode) {
+      const now = new Date();
+      const oneWeekLater = new Date();
+      oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+      oneWeekLater.setHours(18, 0, 0, 0);
+      setStartDate(now);
+      setEndDate(oneWeekLater);
+      setDatesSet(true);
+    }
+  };
 
   return (
     <>
@@ -74,7 +88,7 @@ export default function Index({ items, categories }: IndexProps) {
       </Head>
       {dates.browseMode ? (
         <>
-          <BrowseModeHeader onExitBrowseMode={() => setBrowseMode(false)} />
+          <BrowseModeHeader onExitBrowseMode={handleExitBrowseMode} />
 
           <ItemBrowser
             items={items.map((item) => ({

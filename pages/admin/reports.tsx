@@ -12,6 +12,7 @@ import {
   VStack,
   HStack,
   Divider,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -79,6 +80,7 @@ export const getServerSideProps: GetServerSideProps<ReportsPageProps> = async ()
 
 export default function ReportsPage({ reports }: ReportsPageProps) {
   const { data: session } = useSession();
+  const emptyBg = useColorModeValue('gray.50', 'gray.700');
 
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
@@ -104,8 +106,13 @@ export default function ReportsPage({ reports }: ReportsPageProps) {
         Raportit
       </Heading>
 
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        {reports.map((report) => (
+      {reports.length === 0 ? (
+        <Box p={6} bg={emptyBg} borderRadius="md" textAlign="center">
+          <Text color="gray.600">Ei raportteja</Text>
+        </Box>
+      ) : (
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+          {reports.map((report) => (
           <Box key={report.id} p={5} shadow="md" borderWidth="1px" borderRadius="md">
             <VStack align="start" spacing={3}>
               <HStack justify="space-between" width="100%">
@@ -162,7 +169,8 @@ export default function ReportsPage({ reports }: ReportsPageProps) {
             </VStack>
           </Box>
         ))}
-      </SimpleGrid>
+        </SimpleGrid>
+      )}
     </>
   );
 }

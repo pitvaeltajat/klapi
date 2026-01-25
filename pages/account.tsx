@@ -9,6 +9,7 @@ import {
   HStack,
   Switch,
   useColorModeValue,
+  useColorMode,
   Button,
   AlertDialog,
   AlertDialogBody,
@@ -17,6 +18,8 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useDisclosure,
+  RadioGroup,
+  Radio,
 } from '@chakra-ui/react';
 import { useSession, getSession, signOut } from 'next-auth/react';
 import prisma from '../utils/prisma';
@@ -24,7 +27,7 @@ import { LoanCard } from './loan';
 import Breadcrumbs from '../components/Breadcrumbs';
 import type { GetServerSideProps } from 'next';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
 
@@ -141,6 +144,46 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
     userEmailPreferences.emailNewLoanNotification,
   );
   const [isSaving, setIsSaving] = useState(false);
+  const { colorMode, setColorMode } = useColorMode();
+  const [colorModePreference, setColorModePreference] = useState<'light' | 'dark' | 'system'>(
+    'system',
+  );
+
+  // Load color mode preference from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('chakra-ui-color-mode-preference');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      setColorModePreference(stored);
+    }
+  }, []);
+
+  // Handle color mode preference change
+  const handleColorModeChange = (value: string) => {
+    const preference = value as 'light' | 'dark' | 'system';
+    setColorModePreference(preference);
+    localStorage.setItem('chakra-ui-color-mode-preference', preference);
+
+    if (preference === 'system') {
+      // Use system preference
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setColorMode(systemPrefersDark ? 'dark' : 'light');
+    } else {
+      setColorMode(preference);
+    }
+  };
+
+  // Listen for system color scheme changes when in system mode
+  useEffect(() => {
+    if (colorModePreference !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      setColorMode(e.matches ? 'dark' : 'light');
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [colorModePreference, setColorMode]);
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
@@ -373,6 +416,36 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
                 </HStack>
               </>
             )}
+          </VStack>
+        </Box>
+
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="md"
+          boxShadow="sm"
+          borderWidth="1px"
+          borderColor={cardBorderColor}
+        >
+          <Heading size="md" mb={4}>
+            Ulkoasu
+          </Heading>
+          <VStack align="start" spacing={4}>
+            <VStack align="start" spacing={0}>
+              <Text fontSize="sm" fontWeight="medium">
+                Teema
+              </Text>
+              <Text fontSize="xs" color="gray.500">
+                Valitse sovelluksen väritila
+              </Text>
+            </VStack>
+            <RadioGroup value={colorModePreference} onChange={handleColorModeChange}>
+              <HStack spacing={4}>
+                <Radio value="light">Vaalea</Radio>
+                <Radio value="dark">Tumma</Radio>
+                <Radio value="system">Järjestelmä</Radio>
+              </HStack>
+            </RadioGroup>
           </VStack>
         </Box>
 

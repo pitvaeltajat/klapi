@@ -27,6 +27,7 @@ import {
   Text,
   Badge,
   Flex,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import { MdOutlinePassword } from "react-icons/md";
@@ -99,6 +100,7 @@ const Admin: NextPage = () => {
   const { data: users, error } = useSWR<UserWithGroup[]>('/api/user/getUsers');
   const { mutate } = useSWRConfig();
   const toast = useToast();
+  const cardBg = useColorModeValue('white', 'gray.800');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [userToDelete, setUserToDelete] = useState<UserWithGroup | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -232,7 +234,7 @@ const Admin: NextPage = () => {
 
 
       {/* User Management Section */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
         <HStack justifyContent="space-between" mb={4}>
           <Heading size="md">Käyttäjien hallinta</Heading>
           <Text color="gray.600" fontSize="sm">
