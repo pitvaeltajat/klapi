@@ -1,4 +1,3 @@
-import Auth from './auth';
 import Head from 'next/head';
 import {
   Heading,
@@ -25,6 +24,7 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import type { GetServerSideProps } from 'next';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import { useState } from 'react';
+
 import React from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
 
@@ -134,12 +134,14 @@ function compareDates(dateA: Date, dateB: Date) {
 
 export default function Account({ loans, userEmailPreferences }: AccountProps) {
   const { data: session } = useSession();
+
   const [emailWeeklyReminder, setEmailWeeklyReminder] = useState(
     userEmailPreferences.emailWeeklyReminder,
   );
   const [emailNewLoanNotification, setEmailNewLoanNotification] = useState(
     userEmailPreferences.emailNewLoanNotification,
   );
+
   const [isSaving, setIsSaving] = useState(false);
 
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -200,6 +202,9 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
   if (!session) {
     return null;
   }
+
+  // Helper to get effective group
+  const effectiveGroup = session?.user?.group;
 
   return (
     <>
@@ -268,12 +273,18 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
             </Text>
             <Text fontSize="sm" color="gray.500">
               Rooli:{' '}
-              {session?.user?.group === 'USER'
+              {effectiveGroup === 'USER'
                 ? 'Käyttäjä'
-                : session?.user?.group === 'KIOSK'
+                : effectiveGroup === 'KIOSK'
                   ? 'Kaluston kone'
                   : 'Admin'}
             </Text>
+            {session?.user?.group === 'KIOSK' && effectiveGroup === 'ADMIN' && (
+              <Text fontSize="xs" color="green.500" mt={1}>
+                ADMIN-oikeudet käytössä (tähän sessioon)
+              </Text>
+            )}
+            {/* PIN-koodin syöttömodal poistettu */}
           </VStack>
           <Box my={4} h="1px" bg={dividerColor} />
           <Button colorScheme="red" onClick={handleSignOut}>

@@ -7,7 +7,12 @@ declare module 'next-auth' {
     user: {
       id: string;
       group: 'ADMIN' | 'USER' | 'KIOSK';
+      adminExpiry?: string | null;
     } & DefaultSession['user'];
+  }
+  interface User {
+    group: 'ADMIN' | 'USER' | 'KIOSK';
+    adminExpiry?: string | null;
   }
 }
 

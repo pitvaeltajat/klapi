@@ -8,16 +8,27 @@ import {
   DrawerOverlay,
   TableContainer,
   Table,
+  Text,
   Tbody,
   Tr,
   Td,
   Link,
   Container,
   Circle,
-  useBreakpointValue,
   Progress,
   useColorModeValue,
   Divider,
+  Switch,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Button,
+  HStack,
+  PinInput,
+  PinInputField,
 } from '@chakra-ui/react';
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
@@ -29,26 +40,91 @@ import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
 
 export default function TopBar({ children }: { children: ReactNode }) {
-  const [titleHover, setTitleHover] = useState(false);
-  const [revealWords, setRevealWords] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const revealDelayRef = useRef<number | null>(null);
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const role = session?.user?.group;
+  const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
+  const ADMIN_PIN = process.env.NEXT_PUBLIC_KIOSK_ADMIN_PIN || '1234';
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  // Helper to get effective group and expiry
+  const effectiveGroup = session?.user?.group;
+  const [expiry, setExpiry] = useState<number | null>(null);
+  const [remaining, setRemaining] = useState<number>(0);
+
+  // Read expiry from session if present
+  useEffect(() => {
+    if (session?.user && 'adminExpiry' in session.user && session.user.adminExpiry) {
+      const exp =
+        typeof session.user.adminExpiry === 'string'
+          ? Date.parse(session.user.adminExpiry)
+          : session.user.adminExpiry;
+      setExpiry(exp);
+    } else {
+      setExpiry(null);
+    }
+  }, [session?.user]);
+  // Removed setExpiry from main body to prevent infinite re-render
+
+  // Countdown timer
+  useEffect(() => {
+    if (!expiry || effectiveGroup !== 'ADMIN') {
+      setRemaining(0);
+      return;
+    }
+    const update = () => {
+      setRemaining(Math.max(0, Math.floor((expiry - Date.now()) / 1000)));
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [expiry, effectiveGroup]);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  // Handle switch toggle
+  const handleAdminSwitch = async (checked: boolean) => {
+    if (checked) {
+      setPinDialogOpen(true);
+      setPinInput('');
+      setPinError('');
+    } else {
+      setAdminSwitchLoading(true);
+      await update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
+      setAdminSwitchLoading(false);
+    }
+  };
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pinInput === ADMIN_PIN) {
+      setAdminSwitchLoading(true);
+      const expiryDate = new Date(Date.now() + 30 * 60 * 1000); // 30min from now
+      await update({
+        user: { ...session?.user, group: 'ADMIN', adminExpiry: expiryDate.toISOString() },
+      });
+      setPinDialogOpen(false);
+      setPinError('');
+      setAdminSwitchLoading(false);
+    } else {
+      setPinError('Väärä PIN-koodi');
+    }
+  };
+
+  // Auto-revert to KIOSK when timer expires
+  useEffect(() => {
+    if (effectiveGroup === 'ADMIN' && expiry && Date.now() < expiry) {
+      const timeout = setTimeout(() => {
+        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
+      }, expiry - Date.now());
+      return () => clearTimeout(timeout);
+    }
+  }, [effectiveGroup, expiry, session, update]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
 
   const headerBg = useColorModeValue('rgba(66,131,209,0.9)', 'rgba(26,32,44,0.95)');
 
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isDesktop) {
-      setTitleHover(false);
-      if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-      setRevealWords(false);
-    }
-  }, [isDesktop]);
 
   useEffect(() => {
     const handleStart = () => setIsNavigating(true);
@@ -115,180 +191,152 @@ export default function TopBar({ children }: { children: ReactNode }) {
               )}
 
               <Box
-                onMouseEnter={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(true);
-                  if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                  revealDelayRef.current = window.setTimeout(() => {
-                    setRevealWords(true);
-                  }, 2000);
-                }}
-                onMouseLeave={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(false);
-                  if (revealDelayRef.current) {
-                    window.clearTimeout(revealDelayRef.current);
-                    revealDelayRef.current = null;
-                  }
-                  setRevealWords(false);
-                }}
-                onFocus={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(true);
-                  if (revealDelayRef.current) window.clearTimeout(revealDelayRef.current);
-                  revealDelayRef.current = window.setTimeout(() => {
-                    setRevealWords(true);
-                  }, 2000);
-                }}
-                onBlur={() => {
-                  if (!isDesktop) return;
-                  setTitleHover(false);
-                  if (revealDelayRef.current) {
-                    window.clearTimeout(revealDelayRef.current);
-                    revealDelayRef.current = null;
-                  }
-                  setRevealWords(false);
-                }}
+                _hover={{ transform: 'scale(1.05)' }}
+                transition="transform 0.2s"
+                aria-label={'KLAPI'}
+                fontWeight="semibold"
+                lineHeight="1"
+                fontSize="2xl"
+                letterSpacing="0.02em"
+                display="flex"
+                alignItems="center"
               >
-                <Link
-                  as={NextLink}
-                  href="/"
-                  _hover={{ textDecoration: 'none' }}
-                  aria-label={
-                    titleHover || revealWords
-                      ? 'Kaluston Lainaus Applikaatio Pitvalaisten Ilmeiseen tarpeeseen'
-                      : 'KLAPI'
-                  }
-                  tabIndex={0}
-                >
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={revealWords ? '0.4ch' : '0.8ch'}
-                    as="span"
-                    fontSize="lg"
-                  >
-                    {!revealWords ? (
-                      <Box
-                        as="span"
-                        display="inline-block"
-                        fontWeight="semibold"
-                        lineHeight="1"
-                        fontSize="2xl"
-                        letterSpacing="0.02em"
-                      >
-                        KLAPI
-                      </Box>
-                    ) : (
-                      [
-                        'Kaluston',
-                        'Lainaus',
-                        'Applikaatio',
-                        'Pitvalaisten',
-                        'Ilmeiseen tarpeeseen',
-                      ].map((word, idx) => {
-                        const expanded = `${Math.max(word.length + 1, 5)}ch`;
-                        return (
-                          <Box
-                            as="span"
-                            key={idx}
-                            overflow="hidden"
-                            whiteSpace="nowrap"
-                            transition="width 220ms cubic-bezier(.2,.8,.2,1), opacity 160ms"
-                            width={expanded}
-                            minW={'1.4ch'}
-                            display="inline-flex"
-                            alignItems="center"
-                            justifyContent="flex-start"
-                            textAlign="left"
-                            fontWeight="semibold"
-                            px={2}
-                            letterSpacing="0.02em"
-                          >
-                            <Box
-                              as="span"
-                              display="inline-block"
-                              transformOrigin="left center"
-                              transition="transform 220ms"
-                              fontSize={'lg'}
-                              lineHeight="1"
-                            >
-                              {word}
-                            </Box>
-                          </Box>
-                        );
-                      })
-                    )}
-                  </Box>
+                <Link as={NextLink} href="/">
+                  KLAPI
                 </Link>
               </Box>
-            </Flex>
-
-            {session && (
-              <Flex gap={6} align="center" display={['none', 'none', 'flex']} height="30%">
-                <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
-                  Lainaa
-                </Link>
-                <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
-                  Palauta
-                </Link>
-                <Divider orientation="vertical" />
-                <Link
-                  as={router.pathname === '/' ? 'button' : NextLink}
-                  href={router.pathname === '/' ? undefined : '/'}
-                  onClick={handleBrowseClick}
-                  fontWeight="medium"
-                >
-                  Kamat
-                </Link>
-                <Link as={NextLink} href="/item/announcements" fontWeight="medium">
-                  Ilmoitukset
-                </Link>
-                {(role === 'ADMIN' || role === 'KIOSK') && (
-                  <Link as={NextLink} href="/loan" fontWeight="medium">
-                    Varaukset
-                  </Link>
-                )}
-                {role === 'ADMIN' && (
-                  <>
-                    <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
-                      Laatikot
-                    </Link>
-                    <Link as={NextLink} href="/admin/reports" fontWeight="medium">
-                      Raportit
-                    </Link>
-                    <Link as={NextLink} href="/admin" fontWeight="medium">
-                      Admin
-                    </Link>
-                  </>
-                )}
-                <Link as={NextLink} href="/account" fontWeight="medium">
-                  Oma tili
-                </Link>
-                <Box position="relative">
-                  {children}
-                  {totalItems > 0 && (
-                    <Circle
-                      position="absolute"
-                      right="-12px"
-                      top="-12px"
-                      marginTop="5px"
-                      size="24px"
-                      bg="red.500"
-                      color="white"
-                      fontSize="sm"
-                      fontWeight="bold"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      boxShadow="md"
-                    >
-                      {totalItems}
-                    </Circle>
+              {/* ADMIN/KIOSK switch for KIOSK users and ADMIN (if elevated) */}
+              {session && (role === 'KIOSK' || (role === 'ADMIN' && session.user.adminExpiry)) && (
+                <Box ml={4} display="flex" alignItems="center">
+                  <Text fontSize="sm" color="white" mr={2}>
+                    ADMIN
+                  </Text>
+                  <Switch
+                    isChecked={effectiveGroup === 'ADMIN'}
+                    onChange={(e) => handleAdminSwitch(e.target.checked)}
+                    colorScheme="green"
+                    size="md"
+                    aria-label="Vaihda admin-oikeudet"
+                  />
+                  {effectiveGroup === 'ADMIN' && expiry && (
+                    <Text fontSize="xs" ml={2} minW="60px">
+                      {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, '0')}
+                    </Text>
                   )}
                 </Box>
-              </Flex>
-            )}
+              )}
+            </Flex>
+
+            <AlertDialog
+              isOpen={pinDialogOpen}
+              leastDestructiveRef={cancelRef}
+              onClose={() => setPinDialogOpen(false)}
+            >
+              <AlertDialogOverlay>
+                <AlertDialogContent>
+                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                    Anna admin-PIN
+                  </AlertDialogHeader>
+                  <form onSubmit={handlePinSubmit}>
+                    <AlertDialogBody>
+                      <HStack justify="center">
+                        <PinInput type="number" value={pinInput} onChange={setPinInput}>
+                          <PinInputField />
+                          <PinInputField />
+                          <PinInputField />
+                          <PinInputField />
+                        </PinInput>
+                      </HStack>
+                      {pinError && (
+                        <Text color="red.500" mt={2}>
+                          {pinError}
+                        </Text>
+                      )}
+                    </AlertDialogBody>
+                    <AlertDialogFooter>
+                      <Button
+                        ref={cancelRef}
+                        onClick={() => setPinDialogOpen(false)}
+                        colorScheme={'gray'}
+                      >
+                        Peruuta
+                      </Button>
+                      <Button
+                        colorScheme="blue"
+                        type="submit"
+                        ml={3}
+                        isDisabled={adminSwitchLoading}
+                      >
+                        Korota adminiksi
+                      </Button>
+                    </AlertDialogFooter>
+                  </form>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog>
+            <Flex gap={6} align="center" display={['none', 'none', 'flex']} height="30%">
+              <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
+                Lainaa
+              </Link>
+              <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
+                Palauta
+              </Link>
+              <Divider orientation="vertical" />
+              <Link
+                as={router.pathname === '/' ? 'button' : NextLink}
+                href={router.pathname === '/' ? undefined : '/'}
+                onClick={handleBrowseClick}
+                fontWeight="medium"
+              >
+                Kamat
+              </Link>
+              <Link as={NextLink} href="/item/announcements" fontWeight="medium">
+                Ilmoitukset
+              </Link>
+              {(role === 'ADMIN' || role === 'KIOSK') && (
+                <Link as={NextLink} href="/loan" fontWeight="medium">
+                  Varaukset
+                </Link>
+              )}
+              {role === 'ADMIN' && (
+                <>
+                  <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
+                    Laatikot
+                  </Link>
+                  <Link as={NextLink} href="/admin/reports" fontWeight="medium">
+                    Raportit
+                  </Link>
+                  <Link as={NextLink} href="/admin" fontWeight="medium">
+                    Admin
+                  </Link>
+                </>
+              )}
+              <Box display="flex" alignItems="center" position="relative">
+                <Link as={NextLink} href="/account" fontWeight="medium" mr={6}>
+                  Oma tili
+                </Link>
+                {children}
+                {totalItems > 0 && (
+                  <Circle
+                    position="absolute"
+                    right="-12px"
+                    top="-12px"
+                    marginTop="5px"
+                    size="24px"
+                    bg="red.500"
+                    color="white"
+                    fontSize="sm"
+                    fontWeight="bold"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    boxShadow="md"
+                  >
+                    {totalItems}
+                  </Circle>
+                )}
+              </Box>
+            </Flex>
 
             {session && (
               <Box display={['block', 'block', 'none']} position="relative">
@@ -358,7 +406,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
                     </Td>
                   </Tr>
 
-                  <Divider />
+                  <Tr>
+                    <Td colSpan={1} p={0}>
+                      <Divider />
+                    </Td>
+                  </Tr>
                   <Tr>
                     <Td>
                       <Link

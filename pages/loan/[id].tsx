@@ -30,7 +30,6 @@ import StartLoanConfirmation from '../../components/StartLoanConfirmation';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { Loan, User, Reservation, Item, Box as BoxType, ReservationStatus } from '@prisma/client';
-import { GetServerSideProps } from 'next';
 import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
 
 import {

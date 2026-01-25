@@ -17,15 +17,7 @@ import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import {
-  Box as BoxType,
-  Item,
-  Reservation,
-  Loan,
-  ReservationStatus,
-  ReportAffectedItem,
-} from '@prisma/client';
-import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
+import { Box as BoxType, Item, Reservation, Loan, ReportAffectedItem } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 
 interface ReportsPageProps {
