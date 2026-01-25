@@ -389,6 +389,7 @@ async function main() {
           create: selectedItems.map((item) => ({
             itemId: item.id,
             amount: Math.min(Math.ceil(Math.random() * 3), item.amount),
+            status: selectedStatus,
           })),
         },
       },
