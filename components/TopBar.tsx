@@ -130,9 +130,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
                   Lainaa
                 </Link>
-                <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
-                  Palauta
-                </Link>
+                {(role === 'ADMIN' || role === 'KIOSK') && (
+                  <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
+                    Palauta
+                  </Link>
+                )}
                 <Divider orientation="vertical" />
                 <Link
                   as={router.pathname === '/' ? 'button' : NextLink}
@@ -251,13 +253,15 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       </Link>
                     </Td>
                   </Tr>
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
-                        Palauta
-                      </Link>
-                    </Td>
-                  </Tr>
+                  {(role === 'ADMIN' || role === 'KIOSK') && (
+                    <Tr>
+                      <Td>
+                        <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
+                          Palauta
+                        </Link>
+                      </Td>
+                    </Tr>
+                  )}
 
                   <Divider />
                   <Tr>

@@ -11,9 +11,7 @@ import {
   Box,
   FormLabel,
   Input,
-  InputGroup,
-  InputLeftAddon,
-  InputRightAddon,
+  Flex,
   IconButton,
   Heading,
   useDisclosure,
@@ -267,39 +265,52 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 return (
                   <Box key={item.id}>
                     <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
-                    <InputGroup size="md">
-                      <InputLeftAddon padding={0}>
-                        <IconButton
-                          icon={<FaMinus />}
-                          aria-label="decrement"
-                          onClick={() => decrementAmount(item.id)}
-                          minW="40px"
-                        />
-                      </InputLeftAddon>
+                    <Flex>
+                      <IconButton
+                        icon={<FaMinus />}
+                        aria-label="decrement"
+                        onClick={() => decrementAmount(item.id)}
+                        borderRightRadius={0}
+                        size="md"
+                      />
                       <Input
                         id={`item-${item.id}`}
                         value={item.amount}
                         readOnly
                         textAlign="center"
+                        fontWeight="bold"
+                        userSelect="none"
+                        pointerEvents="none"
+                        borderRadius={0}
+                        borderX={0}
                       />
-                      <InputRightAddon padding={0}>
-                        <IconButton
-                          icon={<FaPlus />}
-                          aria-label="increment"
-                          onClick={() => incrementAmount(item.id)}
-                          minW="40px"
-                          isDisabled={isIncrementDisabled}
-                        />
-                      </InputRightAddon>
-                    </InputGroup>
+                      <IconButton
+                        icon={<FaPlus />}
+                        aria-label="increment"
+                        onClick={() => incrementAmount(item.id)}
+                        borderLeftRadius={0}
+                        size="md"
+                        isDisabled={isIncrementDisabled}
+                      />
+                    </Flex>
                   </Box>
                 );
               })}
             </Stack>
           ) : (
-            <Heading as="h3" size="md">
-              Ostoskori on tyhjä
-            </Heading>
+            <Flex
+              direction="column"
+              align="center"
+              justify="center"
+              flex="1"
+              py={12}
+              color="gray.500"
+            >
+              <Text fontSize="lg">Ostoskori on tyhjä</Text>
+              <Text fontSize="sm" mt={2}>
+                Lisää tavaroita ostoskoriin aloittaaksesi lainauksen
+              </Text>
+            </Flex>
           )}
         </DrawerBody>
 

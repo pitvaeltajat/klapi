@@ -14,6 +14,7 @@ import {
   Badge,
   SimpleGrid,
   Checkbox,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
@@ -42,6 +43,7 @@ export const getServerSideProps: GetServerSideProps<AnnouncementProps> = async (
 
 export default function Announcements({ announcements }: AnnouncementProps) {
   const { data: session } = useSession();
+  const emptyBg = useColorModeValue('gray.50', 'gray.700');
 
   const isAdmin = session?.user?.group === 'ADMIN';
 
@@ -131,39 +133,48 @@ export default function Announcements({ announcements }: AnnouncementProps) {
         </Checkbox>
       </Box>
 
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        {announcements
-          .filter((announcement) => !announcementExpired(announcement) || showExpired)
-          .map((announcement) => (
-            <Box key={announcement.id} borderWidth="1px" borderRadius="lg" p={4}>
-              <VStack align="start" spacing={3}>
-                <Badge colorScheme="blue">Liittyy kamaan: {announcement.item.name}</Badge>
-                <Text>{announcement.message}</Text>
+      {announcements.filter((announcement) => !announcementExpired(announcement) || showExpired)
+        .length === 0 ? (
+        <Box p={6} bg={emptyBg} borderRadius="md" textAlign="center">
+          <Text color="gray.600">
+            {showExpired ? 'Ei ilmoituksia' : 'Ei aktiivisia ilmoituksia'}
+          </Text>
+        </Box>
+      ) : (
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+          {announcements
+            .filter((announcement) => !announcementExpired(announcement) || showExpired)
+            .map((announcement) => (
+              <Box key={announcement.id} borderWidth="1px" borderRadius="lg" p={4}>
+                <VStack align="start" spacing={3}>
+                  <Badge colorScheme="blue">Liittyy kamaan: {announcement.item.name}</Badge>
+                  <Text>{announcement.message}</Text>
 
-                <Text fontSize="sm" color="gray.500">
-                  Julkaistu: {formatDate(new Date(announcement.createdAt))}
-                </Text>
-                {showExpired && announcementExpired(announcement) && (
-                  <Text fontSize="sm" color="red.500">
-                    Vanhentunut{' '}
-                    {announcement.expiresAt && formatDate(new Date(announcement.expiresAt))}
+                  <Text fontSize="sm" color="gray.500">
+                    Julkaistu: {formatDate(new Date(announcement.createdAt))}
                   </Text>
-                )}
-                {isAdmin && !announcementExpired(announcement) && (
-                  <Button
-                    size="sm"
-                    colorScheme="red"
-                    variant="outline"
-                    isDisabled={buttonDisabled === announcement.id}
-                    onClick={() => expireAnnouncement(announcement.id)}
-                  >
-                    Poista ilmoitus
-                  </Button>
-                )}
-              </VStack>
-            </Box>
-          ))}
-      </SimpleGrid>
+                  {showExpired && announcementExpired(announcement) && (
+                    <Text fontSize="sm" color="red.500">
+                      Vanhentunut{' '}
+                      {announcement.expiresAt && formatDate(new Date(announcement.expiresAt))}
+                    </Text>
+                  )}
+                  {isAdmin && !announcementExpired(announcement) && (
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      variant="outline"
+                      isDisabled={buttonDisabled === announcement.id}
+                      onClick={() => expireAnnouncement(announcement.id)}
+                    >
+                      Poista ilmoitus
+                    </Button>
+                  )}
+                </VStack>
+              </Box>
+            ))}
+        </SimpleGrid>
+      )}
     </>
   );
 }
