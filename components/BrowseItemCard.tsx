@@ -1,4 +1,4 @@
-import { Box, Flex, Image, Link, AspectRatio, useColorModeValue, Text } from '@chakra-ui/react';
+import { Box, Flex, Image, Link, AspectRatio, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { Item, Category, ItemType, Announcement } from '@prisma/client';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';

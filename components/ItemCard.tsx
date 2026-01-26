@@ -7,11 +7,8 @@ import {
   AspectRatio,
   useColorModeValue,
   IconButton,
-  InputGroup,
-  InputLeftAddon,
-  InputRightAddon,
-  Input,
   Text,
+  Input,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { ItemCardProps } from '../types';

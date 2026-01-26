@@ -1,4 +1,3 @@
-import Auth from './auth';
 import Head from 'next/head';
 import {
   Heading,
@@ -137,12 +136,14 @@ function compareDates(dateA: Date, dateB: Date) {
 
 export default function Account({ loans, userEmailPreferences }: AccountProps) {
   const { data: session } = useSession();
+
   const [emailWeeklyReminder, setEmailWeeklyReminder] = useState(
     userEmailPreferences.emailWeeklyReminder,
   );
   const [emailNewLoanNotification, setEmailNewLoanNotification] = useState(
     userEmailPreferences.emailNewLoanNotification,
   );
+
   const [isSaving, setIsSaving] = useState(false);
   const { colorMode, setColorMode } = useColorMode();
   const [colorModePreference, setColorModePreference] = useState<'light' | 'dark' | 'system'>(
@@ -244,6 +245,9 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
     return null;
   }
 
+  // Helper to get effective group
+  const effectiveGroup = session?.user?.group;
+
   return (
     <>
       <Head>
@@ -311,12 +315,18 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
             </Text>
             <Text fontSize="sm" color="gray.500">
               Rooli:{' '}
-              {session?.user?.group === 'USER'
+              {effectiveGroup === 'USER'
                 ? 'Käyttäjä'
-                : session?.user?.group === 'KIOSK'
+                : effectiveGroup === 'KIOSK'
                   ? 'Kaluston kone'
                   : 'Admin'}
             </Text>
+            {session?.user?.group === 'KIOSK' && effectiveGroup === 'ADMIN' && (
+              <Text fontSize="xs" color="green.500" mt={1}>
+                ADMIN-oikeudet käytössä (tähän sessioon)
+              </Text>
+            )}
+            {/* PIN-koodin syöttömodal poistettu */}
           </VStack>
           <Box my={4} h="1px" bg={dividerColor} />
           <Button colorScheme="red" onClick={handleSignOut}>

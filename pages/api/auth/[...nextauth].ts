@@ -1,26 +1,14 @@
-import NextAuth, { DefaultSession, NextAuthOptions } from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import prisma from '../../../utils/prisma';
 import bcrypt from 'bcrypt';
 
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      group: 'ADMIN' | 'USER' | 'KIOSK';
-    } & DefaultSession['user'];
-  }
-
-  interface User {
-    group: 'ADMIN' | 'USER' | 'KIOSK';
-  }
-}
-
 declare module 'next-auth/jwt' {
   interface JWT {
     group: 'ADMIN' | 'USER' | 'KIOSK';
     userId?: string;
+    adminExpiry?: string | null;
   }
 }
 
@@ -92,6 +80,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.userId as string;
         session.user.group = token.group || 'USER';
+        session.user.adminExpiry = token.adminExpiry || null;
         // If group is KIOSK and login was via CredentialsProvider, set session expiration to one year
         if (session.user.group === 'KIOSK' && token.provider === 'credentials') {
           const oneYearMs = 365 * 24 * 60 * 60 * 1000;
@@ -100,7 +89,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (user) {
         token.group = user.group;
         token.userId = user.id;
@@ -120,6 +109,12 @@ export const authOptions: NextAuthOptions = {
         } else {
           token.group = 'USER';
         }
+      }
+
+      // Handle session.update({ user: { ...user, group: 'ADMIN', adminExpiry } })
+      if (trigger === 'update' && session?.user) {
+        if (session.user.group) token.group = session.user.group;
+        if ('adminExpiry' in session.user) token.adminExpiry = session.user.adminExpiry;
       }
 
       return token;

@@ -27,10 +27,12 @@ import {
   Text,
   Badge,
   Flex,
+  PinInput,
+  PinInputField,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
-import { MdOutlinePassword } from "react-icons/md";
+import { MdOutlinePassword } from 'react-icons/md';
 import { useSession } from 'next-auth/react';
 import { useRef, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -114,6 +116,15 @@ const Admin: NextPage = () => {
   } = useDisclosure();
   const kioskDialogCancelRef = useRef<HTMLButtonElement>(null);
 
+  // Admin PIN dialog state
+  const {
+    isOpen: isPinDialogOpen,
+    onOpen: openPinDialog,
+    onClose: closePinDialog,
+  } = useDisclosure();
+  const pinDialogCancelRef = useRef<HTMLButtonElement>(null);
+  const [pinValue, setPinValue] = useState('');
+
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
   }
@@ -193,6 +204,46 @@ const Admin: NextPage = () => {
     }
   };
 
+  const setAdminPin = async (pin: string) => {
+    try {
+      const response = await fetch('/api/auth/createPin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pin: pin,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        toast({
+          title: 'PIN-koodi asetettu',
+          description: 'Admin PIN-koodi on asetettu onnistuneesti',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Virhe',
+          description: data.message || 'PIN-koodin asettaminen epäonnistui',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Virhe',
+        description: error instanceof Error ? error.message : 'PIN-koodin asettaminen epäonnistui',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   if (error) {
     return (
       <Box p={6}>
@@ -219,131 +270,200 @@ const Admin: NextPage = () => {
         {/* Header */}
         <Flex justifyContent="space-between" alignItems="center">
           <Heading size="xl">Admin</Heading>
-        <Link as={NextLink} href="/admin/createItem">
-          <Button leftIcon={<FaPlus />} colorScheme="green" size="lg">
-            Luo uusi kama
-          </Button>
-        </Link>
-      </Flex>
-
-      <Box>
-        <Flex justifyContent="flex-end">
-          <Button leftIcon={<MdOutlinePassword />} onClick={getOTP} colorScheme='orange'>Luo kioskikäyttäjän salasana</Button>
+          <Link as={NextLink} href="/admin/createItem">
+            <Button leftIcon={<FaPlus />} colorScheme="green" size="lg">
+              Luo uusi kama
+            </Button>
+          </Link>
         </Flex>
-      </Box>
 
+        <Box>
+          <Flex justifyContent="flex-end">
+            <Button leftIcon={<MdOutlinePassword />} onClick={getOTP} colorScheme="orange">
+              Näytä kioskikäyttäjän salasana
+            </Button>
+          </Flex>
+        </Box>
 
-      {/* User Management Section */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
-        <HStack justifyContent="space-between" mb={4}>
-          <Heading size="md">Käyttäjien hallinta</Heading>
-          <Text color="gray.600" fontSize="sm">
-            Yhteensä {users.length} käyttäjää
-          </Text>
-        </HStack>
+        <Box>
+          <Flex justifyContent="flex-end">
+            <Button leftIcon={<MdOutlinePassword />} onClick={openPinDialog} colorScheme="orange">
+              Aseta admin pin-koodi
+            </Button>
+          </Flex>
+        </Box>
 
-        <TableContainer>
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Nimi</Th>
-                <Th>Sähköposti</Th>
-                <Th>Rooli</Th>
-                <Th>Admin-oikeudet</Th>
-                <Th width="100px">Toiminnot</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {users.map((user) => (
-                <Tr key={user.id}>
-                  <Td fontWeight="medium">{user.name || '-'}</Td>
-                  <Td>{user.email}</Td>
-                  <Td>{getGroupBadge(user.group)}</Td>
-                  <Td>
-                    <RoleSwitch user={user} />
-                  </Td>
-                  <Td>
-                    <IconButton
-                      aria-label="Poista käyttäjä"
-                      icon={<FaTrash />}
-                      colorScheme="red"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteClick(user)}
-                      isDisabled={user.id === session?.user?.id}
-                      title={
-                        user.id === session?.user?.id ? 'Et voi poistaa itseäsi' : 'Poista käyttäjä'
-                      }
-                    />
-                  </Td>
+        {/* Admin PIN Modal */}
+        <AlertDialog
+          isOpen={isPinDialogOpen}
+          leastDestructiveRef={pinDialogCancelRef}
+          onClose={closePinDialog}
+        >
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                Aseta admin PIN-koodi
+              </AlertDialogHeader>
+              <AlertDialogBody>
+                <Text mb={2}>Syötä uusi 4-merkkinen PIN-koodi:</Text>
+                <HStack justifyContent="center" mb={4}>
+                  <PinInput value={pinValue} onChange={setPinValue} type="alphanumeric" size="lg">
+                    <PinInputField />
+                    <PinInputField />
+                    <PinInputField />
+                    <PinInputField />
+                  </PinInput>
+                </HStack>
+              </AlertDialogBody>
+              <AlertDialogFooter>
+                <Button colorScheme="gray" ref={pinDialogCancelRef} onClick={closePinDialog}>
+                  Peruuta
+                </Button>
+                <Button
+                  colorScheme="orange"
+                  ml={3}
+                  onClick={async () => {
+                    if (pinValue.length === 4) {
+                      await setAdminPin(pinValue);
+                      setPinValue('');
+                      closePinDialog();
+                    } else {
+                      toast({
+                        title: 'Virhe',
+                        description: 'PIN-koodin tulee olla 4 merkkiä',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                      });
+                    }
+                  }}
+                  isDisabled={pinValue.length !== 4}
+                >
+                  Aseta PIN
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialogOverlay>
+        </AlertDialog>
+
+        {/* User Management Section */}
+        <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+          <HStack justifyContent="space-between" mb={4}>
+            <Heading size="md">Käyttäjien hallinta</Heading>
+            <Text color="gray.600" fontSize="sm">
+              Yhteensä {users.length} käyttäjää
+            </Text>
+          </HStack>
+
+          <TableContainer>
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Nimi</Th>
+                  <Th>Sähköposti</Th>
+                  <Th>Rooli</Th>
+                  <Th>Admin-oikeudet</Th>
+                  <Th width="100px">Toiminnot</Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      </Box>
+              </Thead>
+              <Tbody>
+                {users.map((user) => (
+                  <Tr key={user.id}>
+                    <Td fontWeight="medium">{user.name || '-'}</Td>
+                    <Td>{user.email}</Td>
+                    <Td>{getGroupBadge(user.group)}</Td>
+                    <Td>
+                      <RoleSwitch user={user} />
+                    </Td>
+                    <Td>
+                      <IconButton
+                        aria-label="Poista käyttäjä"
+                        icon={<FaTrash />}
+                        colorScheme="red"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteClick(user)}
+                        isDisabled={user.id === session?.user?.id}
+                        title={
+                          user.id === session?.user?.id
+                            ? 'Et voi poistaa itseäsi'
+                            : 'Poista käyttäjä'
+                        }
+                      />
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </TableContainer>
+        </Box>
 
-      {/* Kiosk Password AlertDialog */}
-      <AlertDialog
-        isOpen={isKioskDialogOpen}
-        leastDestructiveRef={kioskDialogCancelRef}
-        onClose={closeKioskDialog}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Kioskikäyttäjän salasana luotu
-            </AlertDialogHeader>
-            <AlertDialogBody>
-              Uusi salasana: <Text as="span" fontWeight="bold">{kioskPassword}</Text><br />
-              (voimassa 15 minuuttia)
-            </AlertDialogBody>
-            <AlertDialogFooter>
-              <Button colorScheme='gray' ref={kioskDialogCancelRef} onClick={closeKioskDialog}>
-                Sulje
-              </Button>
-              <Button
-                colorScheme="blue"
-                onClick={() => {
-                  navigator.clipboard.writeText(kioskPassword || '');
-                  closeKioskDialog();
-                }}
-                ml={3}
-              >
-                Kopioi leikepöydälle
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+        {/* Kiosk Password AlertDialog */}
+        <AlertDialog
+          isOpen={isKioskDialogOpen}
+          leastDestructiveRef={kioskDialogCancelRef}
+          onClose={closeKioskDialog}
+        >
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                Kioskikäyttäjän salasana luotu
+              </AlertDialogHeader>
+              <AlertDialogBody>
+                Uusi salasana:{' '}
+                <Box mt={2} mb={4}>
+                  <Text fontSize="2xl" fontWeight="bold" letterSpacing="wider">
+                    {kioskPassword}
+                  </Text>
+                </Box>
+                (voimassa 15 minuuttia)
+              </AlertDialogBody>
+              <AlertDialogFooter>
+                <Button colorScheme="gray" ref={kioskDialogCancelRef} onClick={closeKioskDialog}>
+                  Sulje
+                </Button>
+                <Button
+                  colorScheme="blue"
+                  onClick={() => {
+                    navigator.clipboard.writeText(kioskPassword || '');
+                    closeKioskDialog();
+                  }}
+                  ml={3}
+                >
+                  Kopioi leikepöydälle
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialogOverlay>
+        </AlertDialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Poista käyttäjä
-            </AlertDialogHeader>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                Poista käyttäjä
+              </AlertDialogHeader>
 
-            <AlertDialogBody>
-              Haluatko varmasti poistaa käyttäjän{' '}
-              <Text as="span" fontWeight="bold">
-                {userToDelete?.name || userToDelete?.email}
-              </Text>
-              ? Tätä toimintoa ei voi perua.
-            </AlertDialogBody>
+              <AlertDialogBody>
+                Haluatko varmasti poistaa käyttäjän{' '}
+                <Text as="span" fontWeight="bold">
+                  {userToDelete?.name || userToDelete?.email}
+                </Text>
+                ? Tätä toimintoa ei voi perua.
+              </AlertDialogBody>
 
-            <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose}>
-                Peruuta
-              </Button>
-              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
-                Poista
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+              <AlertDialogFooter>
+                <Button ref={cancelRef} onClick={onClose}>
+                  Peruuta
+                </Button>
+                <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+                  Poista
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialogOverlay>
+        </AlertDialog>
       </VStack>
     </>
   );
