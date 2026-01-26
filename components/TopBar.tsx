@@ -40,11 +40,24 @@ import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
 
 export default function TopBar({ children }: { children: ReactNode }) {
-  const [isNavigating, setIsNavigating] = useState(false);
   const { data: session, update } = useSession();
+  // Tarkista admin-oikeuden vanhentuminen heti mountissa (esim. välilehden uudelleenavaus)
+  useEffect(() => {
+    if (
+      session?.user &&
+      session.user.group === 'ADMIN' &&
+      session.user.adminExpiry &&
+      Date.now() >=
+        (typeof session.user.adminExpiry === 'string'
+          ? Date.parse(session.user.adminExpiry)
+          : session.user.adminExpiry)
+    ) {
+      update({ user: { ...session.user, group: 'KIOSK', adminExpiry: null } });
+    }
+  }, [session?.user, update]);
+  const [isNavigating, setIsNavigating] = useState(false);
   const role = session?.user?.group;
   const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
-  const ADMIN_PIN = process.env.NEXT_PUBLIC_KIOSK_ADMIN_PIN || '1234';
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
@@ -65,7 +78,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
       setExpiry(null);
     }
   }, [session?.user]);
-  // Removed setExpiry from main body to prevent infinite re-render
 
   // Countdown timer
   useEffect(() => {
@@ -95,11 +107,23 @@ export default function TopBar({ children }: { children: ReactNode }) {
     }
   };
 
+  const comparePins = async (inputPin: string) => {
+    return await fetch('/api/auth/validatePin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ pin: inputPin, userId: session?.user?.id }),
+    })
+      .then((res) => res.json())
+      .then((data) => data.isValidPin);
+  };
+
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === ADMIN_PIN) {
+    if (await comparePins(pinInput)) {
       setAdminSwitchLoading(true);
-      const expiryDate = new Date(Date.now() + 30 * 60 * 1000); // 30min from now
+      const expiryDate = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
       await update({
         user: { ...session?.user, group: 'ADMIN', adminExpiry: expiryDate.toISOString() },
       });
@@ -113,13 +137,24 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   // Auto-revert to KIOSK when timer expires
   useEffect(() => {
+    let timeout: NodeJS.Timeout | null = null;
+    function checkAndRevert() {
+      if (effectiveGroup === 'ADMIN' && expiry && Date.now() >= expiry) {
+        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
+      }
+    }
     if (effectiveGroup === 'ADMIN' && expiry && Date.now() < expiry) {
-      const timeout = setTimeout(() => {
+      timeout = setTimeout(() => {
         update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
       }, expiry - Date.now());
-      return () => clearTimeout(timeout);
+      document.addEventListener('visibilitychange', checkAndRevert);
     }
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', checkAndRevert);
+    };
   }, [effectiveGroup, expiry, session, update]);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const headerBg = useColorModeValue('rgba(66,131,209,0.9)', 'rgba(26,32,44,0.95)');

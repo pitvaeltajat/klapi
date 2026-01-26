@@ -47,6 +47,7 @@ model User {
   group                    Group     @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
+  kioskElevatePin          String?
   username                 String?   @unique
   emailNewLoanNotification Boolean   @default(true)
   emailWeeklyReminder      Boolean   @default(true)
