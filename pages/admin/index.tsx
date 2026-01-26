@@ -29,6 +29,7 @@ import {
   Flex,
   PinInput,
   PinInputField,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import { MdOutlinePassword } from 'react-icons/md';
@@ -101,6 +102,7 @@ const Admin: NextPage = () => {
   const { data: users, error } = useSWR<UserWithGroup[]>('/api/user/getUsers');
   const { mutate } = useSWRConfig();
   const toast = useToast();
+  const cardBg = useColorModeValue('white', 'gray.800');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [userToDelete, setUserToDelete] = useState<UserWithGroup | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);

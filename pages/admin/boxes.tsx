@@ -12,6 +12,7 @@ import {
   VStack,
   HStack,
   Divider,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -74,6 +75,10 @@ export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () =
 
 export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
   const { data: session } = useSession();
+  const emptyBg = useColorModeValue('gray.50', 'gray.700');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const loanItemBg = useColorModeValue('gray.50', 'gray.700');
+  const loanItemHoverBg = useColorModeValue('gray.100', 'gray.600');
 
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
@@ -105,7 +110,7 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
       </Heading>
 
       {boxes.length === 0 ? (
-        <Box bg="gray.50" p={8} borderRadius="lg" textAlign="center" borderWidth="1px">
+        <Box bg={emptyBg} p={8} borderRadius="lg" textAlign="center" borderWidth="1px">
           <Text fontSize="lg" color="gray.600">
             Ei laatikkoja
           </Text>
@@ -116,7 +121,7 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
             return (
               <Box
                 key={box.id}
-                bg="white"
+                bg={cardBg}
                 borderWidth="2px"
                 borderRadius="xl"
                 p={6}
@@ -163,12 +168,12 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
                             _hover={{ textDecoration: 'none' }}
                           >
                             <Box
-                              bg="gray.50"
+                              bg={loanItemBg}
                               p={3}
                               borderRadius="md"
                               borderWidth="1px"
                               _hover={{
-                                bg: 'gray.100',
+                                bg: loanItemHoverBg,
                                 borderColor: 'blue.300',
                                 shadow: 'sm',
                               }}

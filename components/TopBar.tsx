@@ -34,7 +34,7 @@ import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useDisclosure } from '@chakra-ui/react';
-import { ReactNode, useState, useRef, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
@@ -433,13 +433,15 @@ export default function TopBar({ children }: { children: ReactNode }) {
                       </Link>
                     </Td>
                   </Tr>
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
-                        Palauta
-                      </Link>
-                    </Td>
-                  </Tr>
+                  {(role === 'ADMIN' || role === 'KIOSK') && (
+                    <Tr>
+                      <Td>
+                        <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
+                          Palauta
+                        </Link>
+                      </Td>
+                    </Tr>
+                  )}
 
                   <Tr>
                     <Td colSpan={1} p={0}>

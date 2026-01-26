@@ -189,11 +189,13 @@ const LoanReturnCard = ({
             <Text fontWeight="bold" mb={2}>
               Tavarat (käytössä):
             </Text>
-            {inuseReservations.map((reservation) => (
-              <Text key={reservation.id} ml={4}>
-                • {reservation.item.name} ({reservation.amount} kpl)
-              </Text>
-            ))}
+            <HStack spacing={2} flexWrap="wrap">
+              {inuseReservations.map((reservation) => (
+                <Tag key={reservation.id} size="md" colorScheme="blue" borderRadius="full">
+                  {reservation.item.name} ({reservation.amount})
+                </Tag>
+              ))}
+            </HStack>
           </Box>
           <Button colorScheme="green" onClick={onOpen} size="lg">
             Palauta
@@ -406,7 +408,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
     router.push('/');
   };
 
-  if (session?.user?.group !== 'KIOSK') {
+  if (session?.user?.group !== 'KIOSK' && session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
   }
 
