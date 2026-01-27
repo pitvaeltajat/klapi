@@ -1,12 +1,4 @@
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  Text,
-  useColorModeValue,
-  HStack,
-} from '@chakra-ui/react';
+import { Box, Button, Heading, VStack, Text, useColorModeValue, HStack } from '@chakra-ui/react';
 import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/router';
@@ -55,12 +47,7 @@ export default function KioskModeSelector() {
         </Box>
 
         <HStack spacing={4}>
-          <Button
-            colorScheme="blue"
-            size="lg"
-            onClick={handleLoanClick}
-            flex={1}
-          >
+          <Button colorScheme="blue" size="lg" onClick={handleLoanClick} flex={1}>
             Lainaa
           </Button>
           <Button
@@ -72,6 +59,14 @@ export default function KioskModeSelector() {
             Palauta
           </Button>
         </HStack>
+        <Button
+          colorScheme="teal"
+          variant="outline"
+          size="md"
+          onClick={() => router.push('/kiosk/startloan')}
+        >
+          Merkkaa ennakkoon tehty varaus noudetuksi
+        </Button>
       </VStack>
     </Box>
   );

@@ -45,8 +45,8 @@ export default function SubmitConfirmation({
   setReportContent: React.Dispatch<React.SetStateAction<string>>;
   reportContent?: string;
 }) {
-  const { state: dates } = useDates();
-  const { state: cart, clearCart } = useCart();
+  const { state: dates, setDatesSet } = useDates();
+  const { state: cart, clearCart, resetCart } = useCart();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
@@ -102,8 +102,7 @@ export default function SubmitConfirmation({
   const successToast = () => {
     toast({
       title: 'Varaus lähetetty',
-      description:
-        'Varaus rekisteröitiin onnistuneesti. Voit tarkastella omia varauksiasi Oma tili -valikon takaa.',
+      description: 'Varaus rekisteröitiin onnistuneesti.',
       status: 'success',
       duration: 9000,
       isClosable: true,
@@ -175,9 +174,10 @@ export default function SubmitConfirmation({
       setReportContent('');
       clearCart();
       successToast();
-      // Kiosk users are redirected to the loan page, others to account
       if (session?.user?.group === 'KIOSK') {
-        router.push(`/loan/${responseData.id}`);
+        resetCart();
+        setDatesSet(false);
+        router.push('/');
       } else {
         router.push('/account');
       }

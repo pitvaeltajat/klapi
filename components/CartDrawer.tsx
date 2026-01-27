@@ -67,6 +67,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
   const [localDescription, setLocalDescription] = useState(cart.description);
 
+  // Nollaa kuvaus kun ostoskori tyhjennetään resetCartilla
+  useEffect(() => {
+    if (cart.items.length === 0 && localDescription !== '') {
+      setLocalDescription('');
+    }
+  }, [cart.items.length]);
+
   // Debounce description updates to context
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -185,7 +192,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     setLoaner(value);
                     setUserId(userId);
                   }}
-                  placeholder="Lainaajan nimi tai sähköposti"
+                  placeholder="Lainaajan nimi tai sähköposti (pakollinen)"
                   size="md"
                 />
               ) : (
@@ -321,7 +328,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <Button
             colorScheme="blue"
             onClick={ConfirmationDialog.onOpen}
-            isDisabled={cart.items.length === 0 || !isDescriptionValid}
+            isDisabled={cart.items.length === 0 || !isDescriptionValid || !cart.loaner}
           >
             Lainaa
           </Button>
