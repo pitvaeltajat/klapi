@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'KLAPI_Kayttoohjeet_lainaajalle.md'
+      - 'KLAPI_Kayttoohjeet_adminille.md'
       - '.github/workflows/generate-pdf.yml'
   workflow_dispatch:
 
@@ -30,10 +31,11 @@ jobs:
       - name: Generate PDF from Markdown
         run: node scripts/generate-pdf.js
 
-      - name: Commit and push PDF
+      - name: Commit and push PDFs
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add public/KLAPI_Kayttoohjeet_lainaajalle.pdf
-          git commit -m 'ci: generate PDF manual [skip ci]' || echo "No changes to commit"
+          git add public/KLAPI_Kayttoohjeet_adminille.pdf
+          git commit -m 'ci: generate PDF manuals [skip ci]' || echo "No changes to commit"
           git push
