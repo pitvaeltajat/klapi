@@ -1,9 +1,12 @@
 // scripts/generate-pdf.js
 // Luo PDF-tiedoston käyttöohjeista buildin yhteydessä md-to-pdf:llä
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import fs from 'fs';
+import { mdToPdf } from 'md-to-pdf';
 
-const { mdToPdf } = require('md-to-pdf');
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const mdPath = path.join(__dirname, '../KLAPI_Kayttoohjeet_lainaajalle.md');
 const pdfPath = path.join(__dirname, '../public/KLAPI_Kayttoohjeet_lainaajalle.pdf');
@@ -22,7 +25,7 @@ mdToPdf(
     document_title: 'KLAPI Käyttöohjeet',
     body_class: 'markdown-body',
     launch_options: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
-  }
+  },
 )
   .then(() => {
     console.log('PDF luotu:', pdfPath);

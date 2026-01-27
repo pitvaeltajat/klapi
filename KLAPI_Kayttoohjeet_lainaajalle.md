@@ -61,7 +61,7 @@ Etusivulla tarjotaan kolmea vaihtoehtoa:
 
 ### Aiemmin tehdyn lainan käyttöönotto (nouto)
 
-- Valitse etusivulta "Nouto".
+- Valitse etusivulta "Merkkaa ennakkoon tehty varaus noudetuksi".
 - Valitse noudettava laina listasta.
 - Tarkista lainan tiedot ja tavarat.
 - Tarkista lainaamiesi kamojen kunto ennen lainan aloitusta ja kirjoita mahdolliset puutteet. **TÄRKEÄÄ:** Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa havaitsemiasi puutteita tai vahinkoja.
