@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",
-    "build": "prisma migrate deploy && next build",
+    "build": "prisma migrate deploy && node scripts/generate-pdf.js && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint .",
@@ -49,6 +49,7 @@
     "eslint-config-next": "15.5.9",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^27.4.0",
+    "md-to-pdf": "^5.2.5",
     "prisma": "^6.19.2",
     "prisma-erd-generator": "^2.4.2",
     "puppeteer": "^24.35.0",
