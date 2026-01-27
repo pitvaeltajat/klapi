@@ -21,7 +21,8 @@ mdToPdf(
     stylesheet: cssPath,
     document_title: 'KLAPI Käyttöohjeet',
     body_class: 'markdown-body',
-  },
+    launch_options: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
+  }
 )
   .then(() => {
     console.log('PDF luotu:', pdfPath);
