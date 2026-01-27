@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",
-    "build": "prisma migrate deploy && node scripts/generate-pdf.js && next build",
+    "build": "prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint .",
