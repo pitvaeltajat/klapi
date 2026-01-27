@@ -54,7 +54,7 @@ Etusivulla tarjotaan kolmea vaihtoehtoa:
 - Valitse etusivulta "Palauta".
 - Valitse palautettava laina listasta.
 - Tarkista palautettavat tavarat.
-- Kirjaa mahdolliset puutteet/huomiot palautusmodalin kenttään. Myös tässä on **_ehdottoman_** tärkeää raportoida mahdolliset vahingot, olet henkilökohtaisesti korvausvastuussa niistä kalustolle tapahtuneista vaurioista, joita et ole kirjannut järjestelmään.
+- Kirjaa mahdolliset puutteet/huomiot tekstikenttään. Myös tässä on **_ehdottoman_** tärkeää raportoida mahdolliset vahingot, olet henkilökohtaisesti korvausvastuussa niistä kalustolle tapahtuneista vaurioista, joita et ole kirjannut järjestelmään.
 - Hyväksy ehdot ja vahvista palautus.
 
 ---
