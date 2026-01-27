@@ -16,7 +16,8 @@ export type CartAction =
   | { type: 'CLEAR_CART' }
   | { type: 'SET_DESCRIPTION'; payload: string }
   | { type: 'SET_LOANER'; payload: string }
-  | { type: 'SET_USER_ID'; payload: string | undefined };
+  | { type: 'SET_USER_ID'; payload: string | undefined }
+  | { type: 'RESET_CART' };
 
 export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -72,6 +73,8 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         loaner: state.loaner, // Preserve loaner when clearing cart
         userId: state.userId, // Preserve userId when clearing cart
       };
+    case 'RESET_CART':
+      return { ...initialCartState };
     default:
       return state;
   }
@@ -84,6 +87,7 @@ type CartContextType = {
   decrementAmount: (id: string) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
+  resetCart: () => void;
   setDescription: (description: string) => void;
   setLoaner: (loaner: string) => void;
   setUserId: (userId: string | undefined) => void;
@@ -101,6 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     decrementAmount: (id: string) => dispatch({ type: 'DECREMENT_AMOUNT', payload: id }),
     removeFromCart: (id: string) => dispatch({ type: 'REMOVE_FROM_CART', payload: id }),
     clearCart: () => dispatch({ type: 'CLEAR_CART' }),
+    resetCart: () => dispatch({ type: 'RESET_CART' }),
     setDescription: (description: string) =>
       dispatch({ type: 'SET_DESCRIPTION', payload: description }),
     setLoaner: (loaner: string) => dispatch({ type: 'SET_LOANER', payload: loaner }),

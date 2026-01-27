@@ -47,15 +47,7 @@ interface Reservation {
 // Helper component to use hooks inside map
 function ReservationItemImage({ itemId, itemName }: { itemId: string; itemName: string }) {
   const imageSrc = useItemImage(itemId);
-  return (
-    <Image
-      src={imageSrc}
-      alt={itemName}
-      boxSize="80px"
-      objectFit="cover"
-      borderRadius="md"
-    />
-  );
+  return <Image src={imageSrc} alt={itemName} boxSize="80px" objectFit="cover" borderRadius="md" />;
 }
 
 interface LoanType {
@@ -168,9 +160,7 @@ const LoanReturnCard = ({
   const derivedStatus = deriveLoanStatus(loan.reservations);
 
   // Only show INUSE reservations in the return flow
-  const inuseReservations = loan.reservations.filter(
-    (r) => r.status === ReservationStatus.INUSE,
-  );
+  const inuseReservations = loan.reservations.filter((r) => r.status === ReservationStatus.INUSE);
 
   return (
     <>
@@ -224,7 +214,10 @@ const LoanReturnCard = ({
                     borderColor={itemBorderColor}
                     spacing={4}
                   >
-                    <ReservationItemImage itemId={reservation.item.id} itemName={reservation.item.name} />
+                    <ReservationItemImage
+                      itemId={reservation.item.id}
+                      itemName={reservation.item.name}
+                    />
                     <VStack align="start" spacing={1} flex={1}>
                       <Text fontSize="lg" fontWeight="bold">
                         {reservation.item.name}

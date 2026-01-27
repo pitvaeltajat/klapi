@@ -12,15 +12,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
-    const { loanId, content } = req.body;
-
+    const { loanId, content, created } = req.body;
+    if (!loanId || !content) {
+      res.status(400).json({ message: 'loanId ja content vaaditaan' });
+      return;
+    }
     const report = await prisma.report.create({
       data: {
         loanId: loanId,
         content: content,
+        created: created || 'AFTER_LOAN',
       },
     });
-
     res.status(200).json({ report });
   } catch (error) {
     console.error('Virhe luotaessa raporttia:', error);
