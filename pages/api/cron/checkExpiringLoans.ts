@@ -1,5 +1,6 @@
 import { PrismaClient, ReservationStatus } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getBaseUrl } from '../../../utils/urlHelpers';
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const baseUrl = getBaseUrl();
+
     // Get current time and 24 hours from now
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -66,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendPickupReminder`,
+          `${baseUrl}/api/email/sendPickupReminder`,
           {
             method: 'POST',
             headers: {
@@ -133,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendReminder`,
+          `${baseUrl}/api/email/sendReminder`,
           {
             method: 'POST',
             headers: {
@@ -208,7 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_VERCEL_URL}/api/email/sendAdminReminder`,
+            `${baseUrl}/api/email/sendAdminReminder`,
             {
               method: 'POST',
               headers: {

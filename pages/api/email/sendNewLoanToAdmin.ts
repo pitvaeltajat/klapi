@@ -3,6 +3,7 @@ import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import 'dotenv/config';
 import { getEmailStyles, renderItemCard, renderLoanDetails } from '../../../utils/emailHelpers';
+import { getPublicUrl } from '../../../utils/urlHelpers';
 
 async function sendNewLoanEmail(loanCreator: string, loanId: string) {
   const adminEmails = (
@@ -59,7 +60,7 @@ async function sendNewLoanEmail(loanCreator: string, loanId: string) {
     .join('');
 
   const loanDetailsHtml = renderLoanDetails(loan.startTime, loan.endTime, loan.description);
-  const loanUrl = `${process.env.NEXT_PUBLIC_VERCEL_URL}/loan/${loanId}`;
+  const loanUrl = `${getPublicUrl()}/loan/${loanId}`;
   const subjectText = loan.description || `Varaus ${loanId}`;
 
   const html = `

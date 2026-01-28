@@ -4,7 +4,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getEmailStyles, renderItemCard, renderLoanDetails } from '../../../utils/emailHelpers';
 import { getPublicUrl } from '../../../utils/urlHelpers';
 
-async function sendCreatedEmail(recipientEmail: string, loanId: string) {
+async function sendOverdueEmail(recipientEmail: string, loanId: string) {
   const loan = await prisma.loan.findUnique({
     where: { id: loanId },
     select: {
@@ -46,30 +46,27 @@ async function sendCreatedEmail(recipientEmail: string, loanId: string) {
     </head>
     <body>
       <div class="email-container">
-        <h1>✅ Varaus luotu</h1>
-        
+        <h1>⚠️ Varauksesi on myöhässä!</h1>
+
         <p>Hei!</p>
-        
-        <p>Varauksesi on luotu onnistuneesti ja se on automaattisesti hyväksytty. Voit noutaa varatut tavarat ilmoittamaasi aikaan.</p>
-        
+
+        <p>Varauksesi palautuspäivä on mennyt umpeen. Ole hyvä ja palauta tavarat mahdollisimman pian.</p>
+
         ${loanDetailsHtml}
-        
-        <h2>Varatut tavarat</h2>
-        <div class="item-grid">
+
+        <div class="info-box">
+          <strong>📦 Varatut tavarat:</strong>
           ${itemsHtml}
         </div>
-        
-        <div class="info-box">
-          <strong>📋 Varaustunnus:</strong> ${loanId}<br />
-          <strong>✅ Tila:</strong> Hyväksytty<br />
-          <br />
-          <strong>⚠️ Muistathan:</strong> Nouda varatut tavarat ilmoittamaasi aikaan. Voit tarkastella varaustasi alla olevasta linkistä.
+
+        <div class="info-box" style="background-color: #fef2f2; border-left: 4px solid #dc2626;">
+          <strong>⚠️ Toiminto vaaditaan:</strong> Palauta tavarat mahdollisimman pian. Jos tarvitset lisäaikaa, ota yhteyttä ylläpitoon.
         </div>
-        
-        <a href="${loanUrl}" class="button">Tarkastele varausta</a>
-        
+
+        <a href="${loanUrl}" class="button">Näytä varauksesi</a>
+
         <div class="footer">
-          <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
+          <p><i>Tämä on automaattinen muistutus. Jos olet jo palauttanut tavarat, voit jättää tämän viestin huomiotta.</i></p>
           <p>Klapi - Kaluston lainausjärjestelmä</p>
         </div>
       </div>
@@ -77,20 +74,30 @@ async function sendCreatedEmail(recipientEmail: string, loanId: string) {
     </html>
   `;
 
-  const subject = `Varaus "${subjectText}" luotu`;
-  await sendEmail([recipientEmail], subject, html);
+  try {
+    await sendEmail(recipientEmail, `⚠️ Myöhästynyt varaus: ${subjectText}`, html);
+  } catch (error) {
+    console.error('Failed to send overdue email:', error);
+    throw error;
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
   const { email, id } = req.body;
+
+  if (!email || !id) {
+    return res.status(400).json({ message: 'Email and ID are required' });
+  }
+
   try {
-    await sendCreatedEmail(email, id);
-    res.status(200).json({ message: 'Email sent' });
+    await sendOverdueEmail(email, id);
+    return res.status(200).json({ message: 'Overdue email sent successfully' });
   } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: 'Unknown error' });
-    }
+    console.error('Error sending overdue email:', error);
+    return res.status(500).json({ message: 'Failed to send overdue email' });
   }
 }
