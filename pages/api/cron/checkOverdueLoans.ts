@@ -1,6 +1,7 @@
-import { PrismaClient, ReservationStatus } from '@prisma/client';
+import { PrismaClient, ReservationStatus, EmailType } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getBaseUrl } from '../../../utils/urlHelpers';
+import { shouldSendEmail } from '../../../utils/emailLogHelpers';
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return;
       }
 
+      // Check if we already sent this email recently (prevents duplicates from double cron execution)
+      const canSend = await shouldSendEmail(
+        loan.id,
+        loan.userId,
+        EmailType.OVERDUE_USER_REMINDER,
+      );
+
+      if (!canSend) {
+        console.log(`Skipping overdue email for loan ${loan.id} - already sent recently`);
+        return;
+      }
+
       try {
         const response = await fetch(`${baseUrl}/api/email/sendOverdueToUser`, {
           method: 'POST',
@@ -115,6 +128,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       adminEmailPromises = admins.map(async (admin) => {
+        // For admin notifications, we check per-admin, not per-loan
+        // Use the first overdue loan ID as a reference for tracking
+        const referenceLoanId = overdueLoans[0].id;
+
+        // Check if we already sent this admin notification recently
+        const canSend = await shouldSendEmail(
+          referenceLoanId,
+          admin.id,
+          EmailType.OVERDUE_ADMIN_NOTIFICATION,
+        );
+
+        if (!canSend) {
+          console.log(`Skipping admin notification to ${admin.email} - already sent recently`);
+          return;
+        }
+
         try {
           const response = await fetch(`${baseUrl}/api/email/sendOverdueToAdmin`, {
             method: 'POST',

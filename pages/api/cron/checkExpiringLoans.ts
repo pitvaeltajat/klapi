@@ -1,6 +1,7 @@
-import { PrismaClient, ReservationStatus } from '@prisma/client';
+import { PrismaClient, ReservationStatus, EmailType } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getBaseUrl } from '../../../utils/urlHelpers';
+import { shouldSendEmail } from '../../../utils/emailLogHelpers';
 
 const prisma = new PrismaClient();
 
@@ -64,6 +65,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (!user?.emailWeeklyReminder) {
         console.log(`User ${loan.userId} has disabled reminder emails`);
+        return;
+      }
+
+      // Check if we already sent this email recently
+      const canSend = await shouldSendEmail(
+        loan.id,
+        loan.userId,
+        EmailType.PICKUP_REMINDER,
+      );
+
+      if (!canSend) {
+        console.log(`Skipping pickup reminder for loan ${loan.id} - already sent recently`);
         return;
       }
 
@@ -131,6 +144,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (!user?.emailWeeklyReminder) {
         console.log(`User ${loan.userId} has disabled reminder emails`);
+        return;
+      }
+
+      // Check if we already sent this email recently
+      const canSend = await shouldSendEmail(
+        loan.id,
+        loan.userId,
+        EmailType.EXPIRING_LOAN_REMINDER,
+      );
+
+      if (!canSend) {
+        console.log(`Skipping expiring loan reminder for loan ${loan.id} - already sent recently`);
         return;
       }
 
@@ -208,6 +233,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       adminEmailPromises = admins.map(async (admin) => {
         if (!admin.email) return;
+
+        // For admin notifications, use the first old box loan ID as a reference
+        const referenceLoanId = oldBoxLoans[0].id;
+
+        // Check if we already sent this admin notification recently
+        const canSend = await shouldSendEmail(
+          referenceLoanId,
+          admin.id,
+          EmailType.OLD_BOX_ADMIN_NOTIFICATION,
+        );
+
+        if (!canSend) {
+          console.log(`Skipping old box admin notification to ${admin.email} - already sent recently`);
+          return;
+        }
 
         try {
           const response = await fetch(
