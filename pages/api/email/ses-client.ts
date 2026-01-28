@@ -3,7 +3,7 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 const isLocal = process.env.USE_LOCAL_SES === 'true';
 
 const ses = new SESClient({
-  region: process.env.AWS_REGION || 'eu-north-1',
+  region: process.env.KLAPI_AWS_REGION || 'eu-north-1',
   ...(isLocal
     ? {
         endpoint: 'http://localhost:8005',
