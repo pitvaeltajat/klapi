@@ -6,9 +6,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { PrismaClient, LoanStatus, Group } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { LoanStatus, Group } from '@prisma/client';
+import prisma from '../../utils/prisma/index.js';
 
 // Helper to create test data
 async function createTestUser(

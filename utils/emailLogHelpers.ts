@@ -1,6 +1,5 @@
-import { PrismaClient, EmailType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { EmailType } from '@prisma/client';
+import prisma from './prisma/index.js';
 
 /**
  * Check if an email of the specified type has been sent recently for a loan

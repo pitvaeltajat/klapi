@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma/index.js';
 
 async function createKioskUser() {
   console.log('Creating kiosk user...');
