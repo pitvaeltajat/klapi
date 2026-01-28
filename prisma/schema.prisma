@@ -39,21 +39,22 @@ model Session {
 }
 
 model User {
-  id                       String    @id @default(cuid())
+  id                       String     @id @default(cuid())
   name                     String?
-  email                    String?   @unique
+  email                    String?    @unique
   emailVerified            DateTime?
   image                    String?
-  group                    Group     @default(USER)
+  group                    Group      @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
   kioskElevatePin          String?
-  username                 String?   @unique
-  emailNewLoanNotification Boolean   @default(true)
-  emailWeeklyReminder      Boolean   @default(true)
+  username                 String?    @unique
+  emailNewLoanNotification Boolean    @default(true)
+  emailWeeklyReminder      Boolean    @default(true)
   accounts                 Account[]
   loans                    Loan[]
   sessions                 Session[]
+  emailLogs                EmailLog[]
 }
 
 model Item {
@@ -125,6 +126,7 @@ model Loan {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   reservations Reservation[]
   reports      Report[]
+  emailLogs    EmailLog[]
 }
 
 model Report {
@@ -185,4 +187,25 @@ enum ReservationStatus {
   INUSE
   IN_BOX
   RETURNED
+}
+
+model EmailLog {
+  id        String         @id @default(cuid())
+  emailType EmailType
+  loanId    String
+  userId    String
+  sentAt    DateTime       @default(now())
+  loan      Loan           @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([loanId, emailType, sentAt])
+  @@index([userId, emailType, sentAt])
+}
+
+enum EmailType {
+  EXPIRING_LOAN_REMINDER
+  PICKUP_REMINDER
+  OVERDUE_USER_REMINDER
+  OVERDUE_ADMIN_NOTIFICATION
+  OLD_BOX_ADMIN_NOTIFICATION
 }
