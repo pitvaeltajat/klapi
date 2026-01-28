@@ -2,6 +2,7 @@ import { sendEmail } from './ses-client';
 import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getEmailStyles, renderItemCard, renderLoanDetails, formatDate } from '../../../utils/emailHelpers';
+import { getPublicUrl } from '../../../utils/urlHelpers';
 
 async function sendPickupReminderEmail(
   recipientEmail: string,
@@ -37,7 +38,7 @@ async function sendPickupReminderEmail(
     .join('');
 
   const loanDetailsHtml = renderLoanDetails(loan.startTime, loan.endTime, loan.description);
-  const loanUrl = `${process.env.NEXT_PUBLIC_VERCEL_URL}/loan/${loanId}`;
+  const loanUrl = `${getPublicUrl()}/loan/${loanId}`;
   const subjectText = loan.description || `Varaus ${loanId}`;
 
   const html = `

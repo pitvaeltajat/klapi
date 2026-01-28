@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import { ReservationStatus } from '@prisma/client';
 import 'dotenv/config';
+import { getBaseUrl } from '../../../utils/urlHelpers';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -95,9 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http')
-      ? process.env.NEXT_PUBLIC_VERCEL_URL
-      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+    const baseUrl = getBaseUrl();
 
     // Send emails for ACCEPTED loans (regular user loans)
     if (loanStatus === 'ACCEPTED') {

@@ -2,6 +2,7 @@ import { sendEmail } from './ses-client';
 import prisma from '../../../utils/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getEmailStyles } from '../../../utils/emailHelpers';
+import { getPublicUrl } from '../../../utils/urlHelpers';
 
 interface LoanInfo {
   id: string;
@@ -11,6 +12,8 @@ interface LoanInfo {
 }
 
 async function sendAdminReminderEmail(recipientEmail: string, loans: LoanInfo[]) {
+  const publicUrl = getPublicUrl();
+
   const loanItems = await Promise.all(
     loans.map(async (loan) => {
       const fullLoan = await prisma.loan.findUnique({
@@ -36,12 +39,12 @@ async function sendAdminReminderEmail(recipientEmail: string, loans: LoanInfo[])
   const loansListHtml = loanItems
     .map(({ loan, fullLoan }) => {
       if (!fullLoan) return '';
-      
+
       const itemsList = fullLoan.reservations
         .map((r) => `${r.item.name} (${r.amount} kpl)`)
         .join(', ');
-      
-      const loanUrl = `${process.env.NEXT_PUBLIC_VERCEL_URL}/loan/${loan.id}`;
+
+      const loanUrl = `${publicUrl}/loan/${loan.id}`;
       
       return `
         <div style="border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin-bottom: 15px; background-color: #ffffff;">
@@ -81,7 +84,7 @@ async function sendAdminReminderEmail(recipientEmail: string, loans: LoanInfo[])
           <strong>⚠️ Toiminto vaaditaan:</strong> Ota yhteyttä varaajiin ja varmista, että tavarat palautetaan ajoissa.
         </div>
         
-        <a href="${process.env.NEXT_PUBLIC_VERCEL_URL}/admin" class="button">Siirry admin-paneeliin</a>
+        <a href="${publicUrl}/admin" class="button">Siirry admin-paneeliin</a>
         
         <div class="footer">
           <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
