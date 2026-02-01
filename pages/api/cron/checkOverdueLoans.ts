@@ -98,19 +98,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    // Prepare admin notification if there are overdue loans
+    // Prepare admin notification for loans at specific overdue intervals (1, 3, 7 days)
     let adminEmailPromises: Promise<void>[] = [];
-    if (overdueLoans.length > 0) {
-      // Get all admins who want weekly reminders
+
+    // Filter loans to only those at notification intervals (1, 3, or 7 days overdue)
+    const notificationIntervals = [1, 3, 7];
+    const loansAtIntervals = overdueLoans.filter((loan) => {
+      const daysOverdue = Math.floor(
+        (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      return notificationIntervals.includes(daysOverdue);
+    });
+
+    console.log(`Found ${loansAtIntervals.length} loans at notification intervals (1, 3, or 7 days)`);
+
+    if (loansAtIntervals.length > 0) {
+      // Get all admins who want overdue notifications
       const admins = await prisma.user.findMany({
         where: {
           group: 'ADMIN',
-          emailWeeklyReminder: true,
+          emailOverdueNotification: true,
           email: { not: null },
         },
       });
 
-      const loanInfo = overdueLoans.map((loan) => {
+      // Group loans by days overdue
+      const loansByInterval: Record<number, typeof loansAtIntervals> = {
+        1: [],
+        3: [],
+        7: [],
+      };
+
+      loansAtIntervals.forEach((loan) => {
+        const daysOverdue = Math.floor(
+          (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        if (notificationIntervals.includes(daysOverdue)) {
+          loansByInterval[daysOverdue].push(loan);
+        }
+      });
+
+      const loanInfo = loansAtIntervals.map((loan) => {
         const daysOverdue = Math.floor(
           (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
         );
@@ -128,21 +156,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       adminEmailPromises = admins.map(async (admin) => {
-        // For admin notifications, we check per-admin, not per-loan
-        // Use the first overdue loan ID as a reference for tracking
-        const referenceLoanId = overdueLoans[0].id;
+        // Send one email per admin per interval
+        // We need to check each loan individually to prevent duplicate sends
+        const loansToNotify = [];
 
-        // Check if we already sent this admin notification recently
-        const canSend = await shouldSendEmail(
-          referenceLoanId,
-          admin.id,
-          EmailType.OVERDUE_ADMIN_NOTIFICATION,
-        );
+        for (const loan of loansAtIntervals) {
+          const canSend = await shouldSendEmail(
+            loan.id,
+            admin.id,
+            EmailType.OVERDUE_ADMIN_NOTIFICATION,
+          );
 
-        if (!canSend) {
-          console.log(`Skipping admin notification to ${admin.email} - already sent recently`);
+          if (canSend) {
+            loansToNotify.push(loan);
+          }
+        }
+
+        if (loansToNotify.length === 0) {
+          console.log(`No new overdue loans to notify ${admin.email} about`);
           return;
         }
+
+        // Create loan info for only the loans we're notifying about
+        const loansToNotifyInfo = loansToNotify.map((loan) => {
+          const daysOverdue = Math.floor(
+            (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
+          return {
+            id: loan.id,
+            userName: loan.user.name || loan.user.email || 'Unknown',
+            userEmail: loan.user.email,
+            endTime: loan.endTime.toLocaleString('fi-FI', {
+              dateStyle: 'short',
+              timeStyle: 'short',
+            }),
+            daysOverdue,
+          };
+        });
 
         try {
           const response = await fetch(`${baseUrl}/api/email/sendOverdueToAdmin`, {
@@ -152,7 +203,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             body: JSON.stringify({
               email: admin.email,
-              loans: loanInfo,
+              loans: loansToNotifyInfo,
             }),
           });
 
@@ -160,7 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             throw new Error(`Failed to send overdue admin email to ${admin.email}`);
           }
 
-          console.log(`Sent overdue admin email to ${admin.email}`);
+          console.log(`Sent overdue admin email to ${admin.email} for ${loansToNotifyInfo.length} loans`);
         } catch (error) {
           console.error(`Error sending overdue admin email to ${admin.email}:`, error);
         }

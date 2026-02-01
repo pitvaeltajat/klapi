@@ -212,11 +212,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Send admin reminder emails if there are old box loans
     let adminEmailPromises: Promise<void>[] = [];
     if (oldBoxLoans.length > 0) {
-      // Get all admins who want weekly reminders
+      // Get all admins who want old box notifications
       const admins = await prisma.user.findMany({
         where: {
           group: 'ADMIN',
-          emailWeeklyReminder: true,
+          emailOldBoxNotification: true,
           email: { not: null },
         },
       });
