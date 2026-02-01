@@ -51,6 +51,8 @@ model User {
   username                 String?    @unique
   emailNewLoanNotification Boolean    @default(true)
   emailWeeklyReminder      Boolean    @default(true)
+  emailOldBoxNotification  Boolean    @default(true)
+  emailOverdueNotification Boolean    @default(true)
   accounts                 Account[]
   loans                    Loan[]
   sessions                 Session[]

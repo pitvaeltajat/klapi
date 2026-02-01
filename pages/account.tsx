@@ -55,6 +55,8 @@ interface AccountProps {
   userEmailPreferences: {
     emailWeeklyReminder: boolean;
     emailNewLoanNotification: boolean;
+    emailOldBoxNotification: boolean;
+    emailOverdueNotification: boolean;
   };
 }
 
@@ -69,6 +71,8 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
         userEmailPreferences: {
           emailWeeklyReminder: true,
           emailNewLoanNotification: true,
+          emailOldBoxNotification: true,
+          emailOverdueNotification: true,
         },
       },
     };
@@ -116,6 +120,8 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
     select: {
       emailWeeklyReminder: true,
       emailNewLoanNotification: true,
+      emailOldBoxNotification: true,
+      emailOverdueNotification: true,
     },
   });
 
@@ -125,6 +131,8 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
       userEmailPreferences: {
         emailWeeklyReminder: user?.emailWeeklyReminder ?? true,
         emailNewLoanNotification: user?.emailNewLoanNotification ?? true,
+        emailOldBoxNotification: user?.emailOldBoxNotification ?? true,
+        emailOverdueNotification: user?.emailOverdueNotification ?? true,
       },
     },
   };
@@ -142,6 +150,12 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
   );
   const [emailNewLoanNotification, setEmailNewLoanNotification] = useState(
     userEmailPreferences.emailNewLoanNotification,
+  );
+  const [emailOldBoxNotification, setEmailOldBoxNotification] = useState(
+    userEmailPreferences.emailOldBoxNotification,
+  );
+  const [emailOverdueNotification, setEmailOverdueNotification] = useState(
+    userEmailPreferences.emailOverdueNotification,
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -194,7 +208,7 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
     compareDates(new Date(a.startTime), new Date(b.startTime)),
   );
 
-  const handleEmailPreferenceChange = async (preference: 'weekly' | 'newLoan', value: boolean) => {
+  const handleEmailPreferenceChange = async (preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue', value: boolean) => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/user/updateEmailPreferences', {
@@ -205,6 +219,8 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
         body: JSON.stringify({
           emailWeeklyReminder: preference === 'weekly' ? value : emailWeeklyReminder,
           emailNewLoanNotification: preference === 'newLoan' ? value : emailNewLoanNotification,
+          emailOldBoxNotification: preference === 'oldBox' ? value : emailOldBoxNotification,
+          emailOverdueNotification: preference === 'overdue' ? value : emailOverdueNotification,
         }),
       });
 
@@ -214,16 +230,24 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
 
       if (preference === 'weekly') {
         setEmailWeeklyReminder(value);
-      } else {
+      } else if (preference === 'newLoan') {
         setEmailNewLoanNotification(value);
+      } else if (preference === 'oldBox') {
+        setEmailOldBoxNotification(value);
+      } else if (preference === 'overdue') {
+        setEmailOverdueNotification(value);
       }
     } catch (error) {
       console.error('Error updating email preferences:', error);
       // Revert the change on error
       if (preference === 'weekly') {
         setEmailWeeklyReminder(!value);
-      } else {
+      } else if (preference === 'newLoan') {
         setEmailNewLoanNotification(!value);
+      } else if (preference === 'oldBox') {
+        setEmailOldBoxNotification(!value);
+      } else if (preference === 'overdue') {
+        setEmailOverdueNotification(!value);
       }
     } finally {
       setIsSaving(false);
@@ -347,44 +371,62 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
           </Heading>
           <VStack align="start" spacing={4}>
             {session?.user?.group === 'ADMIN' && (
-              <HStack justify="space-between" w="full">
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="sm" fontWeight="medium">
-                    Viikottainen muistutus bokseissa olevista varauksista
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    Vain admin-käyttäjille
-                  </Text>
-                </VStack>
-                <Switch
-                  isChecked={emailWeeklyReminder}
-                  isDisabled={isSaving}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    handleEmailPreferenceChange('weekly', e.target.checked)
-                  }
-                  colorScheme="blue"
-                />
-              </HStack>
-            )}
-            {session?.user?.group === 'ADMIN' && (
-              <HStack justify="space-between" w="full">
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="sm" fontWeight="medium">
-                    Uudet varaukset
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    Ilmoitukset uusista varauksista (myös kiosk-käytöstä)
-                  </Text>
-                </VStack>
-                <Switch
-                  isChecked={emailNewLoanNotification}
-                  isDisabled={isSaving}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    handleEmailPreferenceChange('newLoan', e.target.checked)
-                  }
-                  colorScheme="blue"
-                />
-              </HStack>
+              <>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Uudet varaukset
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Ilmoitukset uusista varauksista (myös kiosk-käytöstä)
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailNewLoanNotification}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('newLoan', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Viikottaiset muistutukset vanhoista bokseista
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Muistutukset varauksista, jotka ovat olleet boksissa yli viikon
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailOldBoxNotification}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('oldBox', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+                <HStack justify="space-between" w="full">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Myöhässä olevat varaukset
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Ilmoitukset varauksista, joiden palautusaika on ylittynyt
+                    </Text>
+                  </VStack>
+                  <Switch
+                    isChecked={emailOverdueNotification}
+                    isDisabled={isSaving}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleEmailPreferenceChange('overdue', e.target.checked)
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+              </>
             )}
             {session?.user?.group !== 'ADMIN' && (
               <>

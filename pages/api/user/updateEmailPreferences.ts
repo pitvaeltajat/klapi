@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  const { emailWeeklyReminder, emailNewLoanNotification } = req.body;
+  const { emailWeeklyReminder, emailNewLoanNotification, emailOldBoxNotification, emailOverdueNotification } = req.body;
 
   try {
     const updatedUser = await prisma.user.update({
@@ -25,6 +25,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         emailWeeklyReminder: emailWeeklyReminder !== undefined ? emailWeeklyReminder : undefined,
         emailNewLoanNotification:
           emailNewLoanNotification !== undefined ? emailNewLoanNotification : undefined,
+        emailOldBoxNotification:
+          emailOldBoxNotification !== undefined ? emailOldBoxNotification : undefined,
+        emailOverdueNotification:
+          emailOverdueNotification !== undefined ? emailOverdueNotification : undefined,
       },
     });
 
@@ -32,6 +36,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: 'Email preferences updated',
       emailWeeklyReminder: updatedUser.emailWeeklyReminder,
       emailNewLoanNotification: updatedUser.emailNewLoanNotification,
+      emailOldBoxNotification: updatedUser.emailOldBoxNotification,
+      emailOverdueNotification: updatedUser.emailOverdueNotification,
     });
   } catch (error) {
     console.error('Error updating email preferences:', error);
