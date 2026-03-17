@@ -1,11 +1,23 @@
 import DatePicker from 'react-datepicker';
-import { Box, VStack, FormControl, FormLabel, Grid, GridItem, useColorModeValue } from '@chakra-ui/react';
+import { Box, VStack, FormControl, FormLabel, Grid, GridItem, useColorModeValue, Text, HStack } from '@chakra-ui/react';
 import 'react-datepicker/dist/react-datepicker.css';
 
 import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
 import LoanerAutocomplete from './LoanerAutocomplete';
+
+function formatDateTime(date: Date): string {
+  return date.toLocaleDateString('fi-FI', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+  }) + ' klo ' + date.toLocaleTimeString('fi-FI', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function KioskDateSelector() {
   const { state: dates, setEndDate } = useDates();
@@ -14,6 +26,8 @@ export default function KioskDateSelector() {
   const datePickerHeaderBg = useColorModeValue('white', 'gray.700');
   const datePickerBorderColor = useColorModeValue('gray.200', 'gray.600');
   const datePickerHoverBg = useColorModeValue('gray.100', 'gray.600');
+  const summaryBg = useColorModeValue('blue.50', 'blue.900');
+  const summaryBorderColor = useColorModeValue('blue.200', 'blue.700');
 
   // Helper function to set default time to 18:00
   const setDefaultTime = (date: Date): Date => {
@@ -29,11 +43,24 @@ export default function KioskDateSelector() {
 
   const handleDateChange = (date: Date | null) => {
     if (date) {
-      setEndDate(setDefaultTime(date));
+      const today = new Date();
+      const isToday =
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
+
+      if (isToday) {
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 0, 0);
+        setEndDate(endOfDay);
+      } else {
+        setEndDate(setDefaultTime(date));
+      }
     }
   };
 
   return (
+    <>
     <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={4} mb={4} alignItems="start">
       {/* Left column - Loaner info */}
       <GridItem>
@@ -97,5 +124,38 @@ export default function KioskDateSelector() {
         </Box>
       </GridItem>
     </Grid>
+
+      {/* Loan period summary */}
+      <Box
+        borderWidth="1px"
+        borderRadius="lg"
+        p={4}
+        mb={4}
+        bg={summaryBg}
+        borderColor={summaryBorderColor}
+      >
+        <HStack spacing={3} justify="center" wrap="wrap">
+          <VStack spacing={0}>
+            <Text fontSize="xs" color="gray.500" fontWeight="medium">
+              Laina alkaa
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {formatDateTime(dates.startDate)}
+            </Text>
+          </VStack>
+          <Text fontSize="xl" color="gray.400" px={2}>
+            &rarr;
+          </Text>
+          <VStack spacing={0}>
+            <Text fontSize="xs" color="gray.500" fontWeight="medium">
+              Palautus viimeistään
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {formatDateTime(dates.endDate)}
+            </Text>
+          </VStack>
+        </HStack>
+      </Box>
+    </>
   );
 }
