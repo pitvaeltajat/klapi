@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { PrismaClient, LoanStatus, ReservationStatus, Group } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import handler from '../../pages/api/availability/getAvailabilities';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 interface AvailabilityResponse {
   availabilities: Record<string, { byDate: Record<string, number>; available: number }>;

@@ -1,9 +1,8 @@
-import { PrismaClient, ReservationStatus, EmailType } from '@prisma/client';
+import { ReservationStatus, EmailType } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getBaseUrl } from '../../../utils/urlHelpers';
 import { shouldSendEmail } from '../../../utils/emailLogHelpers';
-
-const prisma = new PrismaClient();
+import prisma from '../../../utils/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Verify the request is from Vercel Cron or has authorization
