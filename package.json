@@ -12,9 +12,9 @@
   },
   "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.970.0",
-    "@aws-sdk/client-ses": "^3.970.0",
-    "@aws-sdk/s3-presigned-post": "^3.970.0",
+    "@aws-sdk/client-s3": "^3.1012.0",
+    "@aws-sdk/client-ses": "^3.1012.0",
+    "@aws-sdk/s3-presigned-post": "^3.1012.0",
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -29,18 +29,18 @@
     "react-datepicker": "^9.1.0",
     "react-dom": "^18.3.1",
     "react-focus-lock": "^2.13.7",
-    "react-icons": "^5.5.0",
+    "react-icons": "^5.6.0",
     "superjson": "^2.2.6",
-    "swr": "^2.3.8"
+    "swr": "^2.4.1"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/eslintrc": "^3.3.5",
     "@mermaid-js/mermaid-cli": "^11.12.0",
     "@testing-library/dom": "^10.4.1",
-    "@testing-library/react": "^16.3.1",
+    "@testing-library/react": "^16.3.2",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.19.7",
-    "@types/react": "^19.2.8",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.2",
@@ -51,12 +51,12 @@
     "jsdom": "^27.4.0",
     "prisma": "6.19.2",
     "prisma-erd-generator": "^2.4.2",
-    "puppeteer": "^24.35.0",
+    "puppeteer": "^24.39.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.0",
-    "vite-tsconfig-paths": "^6.0.4",
-    "vitest": "^4.0.17"
+    "typescript-eslint": "^8.57.1",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.0"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
