@@ -122,6 +122,9 @@ export default function LoanView({
   } = useDisclosure();
   const { data: session } = useSession();
   const cardBg = useColorModeValue('white', 'gray.800');
+  const returnedBg = useColorModeValue('green.50', 'green.900');
+  const returnedBorder = useColorModeValue('green.200', 'green.700');
+  const returnedText = useColorModeValue('green.700', 'green.300');
 
   const isAdmin = session?.user?.group === 'ADMIN';
 
@@ -343,8 +346,8 @@ export default function LoanView({
           />
         )}
         {derivedStatus === 'RETURNED' ? (
-          <Box bg="green.50" p={6} borderRadius="lg" borderWidth="1px" borderColor="green.200">
-            <Heading as="h2" size="md" color="green.700">
+          <Box bg={returnedBg} p={6} borderRadius="lg" borderWidth="1px" borderColor={returnedBorder}>
+            <Heading as="h2" size="md" color={returnedText}>
               Lainaustapahtuma suoritettu loppuun
             </Heading>
           </Box>

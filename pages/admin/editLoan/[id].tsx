@@ -30,6 +30,7 @@ import {
   Flex,
   Badge,
   Stack,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaMinus, FaPlus, FaTrash, FaHistory } from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
@@ -103,6 +104,10 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   const toast = useToast();
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const subtleText = useColorModeValue('gray.600', 'gray.400');
+  const defaultBorder = useColorModeValue('gray.200', 'gray.600');
+  const newItemBg = useColorModeValue('green.50', 'green.900');
 
   const { data: session } = useSession();
 
@@ -322,13 +327,13 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       <Heading size="xl">Muokkaa lainaa</Heading>
 
       {/* Loan Info Card */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
         <Heading size="md" mb={4}>
           Perustiedot
         </Heading>
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
           <Box>
-            <Text fontWeight="medium" color="gray.600" fontSize="sm">
+            <Text fontWeight="medium" color={subtleText} fontSize="sm">
               Lainan ID
             </Text>
             <Text fontFamily="mono" fontSize="sm">
@@ -336,12 +341,12 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
             </Text>
           </Box>
           <Box>
-            <Text fontWeight="medium" color="gray.600" fontSize="sm">
+            <Text fontWeight="medium" color={subtleText} fontSize="sm">
               Lainaaja
             </Text>
             <Text fontWeight="medium">{loan.loaner || loan.user.name || loan.user.email}</Text>
             {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color={subtleText}>
                 Tili: {loan.user.name} ({loan.user.email})
               </Text>
             )}
@@ -350,7 +355,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       </Box>
 
       {/* Description Card */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
         <Flex justify="space-between" align="center" mb={4}>
           <HStack>
             <Heading size="md">Kuvaus</Heading>
@@ -371,7 +376,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
         </Flex>
         <FormControl>
           <Textarea
-            borderColor={isDescriptionModified ? 'orange.300' : 'gray.200'}
+            borderColor={isDescriptionModified ? 'orange.300' : defaultBorder}
             borderWidth={isDescriptionModified ? '2px' : '1px'}
             value={description ?? ''}
             placeholder="Ei kuvausta"
@@ -382,7 +387,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       </Box>
 
       {/* Dates Card */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
         <Heading size="md" mb={4}>
           Päivämäärät
         </Heading>
@@ -407,7 +412,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
               />
             </Flex>
             <Input
-              borderColor={isStartDateModified ? 'orange.300' : 'gray.200'}
+              borderColor={isStartDateModified ? 'orange.300' : defaultBorder}
               borderWidth={isStartDateModified ? '2px' : '1px'}
               onChange={handleStartDateChange}
               type="datetime-local"
@@ -435,7 +440,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
               />
             </Flex>
             <Input
-              borderColor={isEndDateModified ? 'orange.300' : 'gray.200'}
+              borderColor={isEndDateModified ? 'orange.300' : defaultBorder}
               borderWidth={isEndDateModified ? '2px' : '1px'}
               onChange={handleEndDateChange}
               type="datetime-local"
@@ -446,7 +451,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       </Box>
 
       {/* Reservations Card */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="md">Varaukset</Heading>
           <IconButton
@@ -475,9 +480,9 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
                     ? 'green.300'
                     : isReservationModified(reservation)
                       ? 'orange.300'
-                      : 'gray.200'
+                      : defaultBorder
                 }
-                bg={isNewReservation(reservation) ? 'green.50' : 'white'}
+                bg={isNewReservation(reservation) ? newItemBg : cardBg}
               >
                 <Stack
                   direction={{ base: 'column', sm: 'row' }}
@@ -557,7 +562,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
       </Box>
 
       {/* Add Item Card */}
-      <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+      <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
         <Heading size="md" mb={4}>
           Lisää kama
         </Heading>

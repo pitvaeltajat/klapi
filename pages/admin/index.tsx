@@ -103,6 +103,7 @@ const Admin: NextPage = () => {
   const { mutate } = useSWRConfig();
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.800');
+  const subtleText = useColorModeValue('gray.600', 'gray.400');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [userToDelete, setUserToDelete] = useState<UserWithGroup | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -347,10 +348,10 @@ const Admin: NextPage = () => {
         </AlertDialog>
 
         {/* User Management Section */}
-        <Box borderWidth="1px" borderRadius="lg" p={6} bg="white" boxShadow="sm">
+        <Box borderWidth="1px" borderRadius="lg" p={6} bg={cardBg} boxShadow="sm">
           <HStack justifyContent="space-between" mb={4}>
             <Heading size="md">Käyttäjien hallinta</Heading>
-            <Text color="gray.600" fontSize="sm">
+            <Text color={subtleText} fontSize="sm">
               Yhteensä {users.length} käyttäjää
             </Text>
           </HStack>
