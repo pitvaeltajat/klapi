@@ -21,6 +21,7 @@ import {
   Radio,
 } from '@chakra-ui/react';
 import { useSession, getSession, signOut } from 'next-auth/react';
+import { serialize } from '@/utils/serialize';
 import prisma from '../utils/prisma';
 import { LoanCard } from './loan';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -66,7 +67,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
   // If no session, return empty data
   if (!session?.user?.id) {
     return {
-      props: {
+      props: serialize({
         loans: [],
         userEmailPreferences: {
           emailWeeklyReminder: true,
@@ -74,7 +75,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
           emailOldBoxNotification: true,
           emailOverdueNotification: true,
         },
-      },
+      }),
     };
   }
 
@@ -126,7 +127,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
   });
 
   return {
-    props: {
+    props: serialize({
       loans,
       userEmailPreferences: {
         emailWeeklyReminder: user?.emailWeeklyReminder ?? true,
@@ -134,7 +135,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
         emailOldBoxNotification: user?.emailOldBoxNotification ?? true,
         emailOverdueNotification: user?.emailOverdueNotification ?? true,
       },
-    },
+    }),
   };
 };
 

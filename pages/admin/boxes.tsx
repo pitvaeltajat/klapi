@@ -21,6 +21,7 @@ import Breadcrumbs from '../../components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReservationStatus } from '@prisma/client';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 import { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 
 interface LoanWithReservations extends Loan {
   reservations: (Reservation & {
@@ -66,10 +67,10 @@ export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () =
   const reports = await prisma.report.findMany();
 
   return {
-    props: {
-      boxes: JSON.parse(JSON.stringify(boxes)),
-      reports: JSON.parse(JSON.stringify(reports)),
-    },
+    props: serialize({
+      boxes,
+      reports,
+    }),
   };
 };
 

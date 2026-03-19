@@ -8,6 +8,7 @@ import KioskModeSelector from '../components/KioskModeSelector';
 import KioskDateSelector from '../components/KioskDateSelector';
 import type { GetServerSideProps } from 'next';
 import { Item, Category, Loan, Reservation, ItemType, Announcement } from '@prisma/client';
+import { serialize } from '@/utils/serialize';
 import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
 import ItemBrowser from '../components/ItemBrowser';
@@ -58,7 +59,7 @@ export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
       items: true,
     },
   });
-  return { props: { items, categories } };
+  return { props: serialize({ items, categories }) };
 };
 
 export default function Index({ items, categories }: IndexProps) {

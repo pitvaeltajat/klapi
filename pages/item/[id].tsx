@@ -31,6 +31,7 @@ import ReservationTable from '../../components/ReservationTable';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -80,9 +81,9 @@ export const getServerSideProps: GetServerSideProps<{
   }
 
   return {
-    props: {
-      item: JSON.parse(JSON.stringify(item)),
-    },
+    props: serialize({
+      item,
+    }),
   };
 };
 

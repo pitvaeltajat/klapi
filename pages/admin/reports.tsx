@@ -20,6 +20,7 @@ import NotAuthenticated from '../../components/NotAuthenticated';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReportAffectedItem } from '@prisma/client';
 import { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 
 interface ReportsPageProps {
   reports: {
@@ -42,7 +43,7 @@ interface ReportsPageProps {
   }[];
 }
 
-export const getServerSideProps: GetServerSideProps<ReportsPageProps> = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   const reports = await prisma.report.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -64,9 +65,9 @@ export const getServerSideProps: GetServerSideProps<ReportsPageProps> = async ()
   });
 
   return {
-    props: {
-      reports: JSON.parse(JSON.stringify(reports)),
-    },
+    props: serialize({
+      reports,
+    }),
   };
 };
 

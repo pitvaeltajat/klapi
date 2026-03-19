@@ -28,6 +28,7 @@ import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import type { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useRouter } from 'next/router';
@@ -89,9 +90,9 @@ export const getServerSideProps: GetServerSideProps = async () => {
   });
 
   return {
-    props: {
-      loans: JSON.parse(JSON.stringify(loans)),
-    },
+    props: serialize({
+      loans,
+    }),
   };
 };
 

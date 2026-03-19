@@ -1,8 +1,10 @@
-import { withSuperjson } from 'next-superjson';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  turbopack: {
+    root: import.meta.dirname,
+  },
 };
 
-export default withSuperjson()(nextConfig);
+export default nextConfig;
