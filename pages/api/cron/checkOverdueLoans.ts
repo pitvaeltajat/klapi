@@ -150,6 +150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           endTime: loan.endTime.toLocaleString('fi-FI', {
             dateStyle: 'short',
             timeStyle: 'short',
+            timeZone: 'Europe/Helsinki',
           }),
           daysOverdue,
         };
@@ -190,6 +191,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             endTime: loan.endTime.toLocaleString('fi-FI', {
               dateStyle: 'short',
               timeStyle: 'short',
+              timeZone: 'Europe/Helsinki',
             }),
             daysOverdue,
           };

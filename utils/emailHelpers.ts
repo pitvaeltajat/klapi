@@ -9,6 +9,7 @@ export function formatDate(date: Date | string): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Europe/Helsinki',
   });
 }
 
@@ -18,6 +19,7 @@ export function formatDateShort(date: Date | string): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'Europe/Helsinki',
   });
 }
 
