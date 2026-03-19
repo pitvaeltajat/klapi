@@ -123,6 +123,13 @@ const LoanReturnCard = ({
   const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
   const infoBg = useColorModeValue('blue.50', 'blue.900');
   const successBg = useColorModeValue('green.50', 'green.900');
+  const reportBg = useColorModeValue('gray.50', 'gray.700');
+  const reportBorder = useColorModeValue('gray.200', 'gray.600');
+  const subtleText = useColorModeValue('gray.600', 'gray.400');
+  const headingBlue = useColorModeValue('blue.600', 'blue.300');
+  const subtleGray = useColorModeValue('gray.700', 'gray.300');
+  const successText = useColorModeValue('green.700', 'green.300');
+  const infoBorder = useColorModeValue('gray.300', 'gray.600');
 
   const handleConfirmReturn = async () => {
     const box = await onReturn(loan.id);
@@ -199,7 +206,7 @@ const LoanReturnCard = ({
           <ModalCloseButton size="lg" />
           <ModalBody p={8}>
             <VStack spacing={8} maxW="800px" mx="auto" align="stretch">
-              <Heading size="xl" textAlign="center" color="blue.600">
+              <Heading size="xl" textAlign="center" color={headingBlue}>
                 Palautat kamoja
               </Heading>
 
@@ -222,7 +229,7 @@ const LoanReturnCard = ({
                       <Text fontSize="lg" fontWeight="bold">
                         {reservation.item.name}
                       </Text>
-                      <Text fontSize="md" color="gray.600">
+                      <Text fontSize="md" color={subtleText}>
                         Määrä: {reservation.amount} kpl
                       </Text>
                     </VStack>
@@ -230,7 +237,7 @@ const LoanReturnCard = ({
                 ))}
               </VStack>
 
-              <Box p={6} bg="gray.50" borderRadius="lg" borderWidth="2px" borderColor="gray.200">
+              <Box p={6} bg={reportBg} borderRadius="lg" borderWidth="2px" borderColor={reportBorder}>
                 <Text fontSize="md" lineHeight="tall">
                   Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
                   siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden vahinkojen
@@ -307,10 +314,10 @@ const LoanReturnCard = ({
                 borderWidth="3px"
                 borderColor="blue.400"
               >
-                <Text fontSize="lg" color="gray.700" mb={3} fontWeight="medium">
+                <Text fontSize="lg" color={subtleGray} mb={3} fontWeight="medium">
                   Palauta tavarat lokeroon:
                 </Text>
-                <Heading size="3xl" color="blue.600">
+                <Heading size="3xl" color={headingBlue}>
                   {boxInfo?.name}
                 </Heading>
               </Box>
@@ -321,7 +328,7 @@ const LoanReturnCard = ({
                   borderRadius="md"
                   width="100%"
                   borderWidth="1px"
-                  borderColor="gray.300"
+                  borderColor={infoBorder}
                 >
                   <Text fontWeight="bold" mb={2} fontSize="lg">
                     Lisätiedot:
@@ -330,7 +337,7 @@ const LoanReturnCard = ({
                 </Box>
               )}
               <Box p={5} bg={successBg} borderRadius="md" width="100%" textAlign="center">
-                <Text color="green.700" fontSize="md" fontWeight="medium">
+                <Text color={successText} fontSize="md" fontWeight="medium">
                   Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan lokeroon.
                 </Text>
               </Box>

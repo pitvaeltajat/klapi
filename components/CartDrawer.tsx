@@ -38,6 +38,9 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const firstField = useRef<HTMLInputElement>(null);
   const { data: session } = useSession();
   const disabledInputBg = useColorModeValue('gray.100', 'gray.600');
+  const requiredColor = useColorModeValue('red.500', 'red.300');
+  const kioskInfoBg = useColorModeValue('gray.50', 'gray.700');
+  const kioskInfoBorder = useColorModeValue('gray.200', 'gray.600');
   const {
     state: cart,
     incrementAmount,
@@ -183,7 +186,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <Stack spacing={1}>
             <Box>
               <FormLabel htmlFor="loaner">
-                Lainaaja <span style={{ color: 'red' }}>*</span>
+                Lainaaja <Text as="span" color={requiredColor}>*</Text>
               </FormLabel>
               {isAdmin || isKiosk ? (
                 <LoanerAutocomplete
@@ -201,7 +204,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             </Box>
             <Box>
               <FormLabel htmlFor="description">
-                Kuvaus <span style={{ color: 'red' }}>*</span>
+                Kuvaus <Text as="span" color={requiredColor}>*</Text>
               </FormLabel>
               <Input
                 ref={firstField}
@@ -225,15 +228,15 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           </Stack>
 
           <Box mt={4}>
-            <span style={{ color: 'red' }}>*</span> Pakollinen kenttä
+            <Text as="span" color={requiredColor}>*</Text> Pakollinen kenttä
           </Box>
           {isKiosk && (
             <Box
               mt={6}
-              bg="gray.50"
+              bg={kioskInfoBg}
               borderRadius="lg"
               borderWidth="2px"
-              borderColor="gray.200"
+              borderColor={kioskInfoBorder}
               p={4}
             >
               <Text fontSize="md" lineHeight="tall">

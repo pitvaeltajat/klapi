@@ -20,6 +20,7 @@ import {
   NumberDecrementStepper,
   Spacer,
   Tag,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { Loan, Reservation } from '@prisma/client';
 
@@ -67,8 +68,11 @@ const ReportCard: React.FC<ReportCardProps> = ({
 }) => {
   // Filter out resolved reports for count
   const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const reportBg = useColorModeValue('gray.50', 'gray.700');
+  const subtleText = useColorModeValue('gray.600', 'gray.400');
   return (
-    <Box bg="white" p={6} borderRadius="lg" borderWidth="1px">
+    <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
       <Heading as="h2" size="lg" mb={4}>
         Raportit {unresolvedReports.length > 0 ? `(${unresolvedReports.length})` : ''}
       </Heading>
@@ -87,7 +91,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
               p={expanded ? 6 : 4}
               borderWidth="1px"
               borderRadius="md"
-              bg={expanded ? 'gray.50' : 'gray.50'}
+              bg={reportBg}
               boxShadow={expanded ? 'lg' : undefined}
             >
               <Text whiteSpace="pre-wrap" fontSize={expanded ? 'md' : 'sm'}>
@@ -97,7 +101,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                     ? report.content
                     : report.content.substring(0, 100) + '...'}
               </Text>
-              <Text fontSize="sm" color="gray.600" mt={2}>
+              <Text fontSize="sm" color={subtleText} mt={2}>
                 Luotu:{' '}
                 {new Date(report.createdAt).toLocaleString('fi-FI', {
                   dateStyle: 'full',
@@ -126,7 +130,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                     borderWidth="1px"
                     p={4}
                     borderRadius="md"
-                    bg="white"
+                    bg={cardBg}
                   >
                     <Text mb={2}>Lisää ilmoitus kamalle:</Text>
                     <RadioGroup defaultValue="none">
@@ -188,7 +192,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                       borderWidth="1px"
                       p={4}
                       borderRadius="md"
-                      bg="white"
+                      bg={cardBg}
                     >
                       <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
                       <CheckboxGroup>
