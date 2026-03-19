@@ -94,6 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               startTime: loan.startTime.toLocaleString('fi-FI', {
                 dateStyle: 'short',
                 timeStyle: 'short',
+                timeZone: 'Europe/Helsinki',
               }),
             }),
           },
@@ -174,6 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               endTime: loan.endTime.toLocaleString('fi-FI', {
                 dateStyle: 'short',
                 timeStyle: 'short',
+                timeZone: 'Europe/Helsinki',
               }),
             }),
           },
@@ -227,6 +229,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         startTime: loan.startTime.toLocaleString('fi-FI', {
           dateStyle: 'short',
           timeStyle: 'short',
+          timeZone: 'Europe/Helsinki',
         }),
         boxName: loan.box?.name,
       }));
