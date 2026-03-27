@@ -1,0 +1,142 @@
+import { describe, it, expect } from 'vitest';
+import { ReservationStatus, LoanStatus } from '@prisma/client';
+import {
+  deriveLoanStatus,
+  getLoanStatusLabel,
+  getLoanStatusColor,
+  getReservationStatusLabel,
+  getReservationStatusColor,
+} from '../utils/loanHelpers';
+
+describe('deriveLoanStatus', () => {
+  it('should return ACCEPTED for empty reservations', () => {
+    expect(deriveLoanStatus([])).toBe(LoanStatus.ACCEPTED);
+  });
+
+  it('should return RETURNED when all reservations are RETURNED', () => {
+    const reservations = [
+      { status: ReservationStatus.RETURNED },
+      { status: ReservationStatus.RETURNED },
+      { status: ReservationStatus.RETURNED },
+    ];
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.RETURNED);
+  });
+
+  it('should return REJECTED when all reservations are REJECTED', () => {
+    const reservations = [
+      { status: ReservationStatus.REJECTED },
+      { status: ReservationStatus.REJECTED },
+    ];
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.REJECTED);
+  });
+
+  it('should return IN_BOX when any reservation is IN_BOX', () => {
+    const reservations = [
+      { status: ReservationStatus.ACCEPTED },
+      { status: ReservationStatus.IN_BOX },
+      { status: ReservationStatus.RETURNED },
+    ];
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.IN_BOX);
+  });
+
+  it('should return INUSE when any reservation is INUSE', () => {
+    const reservations = [
+      { status: ReservationStatus.ACCEPTED },
+      { status: ReservationStatus.INUSE },
+    ];
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.INUSE);
+  });
+
+  it('should return ACCEPTED when all reservations are ACCEPTED', () => {
+    const reservations = [
+      { status: ReservationStatus.ACCEPTED },
+      { status: ReservationStatus.ACCEPTED },
+    ];
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.ACCEPTED);
+  });
+
+  it('should prioritize IN_BOX over INUSE', () => {
+    const reservations = [
+      { status: ReservationStatus.INUSE },
+      { status: ReservationStatus.IN_BOX },
+    ];
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.IN_BOX);
+  });
+
+  it('should not return RETURNED if any reservation is not RETURNED', () => {
+    const reservations = [
+      { status: ReservationStatus.RETURNED },
+      { status: ReservationStatus.ACCEPTED },
+    ];
+    expect(deriveLoanStatus(reservations)).not.toBe(LoanStatus.RETURNED);
+  });
+
+  it('should not return REJECTED if any reservation is not REJECTED', () => {
+    const reservations = [
+      { status: ReservationStatus.REJECTED },
+      { status: ReservationStatus.ACCEPTED },
+    ];
+    expect(deriveLoanStatus(reservations)).not.toBe(LoanStatus.REJECTED);
+  });
+
+  it('should handle single reservation correctly', () => {
+    expect(deriveLoanStatus([{ status: ReservationStatus.ACCEPTED }])).toBe(LoanStatus.ACCEPTED);
+    expect(deriveLoanStatus([{ status: ReservationStatus.INUSE }])).toBe(LoanStatus.INUSE);
+    expect(deriveLoanStatus([{ status: ReservationStatus.IN_BOX }])).toBe(LoanStatus.IN_BOX);
+    expect(deriveLoanStatus([{ status: ReservationStatus.RETURNED }])).toBe(LoanStatus.RETURNED);
+    expect(deriveLoanStatus([{ status: ReservationStatus.REJECTED }])).toBe(LoanStatus.REJECTED);
+  });
+
+  it('should handle mixed RETURNED and REJECTED as ACCEPTED (fallthrough)', () => {
+    const reservations = [
+      { status: ReservationStatus.RETURNED },
+      { status: ReservationStatus.REJECTED },
+    ];
+    // Not all RETURNED, not all REJECTED, no IN_BOX or INUSE -> ACCEPTED
+    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.ACCEPTED);
+  });
+});
+
+describe('getLoanStatusLabel', () => {
+  it('should return Finnish labels for all loan statuses', () => {
+    expect(getLoanStatusLabel(LoanStatus.ACCEPTED)).toBe('Hyväksytty');
+    expect(getLoanStatusLabel(LoanStatus.REJECTED)).toBe('Hylätty');
+    expect(getLoanStatusLabel(LoanStatus.INUSE)).toBe('Käytössä');
+    expect(getLoanStatusLabel(LoanStatus.IN_BOX)).toBe('Laatikossa');
+    expect(getLoanStatusLabel(LoanStatus.RETURNED)).toBe('Palautettu');
+  });
+
+  it('should return Tuntematon for unknown status', () => {
+    expect(getLoanStatusLabel('UNKNOWN' as LoanStatus)).toBe('Tuntematon');
+  });
+});
+
+describe('getLoanStatusColor', () => {
+  it('should return correct colors for all statuses', () => {
+    expect(getLoanStatusColor(LoanStatus.ACCEPTED)).toBe('green');
+    expect(getLoanStatusColor(LoanStatus.REJECTED)).toBe('red');
+    expect(getLoanStatusColor(LoanStatus.INUSE)).toBe('blue');
+    expect(getLoanStatusColor(LoanStatus.IN_BOX)).toBe('purple');
+    expect(getLoanStatusColor(LoanStatus.RETURNED)).toBe('gray');
+  });
+});
+
+describe('getReservationStatusLabel', () => {
+  it('should return Finnish labels for all reservation statuses', () => {
+    expect(getReservationStatusLabel(ReservationStatus.ACCEPTED)).toBe('Hyväksytty');
+    expect(getReservationStatusLabel(ReservationStatus.REJECTED)).toBe('Hylätty');
+    expect(getReservationStatusLabel(ReservationStatus.INUSE)).toBe('Käytössä');
+    expect(getReservationStatusLabel(ReservationStatus.IN_BOX)).toBe('Laatikossa');
+    expect(getReservationStatusLabel(ReservationStatus.RETURNED)).toBe('Palautettu');
+  });
+});
+
+describe('getReservationStatusColor', () => {
+  it('should return correct colors for all reservation statuses', () => {
+    expect(getReservationStatusColor(ReservationStatus.ACCEPTED)).toBe('green');
+    expect(getReservationStatusColor(ReservationStatus.REJECTED)).toBe('red');
+    expect(getReservationStatusColor(ReservationStatus.INUSE)).toBe('blue');
+    expect(getReservationStatusColor(ReservationStatus.IN_BOX)).toBe('purple');
+    expect(getReservationStatusColor(ReservationStatus.RETURNED)).toBe('gray');
+  });
+});
