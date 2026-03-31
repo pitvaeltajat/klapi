@@ -331,7 +331,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <Button
             colorScheme="blue"
             onClick={ConfirmationDialog.onOpen}
-            isDisabled={cart.items.length === 0 || !isDescriptionValid || !cart.loaner}
+            isDisabled={cart.items.length === 0 || !isDescriptionValid || !cart.loaner || (isKiosk && !cart.userId)}
           >
             Lainaa
           </Button>
