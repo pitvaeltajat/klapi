@@ -25,6 +25,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
+    if (session.user.group === 'KIOSK' && user.group === 'KIOSK') {
+      res.status(400).json({ message: 'Kioskilainaa ei voi yhdistää kioskitiliin' });
+      return;
+    }
+
     // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
     // Check the session user's group (who is creating the loan), not the target user's group
     const loanStatus = session.user.group === 'KIOSK' ? 'INUSE' : 'ACCEPTED';
