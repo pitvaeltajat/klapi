@@ -164,7 +164,7 @@ const LoanReturnCard = ({
   };
 
   // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(loan.reservations);
+  const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
   // Only show INUSE reservations in the return flow
   const inuseReservations = loan.reservations.filter((r) => r.status === ReservationStatus.INUSE);

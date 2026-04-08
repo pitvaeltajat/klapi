@@ -86,7 +86,7 @@ export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
 
   // Helper to get derived status for a loan
   const getDerivedStatus = (loan: LoanWithReservations) => {
-    return deriveLoanStatus(loan.reservations);
+    return deriveLoanStatus(loan.reservations, loan.status);
   };
 
   // Only count unresolved reports

@@ -104,7 +104,7 @@ const LoanStartCard = ({
   const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
 
   // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(loan.reservations);
+  const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
   const acceptedReservations = loan.reservations.filter(
     (r) => r.status === ReservationStatus.ACCEPTED,
   );

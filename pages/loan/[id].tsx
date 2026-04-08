@@ -224,7 +224,7 @@ export default function LoanView({
   const isKiosk = session?.user?.group === 'KIOSK';
 
   // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(loan.reservations.map((r) => ({ status: r.status })));
+  const derivedStatus = deriveLoanStatus(loan.reservations.map((r) => ({ status: r.status })), loan.status);
 
   //Check if user is allowed to see information about this loan
   // KIOSK users can view all loans in read-only mode
