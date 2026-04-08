@@ -188,6 +188,7 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
   // Use derived status from reservations for edit permission check
   const derivedStatus = deriveLoanStatus(
     loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
+    loan.status as LoanStatus,
   );
   const statusAllowsEdit = derivedStatus !== 'INUSE' && derivedStatus !== 'RETURNED';
 

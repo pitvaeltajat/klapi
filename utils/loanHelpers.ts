@@ -70,17 +70,21 @@ export const getReservationStatusColor = (status: ReservationStatus): string => 
 
 /**
  * Derives the overall loan status from its reservations.
+ * Falls back to the loan's own DB status when reservations are
+ * empty or don't match any specific condition.
+ *
  * Priority order:
  * 1. If all reservations are RETURNED -> RETURNED
  * 2. If all reservations are REJECTED -> REJECTED
  * 3. If any reservation is IN_BOX -> IN_BOX
  * 4. If any reservation is INUSE -> INUSE
- * 5. Otherwise -> ACCEPTED
+ * 5. Otherwise -> loan's DB status
  */
 export const deriveLoanStatus = (
   reservations: { status: ReservationStatus }[],
+  loanStatus: LoanStatus,
 ): LoanStatus => {
-  if (reservations.length === 0) return LoanStatus.ACCEPTED;
+  if (reservations.length === 0) return loanStatus;
 
   if (reservations.every((r) => r.status === ReservationStatus.RETURNED)) {
     return LoanStatus.RETURNED;
@@ -95,5 +99,5 @@ export const deriveLoanStatus = (
     return LoanStatus.INUSE;
   }
 
-  return LoanStatus.ACCEPTED;
+  return loanStatus;
 };

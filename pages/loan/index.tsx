@@ -69,7 +69,7 @@ export const LoanCard = ({ loan }: { loan: LoanType }) => {
   // Only count unresolved reports
   const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
   // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(loan.reservations);
+  const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
   return (
     <Box
@@ -219,7 +219,7 @@ export default function LoanList() {
       return true;
     }
     // Use derived status for filtering
-    const derivedStatus = deriveLoanStatus(loan.reservations);
+    const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
     return selectedStatuses.has(derivedStatus);
   });
 
