@@ -25,6 +25,7 @@ import { useRouter } from 'next/router';
 import prisma from '../../../utils/prisma';
 import { Item, Category } from '@prisma/client';
 import { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -61,7 +62,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     orderBy: { name: 'asc' },
   });
 
-  return { props: { item, categories } };
+  return { props: serialize({ item, categories }) };
 };
 
 export default function EditItem({

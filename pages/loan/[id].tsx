@@ -51,6 +51,7 @@ interface LoanWithRelations extends Loan {
   })[];
 }
 
+import { serialize } from '@/utils/serialize';
 import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 
 export async function getServerSideProps(
@@ -92,10 +93,10 @@ export async function getServerSideProps(
   }
 
   return {
-    props: {
+    props: serialize({
       loan,
       reports,
-    },
+    }),
   };
 }
 

@@ -41,6 +41,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs';
 import prisma from '../../../utils/prisma';
 import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 import { Loan, Item, User, Reservation, ReservationStatus, LoanStatus } from '@prisma/client';
 import { deriveLoanStatus } from '../../../utils/loanHelpers';
 
@@ -76,10 +77,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
   }
   return {
-    props: {
-      loan: JSON.parse(JSON.stringify(loan)),
-      items: JSON.parse(JSON.stringify(items)),
-    },
+    props: serialize({
+      loan,
+      items,
+    }),
   };
 };
 

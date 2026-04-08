@@ -19,6 +19,7 @@ import {
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
+import { serialize } from '@/utils/serialize';
 
 interface AnnouncementProps {
   announcements: (Announcement & {
@@ -26,7 +27,7 @@ interface AnnouncementProps {
   })[];
 }
 
-export const getServerSideProps: GetServerSideProps<AnnouncementProps> = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   const announcements = await prisma.announcement.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -35,9 +36,9 @@ export const getServerSideProps: GetServerSideProps<AnnouncementProps> = async (
   });
 
   return {
-    props: {
-      announcements: JSON.parse(JSON.stringify(announcements)),
-    },
+    props: serialize({
+      announcements,
+    }),
   };
 };
 
