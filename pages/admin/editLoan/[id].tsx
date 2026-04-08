@@ -41,7 +41,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs';
 import prisma from '../../../utils/prisma';
 import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
-import { Loan, Item, User, Reservation, ReservationStatus } from '@prisma/client';
+import { Loan, Item, User, Reservation, ReservationStatus, LoanStatus } from '@prisma/client';
 import { deriveLoanStatus } from '../../../utils/loanHelpers';
 
 interface AvailabilityData {
