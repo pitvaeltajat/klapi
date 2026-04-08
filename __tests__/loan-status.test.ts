@@ -10,7 +10,7 @@ import {
 
 describe('deriveLoanStatus', () => {
   it('should return ACCEPTED for empty reservations', () => {
-    expect(deriveLoanStatus([])).toBe(LoanStatus.ACCEPTED);
+    expect(deriveLoanStatus([], LoanStatus.ACCEPTED)).toBe(LoanStatus.ACCEPTED);
   });
 
   it('should return RETURNED when all reservations are RETURNED', () => {
@@ -19,7 +19,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.RETURNED },
       { status: ReservationStatus.RETURNED },
     ];
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.RETURNED);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.RETURNED);
   });
 
   it('should return REJECTED when all reservations are REJECTED', () => {
@@ -27,7 +27,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.REJECTED },
       { status: ReservationStatus.REJECTED },
     ];
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.REJECTED);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.REJECTED);
   });
 
   it('should return IN_BOX when any reservation is IN_BOX', () => {
@@ -36,7 +36,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.IN_BOX },
       { status: ReservationStatus.RETURNED },
     ];
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.IN_BOX);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.IN_BOX);
   });
 
   it('should return INUSE when any reservation is INUSE', () => {
@@ -44,7 +44,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.ACCEPTED },
       { status: ReservationStatus.INUSE },
     ];
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.INUSE);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.INUSE);
   });
 
   it('should return ACCEPTED when all reservations are ACCEPTED', () => {
@@ -52,7 +52,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.ACCEPTED },
       { status: ReservationStatus.ACCEPTED },
     ];
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.ACCEPTED);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.ACCEPTED);
   });
 
   it('should prioritize IN_BOX over INUSE', () => {
@@ -60,7 +60,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.INUSE },
       { status: ReservationStatus.IN_BOX },
     ];
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.IN_BOX);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.IN_BOX);
   });
 
   it('should not return RETURNED if any reservation is not RETURNED', () => {
@@ -68,7 +68,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.RETURNED },
       { status: ReservationStatus.ACCEPTED },
     ];
-    expect(deriveLoanStatus(reservations)).not.toBe(LoanStatus.RETURNED);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).not.toBe(LoanStatus.RETURNED);
   });
 
   it('should not return REJECTED if any reservation is not REJECTED', () => {
@@ -76,15 +76,15 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.REJECTED },
       { status: ReservationStatus.ACCEPTED },
     ];
-    expect(deriveLoanStatus(reservations)).not.toBe(LoanStatus.REJECTED);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).not.toBe(LoanStatus.REJECTED);
   });
 
   it('should handle single reservation correctly', () => {
-    expect(deriveLoanStatus([{ status: ReservationStatus.ACCEPTED }])).toBe(LoanStatus.ACCEPTED);
-    expect(deriveLoanStatus([{ status: ReservationStatus.INUSE }])).toBe(LoanStatus.INUSE);
-    expect(deriveLoanStatus([{ status: ReservationStatus.IN_BOX }])).toBe(LoanStatus.IN_BOX);
-    expect(deriveLoanStatus([{ status: ReservationStatus.RETURNED }])).toBe(LoanStatus.RETURNED);
-    expect(deriveLoanStatus([{ status: ReservationStatus.REJECTED }])).toBe(LoanStatus.REJECTED);
+    expect(deriveLoanStatus([{ status: ReservationStatus.ACCEPTED }], LoanStatus.ACCEPTED)).toBe(LoanStatus.ACCEPTED);
+    expect(deriveLoanStatus([{ status: ReservationStatus.INUSE }], LoanStatus.ACCEPTED)).toBe(LoanStatus.INUSE);
+    expect(deriveLoanStatus([{ status: ReservationStatus.IN_BOX }], LoanStatus.ACCEPTED)).toBe(LoanStatus.IN_BOX);
+    expect(deriveLoanStatus([{ status: ReservationStatus.RETURNED }], LoanStatus.ACCEPTED)).toBe(LoanStatus.RETURNED);
+    expect(deriveLoanStatus([{ status: ReservationStatus.REJECTED }], LoanStatus.ACCEPTED)).toBe(LoanStatus.REJECTED);
   });
 
   it('should handle mixed RETURNED and REJECTED as ACCEPTED (fallthrough)', () => {
@@ -93,7 +93,7 @@ describe('deriveLoanStatus', () => {
       { status: ReservationStatus.REJECTED },
     ];
     // Not all RETURNED, not all REJECTED, no IN_BOX or INUSE -> ACCEPTED
-    expect(deriveLoanStatus(reservations)).toBe(LoanStatus.ACCEPTED);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.ACCEPTED);
   });
 });
 
