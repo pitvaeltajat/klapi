@@ -36,7 +36,6 @@ import {
   Item,
   Box as BoxType,
   ReservationStatus,
-  LoanStatus,
 } from '@prisma/client';
 import {
   Checkbox,
@@ -184,7 +183,14 @@ export default function LoanView({
       });
   };
 
-  const [processingIds, setProcessingIds] = React.useState<Set<string>>(() => new Set());
+  const [processingIds, setProcessingIds] = React.useState<Set<string>>(
+    () =>
+      new Set(
+        loan.reservations
+          .filter((r) => r.status === ReservationStatus.IN_BOX)
+          .map((r) => r.id),
+      ),
+  );
 
   const loanProcessed = async () => {
     const reservationIds = Array.from(processingIds);
@@ -289,12 +295,6 @@ export default function LoanView({
     (r) => r.status === ReservationStatus.IN_BOX,
   );
   const canMarkReturned = isAdmin && inBoxReservations.length > 0;
-
-  // Sync the processing selection to the current IN_BOX set whenever it changes.
-  React.useEffect(() => {
-    setProcessingIds(new Set(inBoxReservations.map((r) => r.id)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loan.id]);
   const canSeeReports = isAdmin && reports.length > 0;
 
   return (
