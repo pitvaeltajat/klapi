@@ -10,6 +10,8 @@ export const getLoanStatusLabel = (status: LoanStatus): string => {
       return 'Käytössä';
     case LoanStatus.IN_BOX:
       return 'Laatikossa';
+    case LoanStatus.PARTIALLY_RETURNED:
+      return 'Osittain palautettu';
     case LoanStatus.RETURNED:
       return 'Palautettu';
     default:
@@ -27,6 +29,8 @@ export const getLoanStatusColor = (status: LoanStatus): string => {
       return 'blue';
     case LoanStatus.IN_BOX:
       return 'purple';
+    case LoanStatus.PARTIALLY_RETURNED:
+      return 'orange';
     case LoanStatus.RETURNED:
       return 'gray';
     default:
@@ -70,15 +74,14 @@ export const getReservationStatusColor = (status: ReservationStatus): string => 
 
 /**
  * Derives the overall loan status from its reservations.
- * Falls back to the loan's own DB status when reservations are
- * empty or don't match any specific condition.
  *
  * Priority order:
- * 1. If all reservations are RETURNED -> RETURNED
- * 2. If all reservations are REJECTED -> REJECTED
- * 3. If any reservation is IN_BOX -> IN_BOX
- * 4. If any reservation is INUSE -> INUSE
- * 5. Otherwise -> loan's DB status
+ * 1. All RETURNED -> RETURNED
+ * 2. All REJECTED -> REJECTED
+ * 3. Mix of INUSE + (IN_BOX or RETURNED) -> PARTIALLY_RETURNED
+ * 4. Any INUSE -> INUSE (remaining non-INUSE are ACCEPTED/REJECTED)
+ * 5. Any IN_BOX -> IN_BOX
+ * 6. Otherwise -> loan's DB status
  */
 export const deriveLoanStatus = (
   reservations: { status: ReservationStatus }[],
@@ -92,11 +95,19 @@ export const deriveLoanStatus = (
   if (reservations.every((r) => r.status === ReservationStatus.REJECTED)) {
     return LoanStatus.REJECTED;
   }
-  if (reservations.some((r) => r.status === ReservationStatus.IN_BOX)) {
-    return LoanStatus.IN_BOX;
+
+  const hasInuse = reservations.some((r) => r.status === ReservationStatus.INUSE);
+  const hasInBox = reservations.some((r) => r.status === ReservationStatus.IN_BOX);
+  const hasReturned = reservations.some((r) => r.status === ReservationStatus.RETURNED);
+
+  if (hasInuse && (hasInBox || hasReturned)) {
+    return LoanStatus.PARTIALLY_RETURNED;
   }
-  if (reservations.some((r) => r.status === ReservationStatus.INUSE)) {
+  if (hasInuse) {
     return LoanStatus.INUSE;
+  }
+  if (hasInBox) {
+    return LoanStatus.IN_BOX;
   }
 
   return loanStatus;

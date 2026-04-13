@@ -191,7 +191,11 @@ export default function LoanEditView({ loan, items }: { loan: LoanWithRelations;
     loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
     loan.status as LoanStatus,
   );
-  const statusAllowsEdit = derivedStatus !== 'INUSE' && derivedStatus !== 'RETURNED';
+  const statusAllowsEdit =
+    derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'IN_BOX' &&
+    derivedStatus !== 'PARTIALLY_RETURNED' &&
+    derivedStatus !== 'RETURNED';
 
   if (!session?.user || (!isAdmin && !isOwner)) {
     return <NotAuthenticated />;

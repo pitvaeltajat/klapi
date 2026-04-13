@@ -59,7 +59,7 @@ export interface LoanCardProps {
     id: string;
     startTime: Date;
     endTime: Date;
-    status: 'ACCEPTED' | 'REJECTED' | 'INUSE' | 'IN_BOX' | 'RETURNED';
+    status: 'ACCEPTED' | 'REJECTED' | 'INUSE' | 'IN_BOX' | 'PARTIALLY_RETURNED' | 'RETURNED';
     description?: string;
     user: User;
     reservations: {

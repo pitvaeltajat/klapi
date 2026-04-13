@@ -102,7 +102,10 @@ const LoanReturnCard = ({
   onReturnComplete,
 }: {
   loan: LoanType;
-  onReturn: (id: string) => Promise<{ name: string; description: string | null } | null>;
+  onReturn: (
+    id: string,
+    reservationIds: string[],
+  ) => Promise<{ name: string; description: string | null } | null>;
   onReturnComplete: () => void;
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -119,6 +122,32 @@ const LoanReturnCard = ({
   const [termsAccepted, setTermsAccepted] = React.useState(false);
 
   const [reportContent, setReportContent] = React.useState('');
+
+  // Only show INUSE reservations in the return flow
+  const inuseReservations = React.useMemo(
+    () => loan.reservations.filter((r) => r.status === ReservationStatus.INUSE),
+    [loan.reservations],
+  );
+
+  // Selected reservations to return. Default: all INUSE items checked.
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
+    () => new Set(inuseReservations.map((r) => r.id)),
+  );
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const allSelected = selectedIds.size === inuseReservations.length;
+  const isPartialReturn = selectedIds.size > 0 && selectedIds.size < inuseReservations.length;
   // Move useColorModeValue calls to top level of component
   const itemBg = useColorModeValue('gray.50', 'gray.700');
   const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
@@ -133,7 +162,7 @@ const LoanReturnCard = ({
   const infoBorder = useColorModeValue('gray.300', 'gray.600');
 
   const handleConfirmReturn = async () => {
-    const box = await onReturn(loan.id);
+    const box = await onReturn(loan.id, Array.from(selectedIds));
     if (box) {
       setBoxInfo(box);
       onClose();
@@ -166,9 +195,6 @@ const LoanReturnCard = ({
 
   // Derive the loan status from reservations
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
-
-  // Only show INUSE reservations in the return flow
-  const inuseReservations = loan.reservations.filter((r) => r.status === ReservationStatus.INUSE);
 
   return (
     <>
@@ -211,32 +237,65 @@ const LoanReturnCard = ({
                 Palautat kamoja
               </Heading>
 
+              <Text fontSize="md" textAlign="center" color={subtleText}>
+                Valitse mitkä tavarat palautat. Jos sinulla ei ole kaikkia käsillä, voit palauttaa
+                osan nyt ja loput myöhemmin.
+              </Text>
+
               <VStack spacing={4} align="stretch">
-                {inuseReservations.map((reservation) => (
-                  <HStack
-                    key={reservation.id}
-                    p={4}
-                    bg={itemBg}
-                    borderRadius="lg"
-                    borderWidth="2px"
-                    borderColor={itemBorderColor}
-                    spacing={4}
-                  >
-                    <ReservationItemImage
-                      itemId={reservation.item.id}
-                      itemName={reservation.item.name}
-                    />
-                    <VStack align="start" spacing={1} flex={1}>
-                      <Text fontSize="lg" fontWeight="bold">
-                        {reservation.item.name}
-                      </Text>
-                      <Text fontSize="md" color={subtleText}>
-                        Määrä: {reservation.amount} kpl
-                      </Text>
-                    </VStack>
-                  </HStack>
-                ))}
+                {inuseReservations.map((reservation) => {
+                  const checked = selectedIds.has(reservation.id);
+                  return (
+                    <HStack
+                      key={reservation.id}
+                      p={4}
+                      bg={itemBg}
+                      borderRadius="lg"
+                      borderWidth="2px"
+                      borderColor={checked ? 'green.400' : itemBorderColor}
+                      spacing={4}
+                      onClick={() => toggleSelected(reservation.id)}
+                      cursor="pointer"
+                    >
+                      <Checkbox
+                        size="lg"
+                        isChecked={checked}
+                        onChange={() => toggleSelected(reservation.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <ReservationItemImage
+                        itemId={reservation.item.id}
+                        itemName={reservation.item.name}
+                      />
+                      <VStack align="start" spacing={1} flex={1}>
+                        <Text fontSize="lg" fontWeight="bold">
+                          {reservation.item.name}
+                        </Text>
+                        <Text fontSize="md" color={subtleText}>
+                          Määrä: {reservation.amount} kpl
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  );
+                })}
               </VStack>
+
+              {isPartialReturn && (
+                <Box
+                  p={4}
+                  bg={infoBg}
+                  borderRadius="lg"
+                  borderWidth="2px"
+                  borderColor="orange.300"
+                >
+                  <Text fontSize="md" fontWeight="bold" color="orange.700">
+                    Osittainen palautus: {selectedIds.size} / {inuseReservations.length} tavaraa
+                  </Text>
+                  <Text fontSize="sm" mt={1}>
+                    Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
+                  </Text>
+                </Box>
+              )}
 
               <Box p={6} bg={reportBg} borderRadius="lg" borderWidth="2px" borderColor={reportBorder}>
                 <Text fontSize="md" lineHeight="tall">
@@ -262,9 +321,9 @@ const LoanReturnCard = ({
 
               <Box p={6} bg={infoBg} borderRadius="lg" borderWidth="2px" borderColor="blue.200">
                 <Text fontSize="md" lineHeight="tall">
-                  Vahvistamalla palautuksen otat vastuun siitä, että kaikki tavarat ovat mukana,
-                  puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna. Palauta
-                  tavarat oikeaan laatikkoon.
+                  Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
+                  mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
+                  Palauta tavarat oikeaan laatikkoon.
                 </Text>
 
                 <Checkbox
@@ -273,7 +332,9 @@ const LoanReturnCard = ({
                   isChecked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                 >
-                  Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.
+                  {allSelected
+                    ? 'Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.'
+                    : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
                 </Checkbox>
               </Box>
 
@@ -283,9 +344,11 @@ const LoanReturnCard = ({
                 onClick={handleConfirmReturn}
                 height="60px"
                 fontSize="xl"
-                isDisabled={!termsAccepted}
+                isDisabled={!termsAccepted || selectedIds.size === 0}
               >
-                Vahvista palautus
+                {isPartialReturn
+                  ? `Vahvista osittainen palautus (${selectedIds.size})`
+                  : 'Vahvista palautus'}
               </Button>
             </VStack>
           </ModalBody>
@@ -369,6 +432,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
 
   const handleReturn = async (
     loanId: string,
+    reservationIds: string[],
   ): Promise<{ name: string; description: string | null } | null> => {
     try {
       const response = await fetch('/api/loan/loanReturned', {
@@ -376,7 +440,7 @@ export default function KioskReturn({ loans }: { loans: LoanType[] }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: loanId }),
+        body: JSON.stringify({ id: loanId, reservationIds }),
       });
 
       if (response.ok) {

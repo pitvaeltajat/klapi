@@ -1,8 +1,9 @@
-import { LoanStatus, ReservationStatus } from '@prisma/client';
+import { ReservationStatus } from '@prisma/client';
 import prisma from '../../../utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { deriveLoanStatus } from '../../../utils/loanHelpers';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
@@ -13,11 +14,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  const { id } = req.body;
+  const { id, reservationIds } = req.body as { id: string; reservationIds?: string[] };
 
-  // Get the loan
   const loan = await prisma.loan.findUnique({
     where: { id },
+    include: {
+      reservations: { select: { id: true, status: true } },
+    },
   });
 
   if (!loan) {
@@ -25,19 +28,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  // Update loan status to RETURNED and remove it from its box
-  // Also update all reservation statuses to RETURNED
+  // Only IN_BOX reservations are eligible to be marked as RETURNED here.
+  // INUSE items are still physically with the borrower and must not be touched.
+  const eligible = loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX);
+  const targetIds =
+    Array.isArray(reservationIds) && reservationIds.length > 0
+      ? eligible.filter((r) => reservationIds.includes(r.id)).map((r) => r.id)
+      : eligible.map((r) => r.id);
+
+  if (targetIds.length === 0) {
+    res.status(400).json({ message: 'Ei käsiteltäviä tavaroita laatikossa' });
+    return;
+  }
+
+  // Post-update reservation states to compute the new loan status.
+  const updatedReservationStates = loan.reservations.map((r) =>
+    targetIds.includes(r.id) ? { status: ReservationStatus.RETURNED } : { status: r.status },
+  );
+  const newLoanStatus = deriveLoanStatus(updatedReservationStates, loan.status);
+
+  // Clear boxId when no reservations remain in IN_BOX after this update.
+  const hasInBoxRemaining = updatedReservationStates.some(
+    (r) => r.status === ReservationStatus.IN_BOX,
+  );
+
   const result = await prisma.loan.update({
     where: { id },
     data: {
-      status: LoanStatus.RETURNED,
-      boxId: null,
+      status: newLoanStatus,
+      boxId: hasInBoxRemaining ? loan.boxId : null,
       reservations: {
         updateMany: {
-          where: {},
-          data: {
-            status: ReservationStatus.RETURNED,
-          },
+          where: { id: { in: targetIds } },
+          data: { status: ReservationStatus.RETURNED },
         },
       },
     },
