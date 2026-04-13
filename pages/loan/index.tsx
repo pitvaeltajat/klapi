@@ -163,7 +163,12 @@ export default function LoanList() {
   const { data: loans, error, isLoading } = useSWR<LoanType[]>('/api/loan/getLoansClient');
   const allStatuses = Object.values(LoanStatus);
   const [selectedStatuses, setSelectedStatuses] = useState<Set<LoanStatus>>(
-    new Set([LoanStatus.ACCEPTED, LoanStatus.IN_BOX, LoanStatus.INUSE]),
+    new Set([
+      LoanStatus.ACCEPTED,
+      LoanStatus.IN_BOX,
+      LoanStatus.INUSE,
+      LoanStatus.PARTIALLY_RETURNED,
+    ]),
   );
 
   const allChecked = selectedStatuses.size === allStatuses.length;

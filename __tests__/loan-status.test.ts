@@ -30,13 +30,46 @@ describe('deriveLoanStatus', () => {
     expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.REJECTED);
   });
 
-  it('should return IN_BOX when any reservation is IN_BOX', () => {
+  it('should return IN_BOX when any reservation is IN_BOX and none are INUSE', () => {
     const reservations = [
       { status: ReservationStatus.ACCEPTED },
       { status: ReservationStatus.IN_BOX },
       { status: ReservationStatus.RETURNED },
     ];
     expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.IN_BOX);
+  });
+
+  it('should return PARTIALLY_RETURNED when some are INUSE and some are IN_BOX', () => {
+    const reservations = [
+      { status: ReservationStatus.INUSE },
+      { status: ReservationStatus.IN_BOX },
+    ];
+    expect(deriveLoanStatus(reservations, LoanStatus.INUSE)).toBe(LoanStatus.PARTIALLY_RETURNED);
+  });
+
+  it('should return PARTIALLY_RETURNED when some are INUSE and some are RETURNED', () => {
+    const reservations = [
+      { status: ReservationStatus.INUSE },
+      { status: ReservationStatus.RETURNED },
+    ];
+    expect(deriveLoanStatus(reservations, LoanStatus.INUSE)).toBe(LoanStatus.PARTIALLY_RETURNED);
+  });
+
+  it('should return PARTIALLY_RETURNED for INUSE + IN_BOX + RETURNED mix', () => {
+    const reservations = [
+      { status: ReservationStatus.INUSE },
+      { status: ReservationStatus.IN_BOX },
+      { status: ReservationStatus.RETURNED },
+    ];
+    expect(deriveLoanStatus(reservations, LoanStatus.INUSE)).toBe(LoanStatus.PARTIALLY_RETURNED);
+  });
+
+  it('should return INUSE when some are INUSE and rest are ACCEPTED/REJECTED only', () => {
+    const reservations = [
+      { status: ReservationStatus.INUSE },
+      { status: ReservationStatus.REJECTED },
+    ];
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.INUSE);
   });
 
   it('should return INUSE when any reservation is INUSE', () => {
@@ -55,12 +88,12 @@ describe('deriveLoanStatus', () => {
     expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.ACCEPTED);
   });
 
-  it('should prioritize IN_BOX over INUSE', () => {
+  it('should return PARTIALLY_RETURNED when mixing INUSE and IN_BOX (not plain IN_BOX)', () => {
     const reservations = [
       { status: ReservationStatus.INUSE },
       { status: ReservationStatus.IN_BOX },
     ];
-    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.IN_BOX);
+    expect(deriveLoanStatus(reservations, LoanStatus.INUSE)).toBe(LoanStatus.PARTIALLY_RETURNED);
   });
 
   it('should not return RETURNED if any reservation is not RETURNED', () => {
@@ -103,6 +136,7 @@ describe('getLoanStatusLabel', () => {
     expect(getLoanStatusLabel(LoanStatus.REJECTED)).toBe('Hylätty');
     expect(getLoanStatusLabel(LoanStatus.INUSE)).toBe('Käytössä');
     expect(getLoanStatusLabel(LoanStatus.IN_BOX)).toBe('Laatikossa');
+    expect(getLoanStatusLabel(LoanStatus.PARTIALLY_RETURNED)).toBe('Osittain palautettu');
     expect(getLoanStatusLabel(LoanStatus.RETURNED)).toBe('Palautettu');
   });
 
@@ -117,6 +151,7 @@ describe('getLoanStatusColor', () => {
     expect(getLoanStatusColor(LoanStatus.REJECTED)).toBe('red');
     expect(getLoanStatusColor(LoanStatus.INUSE)).toBe('blue');
     expect(getLoanStatusColor(LoanStatus.IN_BOX)).toBe('purple');
+    expect(getLoanStatusColor(LoanStatus.PARTIALLY_RETURNED)).toBe('orange');
     expect(getLoanStatusColor(LoanStatus.RETURNED)).toBe('gray');
   });
 });

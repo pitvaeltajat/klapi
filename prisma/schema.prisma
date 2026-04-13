@@ -179,6 +179,7 @@ enum LoanStatus {
   REJECTED
   INUSE
   IN_BOX
+  PARTIALLY_RETURNED
   RETURNED
 }
 

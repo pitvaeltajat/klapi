@@ -29,7 +29,19 @@ interface Report {
 import StartLoanConfirmation from '../../components/StartLoanConfirmation';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
-import { Loan, User, Reservation, Item, Box as BoxType, ReservationStatus } from '@prisma/client';
+import {
+  Loan,
+  User,
+  Reservation,
+  Item,
+  Box as BoxType,
+  ReservationStatus,
+} from '@prisma/client';
+import {
+  Checkbox,
+  HStack,
+  VStack,
+} from '@chakra-ui/react';
 import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
 
 import {
@@ -171,14 +183,33 @@ export default function LoanView({
       });
   };
 
+  const [processingIds, setProcessingIds] = React.useState<Set<string>>(
+    () =>
+      new Set(
+        loan.reservations
+          .filter((r) => r.status === ReservationStatus.IN_BOX)
+          .map((r) => r.id),
+      ),
+  );
+
   const loanProcessed = async () => {
+    const reservationIds = Array.from(processingIds);
     await fetch('/api/loan/loanProcessed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id }),
+      body: JSON.stringify({ id: loan.id, reservationIds }),
     });
     toast({ title: 'Kamat palautettu', status: 'success', duration: 5000, isClosable: true });
     router.push('/loan');
+  };
+
+  const toggleProcessing = (id: string) => {
+    setProcessingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   // Raporttien API-funktiot
@@ -242,22 +273,28 @@ export default function LoanView({
     (isAdmin || session?.user?.id === loan.user.id) &&
     derivedStatus !== 'REJECTED' &&
     derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
   const canEdit =
     (isAdmin || session?.user?.id === loan.user.id) &&
     derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
   const canApprove =
     isAdmin &&
     derivedStatus !== 'ACCEPTED' &&
     derivedStatus !== 'INUSE' &&
+    derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
   const canStartUse = derivedStatus === 'ACCEPTED';
 
-  const canMarkReturned = isAdmin && (derivedStatus === 'INUSE' || derivedStatus === 'IN_BOX');
+  const inBoxReservations = loan.reservations.filter(
+    (r) => r.status === ReservationStatus.IN_BOX,
+  );
+  const canMarkReturned = isAdmin && inBoxReservations.length > 0;
   const canSeeReports = isAdmin && reports.length > 0;
 
   return (
@@ -356,10 +393,49 @@ export default function LoanView({
           <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
             <Stack spacing={3}>
               <Heading as="h3" size="md" mb={2}>
-                Toiminnot
+                Merkitse laatikossa olevat palautetuksi
               </Heading>
-              <Button onClick={loanProcessed} colorScheme="green" size="lg" width="full">
-                Merkitse kamat palautetuksi
+              <Text fontSize="sm" color="gray.500">
+                Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta. Vielä käytössä
+                olevat tavarat (sininen tila) eivät näy tässä eivätkä ne muutu.
+              </Text>
+              <VStack align="stretch" spacing={2}>
+                {inBoxReservations.map((r) => (
+                  <HStack
+                    key={r.id}
+                    p={3}
+                    borderWidth="1px"
+                    borderRadius="md"
+                    borderColor={
+                      processingIds.has(r.id) ? 'green.400' : 'gray.200'
+                    }
+                    onClick={() => toggleProcessing(r.id)}
+                    cursor="pointer"
+                  >
+                    <Checkbox
+                      isChecked={processingIds.has(r.id)}
+                      onChange={() => toggleProcessing(r.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Text flex={1}>
+                      {r.item.name}{' '}
+                      <Text as="span" color="gray.500">
+                        ({r.amount} kpl)
+                      </Text>
+                    </Text>
+                  </HStack>
+                ))}
+              </VStack>
+              <Button
+                onClick={loanProcessed}
+                colorScheme="green"
+                size="lg"
+                width="full"
+                isDisabled={processingIds.size === 0}
+              >
+                {processingIds.size === inBoxReservations.length
+                  ? 'Merkitse kaikki laatikossa olevat palautetuksi'
+                  : `Merkitse valitut palautetuksi (${processingIds.size})`}
               </Button>
             </Stack>
           </Box>
