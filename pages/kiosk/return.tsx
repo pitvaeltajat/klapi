@@ -242,6 +242,19 @@ const LoanReturnCard = ({
                 osan nyt ja loput myöhemmin.
               </Text>
 
+              <Box p={4} bg="blue.50" borderRadius="lg" borderWidth="2px" borderColor="blue.300">
+                <Text fontSize="md" fontWeight="bold" color="blue.800">
+                  💡 Vinkki: Ota kuva palautettavista kamoista
+                </Text>
+                <Text fontSize="sm" mt={1} color="blue.900">
+                  Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
+                  laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä (esim. joku
+                  väittää, ettei tavaraa palautettu, tai jokin on vioittunut), kuva puhelimessasi
+                  toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään — säilytä se
+                  omassa puhelimessasi.
+                </Text>
+              </Box>
+
               <VStack spacing={4} align="stretch">
                 {inuseReservations.map((reservation) => {
                   const checked = selectedIds.has(reservation.id);
