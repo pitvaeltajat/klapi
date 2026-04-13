@@ -171,6 +171,24 @@ const LoanStartCard = ({
             <Box
               mb={4}
               p={3}
+              bg="blue.50"
+              borderRadius="md"
+              borderWidth="1px"
+              borderColor="blue.300"
+            >
+              <Text fontSize="md" lineHeight="tall" fontWeight="bold" color="blue.800">
+                💡 Vinkki: Ota kuva kamoista puhelimellasi
+              </Text>
+              <Text fontSize="md" lineHeight="tall" mt={1} color="blue.900">
+                Suosittelemme ottamaan kuvan kamoista ennen lainauksen aloitusta. Jos palautuksessa
+                tulee hämminkiä (puuttuuko jotain, oliko jokin rikki jo etukäteen), kuva puhelimessasi
+                toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään — säilytä se omassa
+                puhelimessasi.
+              </Text>
+            </Box>
+            <Box
+              mb={4}
+              p={3}
               bg={itemBg}
               borderRadius="md"
               borderWidth="1px"
