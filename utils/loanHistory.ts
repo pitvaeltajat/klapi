@@ -20,24 +20,3 @@ export async function logLoanHistory(params: {
     console.error('Failed to log loan history:', err);
   }
 }
-
-export function getLoanHistoryActionLabel(action: LoanHistoryAction): string {
-  switch (action) {
-    case 'CREATED':
-      return 'Laina luotu';
-    case 'UPDATED':
-      return 'Lainaa muokattu';
-    case 'APPROVED':
-      return 'Laina hyväksytty';
-    case 'REJECTED':
-      return 'Laina hylätty';
-    case 'STARTED':
-      return 'Lainaus aloitettu';
-    case 'RETURNED_TO_BOX':
-      return 'Kamat palautettu laatikkoon';
-    case 'PROCESSED_FROM_BOX':
-      return 'Kamat merkitty palautetuksi';
-    default:
-      return action;
-  }
-}

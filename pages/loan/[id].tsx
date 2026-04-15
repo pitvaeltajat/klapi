@@ -42,8 +42,12 @@ import {
   HStack,
   VStack,
 } from '@chakra-ui/react';
-import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
-import { getLoanHistoryActionLabel } from '../../utils/loanHistory';
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+  deriveLoanStatus,
+  getLoanHistoryActionLabel,
+} from '../../utils/loanHelpers';
 import { LoanHistoryAction } from '@prisma/client';
 
 import {
