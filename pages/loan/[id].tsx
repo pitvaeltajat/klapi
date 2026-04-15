@@ -43,6 +43,8 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '../../utils/loanHelpers';
+import { getLoanHistoryActionLabel } from '../../utils/loanHistory';
+import { LoanHistoryAction } from '@prisma/client';
 
 import {
   Modal,
@@ -63,12 +65,26 @@ interface LoanWithRelations extends Loan {
   })[];
 }
 
+interface HistoryEntry {
+  id: string;
+  action: LoanHistoryAction;
+  createdAt: string | Date;
+  details: unknown;
+  actedBy: { id: string; name: string | null; email: string | null } | null;
+}
+
 import { serialize } from '@/utils/serialize';
 import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 
 export async function getServerSideProps(
   req: GetServerSidePropsContext,
-): Promise<GetServerSidePropsResult<{ loan: LoanWithRelations; reports: Report[] }>> {
+): Promise<
+  GetServerSidePropsResult<{
+    loan: LoanWithRelations;
+    reports: Report[];
+    history: HistoryEntry[];
+  }>
+> {
   if (!req.params?.id || typeof req.params.id !== 'string') {
     return { notFound: true };
   }
@@ -100,6 +116,14 @@ export async function getServerSideProps(
     },
   });
 
+  const history = await prisma.loanHistory.findMany({
+    where: { loanId: req.params.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      actedBy: { select: { id: true, name: true, email: true } },
+    },
+  });
+
   if (!loan) {
     return { notFound: true };
   }
@@ -108,6 +132,7 @@ export async function getServerSideProps(
     props: serialize({
       loan,
       reports,
+      history,
     }),
   };
 }
@@ -115,9 +140,11 @@ export async function getServerSideProps(
 export default function LoanView({
   loan,
   reports,
+  history,
 }: {
   loan: LoanWithRelations;
   reports: Report[];
+  history: HistoryEntry[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -474,6 +501,49 @@ export default function LoanView({
             </Box>
           )
         )}
+
+        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
+          <Heading as="h2" size="lg" mb={4}>
+            Historia
+          </Heading>
+          {history.length === 0 ? (
+            <Text color="gray.500">Ei historiamerkintöjä.</Text>
+          ) : (
+            <VStack align="stretch" spacing={3}>
+              {history.map((entry) => {
+                const who =
+                  entry.actedBy?.name ||
+                  entry.actedBy?.email ||
+                  'Järjestelmä';
+                const when = new Date(entry.createdAt).toLocaleString('fi-FI', {
+                  dateStyle: 'short',
+                  timeStyle: 'short',
+                });
+                return (
+                  <Box
+                    key={entry.id}
+                    p={3}
+                    borderWidth="1px"
+                    borderRadius="md"
+                    borderColor="gray.200"
+                  >
+                    <HStack justify="space-between" align="start" flexWrap="wrap">
+                      <Text fontWeight="semibold">
+                        {getLoanHistoryActionLabel(entry.action)}
+                      </Text>
+                      <Text fontSize="sm" color="gray.500">
+                        {when}
+                      </Text>
+                    </HStack>
+                    <Text fontSize="sm" color="gray.600">
+                      {who}
+                    </Text>
+                  </Box>
+                );
+              })}
+            </VStack>
+          )}
+        </Box>
 
         <Modal isOpen={isOpen} onClose={onClose}>
           <ModalOverlay />

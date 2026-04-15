@@ -3,6 +3,7 @@ import prisma from '../../../utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { logLoanHistory } from '../../../utils/loanHistory';
 
 // Converts an approved loan to in-use status
 // Can be called by:
@@ -67,6 +68,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       },
     },
+  });
+
+  await logLoanHistory({
+    loanId: id,
+    action: 'STARTED',
+    actedById: session.user.id,
   });
 
   res.status(200).json(result);

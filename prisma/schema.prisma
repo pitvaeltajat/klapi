@@ -38,24 +38,25 @@ model Session {
 }
 
 model User {
-  id                       String     @id @default(cuid())
+  id                       String         @id @default(cuid())
   name                     String?
-  email                    String?    @unique
+  email                    String?        @unique
   emailVerified            DateTime?
   image                    String?
-  group                    Group      @default(USER)
+  group                    Group          @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
   kioskElevatePin          String?
-  username                 String?    @unique
-  emailNewLoanNotification Boolean    @default(true)
-  emailWeeklyReminder      Boolean    @default(true)
-  emailOldBoxNotification  Boolean    @default(true)
-  emailOverdueNotification Boolean    @default(true)
+  username                 String?        @unique
+  emailNewLoanNotification Boolean        @default(true)
+  emailWeeklyReminder      Boolean        @default(true)
+  emailOldBoxNotification  Boolean        @default(true)
+  emailOverdueNotification Boolean        @default(true)
   accounts                 Account[]
   loans                    Loan[]
   sessions                 Session[]
   emailLogs                EmailLog[]
+  loanHistoryEntries       LoanHistory[]
 }
 
 model Item {
@@ -128,6 +129,30 @@ model Loan {
   reservations Reservation[]
   reports      Report[]
   emailLogs    EmailLog[]
+  history      LoanHistory[]
+}
+
+model LoanHistory {
+  id        String            @id @default(cuid())
+  loanId    String
+  action    LoanHistoryAction
+  details   Json?
+  actedById String?
+  createdAt DateTime          @default(now())
+  loan      Loan              @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  actedBy   User?             @relation(fields: [actedById], references: [id], onDelete: SetNull)
+
+  @@index([loanId, createdAt])
+}
+
+enum LoanHistoryAction {
+  CREATED
+  UPDATED
+  APPROVED
+  REJECTED
+  STARTED
+  RETURNED_TO_BOX
+  PROCESSED_FROM_BOX
 }
 
 model Report {
