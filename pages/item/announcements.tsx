@@ -1,70 +1,43 @@
-// get item by id and return it
 import prisma from '../../utils/prisma';
 import { Item, Announcement } from '@prisma/client';
 import React from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import {
-  Heading,
-  Button,
-  useToast,
-  VStack,
-  Text,
-  Box,
-  Badge,
-  SimpleGrid,
-  Checkbox,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { toast } from 'sonner';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import { serialize } from '@/utils/serialize';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface AnnouncementProps {
-  announcements: (Announcement & {
-    item: Item;
-  })[];
+  announcements: (Announcement & { item: Item })[];
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
   const announcements = await prisma.announcement.findMany({
     orderBy: { createdAt: 'desc' },
-    include: {
-      item: true,
-    },
+    include: { item: true },
   });
-
-  return {
-    props: serialize({
-      announcements,
-    }),
-  };
+  return { props: serialize({ announcements }) };
 };
 
 export default function Announcements({ announcements }: AnnouncementProps) {
   const { data: session } = useSession();
-  const emptyBg = useColorModeValue('gray.50', 'gray.700');
-
   const isAdmin = session?.user?.group === 'ADMIN';
-
   const [buttonDisabled, setButtonDisabled] = React.useState<string>('');
-
   const [showExpired, setShowExpired] = React.useState<boolean>(false);
-
-  const toast = useToast();
-
   const router = useRouter();
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleString('fi-FI', {
+  const formatDate = (date: Date) =>
+    new Date(date).toLocaleString('fi-FI', {
       day: 'numeric',
       month: 'numeric',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
 
   const announcementExpired = (announcement: Announcement) => {
     const now = new Date();
@@ -76,47 +49,26 @@ export default function Announcements({ announcements }: AnnouncementProps) {
     try {
       const response = await fetch('/api/item/expireAnnouncement', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-
       if (response.ok) {
-        toast({
-          title: 'Ilmoitus poistettu',
-          status: 'success',
-          duration: 2500,
-        });
+        toast.success('Ilmoitus poistettu', { duration: 2500 });
       } else {
-        toast({
-          title: 'Virhe poistettaessa ilmoitusta',
-          status: 'error',
-          duration: 3000,
-        });
+        toast.error('Virhe poistettaessa ilmoitusta');
       }
-
       setButtonDisabled('');
       router.replace(router.asPath);
     } catch (error) {
-      toast({
-        title: 'Virhe poistettaessa ilmoitusta',
-        status: 'error',
-        duration: 3000,
-      });
+      toast.error('Virhe poistettaessa ilmoitusta');
       console.error('Error expiring announcement:', error);
       setButtonDisabled('');
     }
   };
 
-  const handleOravakeittoClick = () => {
-    toast({
-      title: 'Oravakeitto on herkullista!',
-      description: 'Kiitos kun kokeilit oravakeittoa.',
-      status: 'info',
-      duration: 4000,
-    });
-  };
+  const visible = announcements.filter(
+    (announcement) => !announcementExpired(announcement) || showExpired,
+  );
 
   return (
     <>
@@ -124,57 +76,55 @@ export default function Announcements({ announcements }: AnnouncementProps) {
         <title>Ilmoitukset | Klapi</title>
       </Head>
       <Breadcrumbs items={[{ label: 'Ilmoitukset' }]} />
-      <Heading as="h1" size="xl" mb={6}>
-        Ilmoitukset
-      </Heading>
+      <h1 className="mb-6 text-4xl font-semibold">Ilmoitukset</h1>
 
-      <Box mb={4}>
-        <Checkbox isChecked={showExpired} onChange={() => setShowExpired(!showExpired)}>
+      <div className="mb-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showExpired}
+            onChange={() => setShowExpired(!showExpired)}
+          />
           Näytä vanhentuneet ilmoitukset
-        </Checkbox>
-      </Box>
+        </label>
+      </div>
 
-      {announcements.filter((announcement) => !announcementExpired(announcement) || showExpired)
-        .length === 0 ? (
-        <Box p={6} bg={emptyBg} borderRadius="md" textAlign="center">
-          <Text color="gray.600">
+      {visible.length === 0 ? (
+        <div className="rounded-md bg-muted p-6 text-center">
+          <p className="text-muted-foreground">
             {showExpired ? 'Ei ilmoituksia' : 'Ei aktiivisia ilmoituksia'}
-          </Text>
-        </Box>
+          </p>
+        </div>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-          {announcements
-            .filter((announcement) => !announcementExpired(announcement) || showExpired)
-            .map((announcement) => (
-              <Box key={announcement.id} borderWidth="1px" borderRadius="lg" p={4}>
-                <VStack align="start" spacing={3}>
-                  <Badge colorScheme="blue">Liittyy kamaan: {announcement.item.name}</Badge>
-                  <Text>{announcement.message}</Text>
-
-                  <Text fontSize="sm" color="gray.500">
-                    Julkaistu: {formatDate(new Date(announcement.createdAt))}
-                  </Text>
-                  {showExpired && announcementExpired(announcement) && (
-                    <Text fontSize="sm" color="red.500">
-                      Vanhentunut{' '}
-                      {announcement.expiresAt && formatDate(new Date(announcement.expiresAt))}
-                    </Text>
-                  )}
-                  {isAdmin && !announcementExpired(announcement) && (
-                    <Button
-                      size="sm"
-                      colorScheme="red"
-                      variant="outline"
-                      isDisabled={buttonDisabled === announcement.id}
-                      onClick={() => expireAnnouncement(announcement.id)}
-                    >
-                      Poista ilmoitus
-                    </Button>
-                  )}
-                </VStack>
-              </Box>
-            ))}
-        </SimpleGrid>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {visible.map((announcement) => (
+            <div key={announcement.id} className="rounded-lg border p-4">
+              <div className="flex flex-col items-start gap-3">
+                <Badge>Liittyy kamaan: {announcement.item.name}</Badge>
+                <p>{announcement.message}</p>
+                <p className="text-sm text-muted-foreground">
+                  Julkaistu: {formatDate(new Date(announcement.createdAt))}
+                </p>
+                {showExpired && announcementExpired(announcement) && (
+                  <p className="text-sm text-destructive">
+                    Vanhentunut{' '}
+                    {announcement.expiresAt && formatDate(new Date(announcement.expiresAt))}
+                  </p>
+                )}
+                {isAdmin && !announcementExpired(announcement) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={buttonDisabled === announcement.id}
+                    onClick={() => expireAnnouncement(announcement.id)}
+                  >
+                    Poista ilmoitus
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </>
   );

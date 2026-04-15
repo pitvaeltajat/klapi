@@ -1,47 +1,25 @@
-import {
-  Flex,
-  Box,
-  IconButton,
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerOverlay,
-  TableContainer,
-  Table,
-  Text,
-  Tbody,
-  Tr,
-  Td,
-  Link,
-  Container,
-  Circle,
-  Progress,
-  useColorModeValue,
-  Divider,
-  Switch,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Button,
-  HStack,
-  PinInput,
-  PinInputField,
-} from '@chakra-ui/react';
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useDisclosure } from '@chakra-ui/react';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
-import { useRouter } from 'next/router';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
+import { PinInput } from '@/components/ui/pin-input';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session, update } = useSession();
-  // Tarkista admin-oikeuden vanhentuminen heti mountissa (esim. välilehden uudelleenavaus)
   useEffect(() => {
     if (
       session?.user &&
@@ -61,12 +39,10 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
-  // Helper to get effective group and expiry
   const effectiveGroup = session?.user?.group;
   const [expiry, setExpiry] = useState<number | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
 
-  // Read expiry from session if present
   useEffect(() => {
     if (session?.user && 'adminExpiry' in session.user && session.user.adminExpiry) {
       const exp =
@@ -79,7 +55,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
     }
   }, [session?.user]);
 
-  // Countdown timer
   useEffect(() => {
     if (!expiry || effectiveGroup !== 'ADMIN') {
       setRemaining(0);
@@ -92,9 +67,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [expiry, effectiveGroup]);
-  const cancelRef = useRef<HTMLButtonElement>(null);
 
-  // Handle switch toggle
   const handleAdminSwitch = async (checked: boolean) => {
     if (checked) {
       setPinDialogOpen(true);
@@ -110,9 +83,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const comparePins = async (inputPin: string) => {
     return await fetch('/api/auth/validatePin', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: inputPin, userId: session?.user?.id }),
     })
       .then((res) => res.json())
@@ -123,7 +94,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
     e.preventDefault();
     if (await comparePins(pinInput)) {
       setAdminSwitchLoading(true);
-      const expiryDate = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+      const expiryDate = new Date(Date.now() + 30 * 60 * 1000);
       await update({
         user: { ...session?.user, group: 'ADMIN', adminExpiry: expiryDate.toISOString() },
       });
@@ -135,7 +106,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
     }
   };
 
-  // Auto-revert to KIOSK when timer expires
   useEffect(() => {
     let timeout: NodeJS.Timeout | null = null;
     function checkAndRevert() {
@@ -155,9 +125,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
     };
   }, [effectiveGroup, expiry, session, update]);
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const headerBg = useColorModeValue('rgba(66,131,209,0.9)', 'rgba(26,32,44,0.95)');
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
 
   const router = useRouter();
 
@@ -194,326 +164,200 @@ export default function TopBar({ children }: { children: ReactNode }) {
     setBrowseMode(false);
   };
 
+  const navLinks = [
+    { href: '/', label: 'Lainaa', onClick: handleReserveClick },
+    ...(role === 'ADMIN' || role === 'KIOSK'
+      ? [{ href: '/kiosk/return', label: 'Palauta' }]
+      : []),
+  ];
+
+  const browseLink = (
+    <button
+      type="button"
+      onClick={() => {
+        handleBrowseClick();
+      }}
+      className="font-medium text-white hover:underline"
+    >
+      Kamat
+    </button>
+  );
+
   return (
     <>
-      <Box
-        as="header"
-        position="fixed"
-        top={0}
-        left={0}
-        right={0}
-        bg={headerBg}
-        backdropFilter="auto"
-        backdropBlur="4px"
-        zIndex={1000}
-        boxShadow="sm"
-      >
-        <Container maxW="container.xl" px={4}>
-          <Flex h="4rem" align="center" justify="space-between" color="white">
-            <Flex align="center" gap={4}>
+      <header className="fixed inset-x-0 top-0 z-[1000] bg-[rgba(66,131,209,0.9)] shadow-sm backdrop-blur-sm dark:bg-[rgba(26,32,44,0.95)]">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between text-white">
+            <div className="flex items-center gap-4">
               {session && (
-                <IconButton
+                <Button
                   aria-label="open menu"
-                  icon={<FaBars />}
-                  colorScheme="whiteAlpha"
-                  onClick={isOpen ? onClose : onOpen}
-                  display={['block', 'block', 'none']}
                   variant="ghost"
-                  color="white"
-                  _hover={{ bg: 'whiteAlpha.300' }}
-                  _active={{ bg: 'whiteAlpha.400' }}
-                />
+                  size="icon"
+                  onClick={isOpen ? onClose : onOpen}
+                  className="text-white hover:bg-white/30 active:bg-white/40 md:hidden"
+                >
+                  <FaBars />
+                </Button>
               )}
 
-              <Box
-                _hover={{ transform: 'scale(1.05)' }}
-                transition="transform 0.2s"
-                aria-label={'KLAPI'}
-                fontWeight="semibold"
-                lineHeight="1"
-                fontSize="2xl"
-                letterSpacing="0.02em"
-                display="flex"
-                alignItems="center"
-              >
-                <Link as={NextLink} href="/">
+              <div className="flex items-center text-2xl font-semibold leading-none tracking-[0.02em] transition-transform hover:scale-105">
+                <NextLink href="/" aria-label="KLAPI">
                   KLAPI
-                </Link>
-              </Box>
-              {/* ADMIN/KIOSK switch for KIOSK users and ADMIN (if elevated) */}
+                </NextLink>
+              </div>
               {session && (role === 'KIOSK' || (role === 'ADMIN' && session.user.adminExpiry)) && (
-                <Box ml={4} display="flex" alignItems="center">
-                  <Text fontSize="sm" color="white" mr={2}>
-                    ADMIN
-                  </Text>
+                <div className="ml-4 flex items-center gap-2">
+                  <span className="text-sm text-white">ADMIN</span>
                   <Switch
-                    isChecked={effectiveGroup === 'ADMIN'}
-                    onChange={(e) => handleAdminSwitch(e.target.checked)}
-                    colorScheme="green"
-                    size="md"
+                    checked={effectiveGroup === 'ADMIN'}
+                    onCheckedChange={handleAdminSwitch}
                     aria-label="Vaihda admin-oikeudet"
                   />
                   {effectiveGroup === 'ADMIN' && expiry && (
-                    <Text fontSize="xs" ml={2} minW="60px">
+                    <span className="ml-1 min-w-[60px] text-xs">
                       {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, '0')}
-                    </Text>
+                    </span>
                   )}
-                </Box>
+                </div>
               )}
-            </Flex>
+            </div>
 
-            <AlertDialog
-              isOpen={pinDialogOpen}
-              leastDestructiveRef={cancelRef}
-              onClose={() => setPinDialogOpen(false)}
-            >
-              <AlertDialogOverlay>
-                <AlertDialogContent>
-                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                    Anna admin-PIN
-                  </AlertDialogHeader>
-                  <form onSubmit={handlePinSubmit}>
-                    <AlertDialogBody>
-                      <HStack justify="center">
-                        <PinInput type="number" value={pinInput} onChange={setPinInput}>
-                          <PinInputField />
-                          <PinInputField />
-                          <PinInputField />
-                          <PinInputField />
-                        </PinInput>
-                      </HStack>
-                      {pinError && (
-                        <Text color="red.500" mt={2}>
-                          {pinError}
-                        </Text>
-                      )}
-                    </AlertDialogBody>
-                    <AlertDialogFooter>
-                      <Button
-                        ref={cancelRef}
-                        onClick={() => setPinDialogOpen(false)}
-                        colorScheme={'gray'}
-                      >
-                        Peruuta
-                      </Button>
-                      <Button
-                        colorScheme="blue"
-                        type="submit"
-                        ml={3}
-                        isDisabled={adminSwitchLoading}
-                      >
-                        Korota adminiksi
-                      </Button>
-                    </AlertDialogFooter>
-                  </form>
-                </AlertDialogContent>
-              </AlertDialogOverlay>
-            </AlertDialog>
-            <Flex gap={6} align="center" display={['none', 'none', 'flex']} height="30%">
-              <Link as={NextLink} href="/" fontWeight="medium" onClick={handleReserveClick}>
+            <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Anna admin-PIN</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handlePinSubmit}>
+                  <div className="flex justify-center">
+                    <PinInput type="number" value={pinInput} onChange={setPinInput} />
+                  </div>
+                  {pinError && <p className="mt-2 text-destructive">{pinError}</p>}
+                  <DialogFooter className="mt-4">
+                    <Button type="button" variant="secondary" onClick={() => setPinDialogOpen(false)}>
+                      Peruuta
+                    </Button>
+                    <Button type="submit" disabled={adminSwitchLoading}>
+                      Korota adminiksi
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <div className="hidden items-center gap-6 md:flex">
+              <NextLink href="/" className="font-medium text-white" onClick={handleReserveClick}>
                 Lainaa
-              </Link>
-              <Link as={NextLink} href="/kiosk/return" fontWeight="medium">
+              </NextLink>
+              <NextLink href="/kiosk/return" className="font-medium text-white">
                 Palauta
-              </Link>
-              <Divider orientation="vertical" />
-              <Link
-                as={router.pathname === '/' ? 'button' : NextLink}
-                href={router.pathname === '/' ? undefined : '/'}
-                onClick={handleBrowseClick}
-                fontWeight="medium"
-              >
-                Kamat
-              </Link>
-              <Link as={NextLink} href="/item/announcements" fontWeight="medium">
+              </NextLink>
+              <div className="h-6 w-px bg-white/30" />
+              {browseLink}
+              <NextLink href="/item/announcements" className="font-medium text-white">
                 Ilmoitukset
-              </Link>
+              </NextLink>
               {(role === 'ADMIN' || role === 'KIOSK') && (
-                <Link as={NextLink} href="/loan" fontWeight="medium">
+                <NextLink href="/loan" className="font-medium text-white">
                   Varaukset
-                </Link>
+                </NextLink>
               )}
               {role === 'ADMIN' && (
                 <>
-                  <Link as={NextLink} href="/admin/boxes" fontWeight="medium">
+                  <NextLink href="/admin/boxes" className="font-medium text-white">
                     Laatikot
-                  </Link>
-                  <Link as={NextLink} href="/admin/reports" fontWeight="medium">
+                  </NextLink>
+                  <NextLink href="/admin/reports" className="font-medium text-white">
                     Raportit
-                  </Link>
-                  <Link as={NextLink} href="/admin" fontWeight="medium">
+                  </NextLink>
+                  <NextLink href="/admin" className="font-medium text-white">
                     Admin
-                  </Link>
+                  </NextLink>
                 </>
               )}
-              <Box display="flex" alignItems="center" position="relative">
-                <Link as={NextLink} href="/account" fontWeight="medium" mr={6}>
+              <div className="relative flex items-center">
+                <NextLink href="/account" className="mr-6 font-medium text-white">
                   Oma tili
-                </Link>
+                </NextLink>
                 {children}
                 {totalItems > 0 && (
-                  <Circle
-                    position="absolute"
-                    right="-12px"
-                    top="-12px"
-                    marginTop="5px"
-                    size="24px"
-                    bg="red.500"
-                    color="white"
-                    fontSize="sm"
-                    fontWeight="bold"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    boxShadow="md"
-                  >
+                  <span className="absolute -right-3 -top-3 mt-[5px] flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-sm font-bold text-white shadow-md">
                     {totalItems}
-                  </Circle>
+                  </span>
                 )}
-              </Box>
-            </Flex>
+              </div>
+            </div>
 
             {session && (
-              <Box display={['block', 'block', 'none']} position="relative">
+              <div className="relative md:hidden">
                 {children}
                 {totalItems > 0 && (
-                  <Circle
-                    position="absolute"
-                    right="-12px"
-                    top="-12px"
-                    size="24px"
-                    bg="red.500"
-                    color="white"
-                    fontSize="sm"
-                    fontWeight="bold"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    boxShadow="md"
-                  >
+                  <span className="absolute -right-3 -top-3 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-sm font-bold text-white shadow-md">
                     {totalItems}
-                  </Circle>
+                  </span>
                 )}
-              </Box>
+              </div>
             )}
-          </Flex>
-        </Container>
-      </Box>
+          </div>
+        </div>
+      </header>
       {isNavigating && (
-        <Progress
-          size="xs"
-          isIndeterminate
-          position="fixed"
-          top="4rem"
-          left={0}
-          right={0}
-          zIndex={999}
-          colorScheme="blue"
-        />
+        <div className="fixed inset-x-0 top-16 z-[999]">
+          <Progress indeterminate />
+        </div>
       )}
-      <Box h="4rem" />{' '}
-      <Drawer placement="top" onClose={onClose} isOpen={isOpen}>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerBody pt="4rem">
-            <TableContainer>
-              <Table variant="simple">
-                <Tbody>
-                  <Tr>
-                    <Td>
-                      <Link
-                        as={NextLink}
-                        href="/"
-                        onClick={() => {
-                          handleReserveClick();
-                          onClose();
-                        }}
-                      >
-                        Lainaa
-                      </Link>
-                    </Td>
-                  </Tr>
-                  {(role === 'ADMIN' || role === 'KIOSK') && (
-                    <Tr>
-                      <Td>
-                        <Link as={NextLink} href="/kiosk/return" onClick={onClose}>
-                          Palauta
-                        </Link>
-                      </Td>
-                    </Tr>
-                  )}
-
-                  <Tr>
-                    <Td colSpan={1} p={0}>
-                      <Divider />
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Td>
-                      <Link
-                        as={router.pathname === '/' ? 'button' : NextLink}
-                        href={router.pathname === '/' ? undefined : '/'}
-                        onClick={() => {
-                          handleBrowseClick();
-                          onClose();
-                        }}
-                      >
-                        Kamat
-                      </Link>
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/item/announcements" onClick={onClose}>
-                        Ilmoitukset
-                      </Link>
-                    </Td>
-                  </Tr>
-                  {(role === 'ADMIN' || role === 'KIOSK') && (
-                    <Tr>
-                      <Td>
-                        <Link as={NextLink} href="/loan" onClick={onClose}>
-                          Varaukset
-                        </Link>
-                      </Td>
-                    </Tr>
-                  )}
-                  {role === 'ADMIN' && (
-                    <>
-                      <Tr>
-                        <Td>
-                          <Link as={NextLink} href="/admin/boxes" onClick={onClose}>
-                            Laatikot
-                          </Link>
-                        </Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Link as={NextLink} href="/admin/reports" onClick={onClose}>
-                            Raportit
-                          </Link>
-                        </Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Link as={NextLink} href="/admin" onClick={onClose}>
-                            Admin
-                          </Link>
-                        </Td>
-                      </Tr>
-                    </>
-                  )}
-                  <Tr>
-                    <Td>
-                      <Link as={NextLink} href="/account" onClick={onClose}>
-                        Oma tili
-                      </Link>
-                    </Td>
-                  </Tr>
-                </Tbody>
-              </Table>
-            </TableContainer>
-          </DrawerBody>
+      <div className="h-16" />
+      <Drawer open={isOpen} onOpenChange={(o) => (o ? onOpen() : onClose())}>
+        <DrawerContent side="top" className="pt-16">
+          <nav className="flex flex-col divide-y">
+            {navLinks.map((l) => (
+              <NextLink
+                key={l.href}
+                href={l.href}
+                onClick={() => {
+                  l.onClick?.();
+                  onClose();
+                }}
+                className="py-3"
+              >
+                {l.label}
+              </NextLink>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                handleBrowseClick();
+                onClose();
+              }}
+              className="py-3 text-left"
+            >
+              Kamat
+            </button>
+            <NextLink href="/item/announcements" onClick={onClose} className="py-3">
+              Ilmoitukset
+            </NextLink>
+            {(role === 'ADMIN' || role === 'KIOSK') && (
+              <NextLink href="/loan" onClick={onClose} className="py-3">
+                Varaukset
+              </NextLink>
+            )}
+            {role === 'ADMIN' && (
+              <>
+                <NextLink href="/admin/boxes" onClick={onClose} className="py-3">
+                  Laatikot
+                </NextLink>
+                <NextLink href="/admin/reports" onClick={onClose} className="py-3">
+                  Raportit
+                </NextLink>
+                <NextLink href="/admin" onClick={onClose} className="py-3">
+                  Admin
+                </NextLink>
+              </>
+            )}
+            <NextLink href="/account" onClick={onClose} className="py-3">
+              Oma tili
+            </NextLink>
+          </nav>
         </DrawerContent>
       </Drawer>
     </>

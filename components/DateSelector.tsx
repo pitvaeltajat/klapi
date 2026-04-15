@@ -1,151 +1,84 @@
 import DatePicker from 'react-datepicker';
-import {
-  Box,
-  Button,
-  Heading,
-  VStack,
-  HStack,
-  Text,
-  FormControl,
-  FormLabel,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import 'react-datepicker/dist/react-datepicker.css';
-
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet, setBrowseMode } = useDates();
   const { clearCart } = useCart();
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const datePickerBg = useColorModeValue('white', 'gray.700');
-  const datePickerHeaderBg = useColorModeValue('white', 'gray.700');
-  const datePickerBorderColor = useColorModeValue('gray.200', 'gray.600');
-  const datePickerHoverBg = useColorModeValue('gray.100', 'gray.600');
-  const datePickerTextColor = useColorModeValue('gray.800', 'white');
-  const datePickerDayColor = useColorModeValue('gray.800', 'gray.100');
 
-  // Combine the date states into a single array
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
 
-  // Helper function to set default time to 18:00
   const setDefaultTime = (date: Date): Date => {
     const newDate = new Date(date);
     newDate.setHours(18, 0, 0);
     return newDate;
   };
 
-  function applyDates() {
-    clearCart();
-
-    if (startDate && endDate) {
-      setStartDate(startDate);
-      setEndDate(endDate);
+  const handleRangeChange = (update: [Date | null, Date | null]) => {
+    const next: [Date | null, Date | null] = [
+      update[0] ? setDefaultTime(update[0]) : null,
+      update[1] ? setDefaultTime(update[1]) : null,
+    ];
+    setDateRange(next);
+    if (next[0] && next[1]) {
+      clearCart();
+      setStartDate(next[0]);
+      setEndDate(next[1]);
       setDatesSet(true);
     }
-  }
+  };
 
   return (
-    <VStack spacing={4} align="stretch" mb={4}>
+    <div className="mb-4 flex flex-col gap-4">
       {!dates.datesSet ? (
         <>
-          <Box>
-            <Heading size="lg" mb={2}>
-              Aloitus
-            </Heading>
-            <Text color="gray.600">Aloita valitsemalla kamojen nouto- ja palautusajankohdat.</Text>
-          </Box>
+          <div>
+            <h2 className="mb-2 text-2xl font-semibold">Aloitus</h2>
+            <p className="text-muted-foreground">
+              Aloita valitsemalla kamojen nouto- ja palautusajankohdat.
+            </p>
+          </div>
 
-          <Box borderWidth="1px" borderRadius="lg" p={4} bg={cardBg} boxShadow="sm">
-            <FormControl>
-              <FormLabel fontWeight="bold">Valitse lainausaika</FormLabel>
-              <Box
-                sx={{
-                  '.react-datepicker': {
-                    border: 'none',
-                    fontFamily: 'inherit',
-                    backgroundColor: datePickerBg,
-                    color: datePickerTextColor,
-                  },
-                  '.react-datepicker__header': {
-                    backgroundColor: datePickerHeaderBg,
-                    borderBottom: '1px solid',
-                    borderColor: datePickerBorderColor,
-                  },
-                  '.react-datepicker__current-month, .react-datepicker__day-name': {
-                    color: datePickerTextColor,
-                  },
-                  '.react-datepicker__day': {
-                    color: datePickerDayColor,
-                  },
-                  '.react-datepicker__day--selected, .react-datepicker__day--in-range': {
-                    backgroundColor: 'blue.500',
-                    color: 'white',
-                  },
-                  '.react-datepicker__day--keyboard-selected': {
-                    backgroundColor: 'blue.100',
-                  },
-                  '.react-datepicker__day:hover': {
-                    backgroundColor: datePickerHoverBg,
-                  },
-                  '.react-datepicker__day--disabled': {
-                    color: 'gray.400',
-                  },
-                }}
-              >
-                <DatePicker
-                  selected={startDate}
-                  onChange={(update: [Date | null, Date | null]) => {
-                    if (update[0]) update[0] = setDefaultTime(update[0]);
-                    if (update[1]) update[1] = setDefaultTime(update[1]);
-                    setDateRange(update);
-                  }}
-                  startDate={startDate}
-                  endDate={endDate}
-                  selectsRange
-                  swapRange
-                  inline
-                  minDate={new Date()}
-                  dateFormat="dd.MM.yyyy"
-                />
-              </Box>
-              <Button
-                colorScheme="blue"
-                mt={4}
-                width="full"
-                isDisabled={!startDate || !endDate}
-                onClick={applyDates}
-              >
-                Vahvista ajankohta
-              </Button>
-              <Button
-                variant="outline"
-                mt={2}
-                width="full"
-                onClick={() => setBrowseMode(true)}
-              >
-                Selaa katalogia ilman varausta
-              </Button>
-            </FormControl>
-          </Box>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <Label className="font-bold">Valitse lainausaika</Label>
+            <div className="mt-2">
+              <DatePicker
+                selected={startDate}
+                onChange={handleRangeChange}
+                startDate={startDate}
+                endDate={endDate}
+                selectsRange
+                swapRange
+                inline
+                minDate={new Date()}
+                dateFormat="dd.MM.yyyy"
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="mt-4 w-full"
+              onClick={() => setBrowseMode(true)}
+            >
+              Selaa katalogia ilman varausta
+            </Button>
+          </div>
         </>
       ) : (
         <>
-          <Box>
-            <Heading as="h2" size="md" mb={3}>
-              Valitut päivämäärät
-            </Heading>
-          </Box>
+          <div>
+            <h2 className="mb-3 text-lg font-semibold">Valitut päivämäärät</h2>
+          </div>
 
-          <Box borderWidth="1px" borderRadius="lg" p={4} bg={cardBg} boxShadow="sm">
-            <VStack align="stretch" spacing={3}>
-              <HStack spacing={2}>
-                <Text fontWeight="bold">Nouto:</Text>
-                <Text>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <span className="font-bold">Nouto:</span>
+                <span>
                   {dates.startDate.toLocaleDateString('fi-FI', {
                     weekday: 'long',
                     month: 'long',
@@ -153,11 +86,11 @@ export default function DateSelector() {
                     hour: 'numeric',
                     minute: '2-digit',
                   })}
-                </Text>
-              </HStack>
-              <HStack spacing={2}>
-                <Text fontWeight="bold">Palautus:</Text>
-                <Text>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">Palautus:</span>
+                <span>
                   {dates.endDate.toLocaleDateString('fi-FI', {
                     weekday: 'long',
                     month: 'long',
@@ -165,45 +98,12 @@ export default function DateSelector() {
                     hour: 'numeric',
                     minute: '2-digit',
                   })}
-                </Text>
-              </HStack>
+                </span>
+              </div>
 
-              <Box pt={2}>
-                <FormLabel fontWeight="bold">Muokkaa aikaa</FormLabel>
-                <Box
-                  sx={{
-                    '.react-datepicker': {
-                      border: 'none',
-                      fontFamily: 'inherit',
-                      backgroundColor: datePickerBg,
-                      color: datePickerTextColor,
-                    },
-                    '.react-datepicker__header': {
-                      backgroundColor: datePickerHeaderBg,
-                      borderBottom: '1px solid',
-                      borderColor: datePickerBorderColor,
-                    },
-                    '.react-datepicker__current-month, .react-datepicker__day-name': {
-                      color: datePickerTextColor,
-                    },
-                    '.react-datepicker__day': {
-                      color: datePickerDayColor,
-                    },
-                    '.react-datepicker__day--selected, .react-datepicker__day--in-range': {
-                      backgroundColor: 'blue.500',
-                      color: 'white',
-                    },
-                    '.react-datepicker__day--keyboard-selected': {
-                      backgroundColor: 'blue.100',
-                    },
-                    '.react-datepicker__day:hover': {
-                      backgroundColor: datePickerHoverBg,
-                    },
-                    '.react-datepicker__day--disabled': {
-                      color: 'gray.400',
-                    },
-                  }}
-                >
+              <div className="pt-2">
+                <Label className="font-bold">Muokkaa aikaa</Label>
+                <div className="mt-2">
                   <DatePicker
                     selected={dates.startDate}
                     onChange={(update: [Date | null, Date | null]) => {
@@ -224,23 +124,23 @@ export default function DateSelector() {
                     minDate={new Date()}
                     dateFormat="dd.MM.yyyy"
                   />
-                </Box>
+                </div>
                 <Button
                   variant="outline"
-                  mt={4}
-                  width="full"
+                  className="mt-4 w-full"
                   onClick={() => {
                     clearCart();
                     setDatesSet(false);
+                    setDateRange([null, null]);
                   }}
                 >
                   Nollaa päivät
                 </Button>
-              </Box>
-            </VStack>
-          </Box>
+              </div>
+            </div>
+          </div>
         </>
       )}
-    </VStack>
+    </div>
   );
 }

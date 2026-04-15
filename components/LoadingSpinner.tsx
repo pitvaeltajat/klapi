@@ -1,4 +1,4 @@
-import { Container, Spinner, Flex } from '@chakra-ui/react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface LoadingSpinnerProps {
   fullWidth?: boolean;
@@ -10,18 +10,14 @@ export default function LoadingSpinner({
   minHeight = '50vh',
 }: LoadingSpinnerProps) {
   const content = (
-    <Flex justify="center" align="center" minH={minHeight}>
-      <Spinner size="xl" color="blue.500" thickness="4px" />
-    </Flex>
+    <div className="flex items-center justify-center" style={{ minHeight }}>
+      <Spinner size="xl" />
+    </div>
   );
 
   if (fullWidth) {
     return content;
   }
 
-  return (
-    <Container maxW="container.xl" px={4}>
-      {content}
-    </Container>
-  );
+  return <div className="container mx-auto px-4">{content}</div>;
 }

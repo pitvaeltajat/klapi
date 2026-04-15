@@ -1,25 +1,4 @@
 import Head from 'next/head';
-import {
-  Heading,
-  Stack,
-  Box,
-  Text,
-  VStack,
-  HStack,
-  Switch,
-  useColorModeValue,
-  useColorMode,
-  Button,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  useDisclosure,
-  RadioGroup,
-  Radio,
-} from '@chakra-ui/react';
 import { useSession, getSession, signOut } from 'next-auth/react';
 import { serialize } from '@/utils/serialize';
 import prisma from '../utils/prisma';
@@ -30,6 +9,16 @@ import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from 
 import { useState, useEffect } from 'react';
 import React from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface Report {
   id: string;
@@ -64,7 +53,6 @@ interface AccountProps {
 export const getServerSideProps: GetServerSideProps<AccountProps> = async (context) => {
   const session = await getSession(context);
 
-  // If no session, return empty data
   if (!session?.user?.id) {
     return {
       props: serialize({
@@ -85,12 +73,7 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
       user: true,
       reservations: {
         include: {
-          item: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+          item: { select: { id: true, name: true } },
         },
       },
       reports: {
@@ -105,7 +88,6 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
     },
   });
 
-  // Map reports to correct enum types
   const loans = rawLoans.map((loan) => ({
     ...loan,
     reports: loan.reports.map((report) => ({
@@ -115,7 +97,6 @@ export const getServerSideProps: GetServerSideProps<AccountProps> = async (conte
     })),
   }));
 
-  // Get user email preferences
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -145,6 +126,7 @@ function compareDates(dateA: Date, dateB: Date) {
 
 export default function Account({ loans, userEmailPreferences }: AccountProps) {
   const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
 
   const [emailWeeklyReminder, setEmailWeeklyReminder] = useState(
     userEmailPreferences.emailWeeklyReminder,
@@ -160,63 +142,26 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
   );
 
   const [isSaving, setIsSaving] = useState(false);
-  const { colorMode, setColorMode } = useColorMode();
-  const [colorModePreference, setColorModePreference] = useState<'light' | 'dark' | 'system'>(
-    'system',
-  );
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Load color mode preference from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('chakra-ui-color-mode-preference');
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      setColorModePreference(stored);
-    }
+    setMounted(true);
   }, []);
-
-  // Handle color mode preference change
-  const handleColorModeChange = (value: string) => {
-    const preference = value as 'light' | 'dark' | 'system';
-    setColorModePreference(preference);
-    localStorage.setItem('chakra-ui-color-mode-preference', preference);
-
-    if (preference === 'system') {
-      // Use system preference
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setColorMode(systemPrefersDark ? 'dark' : 'light');
-    } else {
-      setColorMode(preference);
-    }
-  };
-
-  // Listen for system color scheme changes when in system mode
-  useEffect(() => {
-    if (colorModePreference !== 'system') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setColorMode(e.matches ? 'dark' : 'light');
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [colorModePreference, setColorMode]);
-
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
-  const dividerColor = useColorModeValue('gray.200', 'gray.600');
 
   const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime)),
   );
 
-  const handleEmailPreferenceChange = async (preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue', value: boolean) => {
+  const handleEmailPreferenceChange = async (
+    preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue',
+    value: boolean,
+  ) => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/user/updateEmailPreferences', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           emailWeeklyReminder: preference === 'weekly' ? value : emailWeeklyReminder,
           emailNewLoanNotification: preference === 'newLoan' ? value : emailNewLoanNotification,
@@ -225,52 +170,29 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update preferences');
-      }
+      if (!response.ok) throw new Error('Failed to update preferences');
 
-      if (preference === 'weekly') {
-        setEmailWeeklyReminder(value);
-      } else if (preference === 'newLoan') {
-        setEmailNewLoanNotification(value);
-      } else if (preference === 'oldBox') {
-        setEmailOldBoxNotification(value);
-      } else if (preference === 'overdue') {
-        setEmailOverdueNotification(value);
-      }
+      if (preference === 'weekly') setEmailWeeklyReminder(value);
+      else if (preference === 'newLoan') setEmailNewLoanNotification(value);
+      else if (preference === 'oldBox') setEmailOldBoxNotification(value);
+      else if (preference === 'overdue') setEmailOverdueNotification(value);
     } catch (error) {
       console.error('Error updating email preferences:', error);
-      // Revert the change on error
-      if (preference === 'weekly') {
-        setEmailWeeklyReminder(!value);
-      } else if (preference === 'newLoan') {
-        setEmailNewLoanNotification(!value);
-      } else if (preference === 'oldBox') {
-        setEmailOldBoxNotification(!value);
-      } else if (preference === 'overdue') {
-        setEmailOverdueNotification(!value);
-      }
     } finally {
       setIsSaving(false);
     }
   };
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const cancelRef = React.useRef(null);
-
   const handleSignOut = () => {
     if (session && session.user.group === 'KIOSK') {
-      onOpen();
+      setSignOutOpen(true);
       return;
     }
     signOut();
   };
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
-  // Helper to get effective group
   const effectiveGroup = session?.user?.group;
 
   return (
@@ -279,248 +201,179 @@ export default function Account({ loans, userEmailPreferences }: AccountProps) {
         <title>Oma tili | Klapi</title>
       </Head>
       <Breadcrumbs items={[{ label: 'Oma tili' }]} />
-      <Heading as="h1" size="xl" mb={6}>
-        Oma tili
-      </Heading>
-      <AlertDialog
-        isOpen={isOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={() => {
-          onClose();
-        }}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Kaluston koneen uloskirjautuminen
-            </AlertDialogHeader>
-            <AlertDialogBody>
-              Olet kirjautumassa ulos kaluston koneen käyttäjältä. Tätä ei yleensä pitäisi tehdä
-              jotta myös seuraava käyttäjä voi käyttää laitetta normaalisti. Haluatko varmasti
-              kirjautua ulos?
-            </AlertDialogBody>
-            <AlertDialogFooter>
-              <Button
-                ref={cancelRef}
-                onClick={() => {
-                  onClose();
-                }}
-              >
-                Peruuta
-              </Button>
-              <Button
-                colorScheme="red"
-                onClick={() => {
-                  signOut();
-                  onClose();
-                }}
-                ml={3}
-              >
-                <LuTriangleAlert style={{ marginRight: '0.4em' }} />
-                Kirjaudu ulos
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+      <h1 className="mb-6 text-4xl font-semibold">Oma tili</h1>
 
-      <VStack spacing={6} align="stretch">
-        <Box
-          bg={cardBg}
-          p={6}
-          borderRadius="md"
-          boxShadow="sm"
-          borderWidth="1px"
-          borderColor={cardBorderColor}
-        >
-          <VStack align="start" spacing={3}>
-            <Heading size="lg">{session?.user?.name}</Heading>
-            <Text fontSize="md" color="gray.600">
-              {session?.user?.email}
-            </Text>
-            <Text fontSize="sm" color="gray.500">
+      <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kaluston koneen uloskirjautuminen</DialogTitle>
+          </DialogHeader>
+          <p>
+            Olet kirjautumassa ulos kaluston koneen käyttäjältä. Tätä ei yleensä pitäisi tehdä
+            jotta myös seuraava käyttäjä voi käyttää laitetta normaalisti. Haluatko varmasti
+            kirjautua ulos?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSignOutOpen(false)}>
+              Peruuta
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                signOut();
+                setSignOutOpen(false);
+              }}
+              className="gap-2"
+            >
+              <LuTriangleAlert />
+              Kirjaudu ulos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex flex-col gap-6">
+        <div className="rounded-md border bg-card p-6 shadow-sm">
+          <div className="flex flex-col items-start gap-3">
+            <h2 className="text-2xl font-semibold">{session?.user?.name}</h2>
+            <p className="text-muted-foreground">{session?.user?.email}</p>
+            <p className="text-sm text-muted-foreground">
               Rooli:{' '}
               {effectiveGroup === 'USER'
                 ? 'Käyttäjä'
                 : effectiveGroup === 'KIOSK'
                   ? 'Kaluston kone'
                   : 'Admin'}
-            </Text>
+            </p>
             {session?.user?.group === 'KIOSK' && effectiveGroup === 'ADMIN' && (
-              <Text fontSize="xs" color="green.500" mt={1}>
+              <p className="mt-1 text-xs text-success">
                 ADMIN-oikeudet käytössä (tähän sessioon)
-              </Text>
+              </p>
             )}
-            {/* PIN-koodin syöttömodal poistettu */}
-          </VStack>
-          <Box my={4} h="1px" bg={dividerColor} />
-          <Button colorScheme="red" onClick={handleSignOut}>
+          </div>
+          <hr className="my-4" />
+          <Button variant="destructive" onClick={handleSignOut}>
             Kirjaudu ulos
           </Button>
-        </Box>
+        </div>
 
-        <Box
-          bg={cardBg}
-          p={6}
-          borderRadius="md"
-          boxShadow="sm"
-          borderWidth="1px"
-          borderColor={cardBorderColor}
-        >
-          <Heading size="md" mb={4}>
-            Sähköposti-ilmoitukset
-          </Heading>
-          <VStack align="start" spacing={4}>
-            {session?.user?.group === 'ADMIN' && (
+        <div className="rounded-md border bg-card p-6 shadow-sm">
+          <h2 className="mb-4 text-xl font-semibold">Sähköposti-ilmoitukset</h2>
+          <div className="flex flex-col items-start gap-4">
+            {session?.user?.group === 'ADMIN' ? (
               <>
-                <HStack justify="space-between" w="full">
-                  <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="medium">
-                      Uudet varaukset
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Ilmoitukset uusista varauksista (myös kiosk-käytöstä)
-                    </Text>
-                  </VStack>
-                  <Switch
-                    isChecked={emailNewLoanNotification}
-                    isDisabled={isSaving}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleEmailPreferenceChange('newLoan', e.target.checked)
-                    }
-                    colorScheme="blue"
-                  />
-                </HStack>
-                <HStack justify="space-between" w="full">
-                  <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="medium">
-                      Viikottaiset muistutukset vanhoista bokseista
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Muistutukset varauksista, jotka ovat olleet boksissa yli viikon
-                    </Text>
-                  </VStack>
-                  <Switch
-                    isChecked={emailOldBoxNotification}
-                    isDisabled={isSaving}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleEmailPreferenceChange('oldBox', e.target.checked)
-                    }
-                    colorScheme="blue"
-                  />
-                </HStack>
-                <HStack justify="space-between" w="full">
-                  <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="medium">
-                      Myöhässä olevat varaukset
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Ilmoitukset varauksista, joiden palautusaika on ylittynyt
-                    </Text>
-                  </VStack>
-                  <Switch
-                    isChecked={emailOverdueNotification}
-                    isDisabled={isSaving}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleEmailPreferenceChange('overdue', e.target.checked)
-                    }
-                    colorScheme="blue"
-                  />
-                </HStack>
+                <PrefRow
+                  title="Uudet varaukset"
+                  description="Ilmoitukset uusista varauksista (myös kiosk-käytöstä)"
+                  checked={emailNewLoanNotification}
+                  disabled={isSaving}
+                  onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
+                />
+                <PrefRow
+                  title="Viikottaiset muistutukset vanhoista bokseista"
+                  description="Muistutukset varauksista, jotka ovat olleet boksissa yli viikon"
+                  checked={emailOldBoxNotification}
+                  disabled={isSaving}
+                  onCheckedChange={(v) => handleEmailPreferenceChange('oldBox', v)}
+                />
+                <PrefRow
+                  title="Myöhässä olevat varaukset"
+                  description="Ilmoitukset varauksista, joiden palautusaika on ylittynyt"
+                  checked={emailOverdueNotification}
+                  disabled={isSaving}
+                  onCheckedChange={(v) => handleEmailPreferenceChange('overdue', v)}
+                />
+              </>
+            ) : (
+              <>
+                <PrefRow
+                  title="Ilmoitukset uusista varauksista"
+                  description="Sähköpostit kun luot uuden varauksen"
+                  checked={emailNewLoanNotification}
+                  disabled={isSaving}
+                  onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
+                />
+                <PrefRow
+                  title="Muistutukset varauksista"
+                  description="Muistutukset varauksiesi päättymisestä"
+                  checked={emailWeeklyReminder}
+                  disabled={isSaving}
+                  onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
+                />
               </>
             )}
-            {session?.user?.group !== 'ADMIN' && (
-              <>
-                <HStack justify="space-between" w="full">
-                  <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="medium">
-                      Ilmoitukset uusista varauksista
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Sähköpostit kun luot uuden varauksen
-                    </Text>
-                  </VStack>
-                  <Switch
-                    isChecked={emailNewLoanNotification}
-                    isDisabled={isSaving}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleEmailPreferenceChange('newLoan', e.target.checked)
-                    }
-                    colorScheme="blue"
-                  />
-                </HStack>
-                <HStack justify="space-between" w="full">
-                  <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="medium">
-                      Muistutukset varauksista
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Muistutukset varauksiesi päättymisestä
-                    </Text>
-                  </VStack>
-                  <Switch
-                    isChecked={emailWeeklyReminder}
-                    isDisabled={isSaving}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleEmailPreferenceChange('weekly', e.target.checked)
-                    }
-                    colorScheme="blue"
-                  />
-                </HStack>
-              </>
-            )}
-          </VStack>
-        </Box>
+          </div>
+        </div>
 
-        <Box
-          bg={cardBg}
-          p={6}
-          borderRadius="md"
-          boxShadow="sm"
-          borderWidth="1px"
-          borderColor={cardBorderColor}
-        >
-          <Heading size="md" mb={4}>
-            Ulkoasu
-          </Heading>
-          <VStack align="start" spacing={4}>
-            <VStack align="start" spacing={0}>
-              <Text fontSize="sm" fontWeight="medium">
-                Teema
-              </Text>
-              <Text fontSize="xs" color="gray.500">
-                Valitse sovelluksen väritila
-              </Text>
-            </VStack>
-            <RadioGroup value={colorModePreference} onChange={handleColorModeChange}>
-              <HStack spacing={4}>
-                <Radio value="light">Vaalea</Radio>
-                <Radio value="dark">Tumma</Radio>
-                <Radio value="system">Järjestelmä</Radio>
-              </HStack>
-            </RadioGroup>
-          </VStack>
-        </Box>
+        <div className="rounded-md border bg-card p-6 shadow-sm">
+          <h2 className="mb-4 text-xl font-semibold">Ulkoasu</h2>
+          <div className="flex flex-col items-start gap-4">
+            <div>
+              <p className="text-sm font-medium">Teema</p>
+              <p className="text-xs text-muted-foreground">Valitse sovelluksen väritila</p>
+            </div>
+            {mounted && (
+              <div role="radiogroup" className="flex gap-4">
+                {[
+                  { value: 'light', label: 'Vaalea' },
+                  { value: 'dark', label: 'Tumma' },
+                  { value: 'system', label: 'Järjestelmä' },
+                ].map((opt) => (
+                  <label key={opt.value} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="theme"
+                      value={opt.value}
+                      checked={theme === opt.value}
+                      onChange={() => setTheme(opt.value)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {session?.user?.group !== 'KIOSK' && (
-          <Box>
-            <Heading size="md" mb={4}>
-              Oma varaushistoria
-            </Heading>
+          <div>
+            <h2 className="mb-4 text-xl font-semibold">Oma varaushistoria</h2>
             {loansSorted.length > 0 ? (
-              <Stack spacing={4}>
+              <div className="flex flex-col gap-4">
                 {loansSorted.map((loan) => (
                   <LoanCard key={loan.id} loan={loan} />
                 ))}
-              </Stack>
+              </div>
             ) : (
-              <Text color="gray.500" textAlign="center" py={8}>
-                Ei varauksia
-              </Text>
+              <p className="py-8 text-center text-muted-foreground">Ei varauksia</p>
             )}
-          </Box>
+          </div>
         )}
-      </VStack>
+      </div>
     </>
+  );
+}
+
+function PrefRow({
+  title,
+  description,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex w-full items-center justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+    </div>
   );
 }

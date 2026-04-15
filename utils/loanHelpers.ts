@@ -40,18 +40,27 @@ export const getLoanStatusLabel = (status: LoanStatus): string => {
   }
 };
 
-export const getLoanStatusColor = (status: LoanStatus): string => {
+export type BadgeVariant =
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'success'
+  | 'warning'
+  | 'outline'
+  | 'gray';
+
+export const getLoanStatusColor = (status: LoanStatus): BadgeVariant => {
   switch (status) {
     case LoanStatus.ACCEPTED:
-      return 'green';
+      return 'success';
     case LoanStatus.REJECTED:
-      return 'red';
+      return 'destructive';
     case LoanStatus.INUSE:
-      return 'blue';
+      return 'default';
     case LoanStatus.IN_BOX:
-      return 'purple';
+      return 'secondary';
     case LoanStatus.PARTIALLY_RETURNED:
-      return 'orange';
+      return 'warning';
     case LoanStatus.RETURNED:
       return 'gray';
     default:
@@ -76,16 +85,16 @@ export const getReservationStatusLabel = (status: ReservationStatus): string => 
   }
 };
 
-export const getReservationStatusColor = (status: ReservationStatus): string => {
+export const getReservationStatusColor = (status: ReservationStatus): BadgeVariant => {
   switch (status) {
     case ReservationStatus.ACCEPTED:
-      return 'green';
+      return 'success';
     case ReservationStatus.REJECTED:
-      return 'red';
+      return 'destructive';
     case ReservationStatus.INUSE:
-      return 'blue';
+      return 'default';
     case ReservationStatus.IN_BOX:
-      return 'purple';
+      return 'secondary';
     case ReservationStatus.RETURNED:
       return 'gray';
     default:

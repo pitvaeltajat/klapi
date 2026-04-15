@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useColorModeValue } from '@chakra-ui/react';
+import { useTheme } from 'next-themes';
 import {
   getPlaceholderUrl,
   getCompressedImageUrl,
@@ -12,8 +12,13 @@ import {
  * Tries to load images in order: compressed (thumbnail) -> root -> placeholder
  * This handles the case where a newly uploaded image hasn't been processed by Lambda yet.
  */
+function useIsDark(): boolean {
+  const { resolvedTheme } = useTheme();
+  return resolvedTheme === 'dark';
+}
+
 export function useItemImage(itemId: string): string {
-  const isDarkMode = useColorModeValue(false, true);
+  const isDarkMode = useIsDark();
   const placeholder = getPlaceholderUrl(isDarkMode);
   const compressedUrl = getCompressedImageUrl(itemId);
   const rootUrl = getRootImageUrl(itemId);
@@ -67,7 +72,7 @@ export function useItemImage(itemId: string): string {
  * Use this for item detail pages where you want the full resolution image.
  */
 export function useItemOriginalImage(itemId: string): string {
-  const isDarkMode = useColorModeValue(false, true);
+  const isDarkMode = useIsDark();
   const placeholder = getPlaceholderUrl(isDarkMode);
   const originalUrl = getOriginalImageUrl(itemId);
   const rootUrl = getRootImageUrl(itemId);
@@ -120,6 +125,6 @@ export function useItemOriginalImage(itemId: string): string {
  * Use this when you just need the placeholder without the fallback logic.
  */
 export function usePlaceholder(): string {
-  const isDarkMode = useColorModeValue(false, true);
+  const isDarkMode = useIsDark();
   return getPlaceholderUrl(isDarkMode);
 }

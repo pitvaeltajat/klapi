@@ -1,24 +1,14 @@
-import {
-  Box,
-  Button,
-  Flex,
-  Image,
-  Link,
-  AspectRatio,
-  useColorModeValue,
-  IconButton,
-  Text,
-  Input,
-} from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { ItemCardProps } from '../types';
 import { useCart } from '@/contexts/CartContext';
-import { useToast } from '@chakra-ui/react';
+import { toast } from 'sonner';
 import { useCallback, useMemo, memo, MouseEvent } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
 import { useRouter } from 'next/router';
 import { LuTriangleAlert } from 'react-icons/lu';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps) {
   const {
@@ -27,7 +17,6 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     decrementAmount,
     state: { items: cartItems },
   } = useCart();
-  const toast = useToast();
   const router = useRouter();
   const imageSrc = useItemImage(item.id);
   const placeholder = usePlaceholder();
@@ -38,7 +27,6 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
   );
 
   const amountLeft = useMemo(() => availableAmount - amountInCart, [availableAmount, amountInCart]);
-
   const canTakeMoreItems = useMemo(() => amountLeft > 0, [amountLeft]);
 
   const handleAddToCart = useCallback(() => {
@@ -47,14 +35,11 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
       name: item.name,
       amount: amountInCart + 1,
     });
-    toast({
-      title: 'Lisättiin kama',
+    toast.success('Lisättiin kama', {
       description: `${item.name} lisätty ostoskoriin`,
-      status: 'success',
       duration: 1500,
-      isClosable: true,
     });
-  }, [addToCart, item.id, item.name, amountInCart, toast]);
+  }, [addToCart, item.id, item.name, amountInCart]);
 
   const handleIncrement = useCallback(() => {
     incrementAmount(item.id);
@@ -72,128 +57,91 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     e.stopPropagation();
   }, []);
 
-  const bgColor = useColorModeValue('white', 'gray.800');
-
   return (
-    <Box
-      bg={bgColor}
-      maxW="sm"
-      borderWidth="1px"
-      rounded="lg"
-      shadow="lg"
-      position="relative"
-      cursor="pointer"
+    <div
       onClick={handleCardClick}
-      _hover={{
-        shadow: '2xl',
-        transform: 'scale(1.01)',
-        transition: 'all 0.2s',
-        zIndex: 1,
-      }}
+      className="relative max-w-sm cursor-pointer rounded-lg border bg-card text-card-foreground shadow-lg transition-all hover:z-10 hover:scale-[1.01] hover:shadow-2xl"
     >
-      <AspectRatio ratio={5 / 3}>
-        <Image
+      <div className="relative aspect-[5/3] overflow-hidden rounded-t-lg">
+        <img
           src={imageSrc}
           alt={`Picture of ${item.name}`}
-          roundedTop="lg"
-          objectFit="cover"
-          objectPosition="center"
-          fallbackSrc={placeholder}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = placeholder;
+          }}
+          className="h-full w-full object-cover object-center"
         />
-      </AspectRatio>
+      </div>
 
-      <Box margin={'1.5em'} marginTop={'0.5em'}>
-        <Flex mt="1" justifyContent="space-between" alignContent="center">
-          <Text
-            fontSize="2xl"
-            fontWeight="semibold"
-            lineHeight="tight"
-            isTruncated
-            overflow="hidden"
-            noOfLines={1}
-            title={item.name}
-          >
+      <div className="m-6 mt-2">
+        <div className="mt-1 flex items-center justify-between">
+          <p className="truncate text-2xl font-semibold leading-tight" title={item.name}>
             {item.name}
-          </Text>
-        </Flex>
+          </p>
+        </div>
 
-        <Box fontSize="l" fontWeight="semibold" as="h5">
+        <h5 className="text-base font-semibold">
           Vapaana: {amountLeft} / {item.amount} kpl
-        </Box>
+        </h5>
 
-        <Box fontSize="l" fontWeight="semibold" as="h5" minH="1.5em">
+        <h5 className="min-h-[1.5em] text-base font-semibold">
           {item.categories.map((cat) => cat.name).join(', ')}
-        </Box>
+        </h5>
 
         {Array.isArray(item.announcements) &&
           item.announcements.length > 0 &&
           item.announcements.map((announcement) => (
-            <Box
+            <div
               key={announcement.id}
-              fontSize="md"
-              fontWeight="semibold"
-              color="red.500"
-              mt={2}
+              className="mt-2 text-sm font-semibold text-destructive"
               onClick={stopPropagation}
             >
-              <Link
-                as={NextLink}
-                href={'/item/announcements'}
-                display="flex"
-                alignItems="center"
-                gap={1}
-              >
-                <LuTriangleAlert style={{ marginRight: '0.4em' }} />
+              <NextLink href="/item/announcements" className="flex items-center gap-1">
+                <LuTriangleAlert className="mr-1" />
                 Sisältää ilmoituksen
-              </Link>
-            </Box>
+              </NextLink>
+            </div>
           ))}
 
-        <Box onClick={stopPropagation}>
+        <div onClick={stopPropagation} onMouseDown={stopPropagation}>
           {amountInCart > 0 ? (
-            <Flex mt={4}>
-              <IconButton
-                icon={<FaMinus />}
+            <div className="mt-4 flex h-14">
+              <Button
+                variant="outline"
                 aria-label="decrement"
                 onClick={handleDecrement}
-                borderRightRadius={0}
-                size="md"
-              />
+                className="h-full w-16 shrink-0 rounded-r-none text-xl"
+              >
+                <FaMinus />
+              </Button>
               <Input
                 value={amountInCart}
                 readOnly
-                textAlign="center"
-                fontWeight="bold"
-                userSelect="none"
-                pointerEvents="none"
-                borderRadius={0}
-                borderX={0}
+                className="pointer-events-none h-full select-none rounded-none border-x-0 text-center text-lg font-bold"
               />
-              <IconButton
-                icon={<FaPlus />}
+              <Button
+                variant="outline"
                 aria-label="increment"
                 onClick={handleIncrement}
-                borderLeftRadius={0}
-                size="md"
-                isDisabled={!canTakeMoreItems}
-              />
-            </Flex>
+                disabled={!canTakeMoreItems}
+                className="h-full w-16 shrink-0 rounded-l-none text-xl"
+              >
+                <FaPlus />
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={handleAddToCart}
-              colorScheme="blue"
-              width="full"
-              mt={4}
-              isDisabled={!canTakeMoreItems}
-              gap={2}
+              className="mt-4 h-14 w-full gap-2 text-lg"
+              disabled={!canTakeMoreItems}
             >
               {canTakeMoreItems ? 'Lisää' : 'Ei saatavilla'}
               {canTakeMoreItems && <FaCartArrowDown />}
             </Button>
           )}
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 });
 

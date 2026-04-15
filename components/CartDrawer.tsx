@@ -1,34 +1,25 @@
-import {
-  Button,
-  Drawer,
-  DrawerBody,
-  DrawerOverlay,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerContent,
-  DrawerCloseButton,
-  Stack,
-  Box,
-  FormLabel,
-  Input,
-  Flex,
-  IconButton,
-  Heading,
-  useDisclosure,
-  Textarea,
-  Text,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { IoMdAlert } from 'react-icons/io';
+import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoadingSpinner from './LoadingSpinner';
 import LoanerAutocomplete from './LoanerAutocomplete';
-import { useSession } from 'next-auth/react';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerFooter,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface AvailabilityData {
   availabilities: Record<string, { available: number }>;
@@ -37,10 +28,6 @@ interface AvailabilityData {
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const firstField = useRef<HTMLInputElement>(null);
   const { data: session } = useSession();
-  const disabledInputBg = useColorModeValue('gray.100', 'gray.600');
-  const requiredColor = useColorModeValue('red.500', 'red.300');
-  const kioskInfoBg = useColorModeValue('gray.50', 'gray.700');
-  const kioskInfoBorder = useColorModeValue('gray.200', 'gray.600');
   const {
     state: cart,
     incrementAmount,
@@ -52,7 +39,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const cartItems = cart.items;
   const { state: dates } = useDates();
 
-  const ConfirmationDialog = useDisclosure();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const startTime = dates.startDate;
   const endTime = dates.endDate;
@@ -70,14 +57,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
   const [localDescription, setLocalDescription] = useState(cart.description);
 
-  // Nollaa kuvaus kun ostoskori tyhjennetään resetCartilla
   useEffect(() => {
     if (cart.items.length === 0 && localDescription !== '') {
       setLocalDescription('');
     }
   }, [cart.items.length]);
 
-  // Debounce description updates to context
   useEffect(() => {
     const timeout = setTimeout(() => {
       setDescription(localDescription);
@@ -87,8 +72,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const [reportContent, setReportContent] = useState('');
 
-  // Pre-fill loaner with current user's info (locked for regular users, editable for admins)
-  // Only set once on initial load
   useEffect(() => {
     if (!isKiosk && session?.user && !hasInitializedLoaner) {
       const userDisplayName = session.user.email || session.user.name || '';
@@ -103,9 +86,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
     fetch('/api/availability/getAvailabilities', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ StartDate, EndDate }),
     })
       .then((response) => response.json())
@@ -131,16 +112,14 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       return null;
     }
     return (
-      <Drawer isOpen={isOpen} placement="right" size={{ base: 'full', md: 'md' }} onClose={onClose}>
-        <DrawerOverlay />
-        <DrawerContent display="flex" flexDirection="column" maxH="100dvh">
-          <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px" flexShrink={0}>
-            Ostoskori
+      <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
+        <DrawerContent side="right" className="flex max-h-[100dvh] flex-col">
+          <DrawerHeader className="border-b">
+            <DrawerTitle>Ostoskori</DrawerTitle>
           </DrawerHeader>
-          <DrawerBody flex="1" minH={0}>
+          <div className="flex-1 overflow-auto">
             <LoadingSpinner fullWidth />
-          </DrawerBody>
+          </div>
         </DrawerContent>
       </Drawer>
     );
@@ -154,40 +133,31 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
   const isDescriptionValid = localDescription.trim().length > 0;
 
   return (
-    <Drawer
-      isOpen={isOpen}
-      placement="right"
-      size={{ base: 'full', md: 'md' }}
-      initialFocusRef={firstField}
-      onClose={onClose}
-    >
-      <DrawerOverlay />
-      <DrawerContent display="flex" flexDirection="column" maxH="100dvh">
-        <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px" flexShrink={0}>
-          Ostoskori
+    <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
+      <DrawerContent side="right" className="flex max-h-[100dvh] w-full flex-col md:max-w-md">
+        <DrawerHeader className="border-b">
+          <DrawerTitle>Ostoskori</DrawerTitle>
         </DrawerHeader>
 
-        <DrawerBody overflow="auto" flex="1" minH={0}>
+        <div className="min-h-0 flex-1 overflow-auto p-6">
           <SubmitConfirmation
-            isOpen={ConfirmationDialog.isOpen}
-            onClose={ConfirmationDialog.onClose}
+            isOpen={confirmOpen}
+            onClose={() => setConfirmOpen(false)}
             closeDrawer={onClose}
             reportContent={reportContent}
             setReportContent={setReportContent}
           />
-          <Stack spacing={1}>
-            <Box>
-              <FormLabel htmlFor="loaner">
-                Lainaaja <Text as="span" color={requiredColor}>*</Text>
-              </FormLabel>
+          <div className="space-y-1">
+            <div>
+              <Label htmlFor="loaner">
+                Lainaaja <span className="text-destructive">*</span>
+              </Label>
               {isAdmin || isKiosk ? (
                 <LoanerAutocomplete
                   value={cart.loaner || ''}
@@ -199,13 +169,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   size="md"
                 />
               ) : (
-                <Input id="loaner" value={cart.loaner || ''} isDisabled bg={disabledInputBg} />
+                <Input id="loaner" value={cart.loaner || ''} disabled className="bg-muted" />
               )}
-            </Box>
-            <Box>
-              <FormLabel htmlFor="description">
-                Kuvaus <Text as="span" color={requiredColor}>*</Text>
-              </FormLabel>
+            </div>
+            <div>
+              <Label htmlFor="description">
+                Kuvaus <span className="text-destructive">*</span>
+              </Label>
               <Input
                 ref={firstField}
                 id="description"
@@ -213,57 +183,49 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 placeholder="Kuvaus (pakollinen)"
                 value={localDescription}
                 onChange={(e) => setLocalDescription(e.target.value)}
-                isRequired
-                isInvalid={!isDescriptionValid && cart.items.length > 0}
+                required
+                aria-invalid={!isDescriptionValid && cart.items.length > 0}
+                className={cn(
+                  !isDescriptionValid && cart.items.length > 0 && 'border-destructive focus-visible:ring-destructive',
+                )}
               />
-            </Box>
-            <Box>
-              <FormLabel htmlFor="startTime">Lainaus alkaa</FormLabel>
+            </div>
+            <div>
+              <Label htmlFor="startTime">Lainaus alkaa</Label>
               <Input id="startTime" value={timeStringWithoutTimeZone(startTime)} readOnly />
-            </Box>
-            <Box>
-              <FormLabel htmlFor="endTime">Lainaus loppuu</FormLabel>
+            </div>
+            <div>
+              <Label htmlFor="endTime">Lainaus loppuu</Label>
               <Input id="endTime" value={timeStringWithoutTimeZone(endTime)} readOnly />
-            </Box>
-          </Stack>
+            </div>
+          </div>
 
-          <Box mt={4}>
-            <Text as="span" color={requiredColor}>*</Text> Pakollinen kenttä
-          </Box>
+          <div className="mt-4 text-sm">
+            <span className="text-destructive">*</span> Pakollinen kenttä
+          </div>
           {isKiosk && (
-            <Box
-              mt={6}
-              bg={kioskInfoBg}
-              borderRadius="lg"
-              borderWidth="2px"
-              borderColor={kioskInfoBorder}
-              p={4}
-            >
-              <Text fontSize="md" lineHeight="tall">
+            <div className="mt-6 rounded-lg border-2 bg-muted p-4">
+              <p className="text-base leading-relaxed">
                 Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja
                 mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
                 reikä laavussa tms.)
-              </Text>
-              <Text fontSize="md" lineHeight="tall" mt={2} color={'red.600'}>
-                <IoMdAlert style={{ display: 'inline', marginRight: '8px' }} />
+              </p>
+              <p className="mt-2 text-base leading-relaxed text-destructive">
+                <IoMdAlert className="mr-2 inline" />
                 Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
                 havaitsemiasi puutteita tai vahinkoja.
-              </Text>
+              </p>
               <Textarea
                 placeholder="Kirjoita raportti tähän..."
                 value={reportContent}
                 onChange={(e) => setReportContent(e.target.value)}
-                mt={3}
-                size="sm"
-                minH="100px"
+                className="mt-3 min-h-[100px] text-sm"
               />
-            </Box>
+            </div>
           )}
           {cart.items.length > 0 ? (
-            <Stack spacing={2} marginTop="20px">
-              <Heading as="h3" size="md">
-                Valitut tavarat
-              </Heading>
+            <div className="mt-5 space-y-2">
+              <h3 className="text-base font-semibold">Valitut tavarat</h3>
               {cart.items.map((item) => {
                 if (item.amount <= 0) return null;
                 const isCustomItem = item.id.startsWith('custom-');
@@ -273,68 +235,63 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     getCartAmount(item.id) >= availabilities[item.id].available;
 
                 return (
-                  <Box key={item.id}>
-                    <FormLabel htmlFor={`item-${item.id}`}>{item.name}</FormLabel>
-                    <Flex>
-                      <IconButton
-                        icon={<FaMinus />}
+                  <div key={item.id}>
+                    <Label htmlFor={`item-${item.id}`}>{item.name}</Label>
+                    <div className="flex">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
                         aria-label="decrement"
                         onClick={() => decrementAmount(item.id)}
-                        borderRightRadius={0}
-                        size="md"
-                      />
+                        className="rounded-r-none"
+                      >
+                        <FaMinus />
+                      </Button>
                       <Input
                         id={`item-${item.id}`}
                         value={item.amount}
                         readOnly
-                        textAlign="center"
-                        fontWeight="bold"
-                        userSelect="none"
-                        pointerEvents="none"
-                        borderRadius={0}
-                        borderX={0}
+                        className="pointer-events-none select-none rounded-none border-x-0 text-center font-bold"
                       />
-                      <IconButton
-                        icon={<FaPlus />}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
                         aria-label="increment"
                         onClick={() => incrementAmount(item.id)}
-                        borderLeftRadius={0}
-                        size="md"
-                        isDisabled={isIncrementDisabled}
-                      />
-                    </Flex>
-                  </Box>
+                        disabled={isIncrementDisabled}
+                        className="rounded-l-none"
+                      >
+                        <FaPlus />
+                      </Button>
+                    </div>
+                  </div>
                 );
               })}
-            </Stack>
+            </div>
           ) : (
-            <Flex
-              direction="column"
-              align="center"
-              justify="center"
-              flex="1"
-              py={12}
-              color="gray.500"
-            >
-              <Text fontSize="lg">Ostoskori on tyhjä</Text>
-              <Text fontSize="sm" mt={2}>
-                Lisää tavaroita ostoskoriin aloittaaksesi lainauksen
-              </Text>
-            </Flex>
+            <div className="flex flex-1 flex-col items-center justify-center py-12 text-muted-foreground">
+              <p className="text-lg">Ostoskori on tyhjä</p>
+              <p className="mt-2 text-sm">Lisää tavaroita ostoskoriin aloittaaksesi lainauksen</p>
+            </div>
           )}
-        </DrawerBody>
+        </div>
 
-        <DrawerFooter borderTopWidth="1px" flexShrink={0}>
-          <Button variant="outline" mr={3} onClick={onClose}>
-            Sulje
-          </Button>
-          <Button
-            colorScheme="blue"
-            onClick={ConfirmationDialog.onOpen}
-            isDisabled={cart.items.length === 0 || !isDescriptionValid || !cart.loaner || (isKiosk && !cart.userId)}
-          >
-            Lainaa
-          </Button>
+        <DrawerFooter className="border-t">
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={onClose}>
+              Sulje
+            </Button>
+            <Button
+              onClick={() => setConfirmOpen(true)}
+              disabled={
+                cart.items.length === 0 || !isDescriptionValid || !cart.loaner || (isKiosk && !cart.userId)
+              }
+            >
+              Lainaa
+            </Button>
+          </div>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

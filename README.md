@@ -37,12 +37,28 @@ A web-based equipment loan management system for organizations. Browse inventory
 
 ## Tech Stack
 
-- [Next.js 15](https://nextjs.org) - React framework
-- [Prisma](https://www.prisma.io) - Database ORM
-- [PostgreSQL](https://www.postgresql.org) - Database
-- [NextAuth.js](https://next-auth.js.org/) - Authentication
-- [Chakra UI](https://chakra-ui.com) - Component library
-- [AWS SES](https://aws.amazon.com/ses/) - Email notifications
+- [Next.js 16](https://nextjs.org) (Pages Router) — React framework
+- [React 18](https://react.dev) with TypeScript (strict)
+- [Prisma 7](https://www.prisma.io) — Database ORM
+- [PostgreSQL](https://www.postgresql.org) — Database
+- [NextAuth.js](https://next-auth.js.org/) — Authentication
+- [Tailwind CSS 3](https://tailwindcss.com) — Utility-first styling
+- [shadcn/ui](https://ui.shadcn.com) — Component primitives (owned in `components/ui/`)
+- [Radix UI](https://www.radix-ui.com) — Unstyled accessible primitives (Dialog, Dropdown, Switch, Tooltip, Label)
+- [next-themes](https://github.com/pacocoursey/next-themes) — Dark mode (class-based)
+- [sonner](https://sonner.emilkowal.ski/) — Toast notifications
+- [react-select](https://react-select.com/) — Creatable/multi selects (shadcn-styled wrapper)
+- [lucide-react](https://lucide.dev/) + [react-icons](https://react-icons.github.io/react-icons/) — Icons
+- [SWR](https://swr.vercel.app/) — Client-side data fetching
+- [AWS SES](https://aws.amazon.com/ses/) — Email notifications
+
+## UI & theming
+
+- All UI primitives live in `components/ui/` — they're source files you own and edit freely (shadcn pattern, not an installed library).
+- Design tokens are CSS variables in `styles/globals.css`. Colors map to HSL vars (`--primary`, `--background`, `--card`, `--destructive`, `--success`, `--warning`, etc.) with `.dark` overrides.
+- Tailwind config in `tailwind.config.ts` exposes those tokens via `bg-primary`, `text-muted-foreground`, etc. Dark mode is class-based — toggled by `next-themes` via the `class` attribute on `<html>`.
+- Toasts use `sonner`. Import `toast` from `sonner` and call `toast.success(...)`, `toast.error(...)`, `toast.warning(...)`.
+- Creatable selects use the `CreatableSelect` wrapper in `components/ui/creatable-select.tsx` — it styles `react-select`'s creatable via the `classNames` API so it respects dark mode and tokens without runtime theme juggling.
 
 ## Development
 
@@ -71,25 +87,33 @@ pnpm prisma migrate dev
 pnpm prisma db seed
 ```
 
-5. Start development server:
+5. Start development server (also boots the local SES mock automatically):
 
 ```bash
 pnpm dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+Visit [http://localhost:3000](http://localhost:3000).
+
+### Useful scripts
+
+- `pnpm dev` — Next dev server + local SES mock
+- `pnpm build` — `prisma migrate deploy` + `next build`
+- `pnpm start` — Production server
+- `pnpm type-check` — `tsc --noEmit`
+- `pnpm lint` — ESLint (Next config)
+- `pnpm test` — Vitest against a disposable Postgres (docker-compose)
+- `pnpm test:ci` — Vitest without docker (expects `DATABASE_URL` already set)
 
 ## Local Email Testing
 
-To test emails locally without sending real emails, use [aws-ses-v2-local](https://github.com/domdomegg/aws-ses-v2-local). The email server is started automatically on dev server startup.
+The dev script starts [aws-ses-v2-local](https://github.com/domdomegg/aws-ses-v2-local) in parallel. All emails are captured instead of being sent.
 
 Open the email viewer at [http://localhost:8005](http://localhost:8005) to see sent emails.
 
-All emails sent by the application will be captured and displayed in the web interface instead of being sent to real recipients.
-
 ## Database
 
-Schema is defined in [prisma/schema.prisma](prisma/schema.prisma). After schema changes, run:
+Schema is defined in [prisma/schema.prisma](prisma/schema.prisma). After schema changes:
 
 ```bash
 pnpm prisma migrate dev --name description_of_change
@@ -111,11 +135,13 @@ Supports Google OAuth and username/password authentication via NextAuth.js. Conf
 - **User**: Browse catalog, request loans, view own history
 - **Kiosk**: Simplified interface for self-service stations
 
+Admins can elevate a kiosk session to ADMIN temporarily via a 4-digit PIN (set in `/admin`). The elevated session auto-expires after 30 minutes.
+
 ## Hosting
 
 ### Production Deployment
 
-Klapi is deployed automatically when a new commit to main branch is made.
+Klapi is deployed automatically when a new commit lands on `main`.
 
 ### Environment Variables
 
@@ -125,3 +151,18 @@ Klapi is deployed automatically when a new commit to main branch is made.
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: Google OAuth credentials
 - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`: AWS SES for emails
 - `EMAIL_FROM`: Sender email address
+
+## Project layout
+
+```
+pages/              Next.js Pages Router — routes, API handlers, SSR via getServerSideProps
+components/         App-specific React components
+components/ui/      shadcn/ui primitives (owned source, edit freely)
+contexts/           React contexts (cart, dates)
+hooks/              Custom hooks
+lib/utils.ts        `cn()` className merger
+styles/globals.css  Tailwind base + CSS token variables (light/dark)
+tailwind.config.ts  Tailwind config (content paths, token mapping, dark mode)
+utils/              Server and shared helpers (Prisma client, loan helpers, etc.)
+prisma/             Schema, migrations, seed
+```

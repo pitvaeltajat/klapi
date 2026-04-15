@@ -2,7 +2,6 @@ import Auth from './auth';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
-import { Heading, Flex, Text, VStack } from '@chakra-ui/react';
 import type { NextPage } from 'next';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
@@ -18,23 +17,21 @@ const Login: NextPage = () => {
   }
 
   if (status === 'loading' || session) {
-    if (!showLoading) {
-      return null;
-    }
+    if (!showLoading) return null;
     return <LoadingSpinner fullWidth minHeight="100vh" />;
   }
 
   return (
-    <Flex minH="100vh" align="flex-start" justify="center" pt="25vh">
+    <div className="flex min-h-screen items-start justify-center pt-[25vh]">
       <Head>
         <title>Kirjaudu sisään | Klapi</title>
       </Head>
-      <VStack spacing={4} textAlign="center">
-        <Heading>Kirjaudu sisään</Heading>
-        <Text>Käyttääksesi Klapia sinun tulee kirjautua palveluun.</Text>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <h1 className="text-3xl font-semibold">Kirjaudu sisään</h1>
+        <p>Käyttääksesi Klapia sinun tulee kirjautua palveluun.</p>
         <Auth />
-      </VStack>
-    </Flex>
+      </div>
+    </div>
   );
 };
 

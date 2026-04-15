@@ -1,29 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Head from 'next/head';
 import prisma from '../../utils/prisma';
-import {
-  Box,
-  Button,
-  Heading,
-  Stack,
-  Tag,
-  Text,
-  useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  useDisclosure,
-  VStack,
-  Image,
-  HStack,
-  Checkbox,
-  Textarea,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
@@ -32,8 +9,18 @@ import { serialize } from '@/utils/serialize';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useRouter } from 'next/router';
+import { toast } from 'sonner';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
-import { useItemImage } from '../../hooks/useItemImage';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface Reservation {
   id: string;
@@ -43,12 +30,6 @@ interface Reservation {
     id: string;
     name: string;
   };
-}
-
-// Helper component to use hooks inside map
-function ReservationItemImage({ itemId, itemName }: { itemId: string; itemName: string }) {
-  const imageSrc = useItemImage(itemId);
-  return <Image src={imageSrc} alt={itemName} boxSize="80px" objectFit="cover" borderRadius="md" />;
 }
 
 interface LoanType {
@@ -68,25 +49,11 @@ interface LoanType {
 
 export const getServerSideProps: GetServerSideProps = async () => {
   const loans = await prisma.loan.findMany({
-    where: {
-      status: LoanStatus.ACCEPTED,
-    },
-    include: {
-      user: true,
-      reservations: {
-        include: {
-          item: true,
-        },
-      },
-    },
+    where: { status: LoanStatus.ACCEPTED },
+    include: { user: true, reservations: { include: { item: true } } },
     orderBy: { startTime: 'asc' },
   });
-
-  return {
-    props: serialize({
-      loans,
-    }),
-  };
+  return { props: serialize({ loans }) };
 };
 
 const LoanStartCard = ({
@@ -98,20 +65,16 @@ const LoanStartCard = ({
   onStart: (id: string) => Promise<void>;
   onStartComplete: () => void;
 }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [termsAccepted, setTermsAccepted] = React.useState(false);
-  const [reportContent, setReportContent] = React.useState('');
-  const itemBg = useColorModeValue('gray.50', 'gray.700');
-  const itemBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const [open, setOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [reportContent, setReportContent] = useState('');
 
-  // Derive the loan status from reservations
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
   const acceptedReservations = loan.reservations.filter(
     (r) => r.status === ReservationStatus.ACCEPTED,
   );
 
   const handleStartLoan = async () => {
-    // Lähetä puutteet backendille, jos kenttä ei ole tyhjä
     if (reportContent.trim() !== '') {
       try {
         await fetch('/api/loan/createReport', {
@@ -124,112 +87,95 @@ const LoanStartCard = ({
       }
     }
     await onStart(loan.id);
-    onClose();
+    setOpen(false);
     onStartComplete();
   };
 
   return (
     <>
-      <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} mb={4}>
-        <Stack spacing={3}>
-          <Heading size="md">{loan.description || loan.loaner}</Heading>
-          <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
+      <div className="mb-4 overflow-hidden rounded-lg border p-4">
+        <div className="flex flex-col gap-3">
+          <h3 className="text-lg font-semibold">{loan.description || loan.loaner}</h3>
+          <Badge variant={getLoanStatusColor(derivedStatus)} className="w-fit">
             {getLoanStatusLabel(derivedStatus)}
-          </Tag>
-          <Text>Lainaaja: {loan.loaner}</Text>
-          <Text>
+          </Badge>
+          <p>Lainaaja: {loan.loaner}</p>
+          <p>
             Laina-aika: {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
             {new Date(loan.endTime).toLocaleDateString('fi-FI')}
-          </Text>
-          <Box>
-            <Text fontWeight="bold" mb={2}>
-              Tavarat:
-            </Text>
-            <HStack spacing={2} flexWrap="wrap">
+          </p>
+          <div>
+            <p className="mb-2 font-bold">Tavarat:</p>
+            <div className="flex flex-wrap gap-2">
               {acceptedReservations.map((reservation) => (
-                <Tag key={reservation.id} size="md" colorScheme="blue" borderRadius="full">
+                <Badge key={reservation.id} className="rounded-full">
                   {reservation.item.name} ({reservation.amount})
-                </Tag>
+                </Badge>
               ))}
-            </HStack>
-          </Box>
-          <Button colorScheme="green" onClick={onOpen} size="lg">
+            </div>
+          </div>
+          <Button variant="success" size="lg" onClick={() => setOpen(true)}>
             Aloita lainaus
           </Button>
-        </Stack>
-      </Box>
+        </div>
+      </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Hyväksy lainauksen aloitus</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text mb={4}>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hyväksy lainauksen aloitus</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p className="mb-4">
               Vahvistamalla lainauksen aloituksen otat vastuullesi lainattavat tavarat.
-            </Text>
-            <Box
-              mb={4}
-              p={3}
-              bg="blue.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="blue.300"
-            >
-              <Text fontSize="md" lineHeight="tall" fontWeight="bold" color="blue.800">
+            </p>
+            <div className="mb-4 rounded-md border border-primary/30 bg-primary/10 p-3">
+              <p className="font-bold leading-relaxed text-primary">
                 💡 Vinkki: Ota kuva kamoista puhelimellasi
-              </Text>
-              <Text fontSize="md" lineHeight="tall" mt={1} color="blue.900">
+              </p>
+              <p className="mt-1 leading-relaxed">
                 Suosittelemme ottamaan kuvan kamoista ennen lainauksen aloitusta. Jos palautuksessa
-                tulee hämminkiä (puuttuuko jotain, oliko jokin rikki jo etukäteen), kuva puhelimessasi
-                toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään — säilytä se omassa
-                puhelimessasi.
-              </Text>
-            </Box>
-            <Box
-              mb={4}
-              p={3}
-              bg={itemBg}
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor={itemBorderColor}
-            >
-              <Text fontSize="md" lineHeight="tall">
+                tulee hämminkiä, kuva puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse
+                lähettää mihinkään — säilytä se omassa puhelimessasi.
+              </p>
+            </div>
+            <div className="mb-4 rounded-md border bg-muted p-3">
+              <p className="leading-relaxed">
                 Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja
                 mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
                 reikä laavussa tms.)
-              </Text>
-              <Text fontSize="md" lineHeight="tall" mt={2} color={'red.600'}>
-                <IoMdAlert style={{ display: 'inline', marginRight: '8px' }} />
+              </p>
+              <p className="mt-2 leading-relaxed text-destructive">
+                <IoMdAlert className="mr-2 inline" />
                 Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
                 havaitsemiasi puutteita tai vahinkoja.
-              </Text>
+              </p>
               <Textarea
                 placeholder="Kirjoita puutteet tai huomiot tähän..."
                 value={reportContent}
                 onChange={(e) => setReportContent(e.target.value)}
-                mt={2}
-                size="sm"
-                minH="100px"
+                className="mt-2 min-h-[100px] text-sm"
               />
-            </Box>
-            <Checkbox
-              isChecked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-            >
+            </div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+              />
               Ymmärrän ja hyväksyn vastuuni lainattavista tavaroista.
-            </Checkbox>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="green" onClick={handleStartLoan} isDisabled={!termsAccepted}>
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="success" onClick={handleStartLoan} disabled={!termsAccepted}>
               Aloita lainaus
             </Button>
-            <Button variant="ghost" onClick={onClose} ml={3}>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
               Peruuta
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -237,35 +183,21 @@ const LoanStartCard = ({
 export default function KioskStartLoan({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
   const router = useRouter();
-  const toast = useToast();
 
   const handleStart = async (loanId: string) => {
     try {
       const response = await fetch('/api/loan/startLoan', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: loanId }),
       });
       if (response.ok) {
-        toast({
-          title: 'Lainaus aloitettu!',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
+        toast.success('Lainaus aloitettu!');
       } else {
         throw new Error('Lainauksen aloitus epäonnistui');
       }
     } catch {
-      toast({
-        title: 'Virhe',
-        description: 'Lainauksen aloitus epäonnistui. Yritä uudelleen.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      toast.error('Virhe', { description: 'Lainauksen aloitus epäonnistui. Yritä uudelleen.' });
     }
   };
 
@@ -283,15 +215,15 @@ export default function KioskStartLoan({ loans }: { loans: LoanType[] }) {
         <title>Aloita lainaus | Klapi</title>
       </Head>
       <Breadcrumbs items={[{ label: 'Aloita lainaus' }]} />
-      <Stack spacing={8}>
-        <Box>
-          <Heading mb={4}>Aloita lainaus</Heading>
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1 className="mb-4 text-3xl font-semibold">Aloita lainaus</h1>
           {loans.length === 0 ? (
-            <Box textAlign="center" py={8}>
-              <Heading size="md" color="gray.500">
+            <div className="py-8 text-center">
+              <h2 className="text-xl font-semibold text-muted-foreground">
                 Ei aloitettavia lainoja
-              </Heading>
-            </Box>
+              </h2>
+            </div>
           ) : (
             loans.map((loan) => (
               <LoanStartCard
@@ -302,8 +234,8 @@ export default function KioskStartLoan({ loans }: { loans: LoanType[] }) {
               />
             ))
           )}
-        </Box>
-      </Stack>
+        </div>
+      </div>
     </>
   );
 }
