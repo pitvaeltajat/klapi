@@ -1,34 +1,15 @@
-// single loan view
 import React from 'react';
 import Head from 'next/head';
 import prisma from '../../utils/prisma';
-import {
-  Stack,
-  Button,
-  Heading,
-  Box,
-  useToast,
-  useDisclosure,
-  Link,
-  Text,
-  Tag,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import NextLink from 'next/link';
 import ReservationTableLoanView from '../../components/ReservationTableLoanView';
 import ReportCard from '../../components/ReportCard';
-
-interface Report {
-  id: string;
-  content: string;
-  createdAt: string | Date;
-  status: string;
-}
 import StartLoanConfirmation from '../../components/StartLoanConfirmation';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import {
   Loan,
   User,
@@ -38,27 +19,31 @@ import {
   ReservationStatus,
 } from '@prisma/client';
 import {
-  Checkbox,
-  HStack,
-  VStack,
-} from '@chakra-ui/react';
-import {
   getLoanStatusLabel,
   getLoanStatusColor,
   deriveLoanStatus,
   getLoanHistoryActionLabel,
 } from '../../utils/loanHelpers';
 import { LoanHistoryAction } from '@prisma/client';
-
+import { serialize } from '@/utils/serialize';
+import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-} from '@chakra-ui/react';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+
+interface Report {
+  id: string;
+  content: string;
+  createdAt: string | Date;
+  status: string;
+}
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -77,9 +62,6 @@ interface HistoryEntry {
   actedBy: { id: string; name: string | null; email: string | null } | null;
 }
 
-import { serialize } from '@/utils/serialize';
-import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
-
 export async function getServerSideProps(
   req: GetServerSidePropsContext,
 ): Promise<
@@ -94,30 +76,17 @@ export async function getServerSideProps(
   }
 
   const loan = await prisma.loan.findUnique({
-    where: {
-      id: req.params.id,
-    },
+    where: { id: req.params.id },
     include: {
       user: true,
       box: true,
-      reservations: {
-        include: {
-          item: true,
-        },
-      },
+      reservations: { include: { item: true } },
     },
   });
 
   const reports = await prisma.report.findMany({
-    where: {
-      loanId: req.params.id,
-    },
-    select: {
-      id: true,
-      content: true,
-      createdAt: true,
-      status: true,
-    },
+    where: { loanId: req.params.id },
+    select: { id: true, content: true, createdAt: true, status: true },
   });
 
   const history = await prisma.loanHistory.findMany({
@@ -128,17 +97,9 @@ export async function getServerSideProps(
     },
   });
 
-  if (!loan) {
-    return { notFound: true };
-  }
+  if (!loan) return { notFound: true };
 
-  return {
-    props: serialize({
-      loan,
-      reports,
-      history,
-    }),
-  };
+  return { props: serialize({ loan, reports, history }) };
 }
 
 export default function LoanView({
@@ -151,75 +112,48 @@ export default function LoanView({
   history: HistoryEntry[];
 }) {
   const router = useRouter();
-  const toast = useToast();
   const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
   const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
   const [announcement, setAnnouncement] = React.useState<{ itemId: string; content: string }>({
     itemId: '',
     content: '',
   });
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const {
-    isOpen: isStartLoanOpen,
-    onOpen: onStartLoanOpen,
-    onClose: onStartLoanClose,
-  } = useDisclosure();
+  const [rejectOpen, setRejectOpen] = React.useState(false);
+  const [startLoanOpen, setStartLoanOpen] = React.useState(false);
   const { data: session } = useSession();
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const returnedBg = useColorModeValue('green.50', 'green.900');
-  const returnedBorder = useColorModeValue('green.200', 'green.700');
-  const returnedText = useColorModeValue('green.700', 'green.300');
 
   const isAdmin = session?.user?.group === 'ADMIN';
 
-  // API-funktiot
   const approveLoan = async () => {
     await fetch('/api/loan/approveLoan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: loan.id }),
     });
-    toast({ title: 'Laina hyväksytty', status: 'success', duration: 5000, isClosable: true });
+    toast.success('Laina hyväksytty');
     router.push('/loan');
   };
 
   const rejectLoan = async () => {
-    const body = { id: loan.id };
     await fetch('/api/loan/rejectLoan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: loan.id }),
     })
       .then((res) => res.json())
       .then(() => {
-        toast({
-          title: 'Laina hylätty',
-          description: 'Laina hylätty onnistuneesti',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
+        toast.success('Laina hylätty', { description: 'Laina hylätty onnistuneesti' });
         router.push('/loan');
       })
       .catch((err) => {
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        toast.error('Error', { description: err.message });
       });
   };
 
   const [processingIds, setProcessingIds] = React.useState<Set<string>>(
     () =>
       new Set(
-        loan.reservations
-          .filter((r) => r.status === ReservationStatus.IN_BOX)
-          .map((r) => r.id),
+        loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).map((r) => r.id),
       ),
   );
 
@@ -230,7 +164,7 @@ export default function LoanView({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: loan.id, reservationIds }),
     });
-    toast({ title: 'Kamat palautettu', status: 'success', duration: 5000, isClosable: true });
+    toast.success('Kamat palautettu');
     router.push('/loan');
   };
 
@@ -243,7 +177,6 @@ export default function LoanView({
     });
   };
 
-  // Raporttien API-funktiot
   const setReportToProcessing = async (
     reportId: string,
     affectedItems?: { [key: string]: number },
@@ -253,53 +186,40 @@ export default function LoanView({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
     });
-    toast({
-      title: 'Raportti otettu käsittelyyn',
-      status: 'success',
-      duration: 5000,
-      isClosable: true,
-    });
+    toast.success('Raportti otettu käsittelyyn');
     router.replace(router.asPath);
   };
+
   const resolveReport = async (reportId: string, affectedItems?: { [key: string]: number }) => {
     await fetch('/api/loan/editReport', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
     });
-    toast({
-      title: 'Raportti merkitty käsitellyksi',
-      status: 'success',
-      duration: 5000,
-      isClosable: true,
-    });
+    toast.success('Raportti merkitty käsitellyksi');
     router.replace(router.asPath);
   };
+
   const sendAnnouncement = async (itemId: string, content: string) => {
     await fetch('/api/item/createAnnouncement', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ announcement: { itemId, message: content } }),
     });
-    toast({ title: 'Ilmoitus lähetetty', status: 'success', duration: 5000, isClosable: true });
+    toast.success('Ilmoitus lähetetty');
   };
 
   const isKiosk = session?.user?.group === 'KIOSK';
 
-  // Derive the loan status from reservations
-  const derivedStatus = deriveLoanStatus(loan.reservations.map((r) => ({ status: r.status })), loan.status);
+  const derivedStatus = deriveLoanStatus(
+    loan.reservations.map((r) => ({ status: r.status })),
+    loan.status,
+  );
 
-  //Check if user is allowed to see information about this loan
-  // KIOSK users can view all loans in read-only mode
   if (!(session?.user?.group === 'ADMIN' || session?.user?.id === loan.user.id || isKiosk)) {
-    return (
-      <>
-        <NotAuthenticated />
-      </>
-    );
+    return <NotAuthenticated />;
   }
 
-  // Determine which buttons to show based on derived status and user role
   const canReject =
     (isAdmin || session?.user?.id === loan.user.id) &&
     derivedStatus !== 'REJECTED' &&
@@ -339,53 +259,49 @@ export default function LoanView({
           { label: loan.description || 'Ei kuvausta' },
         ]}
       />
-      <Stack spacing={6}>
-        <Heading as="h1" mb={4}>
+      <div className="flex flex-col gap-6">
+        <h1 className="mb-4 text-3xl font-semibold">
           Varaus: {loan.description || 'Ei kuvausta'}
-        </Heading>
+        </h1>
 
-        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
-          <Heading as="h2" size="lg" mb={4}>
-            Perustiedot
-          </Heading>
-          <Stack spacing={3}>
-            <Text>
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="mb-4 text-2xl font-semibold">Perustiedot</h2>
+          <div className="flex flex-col gap-3">
+            <p>
               Aloitusaika:{' '}
               {new Date(loan.startTime).toLocaleString('fi-FI', {
                 dateStyle: 'full',
                 timeStyle: 'short',
               })}
-            </Text>
-            <Text>
+            </p>
+            <p>
               Lopetusaika:{' '}
               {new Date(loan.endTime).toLocaleString('fi-FI', {
                 dateStyle: 'full',
                 timeStyle: 'short',
               })}
-            </Text>
-            <Text>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</Text>
+            </p>
+            <p>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</p>
             {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
-              <Text>Tili: {loan.user.name}</Text>
+              <p>Tili: {loan.user.name}</p>
             )}
-            {loan.box && <Text>Laatikko: {loan.box.name}</Text>}
-            <Box>
-              <Tag colorScheme={getLoanStatusColor(derivedStatus)} width="fit-content">
+            {loan.box && <p>Laatikko: {loan.box.name}</p>}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={getLoanStatusColor(derivedStatus)}>
                 {getLoanStatusLabel(derivedStatus)}
-              </Tag>
+              </Badge>
               {reports.filter((r) => r.status !== 'RESOLVED').length > 0 && (
-                <Tag colorScheme="red" size="md" flexShrink={0} ml={2}>
+                <Badge variant="destructive">
                   Käsittelemättömiä raportteja:{' '}
                   {reports.filter((r) => r.status !== 'RESOLVED').length}
-                </Tag>
+                </Badge>
               )}
-            </Box>
-          </Stack>
-        </Box>
+            </div>
+          </div>
+        </div>
 
-        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
-          <Heading as="h2" size="lg" mb={4}>
-            Kamat
-          </Heading>
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="mb-4 text-2xl font-semibold">Kamat</h2>
           <ReservationTableLoanView
             loan={{
               id: loan.id,
@@ -398,7 +314,8 @@ export default function LoanView({
               })),
             }}
           />
-        </Box>
+        </div>
+
         {canSeeReports && (
           <ReportCard
             reports={reports}
@@ -414,161 +331,138 @@ export default function LoanView({
             onSendAnnouncement={sendAnnouncement}
           />
         )}
+
         {derivedStatus === 'RETURNED' ? (
-          <Box bg={returnedBg} p={6} borderRadius="lg" borderWidth="1px" borderColor={returnedBorder}>
-            <Heading as="h2" size="md" color={returnedText}>
+          <div className="rounded-lg border border-success/50 bg-success/10 p-6">
+            <h2 className="text-xl font-semibold text-success">
               Lainaustapahtuma suoritettu loppuun
-            </Heading>
-          </Box>
+            </h2>
+          </div>
         ) : canMarkReturned ? (
-          <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
-            <Stack spacing={3}>
-              <Heading as="h3" size="md" mb={2}>
-                Merkitse laatikossa olevat palautetuksi
-              </Heading>
-              <Text fontSize="sm" color="gray.500">
+          <div className="rounded-lg border bg-card p-6">
+            <div className="flex flex-col gap-3">
+              <h3 className="mb-2 text-xl font-semibold">Merkitse laatikossa olevat palautetuksi</h3>
+              <p className="text-sm text-muted-foreground">
                 Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta. Vielä käytössä
                 olevat tavarat (sininen tila) eivät näy tässä eivätkä ne muutu.
-              </Text>
-              <VStack align="stretch" spacing={2}>
+              </p>
+              <div className="flex flex-col gap-2">
                 {inBoxReservations.map((r) => (
-                  <HStack
+                  <div
                     key={r.id}
-                    p={3}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    borderColor={
-                      processingIds.has(r.id) ? 'green.400' : 'gray.200'
-                    }
                     onClick={() => toggleProcessing(r.id)}
-                    cursor="pointer"
+                    className={cn(
+                      'flex cursor-pointer items-center gap-2 rounded-md border p-3',
+                      processingIds.has(r.id) ? 'border-success' : 'border-border',
+                    )}
                   >
-                    <Checkbox
-                      isChecked={processingIds.has(r.id)}
+                    <input
+                      type="checkbox"
+                      checked={processingIds.has(r.id)}
                       onChange={() => toggleProcessing(r.id)}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <Text flex={1}>
+                    <p className="flex-1">
                       {r.item.name}{' '}
-                      <Text as="span" color="gray.500">
-                        ({r.amount} kpl)
-                      </Text>
-                    </Text>
-                  </HStack>
+                      <span className="text-muted-foreground">({r.amount} kpl)</span>
+                    </p>
+                  </div>
                 ))}
-              </VStack>
+              </div>
               <Button
                 onClick={loanProcessed}
-                colorScheme="green"
+                variant="success"
                 size="lg"
-                width="full"
-                isDisabled={processingIds.size === 0}
+                className="w-full"
+                disabled={processingIds.size === 0}
               >
                 {processingIds.size === inBoxReservations.length
                   ? 'Merkitse kaikki laatikossa olevat palautetuksi'
                   : `Merkitse valitut palautetuksi (${processingIds.size})`}
               </Button>
-            </Stack>
-          </Box>
+            </div>
+          </div>
         ) : (
           (canReject || canEdit || canApprove || canStartUse) && (
-            <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
-              <Stack spacing={3}>
-                <Heading as="h3" size="md" mb={2}>
-                  Toiminnot
-                </Heading>
-                <Stack direction={{ base: 'column', md: 'row' }} spacing={3}>
+            <div className="rounded-lg border bg-card p-6">
+              <div className="flex flex-col gap-3">
+                <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
+                <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
-                    <Button colorScheme="red" onClick={onOpen} flex="1">
+                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1">
                       Hylkää
                     </Button>
                   )}
                   {canEdit && (
-                    <Link as={NextLink} href={`/admin/editLoan/${loan.id}`} flex="1">
-                      <Button colorScheme="yellow" width="full">
-                        Muokkaa
-                      </Button>
-                    </Link>
+                    <Button asChild variant="warning" className="flex-1">
+                      <NextLink href={`/admin/editLoan/${loan.id}`}>Muokkaa</NextLink>
+                    </Button>
                   )}
                   {canApprove && (
-                    <Button colorScheme="green" onClick={approveLoan} flex="1">
+                    <Button variant="success" onClick={approveLoan} className="flex-1">
                       Hyväksy
                     </Button>
                   )}
                   {canStartUse && (
-                    <Button colorScheme="blue" onClick={onStartLoanOpen} flex="1">
+                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1">
                       Aloita lainaus
                     </Button>
                   )}
-                </Stack>
-              </Stack>
-            </Box>
+                </div>
+              </div>
+            </div>
           )
         )}
 
-        <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
-          <Heading as="h2" size="lg" mb={4}>
-            Historia
-          </Heading>
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="mb-4 text-2xl font-semibold">Historia</h2>
           {history.length === 0 ? (
-            <Text color="gray.500">Ei historiamerkintöjä.</Text>
+            <p className="text-muted-foreground">Ei historiamerkintöjä.</p>
           ) : (
-            <VStack align="stretch" spacing={3}>
+            <div className="flex flex-col gap-3">
               {history.map((entry) => {
-                const who =
-                  entry.actedBy?.name ||
-                  entry.actedBy?.email ||
-                  'Järjestelmä';
+                const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
                 const when = new Date(entry.createdAt).toLocaleString('fi-FI', {
                   dateStyle: 'short',
                   timeStyle: 'short',
                 });
                 return (
-                  <Box
-                    key={entry.id}
-                    p={3}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    borderColor="gray.200"
-                  >
-                    <HStack justify="space-between" align="start" flexWrap="wrap">
-                      <Text fontWeight="semibold">
-                        {getLoanHistoryActionLabel(entry.action)}
-                      </Text>
-                      <Text fontSize="sm" color="gray.500">
-                        {when}
-                      </Text>
-                    </HStack>
-                    <Text fontSize="sm" color="gray.600">
-                      {who}
-                    </Text>
-                  </Box>
+                  <div key={entry.id} className="rounded-md border p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="font-semibold">{getLoanHistoryActionLabel(entry.action)}</p>
+                      <p className="text-sm text-muted-foreground">{when}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{who}</p>
+                  </div>
                 );
               })}
-            </VStack>
+            </div>
           )}
-        </Box>
+        </div>
 
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Hylätäänkö varaus?</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>Varaushakemus hylätään. Oletko varma?</ModalBody>
-
-            <ModalFooter>
-              <Button colorScheme="red" mr={3} onClick={rejectLoan}>
+        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Hylätäänkö varaus?</DialogTitle>
+            </DialogHeader>
+            <p>Varaushakemus hylätään. Oletko varma?</p>
+            <DialogFooter>
+              <Button variant="destructive" onClick={rejectLoan}>
                 Hylkää
               </Button>
-              <Button colorScheme="gray" onClick={onClose}>
+              <Button variant="secondary" onClick={() => setRejectOpen(false)}>
                 Peruuta
               </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-        <StartLoanConfirmation isOpen={isStartLoanOpen} onClose={onStartLoanClose} loan={loan} />
-      </Stack>
+        <StartLoanConfirmation
+          isOpen={startLoanOpen}
+          onClose={() => setStartLoanOpen(false)}
+          loan={loan}
+        />
+      </div>
     </>
   );
 }

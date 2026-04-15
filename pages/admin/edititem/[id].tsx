@@ -2,30 +2,21 @@ import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import NotAuthenticated from '../../../components/NotAuthenticated';
 import Breadcrumbs from '../../../components/Breadcrumbs';
-import { useItemOriginalImage } from '../../../hooks/useItemImage';
-import {
-  Heading,
-  Input,
-  Image,
-  Textarea,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Button,
-  useToast,
-  VStack,
-  FormControl,
-  FormLabel,
-} from '@chakra-ui/react';
+import { useItemOriginalImage, usePlaceholder } from '../../../hooks/useItemImage';
 import { useState } from 'react';
-import { CreatableSelect, MultiValue } from 'chakra-react-select';
 import { useRouter } from 'next/router';
+import { toast } from 'sonner';
 import prisma from '../../../utils/prisma';
 import { Item, Category } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { serialize } from '@/utils/serialize';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { NumberInput } from '@/components/ui/number-input';
+import { CreatableSelect } from '@/components/ui/creatable-select';
+import { cn } from '@/lib/utils';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -40,28 +31,19 @@ interface ItemWithRelations extends Item {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  if (!params?.id || typeof params.id !== 'string') {
-    return { notFound: true };
-  }
+  if (!params?.id || typeof params.id !== 'string') return { notFound: true };
 
   const item = await prisma.item.findUnique({
-    where: {
-      id: params.id,
-    },
+    where: { id: params.id },
     include: {
       categories: true,
       reservations: { include: { loan: true } },
     },
   });
 
-  if (!item) {
-    return { notFound: true };
-  }
+  if (!item) return { notFound: true };
 
-  const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' },
-  });
-
+  const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
   return { props: serialize({ item, categories }) };
 };
 
@@ -74,40 +56,28 @@ export default function EditItem({
 }) {
   const { data: session } = useSession();
   const router = useRouter();
-  const toast = useToast();
   const existingImageSrc = useItemOriginalImage(item.id);
+  const placeholder = usePlaceholder();
 
   const [itemName, setItemName] = useState(item.name);
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setItemName(e.target.value);
-  };
-
   const [itemCategories, setItemCategories] = useState(item.categories);
-
   const [itemDescription, setItemDescription] = useState(item.description);
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setItemDescription(e.target.value);
-  };
-
   const [itemAmount, setItemAmount] = useState(item.amount);
-
   const [image, setImage] = useState<File | null>(null);
+  const [imgError, setImgError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setImage(file);
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const submitImage = async () => {
     if (!image) return;
-
     setIsSubmitting(true);
     const response = await fetch('/api/item/uploadImage', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: item.id, contentType: image.type }),
     });
 
@@ -118,24 +88,16 @@ export default function EditItem({
         formData.append(key, value as string);
       });
       formData.append('file', image);
-
-      await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
+      await fetch(url, { method: 'POST', body: formData });
     }
   };
 
   const updateItem = async () => {
-    if (image) {
-      await submitImage();
-    }
+    if (image) await submitImage();
 
     const response = await fetch('/api/item/editItem', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: item.id,
         name: itemName,
@@ -147,27 +109,18 @@ export default function EditItem({
 
     if (response.ok) {
       setIsSubmitting(false);
-      toast({
-        title: 'Kama päivitetty',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
+      toast.success('Kama päivitetty');
       router.push(`/item/${item.id}`);
     } else {
       setIsSubmitting(false);
-      toast({
-        title: 'Virhe kaman päivityksessä',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      toast.error('Virhe kaman päivityksessä');
     }
   };
 
-  if (session?.user?.group !== 'ADMIN') {
-    return <NotAuthenticated />;
-  }
+  if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
+
+  const dirtyBorder = (dirty: boolean) =>
+    dirty ? 'border-2 border-warning' : '';
 
   return (
     <>
@@ -175,112 +128,77 @@ export default function EditItem({
         <title>Muokkaa kamaa: {item.name} | Klapi</title>
       </Head>
       <Breadcrumbs
-        items={[
-          { label: item.name, href: `/item/${item.id}` },
-          { label: 'Muokkaa' },
-        ]}
+        items={[{ label: item.name, href: `/item/${item.id}` }, { label: 'Muokkaa' }]}
       />
-      <VStack spacing={6} align="stretch">
-        <Heading as="h1" size="md">
-          Muokkaa kamaa
-        </Heading>
+      <div className="flex max-w-2xl flex-col gap-6">
+        <h1 className="text-xl font-semibold">Muokkaa kamaa</h1>
 
-        <FormControl>
-          <FormLabel>Nimi:</FormLabel>
+        <div>
+          <Label>Nimi:</Label>
           <Input
             placeholder="Mäkihyppylehti"
             value={itemName}
-            onChange={handleNameChange}
-            borderColor={itemName === item.name ? 'gray.300' : 'orange.300'}
-            borderWidth={itemName === item.name ? '1px' : '2px'}
+            onChange={(e) => setItemName(e.target.value)}
+            className={cn(dirtyBorder(itemName !== item.name))}
           />
-        </FormControl>
+        </div>
 
-        <FormControl>
-          <FormLabel>Kuvaus:</FormLabel>
+        <div>
+          <Label>Kuvaus:</Label>
           <Textarea
             placeholder="Viihteeksi reissuille kaluston vessaan."
             value={itemDescription || ''}
-            onChange={handleDescriptionChange}
-            borderColor={itemDescription === item.description ? 'gray.300' : 'orange.300'}
-            borderWidth={itemDescription === item.description ? '1px' : '2px'}
+            onChange={(e) => setItemDescription(e.target.value)}
+            className={cn(dirtyBorder(itemDescription !== item.description))}
           />
-        </FormControl>
+        </div>
 
-        <FormControl>
-          <FormLabel>Kategoriat:</FormLabel>
+        <div>
+          <Label>Kategoriat:</Label>
           <CreatableSelect
             isMulti
-            value={itemCategories.map((cat: Category) => ({
-              value: cat.id,
-              label: cat.name,
-            }))}
-            options={categories.map((cat: Category) => ({
-              value: cat.id,
-              label: cat.name,
-            }))}
-            defaultValue={item.categories.map((cat: Category) => ({
-              value: cat.id,
-              label: cat.name,
-            }))}
-            onChange={(e: MultiValue<{ value: string; label: string }>) =>
+            value={itemCategories.map((cat: Category) => ({ value: cat.id, label: cat.name }))}
+            options={categories.map((cat: Category) => ({ value: cat.id, label: cat.name }))}
+            onChange={(e) =>
               setItemCategories(
-                e.map((cat: { label: string; value: string }) => ({
+                (e as { value: string; label: string }[]).map((cat) => ({
                   name: cat.label,
                   id: cat.value,
                   description: null,
                 })),
               )
             }
-            isInvalid={itemCategories !== item.categories}
-            errorBorderColor="orange.300"
           />
-        </FormControl>
+        </div>
 
-        <FormControl>
-          <FormLabel>Määrä:</FormLabel>
-          <NumberInput
-            min={1}
-            borderColor={itemAmount === item.amount ? 'grey.300' : 'orange.300'}
-            value={itemAmount}
-            onChange={(valueString) => setItemAmount(parseInt(valueString))}
-          >
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-        </FormControl>
+        <div>
+          <Label>Määrä:</Label>
+          <NumberInput min={1} value={itemAmount} onChange={setItemAmount} />
+        </div>
 
-        <FormControl>
-          <FormLabel>Kuva:</FormLabel>
+        <div>
+          <Label>Kuva:</Label>
           {image !== null ? (
-            <Image
+            <img
               src={URL.createObjectURL(image)}
               alt={item.name}
-              maxW="full"
-              maxH="400px"
-              objectFit="contain"
-              mb={4}
+              className="mb-4 max-h-[400px] max-w-full object-contain"
             />
           ) : (
-            <Image
-              src={existingImageSrc}
+            <img
+              src={imgError ? placeholder : existingImageSrc}
               alt={item.name}
-              maxW="full"
-              maxH="400px"
-              objectFit="contain"
-              mb={4}
+              onError={() => setImgError(true)}
+              className="mb-4 max-h-[400px] max-w-full object-contain"
             />
           )}
           <Input type="file" accept="image/*" onChange={handleImageChange} />
-        </FormControl>
+        </div>
 
-        <Button onClick={updateItem} isLoading={isSubmitting} colorScheme="blue" size="lg">
+        <Button onClick={updateItem} isLoading={isSubmitting} size="lg">
           Tallenna
         </Button>
-      </VStack>
+      </div>
     </>
   );
 }

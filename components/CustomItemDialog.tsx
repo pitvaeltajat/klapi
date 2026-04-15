@@ -1,22 +1,17 @@
 import React from 'react';
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  NumberInput,
-  NumberInputField,
-  useToast,
-} from '@chakra-ui/react';
 import { useCart } from '@/contexts/CartContext';
 import { FaCartArrowDown } from 'react-icons/fa';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Props {
   isOpen: boolean;
@@ -27,58 +22,57 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
   const [name, setName] = React.useState('');
   const [amount, setAmount] = React.useState<number>(1);
   const { addToCart } = useCart();
-  const toast = useToast();
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      toast({ title: 'Anna kaman nimi', status: 'warning', duration: 3000 });
+      toast.warning('Anna kaman nimi');
       return;
     }
     const id = `custom-${Date.now()}`;
     addToCart({ id, name: name.trim(), amount });
-    toast({
-      title: 'Lisätty koriin',
-      description: name,
-      status: 'success',
-      duration: 2500,
-    });
+    toast.success('Lisätty koriin', { description: name });
     setName('');
     setAmount(1);
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Lisää oma kama varaukseen</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <FormControl mb={3}>
-            <FormLabel>Nimi</FormLabel>
+    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Lisää oma kama varaukseen</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="custom-name">Nimi</Label>
             <Input
+              id="custom-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Kaman nimi"
             />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Määrä</FormLabel>
-            <NumberInput min={1} value={amount} onChange={(val) => setAmount(Number(val))}>
-              <NumberInputField />
-            </NumberInput>
-          </FormControl>
-        </ModalBody>
-        <ModalFooter>
-          <Button mr={3} onClick={onClose} variant="ghost">
+          </div>
+          <div>
+            <Label htmlFor="custom-amount">Määrä</Label>
+            <Input
+              id="custom-amount"
+              type="number"
+              min={1}
+              value={amount}
+              onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
             Peruuta
           </Button>
-          <Button colorScheme="teal" onClick={handleSubmit}>
+          <Button onClick={handleSubmit} className="gap-2">
             Lisää
             <FaCartArrowDown />
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,6 +1,5 @@
 import React from 'react';
 import Head from 'next/head';
-import { Box, Button, Heading, Text, VStack, HStack, SimpleGrid } from '@chakra-ui/react';
 import prisma from '../utils/prisma';
 import { visibleItemsWhere, itemsWithRelationsInclude } from '../utils/itemQueries';
 import DateSelector from '../components/DateSelector';
@@ -13,26 +12,21 @@ import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
 import ItemBrowser from '../components/ItemBrowser';
 import BrowseItemCard from '../components/BrowseItemCard';
+import { Button } from '@/components/ui/button';
 
 function BrowseModeHeader({ onExitBrowseMode }: { onExitBrowseMode: () => void }) {
   return (
-    <VStack spacing={4} align="stretch" mb={4}>
-      <Box>
-        <Heading size="lg" mb={2}>
-          <HStack>
-            <Text>Selaa katalogia</Text>
-          </HStack>
-        </Heading>
-        <Text color="gray.600">
+    <div className="mb-4 flex flex-col gap-4">
+      <div>
+        <h2 className="mb-2 text-2xl font-semibold">Selaa katalogia</h2>
+        <p className="text-muted-foreground">
           Selaat katalogia ilman varaustoimintoa. Voit tarkastella saatavilla olevia kamoja.
-        </Text>
-      </Box>
-      <Box>
-        <Button colorScheme="blue" onClick={onExitBrowseMode}>
-          Siirry varaamaan
-        </Button>
-      </Box>
-    </VStack>
+        </p>
+      </div>
+      <div>
+        <Button onClick={onExitBrowseMode}>Siirry varaamaan</Button>
+      </div>
+    </div>
   );
 }
 
@@ -54,11 +48,7 @@ export const getServerSideProps: GetServerSideProps<IndexProps> = async () => {
     include: itemsWithRelationsInclude,
     orderBy: { name: 'asc' },
   });
-  const categories = await prisma.category.findMany({
-    include: {
-      items: true,
-    },
-  });
+  const categories = await prisma.category.findMany({ include: { items: true } });
   return { props: serialize({ items, categories }) };
 };
 
@@ -70,7 +60,6 @@ export default function Index({ items, categories }: IndexProps) {
 
   const handleExitBrowseMode = () => {
     setBrowseMode(false);
-    // For kiosk mode, also set default dates so it goes directly to reservation
     if (isKioskMode) {
       const now = new Date();
       const oneWeekLater = new Date();
@@ -82,6 +71,13 @@ export default function Index({ items, categories }: IndexProps) {
     }
   };
 
+  const filteredItems = items.map((item) => ({
+    ...item,
+    announcements: item.announcements.filter(
+      (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
+    ),
+  }));
+
   return (
     <>
       <Head>
@@ -90,22 +86,16 @@ export default function Index({ items, categories }: IndexProps) {
       {dates.browseMode ? (
         <>
           <BrowseModeHeader onExitBrowseMode={handleExitBrowseMode} />
-
           <ItemBrowser
-            items={items.map((item) => ({
-              ...item,
-              announcements: item.announcements.filter(
-                (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
-              ),
-            }))}
+            items={filteredItems}
             categories={categories}
             showCustomItemLink={false}
-            renderItems={(filteredItems) => (
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }} gap={[4, 6, 8, 10]}>
-                {filteredItems.map((item) => (
+            renderItems={(items) => (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
+                {items.map((item) => (
                   <BrowseItemCard key={item.id} item={item} />
                 ))}
-              </SimpleGrid>
+              </div>
             )}
           />
         </>
@@ -116,16 +106,7 @@ export default function Index({ items, categories }: IndexProps) {
           ) : (
             <>
               <KioskDateSelector />
-              <ItemBrowser
-                items={items.map((item) => ({
-                  ...item,
-                  announcements: item.announcements.filter(
-                    (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
-                  ),
-                }))}
-                categories={categories}
-                showCustomItemLink={true}
-              />
+              <ItemBrowser items={filteredItems} categories={categories} showCustomItemLink />
             </>
           )}
         </>
@@ -134,16 +115,7 @@ export default function Index({ items, categories }: IndexProps) {
           {dates.datesSet ? (
             <>
               <DateSelector />
-              <ItemBrowser
-                items={items.map((item) => ({
-                  ...item,
-                  announcements: item.announcements.filter(
-                    (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
-                  ),
-                }))}
-                categories={categories}
-                showCustomItemLink={true}
-              />
+              <ItemBrowser items={filteredItems} categories={categories} showCustomItemLink />
             </>
           ) : (
             <DateSelector />

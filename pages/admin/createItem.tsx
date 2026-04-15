@@ -1,28 +1,19 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
-import {
-  FormControl,
-  FormLabel,
-  Input,
-  Image,
-  Button,
-  Heading,
-  NumberInputField,
-  NumberInput,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  NumberInputStepper,
-  Textarea,
-  useToast,
-} from '@chakra-ui/react';
 import { useRouter } from 'next/router';
-import { CreatableSelect } from 'chakra-react-select';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import type { NextPage } from 'next';
 import type { Category, Location } from '@prisma/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { NumberInput } from '@/components/ui/number-input';
+import { CreatableSelect } from '@/components/ui/creatable-select';
 
 interface SelectOption {
   value: string;
@@ -41,13 +32,11 @@ interface CategoryWithLabel extends Category {
 
 const CreateItem: NextPage = () => {
   const { data: session } = useSession();
-  const toast = useToast();
   const router = useRouter();
 
   const { data: locations, error: locationsError } = useSWR<LocationWithLabel[]>(
     '/api/location/getLocations',
   );
-
   const { data: categories, error: categoriesError } = useSWR<CategoryWithLabel[]>(
     '/api/category/getCategories',
   );
@@ -128,165 +117,124 @@ const CreateItem: NextPage = () => {
               name,
               description,
               amount,
-              categories: selectedCategories.map((c) => ({
-                id: c.value,
-                name: c.label,
-              })),
+              categories: selectedCategories.map((c) => ({ id: c.value, name: c.label })),
             }),
           });
         }
       }
 
-      toast({
-        title: 'Kama luotu',
-        description: `"${name}" luotu onnistuneesti`,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
+      toast.success('Kama luotu', { description: `"${name}" luotu onnistuneesti` });
       resetForm();
-      if (submitAction === 'redirect') {
-        router.push('/admin');
-      }
+      if (submitAction === 'redirect') router.push('/admin');
     } catch (error) {
       if (error instanceof Error) {
-        toast({
-          title: 'Error',
-          description: error.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        toast.error('Error', { description: error.message });
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (session?.user?.group !== 'ADMIN') {
-    return <NotAuthenticated />;
-  }
-
+  if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
   if (locationsError || categoriesError) return <div>failed to load</div>;
-
   if (!categories || !locations) return <div>loading...</div>;
 
-  const locationOptions = locations.map((location) => ({
-    ...location,
-    label: location.name,
-    value: location.id,
-  }));
-
-  const categoryOptions = categories.map((category) => ({
-    ...category,
-    label: category.name,
-    value: category.id,
-  }));
+  const locationOptions = locations.map((l) => ({ ...l, label: l.name, value: l.id }));
+  const categoryOptions = categories.map((c) => ({ ...c, label: c.name, value: c.id }));
 
   return (
     <>
       <Head>
         <title>Luo uusi kama | Klapi</title>
       </Head>
-      <Breadcrumbs
-        items={[
-          { label: 'Admin', href: '/admin' },
-          { label: 'Luo uusi kama' },
-        ]}
-      />
-      <Heading>Luo uusi kama</Heading>
+      <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Luo uusi kama' }]} />
+      <h1 className="mb-6 text-4xl font-semibold">Luo uusi kama</h1>
 
-      <form onSubmit={handleSubmit}>
-        <FormControl isRequired>
-          <FormLabel htmlFor="name">Nimi</FormLabel>
+      <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+        <div>
+          <Label htmlFor="name">
+            Nimi <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="name"
             placeholder="PJ-teltta"
             value={name}
+            required
             onChange={(e) => setName(e.target.value)}
           />
-        </FormControl>
+        </div>
 
-        <FormControl isRequired>
-          <FormLabel htmlFor="amount">Määrä</FormLabel>
-          <NumberInput
-            id="amount"
-            min={1}
-            value={amount}
-            onChange={(val) => setAmount(Number(val))}
-          >
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-        </FormControl>
+        <div>
+          <Label htmlFor="amount">
+            Määrä <span className="text-destructive">*</span>
+          </Label>
+          <NumberInput id="amount" min={1} value={amount} onChange={setAmount} />
+        </div>
 
-        <FormControl>
-          <FormLabel htmlFor="description">Kuvaus</FormLabel>
+        <div>
+          <Label htmlFor="description">Kuvaus</Label>
           <Textarea
             id="description"
             placeholder="Kamaa käytetään..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-        </FormControl>
+        </div>
 
-        <FormControl>
-          <FormLabel htmlFor="categories">Kategoriat</FormLabel>
+        <div>
+          <Label htmlFor="categories">Kategoriat</Label>
           <CreatableSelect
-            id="categories"
+            inputId="categories"
             isMulti
             options={categoryOptions}
             name="categories"
             placeholder="Retkikeittimet"
             value={selectedCategories}
-            onChange={(option) => setSelectedCategories([...option])}
+            onChange={(option) => setSelectedCategories([...(option as SelectOption[])])}
             isClearable
             backspaceRemovesValue
           />
-        </FormControl>
+        </div>
 
-        <FormControl isRequired>
-          <FormLabel htmlFor="locationId">Sijainti</FormLabel>
+        <div>
+          <Label htmlFor="locationId">
+            Sijainti <span className="text-destructive">*</span>
+          </Label>
           <CreatableSelect
             options={locationOptions}
-            id="locationId"
+            inputId="locationId"
             name="locationId"
             placeholder="Kolon vessa"
             value={selectedLocation}
-            onChange={(option) => setSelectedLocation(option)}
+            onChange={(option) => setSelectedLocation(option as SelectOption | null)}
             isClearable
           />
-        </FormControl>
+        </div>
 
-        <FormControl marginTop={4}>
-          <FormLabel>Kuva</FormLabel>
-          <Input type="file" accept="image/*" onChange={handleImageChange} />
-          {previewUrl ? <Image src={previewUrl} alt="Preview" mt={2} maxW="300px" /> : null}
-        </FormControl>
+        <div className="mt-4">
+          <Label htmlFor="image">Kuva</Label>
+          <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
+          {previewUrl && <img src={previewUrl} alt="Preview" className="mt-2 max-w-[300px]" />}
+        </div>
 
-        <Button
-          mt={4}
-          colorScheme="teal"
-          isLoading={isSubmitting && submitAction === 'redirect'}
-          type="submit"
-          onClick={() => setSubmitAction('redirect')}
-        >
-          Luo kama
-        </Button>
-        <Button
-          mt={4}
-          ml={2}
-          colorScheme="blue"
-          variant="outline"
-          isLoading={isSubmitting && submitAction === 'createAnother'}
-          type="submit"
-          onClick={() => setSubmitAction('createAnother')}
-        >
-          Luo ja lisää toinen
-        </Button>
+        <div className="mt-4 flex gap-2">
+          <Button
+            variant="success"
+            type="submit"
+            isLoading={isSubmitting && submitAction === 'redirect'}
+            onClick={() => setSubmitAction('redirect')}
+          >
+            Luo kama
+          </Button>
+          <Button
+            variant="outline"
+            type="submit"
+            isLoading={isSubmitting && submitAction === 'createAnother'}
+            onClick={() => setSubmitAction('createAnother')}
+          >
+            Luo ja lisää toinen
+          </Button>
+        </div>
       </form>
     </>
   );

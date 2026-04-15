@@ -1,10 +1,9 @@
 import React from 'react';
-
-import { Table, Thead, Tbody, Tr, Th, Td, TableContainer, Link, Tag } from '@chakra-ui/react';
-
 import NextLink from 'next/link';
 import { ReservationStatus } from '@prisma/client';
 import { getReservationStatusLabel, getReservationStatusColor } from '../utils/loanHelpers';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 interface Reservation {
   id: string;
@@ -23,35 +22,31 @@ interface Loan {
 
 export default function ReservationTableLoanView({ loan }: { loan: Loan }) {
   return (
-    <TableContainer>
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>Tuote</Th>
-            <Th>Määrä</Th>
-            <Th>Tila</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {loan.reservations.map((reservation) => {
-            return (
-              <Tr key={reservation.id}>
-                <Td>
-                  <Link as={NextLink} href={`/item/${reservation.itemId}`}>
-                    {reservation.item.name}
-                  </Link>
-                </Td>
-                <Td>{reservation.amount}</Td>
-                <Td>
-                  <Tag colorScheme={getReservationStatusColor(reservation.status)} size="sm">
-                    {getReservationStatusLabel(reservation.status)}
-                  </Tag>
-                </Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </TableContainer>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Tuote</TableHead>
+          <TableHead>Määrä</TableHead>
+          <TableHead>Tila</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loan.reservations.map((reservation) => (
+          <TableRow key={reservation.id}>
+            <TableCell>
+              <NextLink href={`/item/${reservation.itemId}`} className="text-primary hover:underline">
+                {reservation.item.name}
+              </NextLink>
+            </TableCell>
+            <TableCell>{reservation.amount}</TableCell>
+            <TableCell>
+              <Badge variant={getReservationStatusColor(reservation.status)}>
+                {getReservationStatusLabel(reservation.status)}
+              </Badge>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

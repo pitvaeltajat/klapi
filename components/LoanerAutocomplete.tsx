@@ -1,16 +1,7 @@
-import {
-  Box,
-  Input,
-  InputGroup,
-  InputRightElement,
-  List,
-  ListItem,
-  Text,
-  useOutsideClick,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -29,6 +20,12 @@ interface LoanerAutocompleteProps {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
+const sizeClasses = {
+  sm: 'h-9 text-sm',
+  md: 'h-10 text-sm',
+  lg: 'h-12 text-base',
+};
+
 export default function LoanerAutocomplete({
   value,
   onChange,
@@ -42,21 +39,19 @@ export default function LoanerAutocomplete({
   const [users, setUsers] = useState<User[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const inputBg = useColorModeValue('white', 'gray.700');
-  const selectedBg = useColorModeValue('green.50', 'green.900');
-  const dropdownBg = useColorModeValue('white', 'gray.700');
-  const hoverBg = useColorModeValue('blue.50', 'blue.900');
-  const selectedTextColor = useColorModeValue('green.600', 'green.300');
-
-  useOutsideClick({
-    ref: dropdownRef,
-    handler: () => setShowDropdown(false),
-  });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Fetch users on component mount
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
     fetch('/api/users/getUsers')
       .then((res) => res.json())
       .then((data) => setUsers(data))
@@ -74,7 +69,7 @@ export default function LoanerAutocomplete({
   };
 
   const handleInputChange = (newValue: string) => {
-    setSelectedUserId(undefined); // Clear selection when typing freeform
+    setSelectedUserId(undefined);
     setShowDropdown(true);
     onChange(newValue, undefined);
   };
@@ -87,8 +82,8 @@ export default function LoanerAutocomplete({
   };
 
   return (
-    <Box position="relative" ref={dropdownRef}>
-      <InputGroup size={size}>
+    <div className="relative" ref={containerRef}>
+      <div className="relative">
         <Input
           placeholder={placeholder}
           value={value}
@@ -98,60 +93,46 @@ export default function LoanerAutocomplete({
             handleKeyDown(e);
             onKeyDown?.(e);
           }}
-          bg={selectedUserId ? selectedBg : inputBg}
-          borderColor={selectedUserId ? 'green.300' : undefined}
-          isRequired={isRequired}
+          required={isRequired}
           autoFocus={autoFocus}
+          className={cn(
+            sizeClasses[size],
+            'pr-9',
+            selectedUserId && 'border-success bg-success/10',
+          )}
         />
-        <InputRightElement>
-          <FaChevronDown color="gray.500" />
-        </InputRightElement>
-      </InputGroup>
+        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <FaChevronDown />
+        </div>
+      </div>
 
       {showDropdown && filteredUsers.length > 0 && (
-        <List
-          position="absolute"
-          top="100%"
-          left={0}
-          right={0}
-          mt={1}
-          bg={dropdownBg}
-          borderWidth="1px"
-          borderRadius="md"
-          boxShadow="lg"
-          maxH="300px"
-          overflowY="auto"
-          zIndex={10}
-        >
+        <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-[300px] overflow-y-auto rounded-md border bg-popover shadow-lg">
           {filteredUsers.map((user) => (
-            <ListItem
+            <li
               key={user.id}
-              px={4}
-              py={3}
-              cursor="pointer"
-              _hover={{ bg: hoverBg }}
+              className="cursor-pointer border-b px-4 py-3 last:border-b-0 hover:bg-accent"
               onClick={() => handleUserSelect(user)}
-              borderBottomWidth="1px"
-              _last={{ borderBottom: 'none' }}
             >
-              <Text fontWeight="medium">{user.email}</Text>
-              {user.name && (
-                <Text fontSize="sm" color="gray.600">
-                  {user.name}
-                </Text>
-              )}
-            </ListItem>
+              <div className="font-medium">{user.email}</div>
+              {user.name && <div className="text-sm text-muted-foreground">{user.name}</div>}
+            </li>
           ))}
-        </List>
+        </ul>
       )}
 
       {showValidationFeedback && (
-        <Text fontSize="sm" mt={1} color={selectedUserId ? selectedTextColor : 'gray.600'}>
+        <p
+          className={cn(
+            'mt-1 text-sm',
+            selectedUserId ? 'text-success' : 'text-muted-foreground',
+          )}
+        >
           {selectedUserId
             ? '✓ Käyttäjä valittu. Varaus yhdistetään tähän tiliin.'
             : 'Valitse sähköposti listalta tai kirjoita vapaamuotoinen nimi.'}
-        </Text>
+        </p>
       )}
-    </Box>
+    </div>
   );
 }

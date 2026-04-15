@@ -1,28 +1,10 @@
 import React from 'react';
-import {
-  Box,
-  Button,
-  Heading,
-  Stack,
-  Text,
-  Divider,
-  RadioGroup,
-  Radio,
-  Wrap,
-  WrapItem,
-  Textarea,
-  CheckboxGroup,
-  Checkbox,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Spacer,
-  Tag,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import { Loan, Reservation } from '@prisma/client';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface Report {
   id: string;
@@ -66,17 +48,13 @@ const ReportCard: React.FC<ReportCardProps> = ({
   onSetResolved,
   onSendAnnouncement,
 }) => {
-  // Filter out resolved reports for count
   const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const reportBg = useColorModeValue('gray.50', 'gray.700');
-  const subtleText = useColorModeValue('gray.600', 'gray.400');
   return (
-    <Box bg={cardBg} p={6} borderRadius="lg" borderWidth="1px">
-      <Heading as="h2" size="lg" mb={4}>
+    <div className="rounded-lg border bg-card p-6">
+      <h2 className="mb-4 text-2xl font-semibold">
         Raportit {unresolvedReports.length > 0 ? `(${unresolvedReports.length})` : ''}
-      </Heading>
-      <Stack spacing={4}>
+      </h2>
+      <div className="flex flex-col gap-4">
         {reports.map((report) => {
           const expanded = expandedReportId === report.id;
           const inProgress = report.status === 'IN_PROGRESS';
@@ -86,81 +64,69 @@ const ReportCard: React.FC<ReportCardProps> = ({
             setAffectedItems({});
           };
           return (
-            <Box
+            <div
               key={report.id}
-              p={expanded ? 6 : 4}
-              borderWidth="1px"
-              borderRadius="md"
-              bg={reportBg}
-              boxShadow={expanded ? 'lg' : undefined}
+              className={cn(
+                'rounded-md border bg-muted',
+                expanded ? 'p-6 shadow-lg' : 'p-4',
+              )}
             >
-              <Text whiteSpace="pre-wrap" fontSize={expanded ? 'md' : 'sm'}>
+              <p className={cn('whitespace-pre-wrap', expanded ? 'text-base' : 'text-sm')}>
                 {expanded
                   ? report.content
                   : report.content.length < 100
                     ? report.content
                     : report.content.substring(0, 100) + '...'}
-              </Text>
-              <Text fontSize="sm" color={subtleText} mt={2}>
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Luotu:{' '}
                 {new Date(report.createdAt).toLocaleString('fi-FI', {
                   dateStyle: 'full',
                   timeStyle: 'short',
                 })}
-              </Text>
+              </p>
               {isResolved ? (
-                <Tag mt={2} colorScheme="green" size="sm">
+                <Badge variant="success" className="mt-2">
                   Ratkaistu
-                </Tag>
+                </Badge>
               ) : !expanded ? (
                 <Button
-                  mt={2}
                   size="sm"
+                  className="mt-2"
                   onClick={() => !isResolved && setExpandedReportId(report.id)}
                 >
                   Käsittele raportti
                 </Button>
               ) : (
-                <Box>
-                  <Box
-                    mt={4}
-                    mb={2}
-                    fontWeight="semibold"
-                    fontSize="lg"
-                    borderWidth="1px"
-                    p={4}
-                    borderRadius="md"
-                    bg={cardBg}
-                  >
-                    <Text mb={2}>Lisää ilmoitus kamalle:</Text>
-                    <RadioGroup defaultValue="none">
-                      <Wrap direction="row">
-                        {loan.reservations.map((reservation: ReservationWithItem) => (
-                          <WrapItem key={reservation.item.id}>
-                            <Box>
-                              <Radio
-                                value={reservation.item.id}
-                                isDisabled={inProgress}
-                                onChange={() =>
-                                  setAnnouncement({
-                                    itemId: reservation.item.id,
-                                    content: announcement.content,
-                                  })
-                                }
-                              >
-                                {reservation.item.name}
-                              </Radio>
-                            </Box>
-                          </WrapItem>
-                        ))}
-                      </Wrap>
-                    </RadioGroup>
+                <div>
+                  <div className="mb-2 mt-4 rounded-md border bg-card p-4 text-lg font-semibold">
+                    <p className="mb-2">Lisää ilmoitus kamalle:</p>
+                    <div role="radiogroup" className="flex flex-wrap gap-3">
+                      {loan.reservations.map((reservation: ReservationWithItem) => (
+                        <label key={reservation.item.id} className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="announcement-item"
+                            value={reservation.item.id}
+                            disabled={inProgress}
+                            checked={announcement.itemId === reservation.item.id}
+                            onChange={() =>
+                              setAnnouncement({
+                                itemId: reservation.item.id,
+                                content: announcement.content,
+                              })
+                            }
+                          />
+                          {reservation.item.name}
+                        </label>
+                      ))}
+                    </div>
                     <Textarea
-                      mt={2}
+                      className="mt-2"
                       placeholder="Kirjoita ilmoitus"
                       rows={3}
                       value={announcement.content}
-                      isDisabled={inProgress}
+                      disabled={inProgress}
                       onChange={(e) =>
                         setAnnouncement({
                           itemId: announcement.itemId,
@@ -169,152 +135,125 @@ const ReportCard: React.FC<ReportCardProps> = ({
                       }
                     />
                     <Button
-                      mt={2}
-                      colorScheme="blue"
                       size="sm"
+                      className="mt-2"
                       onClick={() => {
                         if (announcement.itemId && announcement.content) {
                           onSendAnnouncement(announcement.itemId, announcement.content);
                           resetSelections();
                         }
                       }}
-                      isDisabled={!announcement.itemId || !announcement.content || inProgress}
+                      disabled={!announcement.itemId || !announcement.content || inProgress}
                     >
                       Lähetä ilmoitus
                     </Button>
-                  </Box>
+                  </div>
                   {!inProgress && (
-                    <Box
-                      mt={4}
-                      mb={2}
-                      fontWeight="semibold"
-                      fontSize="lg"
-                      borderWidth="1px"
-                      p={4}
-                      borderRadius="md"
-                      bg={cardBg}
-                    >
-                      <Text mb={2}>Poista kama valikoimista käsittelyn ajaksi:</Text>
-                      <CheckboxGroup>
-                        <Stack spacing={2} direction="column">
-                          {loan.reservations.map((reservation: ReservationWithItem) => (
-                            <React.Fragment key={reservation.item.id}>
-                              <Divider />
-                              <Wrap>
-                                <WrapItem>
-                                  <Checkbox
-                                    value={reservation.item.id}
-                                    isChecked={
-                                      reservation.item.id in affectedItems &&
-                                      affectedItems[reservation.item.id] > 0
-                                    }
-                                    isDisabled={inProgress || isResolved}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                      if (e.target.checked) {
-                                        setAffectedItems({
-                                          ...affectedItems,
-                                          [reservation.item.id]: reservation.amount,
-                                        });
-                                      } else {
-                                        setAffectedItems({
-                                          ...affectedItems,
-                                          [reservation.item.id]: 0,
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    {reservation.item.name}
-                                    {affectedItems[reservation.item.id] > 0 &&
-                                      ` - ${affectedItems[reservation.item.id]} kpl`}
-                                  </Checkbox>
-                                </WrapItem>
-                                <Spacer />
-                                <WrapItem>
-                                  <NumberInput
-                                    min={1}
-                                    max={reservation.item.amount}
-                                    value={affectedItems[reservation.item.id] || 0}
-                                    size="sm"
-                                    width="60px"
-                                    borderRadius={'md'}
-                                    isDisabled={
-                                      inProgress ||
-                                      isResolved ||
-                                      !(reservation.item.id in affectedItems) ||
-                                      affectedItems[reservation.item.id] === 0
-                                    }
-                                    onChange={(_valueString: string, valueNumber: number) => {
+                    <div className="mb-2 mt-4 rounded-md border bg-card p-4 text-lg font-semibold">
+                      <p className="mb-2">Poista kama valikoimista käsittelyn ajaksi:</p>
+                      <div className="flex flex-col gap-2">
+                        {loan.reservations.map((reservation: ReservationWithItem) => (
+                          <React.Fragment key={reservation.item.id}>
+                            <hr />
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  value={reservation.item.id}
+                                  checked={
+                                    reservation.item.id in affectedItems &&
+                                    affectedItems[reservation.item.id] > 0
+                                  }
+                                  disabled={inProgress || isResolved}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
                                       setAffectedItems({
                                         ...affectedItems,
-                                        [reservation.item.id]: valueNumber,
+                                        [reservation.item.id]: reservation.amount,
                                       });
-                                    }}
-                                  >
-                                    <NumberInputField />
-                                    <NumberInputStepper>
-                                      <NumberIncrementStepper />
-                                      <NumberDecrementStepper />
-                                    </NumberInputStepper>
-                                  </NumberInput>
-                                  <Text ml={2}>kpl</Text>
-                                </WrapItem>
-                              </Wrap>
-                            </React.Fragment>
-                          ))}
-                        </Stack>
-                      </CheckboxGroup>
-                    </Box>
+                                    } else {
+                                      setAffectedItems({
+                                        ...affectedItems,
+                                        [reservation.item.id]: 0,
+                                      });
+                                    }
+                                  }}
+                                />
+                                {reservation.item.name}
+                                {affectedItems[reservation.item.id] > 0 &&
+                                  ` - ${affectedItems[reservation.item.id]} kpl`}
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={reservation.item.amount}
+                                  value={affectedItems[reservation.item.id] || 0}
+                                  className="h-9 w-20"
+                                  disabled={
+                                    inProgress ||
+                                    isResolved ||
+                                    !(reservation.item.id in affectedItems) ||
+                                    affectedItems[reservation.item.id] === 0
+                                  }
+                                  onChange={(e) => {
+                                    setAffectedItems({
+                                      ...affectedItems,
+                                      [reservation.item.id]: Number(e.target.value) || 0,
+                                    });
+                                  }}
+                                />
+                                <span>kpl</span>
+                              </div>
+                            </div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <Wrap direction="row" spacing={2} mt={4}>
-                    <WrapItem>
-                      <Button
-                        colorScheme="orange"
-                        size="sm"
-                        isDisabled={inProgress}
-                        onClick={() => {
-                          onSetProcessing(report.id, affectedItems);
-                          resetSelections();
-                        }}
-                      >
-                        Ota käsittelyyn
-                      </Button>
-                    </WrapItem>
-                    <WrapItem>
-                      <Button
-                        colorScheme="green"
-                        size="sm"
-                        isDisabled={
-                          Object.values(affectedItems).filter((v) => v > 0).length !== 0 ||
-                          isResolved
-                        }
-                        onClick={() => {
-                          onSetResolved(report.id, affectedItems);
-                          resetSelections();
-                        }}
-                      >
-                        Aseta käsitellyksi
-                      </Button>
-                    </WrapItem>
-                    <WrapItem>
-                      <Button
-                        colorScheme="gray"
-                        size="sm"
-                        onClick={() => {
-                          setExpandedReportId(null);
-                          resetSelections();
-                        }}
-                      >
-                        Käsittele myöhemmin
-                      </Button>
-                    </WrapItem>
-                  </Wrap>
-                </Box>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      disabled={inProgress}
+                      onClick={() => {
+                        onSetProcessing(report.id, affectedItems);
+                        resetSelections();
+                      }}
+                    >
+                      Ota käsittelyyn
+                    </Button>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      disabled={
+                        Object.values(affectedItems).filter((v) => v > 0).length !== 0 || isResolved
+                      }
+                      onClick={() => {
+                        onSetResolved(report.id, affectedItems);
+                        resetSelections();
+                      }}
+                    >
+                      Aseta käsitellyksi
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setExpandedReportId(null);
+                        resetSelections();
+                      }}
+                    >
+                      Käsittele myöhemmin
+                    </Button>
+                  </div>
+                </div>
               )}
-            </Box>
+            </div>
           );
         })}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 };
 

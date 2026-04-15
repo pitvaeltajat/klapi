@@ -1,20 +1,7 @@
 import React from 'react';
 import Head from 'next/head';
-import prisma from '../../utils/prisma';
-import {
-  Heading,
-  SimpleGrid,
-  Box,
-  Stack,
-  Text,
-  Link,
-  Badge,
-  VStack,
-  HStack,
-  Divider,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import NextLink from 'next/link';
+import prisma from '../../utils/prisma';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '../../components/NotAuthenticated';
 import Breadcrumbs from '../../components/Breadcrumbs';
@@ -22,11 +9,10 @@ import { Box as BoxType, Item, Reservation, Loan, ReservationStatus } from '@pri
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '../../utils/loanHelpers';
 import { GetServerSideProps } from 'next';
 import { serialize } from '@/utils/serialize';
+import { Badge } from '@/components/ui/badge';
 
 interface LoanWithReservations extends Loan {
-  reservations: (Reservation & {
-    item: Item;
-  })[];
+  reservations: (Reservation & { item: Item })[];
 }
 
 interface BoxWithLoans extends BoxType {
@@ -42,189 +28,110 @@ export const getServerSideProps: GetServerSideProps<BoxesPageProps> = async () =
   const boxes = await prisma.box.findMany({
     include: {
       loans: {
-        include: {
-          reservations: {
-            include: {
-              item: true,
-            },
-          },
-        },
-        where: {
-          // Get loans that have at least one IN_BOX reservation
-          reservations: {
-            some: {
-              status: ReservationStatus.IN_BOX,
-            },
-          },
-        },
+        include: { reservations: { include: { item: true } } },
+        where: { reservations: { some: { status: ReservationStatus.IN_BOX } } },
       },
     },
-    orderBy: {
-      name: 'asc',
-    },
+    orderBy: { name: 'asc' },
   });
 
   const reports = await prisma.report.findMany();
-
-  return {
-    props: serialize({
-      boxes,
-      reports,
-    }),
-  };
+  return { props: serialize({ boxes, reports }) };
 };
 
 export default function BoxesPage({ boxes, reports }: BoxesPageProps) {
   const { data: session } = useSession();
-  const emptyBg = useColorModeValue('gray.50', 'gray.700');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const loanItemBg = useColorModeValue('gray.50', 'gray.700');
-  const loanItemHoverBg = useColorModeValue('gray.100', 'gray.600');
 
-  if (session?.user?.group !== 'ADMIN') {
-    return <NotAuthenticated />;
-  }
+  if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
 
-  // Helper to get derived status for a loan
-  const getDerivedStatus = (loan: LoanWithReservations) => {
-    return deriveLoanStatus(loan.reservations, loan.status);
-  };
+  const getDerivedStatus = (loan: LoanWithReservations) =>
+    deriveLoanStatus(loan.reservations, loan.status);
 
-  // Only count unresolved reports
-  const hasReports = (loanId: string) => {
-    return reports.some((report) => report.loanId === loanId && report.status !== 'RESOLVED');
-  };
+  const hasReports = (loanId: string) =>
+    reports.some((report) => report.loanId === loanId && report.status !== 'RESOLVED');
 
   return (
     <>
       <Head>
         <title>Laatikot | Klapi</title>
       </Head>
-      <Breadcrumbs
-        items={[
-          { label: 'Admin', href: '/admin' },
-          { label: 'Laatikot' },
-        ]}
-      />
-      <Heading as="h1" size="xl" mb={6}>
-        Laatikot
-      </Heading>
+      <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Laatikot' }]} />
+      <h1 className="mb-6 text-4xl font-semibold">Laatikot</h1>
 
       {boxes.length === 0 ? (
-        <Box bg={emptyBg} p={8} borderRadius="lg" textAlign="center" borderWidth="1px">
-          <Text fontSize="lg" color="gray.600">
-            Ei laatikkoja
-          </Text>
-        </Box>
+        <div className="rounded-lg border bg-muted p-8 text-center">
+          <p className="text-lg text-muted-foreground">Ei laatikkoja</p>
+        </div>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-          {boxes.map((box) => {
-            return (
-              <Box
-                key={box.id}
-                bg={cardBg}
-                borderWidth="2px"
-                borderRadius="xl"
-                p={6}
-                shadow="md"
-                _hover={{
-                  shadow: 'lg',
-                  transform: 'translateY(-2px)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <VStack align="stretch" spacing={4}>
-                  <Box>
-                    <Heading as="h2" size="md" mb={2}>
-                      {box.name}
-                    </Heading>
-                    {box.description && (
-                      <Text fontSize="sm" color="gray.600">
-                        {box.description}
-                      </Text>
-                    )}
-                  </Box>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {boxes.map((box) => (
+            <div
+              key={box.id}
+              className="rounded-xl border-2 bg-card p-6 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h2 className="mb-2 text-lg font-semibold">{box.name}</h2>
+                  {box.description && (
+                    <p className="text-sm text-muted-foreground">{box.description}</p>
+                  )}
+                </div>
 
-                  <Divider />
+                <hr />
 
-                  <Box>
-                    <HStack justify="space-between" mb={3}>
-                      <Text fontWeight="semibold" fontSize="sm" color="gray.700">
-                        Varaukset
-                      </Text>
-                      <Badge colorScheme="blue">{box.loans.length}</Badge>
-                    </HStack>
+                <div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-semibold">Varaukset</p>
+                    <Badge>{box.loans.length}</Badge>
+                  </div>
 
-                    {box.loans.length === 0 ? (
-                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                        Ei varauksia
-                      </Text>
-                    ) : (
-                      <Stack spacing={3}>
-                        {box.loans.map((loan) => (
-                          <Link
-                            key={loan.id}
-                            as={NextLink}
-                            href={`/loan/${loan.id}`}
-                            _hover={{ textDecoration: 'none' }}
-                          >
-                            <Box
-                              bg={loanItemBg}
-                              p={3}
-                              borderRadius="md"
-                              borderWidth="1px"
-                              _hover={{
-                                bg: loanItemHoverBg,
-                                borderColor: 'blue.300',
-                                shadow: 'sm',
-                              }}
-                              transition="all 0.2s"
-                            >
-                              <VStack align="stretch" spacing={2}>
-                                <HStack justify="space-between">
-                                  <Text fontWeight="medium" fontSize="sm">
-                                    {loan.description || 'Ei kuvausta'}
-                                  </Text>
-                                  <Badge
-                                    colorScheme={getLoanStatusColor(getDerivedStatus(loan))}
-                                    fontSize="xs"
-                                  >
-                                    {getLoanStatusLabel(getDerivedStatus(loan))}
-                                  </Badge>
-                                </HStack>
-                                {hasReports(loan.id) && (
-                                  <Badge colorScheme="red" fontSize="xs" alignSelf="flex-end">
-                                    Raportteja:{' '}
-                                    {
-                                      reports.filter(
-                                        (report) =>
-                                          report.loanId === loan.id && report.status !== 'RESOLVED',
-                                      ).length
-                                    }
-                                  </Badge>
-                                )}
-                                <Text fontSize="xs" color="gray.600">
-                                  {loan.reservations
-                                    .filter((r) => r.status === ReservationStatus.IN_BOX)
-                                    .map((r) => `${r.item.name} (${r.amount})`)
-                                    .join(', ')}
-                                </Text>
-                                <Text fontSize="xs" color="gray.500">
-                                  {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
-                                  {new Date(loan.endTime).toLocaleDateString('fi-FI')}
-                                </Text>
-                              </VStack>
-                            </Box>
-                          </Link>
-                        ))}
-                      </Stack>
-                    )}
-                  </Box>
-                </VStack>
-              </Box>
-            );
-          })}
-        </SimpleGrid>
+                  {box.loans.length === 0 ? (
+                    <p className="text-sm italic text-muted-foreground">Ei varauksia</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {box.loans.map((loan) => (
+                        <NextLink key={loan.id} href={`/loan/${loan.id}`}>
+                          <div className="rounded-md border bg-muted p-3 transition-all hover:border-primary/50 hover:bg-muted/80">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-medium">
+                                  {loan.description || 'Ei kuvausta'}
+                                </p>
+                                <Badge variant={getLoanStatusColor(getDerivedStatus(loan))}>
+                                  {getLoanStatusLabel(getDerivedStatus(loan))}
+                                </Badge>
+                              </div>
+                              {hasReports(loan.id) && (
+                                <Badge variant="destructive" className="self-end">
+                                  Raportteja:{' '}
+                                  {
+                                    reports.filter(
+                                      (r) => r.loanId === loan.id && r.status !== 'RESOLVED',
+                                    ).length
+                                  }
+                                </Badge>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {loan.reservations
+                                  .filter((r) => r.status === ReservationStatus.IN_BOX)
+                                  .map((r) => `${r.item.name} (${r.amount})`)
+                                  .join(', ')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
+                                {new Date(loan.endTime).toLocaleDateString('fi-FI')}
+                              </p>
+                            </div>
+                          </div>
+                        </NextLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </>
   );

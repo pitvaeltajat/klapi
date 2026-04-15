@@ -1,11 +1,8 @@
-import React from 'react';
-import { SimpleGrid } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
 import ItemCard from '../components/ItemCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useDates } from '@/contexts/DatesContext';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
-import { useState } from 'react';
-import { useEffect } from 'react';
 import { Item, Category, Announcement } from '@prisma/client';
 
 interface ItemWithCategories extends Item {
@@ -37,16 +34,10 @@ export default function AllItems({ items }: AllItemsProps) {
 
   useEffect(() => {
     setLoading(true);
-
     fetch('/api/availability/getAvailabilities', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        StartDate: startDate,
-        EndDate: endDate,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ StartDate: startDate, EndDate: endDate }),
     })
       .then((response) => response.json())
       .then((data: AvailabilityResponse) => {
@@ -62,33 +53,26 @@ export default function AllItems({ items }: AllItemsProps) {
   const availabilities = data?.availabilities;
 
   if (loading) {
-    if (!showLoading) {
-      return null;
-    }
+    if (!showLoading) return null;
     return <LoadingSpinner minHeight="30vh" />;
   }
 
   return (
-    <>
-      <SimpleGrid columns={[1, 2, 2, 3, 4]} spacing={[4, 6, 8, 10]}>
-        {items.map((item) => (
-          <ItemCard
-            key={item.id}
-            item={{
-              id: item.id,
-              name: item.name,
-              description: item.description || undefined,
-              amount: item.amount,
-              categories: item.categories.map((cat) => ({
-                id: cat.id,
-                name: cat.name,
-              })),
-              announcements: item.announcements || null,
-            }}
-            availableAmount={availabilities?.[item.id]?.available ?? 0}
-          />
-        ))}
-      </SimpleGrid>
-    </>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
+      {items.map((item) => (
+        <ItemCard
+          key={item.id}
+          item={{
+            id: item.id,
+            name: item.name,
+            description: item.description || undefined,
+            amount: item.amount,
+            categories: item.categories.map((cat) => ({ id: cat.id, name: cat.name })),
+            announcements: item.announcements || null,
+          }}
+          availableAmount={availabilities?.[item.id]?.available ?? 0}
+        />
+      ))}
+    </div>
   );
 }

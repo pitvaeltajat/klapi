@@ -1,25 +1,11 @@
-import React from 'react';
-import {
-  Box,
-  Heading,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Button,
-  Wrap,
-  WrapItem,
-  Text,
-  Link,
-  useDisclosure,
-  Flex,
-  Icon,
-  Select,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import React, { useState } from 'react';
 import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import AllItems from '../pages/productlist';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -40,87 +26,76 @@ export default function ItemBrowser({
   showCustomItemLink = false,
   renderItems,
 }: ItemBrowserProps) {
-  const [search, setSearch] = React.useState('');
-  const [category, setCategory] = React.useState('');
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const infoBg = useColorModeValue('blue.50', 'blue.900');
-  const infoBorderColor = useColorModeValue('blue.400', 'blue.500');
-  const infoIconColor = useColorModeValue('blue.500', 'blue.300');
-  const linkColor = useColorModeValue('blue.600', 'blue.300');
-  const linkHoverColor = useColorModeValue('blue.700', 'blue.200');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
 
   const filteredItems = items
+    .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     .filter((item) => {
-      return item.name.toLowerCase().includes(search.toLowerCase());
-    })
-    .filter((item) => {
-      if (category === '') {
-        return true;
-      } else {
-        return item.categories.some((cat) => cat.name === category);
-      }
+      if (category === '') return true;
+      return item.categories.some((cat) => cat.name === category);
     });
 
   return (
     <>
-      <Box padding="4px">
-        <InputGroup width={'fit-content'}>
+      <div className="p-1">
+        <div className="relative mb-4 w-fit">
           <Input
             placeholder="Hae kamoja"
-            marginBottom={'1em'}
             value={search}
             onChange={handleChange}
+            className="pr-9"
           />
-          <InputRightElement>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             {search ? (
-              <FaTimes cursor="pointer" onClick={() => setSearch('')} aria-label="Tyhjennä haku" />
+              <FaTimes
+                role="button"
+                className="cursor-pointer"
+                onClick={() => setSearch('')}
+                aria-label="Tyhjennä haku"
+              />
             ) : (
               <FaSearch />
             )}
-          </InputRightElement>
-        </InputGroup>
-      </Box>
-      <Box padding="2em" paddingLeft={0} display={{ base: 'none', md: 'block' }}>
-        <Wrap padding="4px">
-          <WrapItem key="all">
-            <Button
-              onClick={() => setCategory('')}
-              variant={category === '' ? 'solid' : 'outline'}
-              colorScheme={category === '' ? 'blue' : 'gray'}
-            >
-              Kaikki
-            </Button>
-          </WrapItem>
-
+          </div>
+        </div>
+      </div>
+      <div className="hidden py-8 pl-0 md:block">
+        <div className="flex flex-wrap gap-2 p-1">
+          <Button
+            key="all"
+            onClick={() => setCategory('')}
+            variant={category === '' ? 'default' : 'outline'}
+          >
+            Kaikki
+          </Button>
           {[...categories]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((cat) => (
-              <WrapItem key={cat.id}>
-                <Button
-                  onClick={() => setCategory(category === cat.name ? '' : cat.name)}
-                  variant={category === cat.name ? 'solid' : 'outline'}
-                  colorScheme={category === cat.name ? 'blue' : 'gray'}
-                >
-                  {cat.name}
-                </Button>
-              </WrapItem>
+              <Button
+                key={cat.id}
+                onClick={() => setCategory(category === cat.name ? '' : cat.name)}
+                variant={category === cat.name ? 'default' : 'outline'}
+              >
+                {cat.name}
+              </Button>
             ))}
-        </Wrap>
-      </Box>
-      <Box padding="2em" paddingLeft={0} display={{ base: 'block', md: 'none' }}>
-        <Select
-          width="100%"
+        </div>
+      </div>
+      <div className="py-8 pl-0 md:hidden">
+        <select
+          className={cn(
+            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          )}
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          borderRadius="6px"
-          borderColor="gray.300"
-          placeholder="Kaikki"
         >
+          <option value="">Kaikki</option>
           {[...categories]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((cat) => (
@@ -128,35 +103,24 @@ export default function ItemBrowser({
                 {cat.name}
               </option>
             ))}
-        </Select>
-      </Box>
+        </select>
+      </div>
       {showCustomItemLink && (
         <>
-          <Flex
-            alignItems="center"
-            gap={3}
-            padding="1em"
-            marginBottom="1em"
-            bg={infoBg}
-            borderRadius="md"
-            borderLeft="4px solid"
-            borderColor={infoBorderColor}
-          >
-            <Icon as={FaInfoCircle} color={infoIconColor} boxSize={5} />
-            <Text fontSize="sm">
+          <div className="mb-4 flex items-center gap-3 rounded-md border-l-4 border-primary bg-primary/10 p-4">
+            <FaInfoCircle className="h-5 w-5 text-primary" />
+            <p className="text-sm">
               Jos haluamaasi kamaa ei löydy,{' '}
-              <Link
-                color={linkColor}
-                fontWeight="semibold"
-                onClick={onOpen}
-                textDecoration="underline"
-                _hover={{ color: linkHoverColor }}
+              <button
+                type="button"
+                className="font-semibold text-primary underline hover:text-primary/80"
+                onClick={() => setDialogOpen(true)}
               >
                 klikkaa tästä
-              </Link>
-            </Text>
-          </Flex>
-          <CustomItemDialog isOpen={isOpen} onClose={onClose} />
+              </button>
+            </p>
+          </div>
+          <CustomItemDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
         </>
       )}
       {filteredItems.length > 0 ? (
@@ -166,9 +130,7 @@ export default function ItemBrowser({
           <AllItems items={filteredItems} categories={categories} />
         )
       ) : (
-        <Heading textAlign="center" marginTop="1em">
-          Ei hakutuloksia :(
-        </Heading>
+        <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
       )}
     </>
   );

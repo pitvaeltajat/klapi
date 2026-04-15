@@ -1,7 +1,7 @@
 import React from 'react';
-import { IconButton } from '@chakra-ui/react';
 import { FaShoppingCart } from 'react-icons/fa';
 import { useDates } from '@/contexts/DatesContext';
+import { Button } from '@/components/ui/button';
 
 interface CartButtonProps {
   onOpen: () => void;
@@ -13,12 +13,13 @@ export default function CartButton({ onOpen, onClose, isOpen }: CartButtonProps)
   const { state: dates } = useDates();
 
   return (
-    <IconButton
+    <Button
       aria-label="open cart"
-      icon={<FaShoppingCart />}
-      colorScheme="blue"
+      size="icon"
       onClick={isOpen ? onClose : onOpen}
-      isDisabled={!dates.datesSet}
-    />
+      disabled={!dates.datesSet}
+    >
+      <FaShoppingCart />
+    </Button>
   );
 }

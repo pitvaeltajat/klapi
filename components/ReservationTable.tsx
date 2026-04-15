@@ -1,9 +1,7 @@
 import React from 'react';
-
-import { Table, Thead, Tbody, Tr, Th, Td, TableContainer } from '@chakra-ui/react';
-
 import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Reservation {
   id: string;
@@ -23,37 +21,32 @@ interface Reservation {
   };
 }
 
-const DateTimeToString = (date: Date): string => {
-  return new Date(date).toLocaleDateString('fi-FI');
-};
+const DateTimeToString = (date: Date): string => new Date(date).toLocaleDateString('fi-FI');
 
 export default function ReservationTable({ reservations }: { reservations: Reservation[] }) {
   const { data: session } = useSession();
+  const isAdmin = session?.user?.group === 'ADMIN';
 
   return (
-    <TableContainer>
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            {session?.user?.group === 'ADMIN' ? <Th>Tuote</Th> : null}
-            <Th>Määrä</Th>
-            <Th>Nouto</Th>
-            <Th>Palautus</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {reservations.toReversed().map((reservation) => {
-            return (
-              <Tr key={reservation.id}>
-                {session?.user?.group === 'ADMIN' ? <Td>{reservation.item.name}</Td> : null}
-                <Td>{reservation.amount}</Td>
-                <Td>{DateTimeToString(reservation.loan.startTime)}</Td>
-                <Td>{DateTimeToString(reservation.loan.endTime)}</Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </TableContainer>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {isAdmin ? <TableHead>Tuote</TableHead> : null}
+          <TableHead>Määrä</TableHead>
+          <TableHead>Nouto</TableHead>
+          <TableHead>Palautus</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reservations.toReversed().map((reservation) => (
+          <TableRow key={reservation.id}>
+            {isAdmin ? <TableCell>{reservation.item.name}</TableCell> : null}
+            <TableCell>{reservation.amount}</TableCell>
+            <TableCell>{DateTimeToString(reservation.loan.startTime)}</TableCell>
+            <TableCell>{DateTimeToString(reservation.loan.endTime)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

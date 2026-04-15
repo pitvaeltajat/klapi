@@ -146,12 +146,12 @@ describe('getLoanStatusLabel', () => {
 });
 
 describe('getLoanStatusColor', () => {
-  it('should return correct colors for all statuses', () => {
-    expect(getLoanStatusColor(LoanStatus.ACCEPTED)).toBe('green');
-    expect(getLoanStatusColor(LoanStatus.REJECTED)).toBe('red');
-    expect(getLoanStatusColor(LoanStatus.INUSE)).toBe('blue');
-    expect(getLoanStatusColor(LoanStatus.IN_BOX)).toBe('purple');
-    expect(getLoanStatusColor(LoanStatus.PARTIALLY_RETURNED)).toBe('orange');
+  it('should return correct badge variants for all statuses', () => {
+    expect(getLoanStatusColor(LoanStatus.ACCEPTED)).toBe('success');
+    expect(getLoanStatusColor(LoanStatus.REJECTED)).toBe('destructive');
+    expect(getLoanStatusColor(LoanStatus.INUSE)).toBe('default');
+    expect(getLoanStatusColor(LoanStatus.IN_BOX)).toBe('secondary');
+    expect(getLoanStatusColor(LoanStatus.PARTIALLY_RETURNED)).toBe('warning');
     expect(getLoanStatusColor(LoanStatus.RETURNED)).toBe('gray');
   });
 });
@@ -167,11 +167,11 @@ describe('getReservationStatusLabel', () => {
 });
 
 describe('getReservationStatusColor', () => {
-  it('should return correct colors for all reservation statuses', () => {
-    expect(getReservationStatusColor(ReservationStatus.ACCEPTED)).toBe('green');
-    expect(getReservationStatusColor(ReservationStatus.REJECTED)).toBe('red');
-    expect(getReservationStatusColor(ReservationStatus.INUSE)).toBe('blue');
-    expect(getReservationStatusColor(ReservationStatus.IN_BOX)).toBe('purple');
+  it('should return correct badge variants for all reservation statuses', () => {
+    expect(getReservationStatusColor(ReservationStatus.ACCEPTED)).toBe('success');
+    expect(getReservationStatusColor(ReservationStatus.REJECTED)).toBe('destructive');
+    expect(getReservationStatusColor(ReservationStatus.INUSE)).toBe('default');
+    expect(getReservationStatusColor(ReservationStatus.IN_BOX)).toBe('secondary');
     expect(getReservationStatusColor(ReservationStatus.RETURNED)).toBe('gray');
   });
 });

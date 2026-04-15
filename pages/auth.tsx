@@ -1,29 +1,16 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { Button } from '@chakra-ui/react';
 import type { FC } from 'react';
+import { Button } from '@/components/ui/button';
 
 const Auth: FC = () => {
   const { data: session, status } = useSession();
   if (session) {
-    return (
-      <>
-        <Button colorScheme="blue" onClick={() => signOut()}>
-          Kirjaudu ulos
-        </Button>
-      </>
-    );
+    return <Button onClick={() => signOut()}>Kirjaudu ulos</Button>;
   }
   return (
-    <>
-      <Button
-        colorScheme="blue"
-        onClick={() => signIn()}
-        isLoading={status === 'loading'}
-        loadingText="Kirjaudutaan..."
-      >
-        Kirjaudu
-      </Button>
-    </>
+    <Button onClick={() => signIn()} isLoading={status === 'loading'}>
+      {status === 'loading' ? 'Kirjaudutaan...' : 'Kirjaudu'}
+    </Button>
   );
 };
 
