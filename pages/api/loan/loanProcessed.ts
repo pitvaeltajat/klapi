@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { deriveLoanStatus } from '../../../utils/loanHelpers';
+import { logLoanHistory } from '../../../utils/loanHistory';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
@@ -63,6 +64,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           data: { status: ReservationStatus.RETURNED },
         },
       },
+    },
+  });
+
+  await logLoanHistory({
+    loanId: id,
+    action: 'PROCESSED_FROM_BOX',
+    actedById: session.user.id,
+    details: {
+      reservationIds: targetIds,
+      count: targetIds.length,
+      newStatus: newLoanStatus,
     },
   });
 

@@ -5,6 +5,7 @@ import { authOptions } from '../auth/[...nextauth]';
 import { ReservationStatus } from '@prisma/client';
 import 'dotenv/config';
 import { getBaseUrl } from '../../../utils/urlHelpers';
+import { logLoanHistory } from '../../../utils/loanHistory';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -98,6 +99,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         description,
         loaner,
         status: loanStatus,
+      },
+    });
+
+    await logLoanHistory({
+      loanId: result.id,
+      action: 'CREATED',
+      actedById: session.user.id,
+      details: {
+        status: loanStatus,
+        itemCount: createReservations.length,
+        loaner: loaner ?? null,
+        description: description ?? null,
       },
     });
 

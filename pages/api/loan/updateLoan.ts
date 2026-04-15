@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import { ReservationStatus } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { logLoanHistory } from '../../../utils/loanHistory';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -165,6 +166,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         startTime: startTime,
         endTime: endTime,
         description: description,
+      },
+    });
+
+    await logLoanHistory({
+      loanId: id,
+      action: 'UPDATED',
+      actedById: session.user.id,
+      details: {
+        startTime,
+        endTime,
+        description: description ?? null,
+        itemCount: reservationsWithStatus.length,
       },
     });
 
