@@ -58,7 +58,7 @@ export default function AllItems({ items }: AllItemsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
       {items.map((item) => (
         <ItemCard
           key={item.id}

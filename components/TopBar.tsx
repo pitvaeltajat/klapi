@@ -318,7 +318,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   l.onClick?.();
                   onClose();
                 }}
-                className="py-3"
+                className="px-6 py-4"
               >
                 {l.label}
               </NextLink>
@@ -329,32 +329,32 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 handleBrowseClick();
                 onClose();
               }}
-              className="py-3 text-left"
+              className="px-6 py-4 text-left"
             >
               Kamat
             </button>
-            <NextLink href="/item/announcements" onClick={onClose} className="py-3">
+            <NextLink href="/item/announcements" onClick={onClose} className="px-6 py-4">
               Ilmoitukset
             </NextLink>
             {(role === 'ADMIN' || role === 'KIOSK') && (
-              <NextLink href="/loan" onClick={onClose} className="py-3">
+              <NextLink href="/loan" onClick={onClose} className="px-6 py-4">
                 Varaukset
               </NextLink>
             )}
             {role === 'ADMIN' && (
               <>
-                <NextLink href="/admin/boxes" onClick={onClose} className="py-3">
+                <NextLink href="/admin/boxes" onClick={onClose} className="px-6 py-4">
                   Laatikot
                 </NextLink>
-                <NextLink href="/admin/reports" onClick={onClose} className="py-3">
+                <NextLink href="/admin/reports" onClick={onClose} className="px-6 py-4">
                   Raportit
                 </NextLink>
-                <NextLink href="/admin" onClick={onClose} className="py-3">
+                <NextLink href="/admin" onClick={onClose} className="px-6 py-4">
                   Admin
                 </NextLink>
               </>
             )}
-            <NextLink href="/account" onClick={onClose} className="py-3">
+            <NextLink href="/account" onClick={onClose} className="px-6 py-4">
               Oma tili
             </NextLink>
           </nav>
