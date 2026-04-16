@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Invalid PIN format' }, { status: 400 });
   }
 
-  const user = await prisma.user.updateMany({
+  await prisma.user.updateMany({
     where: { group: 'KIOSK' },
     data: {
       kioskElevatePin: await bcrypt.hash(pin, 10),

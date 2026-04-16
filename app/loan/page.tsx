@@ -143,7 +143,7 @@ export default function LoanListPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {filteredLoans.map((loan) => (
-              <LoanCard key={loan.id} loan={loan as any} />
+              <LoanCard key={loan.id} loan={loan as LoanType} />
             ))}
           </div>
         </div>

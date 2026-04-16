@@ -137,24 +137,6 @@ export async function GET(request: Request) {
         }
       });
 
-      const loanInfo = loansAtIntervals.map((loan) => {
-        const daysOverdue = Math.floor(
-          (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        return {
-          id: loan.id,
-          userName: loan.user.name || loan.user.email || 'Unknown',
-          userEmail: loan.user.email,
-          endTime: loan.endTime.toLocaleString('fi-FI', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-            timeZone: 'Europe/Helsinki',
-          }),
-          daysOverdue,
-        };
-      });
-
       adminEmailPromises = admins.map(async (admin) => {
         // Send one email per admin per interval
         // We need to check each loan individually to prevent duplicate sends
