@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { FaCartArrowDown } from 'react-icons/fa';

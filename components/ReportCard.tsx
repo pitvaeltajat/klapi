@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Loan, Reservation } from '@prisma/client';
 import { Button } from '@/components/ui/button';

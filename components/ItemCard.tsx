@@ -1,3 +1,5 @@
+'use client';
+
 import { ItemCardProps } from '../types';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';

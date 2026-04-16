@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { PrismaClient, LoanStatus, ReservationStatus, Group } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import handler from '../../pages/api/availability/getAvailabilities';
+import { POST as handler } from '../../app/api/availability/getAvailabilities/route';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -84,32 +83,20 @@ async function createTestLoan(
 }
 
 async function getAvailabilities(startDate: Date, endDate: Date): Promise<AvailabilityResponse> {
-  return new Promise<AvailabilityResponse>((resolve, reject) => {
-    const req = {
-      method: 'POST',
-      body: {
-        StartDate: startDate.toISOString(),
-        EndDate: endDate.toISOString(),
-      },
-    } as NextApiRequest;
-
-    let statusCode = 200;
-    const res = {
-      status: (code: number) => {
-        statusCode = code;
-        return res;
-      },
-      json: (data: AvailabilityResponse | { error: string }) => {
-        if (statusCode >= 400) {
-          reject(new Error(`API error ${statusCode}: ${JSON.stringify(data)}`));
-        } else {
-          resolve(data as AvailabilityResponse);
-        }
-      },
-    } as unknown as NextApiResponse;
-
-    handler(req, res).catch(reject);
+  const request = new Request('http://localhost/api/availability/getAvailabilities', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      StartDate: startDate.toISOString(),
+      EndDate: endDate.toISOString(),
+    }),
   });
+  const response = await handler(request);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`API error ${response.status}: ${JSON.stringify(data)}`);
+  }
+  return data as AvailabilityResponse;
 }
 
 describe('getAvailabilities API integration tests', () => {

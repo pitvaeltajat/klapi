@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { CartItem } from '../types';
 import { useSession } from 'next-auth/react';

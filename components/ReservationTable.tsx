@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
@@ -12,8 +14,8 @@ interface Reservation {
     id: string;
     description: string | null;
     status: LoanStatus;
-    startTime: Date;
-    endTime: Date;
+    startTime: Date | string;
+    endTime: Date | string;
     userId: string;
   };
   item: {
@@ -21,7 +23,7 @@ interface Reservation {
   };
 }
 
-const DateTimeToString = (date: Date): string => new Date(date).toLocaleDateString('fi-FI');
+const DateTimeToString = (date: Date | string): string => new Date(date).toLocaleDateString('fi-FI');
 
 export default function ReservationTable({ reservations }: { reservations: Reservation[] }) {
   const { data: session } = useSession();

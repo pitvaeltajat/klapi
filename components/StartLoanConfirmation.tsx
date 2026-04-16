@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Loan, User, Reservation, Item } from '@prisma/client';

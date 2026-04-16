@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import CreatableSelectBase from 'react-select/creatable';
 import type { GroupBase, Props as SelectProps } from 'react-select';

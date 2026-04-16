@@ -1,3 +1,5 @@
+'use client';
+
 import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { IoMdAlert } from 'react-icons/io';

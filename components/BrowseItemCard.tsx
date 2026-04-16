@@ -1,3 +1,5 @@
+'use client';
+
 import { Item, Category, ItemType, Announcement } from '@prisma/client';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 import ItemCardShell from './ItemCardShell';

@@ -1,3 +1,5 @@
+'use client';
+
 import NextLink from 'next/link';
 import { FaChevronCircleRight } from 'react-icons/fa';
 import React from 'react';

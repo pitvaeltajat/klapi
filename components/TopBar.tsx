@@ -1,8 +1,10 @@
+'use client';
+
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
@@ -33,7 +35,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
       update({ user: { ...session.user, group: 'KIOSK', adminExpiry: null } });
     }
   }, [session?.user, update]);
-  const [isNavigating, setIsNavigating] = useState(false);
   const role = session?.user?.group;
   const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -130,21 +131,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const onClose = () => setIsOpen(false);
 
   const router = useRouter();
-
-  useEffect(() => {
-    const handleStart = () => setIsNavigating(true);
-    const handleComplete = () => setIsNavigating(false);
-
-    router.events.on('routeChangeStart', handleStart);
-    router.events.on('routeChangeComplete', handleComplete);
-    router.events.on('routeChangeError', handleComplete);
-
-    return () => {
-      router.events.off('routeChangeStart', handleStart);
-      router.events.off('routeChangeComplete', handleComplete);
-      router.events.off('routeChangeError', handleComplete);
-    };
-  }, [router]);
+  const pathname = usePathname();
 
   const {
     state: { items },
@@ -155,7 +142,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const handleBrowseClick = () => {
     setBrowseMode(true);
     setDatesSet(false);
-    if (router.pathname !== '/') {
+    if (pathname !== '/') {
       router.push('/');
     }
   };
@@ -301,11 +288,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      {isNavigating && (
-        <div className="fixed inset-x-0 top-16 z-[999]">
-          <Progress indeterminate />
-        </div>
-      )}
       <div className="h-16" />
       <Drawer open={isOpen} onOpenChange={(o) => (o ? onOpen() : onClose())}>
         <DrawerContent side="top" className="pt-16">

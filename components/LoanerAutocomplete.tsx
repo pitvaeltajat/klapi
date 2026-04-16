@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';

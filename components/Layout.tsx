@@ -1,3 +1,5 @@
+'use client';
+
 import React, { ReactNode, useState } from 'react';
 import TopBar from './TopBar';
 import CartDrawer from './CartDrawer';

@@ -19,6 +19,11 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -32,7 +37,8 @@
     "**/*.tsx",
     "*.ts",
     "*.tsx",
-    "pages/admin/edititem/[id].tsx"
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
