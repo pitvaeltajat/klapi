@@ -76,12 +76,14 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const [reportContent, setReportContent] = useState('');
 
-  if (!isKiosk && session?.user && !hasInitializedLoaner) {
-    const userDisplayName = session.user.email || session.user.name || '';
-    setLoaner(userDisplayName);
-    setUserId(session.user.id);
-    setHasInitializedLoaner(true);
-  }
+  useEffect(() => {
+    if (!isKiosk && session?.user && !hasInitializedLoaner) {
+      const userDisplayName = session.user.email || session.user.name || '';
+      setLoaner(userDisplayName);
+      setUserId(session.user.id);
+      setHasInitializedLoaner(true);
+    }
+  }, [isKiosk, session, hasInitializedLoaner, setLoaner, setUserId]);
 
   useEffect(() => {
     setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
@@ -115,8 +117,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     }
     return (
       <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
-        <DrawerContent side="right" className="flex max-h-[100dvh] flex-col">
-          <DrawerHeader className="border-b">
+        <DrawerContent side="right" className="flex max-h-dvh flex-col">
+          <DrawerHeader>
             <DrawerTitle>Ostoskori</DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-auto">
@@ -141,9 +143,20 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isDescriptionValid = localDescription.trim().length > 0;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
-      <DrawerContent side="right" className="flex max-h-[100dvh] w-full flex-col md:max-w-md">
-        <DrawerHeader className="border-b">
+    <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)} modal={false}>
+      <DrawerContent
+        side="right"
+        className="flex max-h-dvh w-full flex-col md:max-w-md"
+        onPointerDownOutside={(e) => {
+          // Prevent Radix from auto-closing when the cart button is clicked,
+          // so the button's onClick toggle works without a race condition.
+          const target = e.target as HTMLElement;
+          if (target.closest('[data-cart-button]')) {
+            e.preventDefault();
+          }
+        }}
+      >
+        <DrawerHeader>
           <DrawerTitle>Ostoskori</DrawerTitle>
         </DrawerHeader>
 

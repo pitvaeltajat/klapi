@@ -172,7 +172,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-[1000] bg-[rgba(66,131,209,0.9)] shadow-sm backdrop-blur-sm dark:bg-[rgba(26,32,44,0.95)]">
+      <header className="fixed inset-x-0 top-0 z-1000 bg-[rgba(66,131,209,0.9)] shadow-xs backdrop-blur-xs dark:bg-[rgba(26,32,44,0.95)]">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between text-white">
             <div className="flex items-center gap-4">

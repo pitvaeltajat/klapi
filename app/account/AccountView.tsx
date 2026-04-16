@@ -158,7 +158,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
       </Dialog>
 
       <div className="flex flex-col gap-6">
-        <div className="rounded-md border bg-card p-6 shadow-sm">
+        <div className="rounded-md border bg-card p-6 shadow-xs">
           <div className="flex flex-col items-start gap-3">
             <h2 className="text-2xl font-semibold">{session?.user?.name}</h2>
             <p className="text-muted-foreground">{session?.user?.email}</p>
@@ -182,7 +182,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
           </Button>
         </div>
 
-        <div className="rounded-md border bg-card p-6 shadow-sm">
+        <div className="rounded-md border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Sähköposti-ilmoitukset</h2>
           <div className="flex flex-col items-start gap-4">
             {session?.user?.group === 'ADMIN' ? (
@@ -230,7 +230,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
           </div>
         </div>
 
-        <div className="rounded-md border bg-card p-6 shadow-sm">
+        <div className="rounded-md border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Ulkoasu</h2>
           <div className="flex flex-col items-start gap-4">
             <div>

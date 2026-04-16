@@ -61,7 +61,7 @@ export function PinInput({ length = 4, value, onChange, type = 'text', autoFocus
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKey(i, e)}
           autoFocus={autoFocus && i === 0}
-          className="h-12 w-12 rounded-md border border-input bg-background text-center text-lg font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="h-12 w-12 rounded-md border border-input bg-background text-center text-lg font-semibold ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
       ))}
     </div>

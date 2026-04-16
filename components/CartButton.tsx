@@ -18,6 +18,7 @@ export default function CartButton({ onOpen, onClose, isOpen }: CartButtonProps)
     <Button
       aria-label="open cart"
       size="icon"
+      data-cart-button
       onClick={isOpen ? onClose : onOpen}
       disabled={!dates.datesSet}
     >

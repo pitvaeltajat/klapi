@@ -46,7 +46,7 @@ export type BadgeVariant =
   | 'destructive'
   | 'success'
   | 'warning'
-  | 'outline'
+  | 'outline-solid'
   | 'gray';
 
 export const getLoanStatusColor = (status: LoanStatus): BadgeVariant => {

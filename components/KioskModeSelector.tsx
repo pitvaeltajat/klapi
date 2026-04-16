@@ -24,7 +24,7 @@ export default function KioskModeSelector() {
     <div className="mx-auto mt-8 max-w-[500px] p-6">
       <div className="flex flex-col gap-6">
         <h1 className="mb-3 text-3xl font-semibold">Tervetuloa kalustoon!</h1>
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-5 text-base leading-relaxed shadow-sm text-foreground/90">
+        <div className="rounded-lg border border-primary/30 bg-primary/10 p-5 text-base leading-relaxed shadow-xs text-foreground/90">
           <p className="mb-3">
             Merkkaa Klapiin jokainen tavara jonka lainaat. Jos tavara ei löydy Klapista, voit lisätä
             sen itse varauksen yhteydessä.

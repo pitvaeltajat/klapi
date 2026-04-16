@@ -46,7 +46,7 @@ export default function DateSelector() {
             </p>
           </div>
 
-          <div className="rounded-lg border bg-card p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-xs">
             <Label className="font-bold">Valitse lainausaika</Label>
             <div className="mt-2">
               <DatePicker
@@ -76,7 +76,7 @@ export default function DateSelector() {
             <h2 className="mb-3 text-lg font-semibold">Valitut päivämäärät</h2>
           </div>
 
-          <div className="rounded-lg border bg-card p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-xs">
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <span className="font-bold">Nouto:</span>

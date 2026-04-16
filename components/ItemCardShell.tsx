@@ -29,7 +29,7 @@ interface ItemCardShellProps {
 }
 
 const shellClasses =
-  'relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl';
+  'relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-xs transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl';
 
 export default function ItemCardShell({
   name,
@@ -45,7 +45,7 @@ export default function ItemCardShell({
 }: ItemCardShellProps) {
   const Inner = (
     <>
-      <div className="relative aspect-square w-28 shrink-0 overflow-hidden bg-muted sm:aspect-[5/3] sm:w-full">
+      <div className="relative aspect-square w-28 shrink-0 overflow-hidden bg-muted sm:aspect-5/3 sm:w-full">
         {/* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */}
         <img
           src={imageSrc}

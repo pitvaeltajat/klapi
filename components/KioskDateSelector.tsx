@@ -60,7 +60,7 @@ export default function KioskDateSelector() {
   return (
     <>
       <div className="mb-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <div className="h-full rounded-lg border bg-card p-6 shadow-sm">
+        <div className="h-full rounded-lg border bg-card p-6 shadow-xs">
           <Label className="mb-4 block text-lg font-bold">Lainaaja</Label>
           <LoanerAutocomplete
             value={cart.loaner || ''}
@@ -71,7 +71,7 @@ export default function KioskDateSelector() {
           />
         </div>
 
-        <div className="h-full rounded-lg border bg-card p-6 shadow-sm">
+        <div className="h-full rounded-lg border bg-card p-6 shadow-xs">
           <Label className="mb-2 block text-lg font-bold">Palautuspäivä</Label>
           <div className="flex flex-col gap-3">
             <DatePicker
