@@ -143,7 +143,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isDescriptionValid = localDescription.trim().length > 0;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
+    <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)} modal={false}>
       <DrawerContent side="right" className="flex max-h-dvh w-full flex-col md:max-w-md">
         <DrawerHeader className="border-b">
           <DrawerTitle>Ostoskori</DrawerTitle>

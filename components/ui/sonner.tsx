@@ -12,6 +12,7 @@ export function Toaster({ ...props }: ToasterProps) {
       theme={theme as ToasterProps['theme']}
       className="toaster group"
       position="top-right"
+      offset={{ top: 72 }}
       closeButton
       duration={5000}
       toastOptions={{
