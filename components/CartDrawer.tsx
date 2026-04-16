@@ -76,12 +76,14 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const [reportContent, setReportContent] = useState('');
 
-  if (!isKiosk && session?.user && !hasInitializedLoaner) {
-    const userDisplayName = session.user.email || session.user.name || '';
-    setLoaner(userDisplayName);
-    setUserId(session.user.id);
-    setHasInitializedLoaner(true);
-  }
+  useEffect(() => {
+    if (!isKiosk && session?.user && !hasInitializedLoaner) {
+      const userDisplayName = session.user.email || session.user.name || '';
+      setLoaner(userDisplayName);
+      setUserId(session.user.id);
+      setHasInitializedLoaner(true);
+    }
+  }, [isKiosk, session, hasInitializedLoaner, setLoaner, setUserId]);
 
   useEffect(() => {
     setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
