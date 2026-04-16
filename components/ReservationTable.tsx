@@ -40,7 +40,7 @@ export default function ReservationTable({ reservations }: { reservations: Reser
         </TableRow>
       </TableHeader>
       <TableBody>
-        {reservations.toReversed().map((reservation) => (
+        {[...reservations].sort((a, b) => new Date(b.loan.startTime).getTime() - new Date(a.loan.startTime).getTime()).map((reservation) => (
           <TableRow key={reservation.id}>
             {isAdmin ? <TableCell>{reservation.item.name}</TableCell> : null}
             <TableCell>{reservation.amount}</TableCell>
