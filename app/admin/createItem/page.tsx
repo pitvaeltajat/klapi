@@ -211,6 +211,7 @@ export default function CreateItemPage() {
         <div className="mt-4">
           <Label htmlFor="image">Kuva</Label>
           <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
           {previewUrl && <img src={previewUrl} alt="Preview" className="mt-2 max-w-[300px]" />}
         </div>
 

@@ -38,6 +38,7 @@ function ReservationItemImage({ itemId, itemName }: { itemId: string; itemName: 
   const placeholder = usePlaceholder();
   const [err, setErr] = useState(false);
   return (
+    /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
     <img
       src={err ? placeholder : imageSrc}
       alt={itemName}

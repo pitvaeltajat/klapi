@@ -94,6 +94,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
         <hr />
 
         <div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */}
           <img
             src={imgError ? placeholder : imageSrc}
             alt={item.name}

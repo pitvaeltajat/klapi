@@ -5,7 +5,7 @@ import NextLink from 'next/link';
 import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '@/utils/loanHelpers';
 import { Badge } from '@/components/ui/badge';
 
-interface LoanType {
+export interface LoanType {
   id: string;
   userId: string;
   status: LoanStatus;

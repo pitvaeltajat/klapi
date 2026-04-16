@@ -35,7 +35,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
   const showLoading = useDelayedLoading(loading);
 
   useEffect(() => {
-    setLoading(true);
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
     fetch('/api/availability/getAvailabilities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

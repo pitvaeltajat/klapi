@@ -16,7 +16,7 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'prisma/items.ts'],
+    ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'prisma/items.ts', '.claude/**'],
   },
 ];
 

@@ -46,6 +46,7 @@ export default function ItemCardShell({
   const Inner = (
     <>
       <div className="relative aspect-square w-28 shrink-0 overflow-hidden bg-muted sm:aspect-[5/3] sm:w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */}
         <img
           src={imageSrc}
           alt={`Picture of ${name}`}

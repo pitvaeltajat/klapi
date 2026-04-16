@@ -157,12 +157,14 @@ export default function EditItemView({
         <div>
           <Label>Kuva:</Label>
           {image !== null ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- local blob preview */
             <img
               src={URL.createObjectURL(image)}
               alt={item.name}
               className="mb-4 max-h-[400px] max-w-full object-contain"
             />
           ) : (
+            /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
             <img
               src={imgError ? placeholder : existingImageSrc}
               alt={item.name}

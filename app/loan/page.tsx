@@ -1,6 +1,6 @@
 'use client';
 
-import { LoanStatus, ReservationStatus } from '@prisma/client';
+import { LoanStatus } from '@prisma/client';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
@@ -8,37 +8,9 @@ import useSWR from 'swr';
 import NotAuthenticated from '@/components/NotAuthenticated';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import LoanCard from '@/components/LoanCard';
+import LoanCard, { LoanType } from '@/components/LoanCard';
 import { getLoanStatusLabel, deriveLoanStatus } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
-
-interface LoanType {
-  id: string;
-  userId: string;
-  status: LoanStatus;
-  description: string | null;
-  loaner: string | null;
-  startTime: Date | string;
-  endTime: Date | string;
-  user: {
-    name: string | null;
-    email: string | null;
-  };
-  reservations: {
-    status: ReservationStatus;
-    item: {
-      id: string;
-      name: string;
-    };
-  }[];
-  reports: {
-    id: string;
-    content: string;
-    createdAt: Date | string;
-    created: string;
-    status: string;
-  }[];
-}
 
 const getStatusFilterLabel = (status: LoanStatus): string => {
   const label = getLoanStatusLabel(status);

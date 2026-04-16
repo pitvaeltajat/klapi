@@ -9,7 +9,6 @@ import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
 import { PinInput } from '@/components/ui/pin-input';
 import {
   Dialog,
@@ -44,21 +43,21 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const [expiry, setExpiry] = useState<number | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
 
-  useEffect(() => {
-    if (session?.user && 'adminExpiry' in session.user && session.user.adminExpiry) {
-      const exp =
-        typeof session.user.adminExpiry === 'string'
-          ? Date.parse(session.user.adminExpiry)
-          : session.user.adminExpiry;
-      setExpiry(exp);
-    } else {
-      setExpiry(null);
-    }
-  }, [session?.user]);
+  const derivedExpiry =
+    session?.user && 'adminExpiry' in session.user && session.user.adminExpiry
+      ? typeof session.user.adminExpiry === 'string'
+        ? Date.parse(session.user.adminExpiry)
+        : session.user.adminExpiry
+      : null;
 
+  if (derivedExpiry !== expiry) {
+    setExpiry(derivedExpiry);
+  }
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- timer countdown */
   useEffect(() => {
     if (!expiry || effectiveGroup !== 'ADMIN') {
-      setRemaining(0);
+      if (remaining !== 0) setRemaining(0);
       return;
     }
     const update = () => {
@@ -68,6 +67,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [expiry, effectiveGroup]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleAdminSwitch = async (checked: boolean) => {
     if (checked) {

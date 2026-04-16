@@ -9,16 +9,16 @@ import { useState, useEffect } from 'react';
 export function useDelayedLoading(isLoading: boolean, delay: number = 150) {
   const [showLoading, setShowLoading] = useState(false);
 
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setShowLoading(true);
-      }, delay);
+  if (!isLoading && showLoading) {
+    setShowLoading(false);
+  }
 
-      return () => clearTimeout(timer);
-    } else {
-      setShowLoading(false);
-    }
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => {
+      setShowLoading(true);
+    }, delay);
+    return () => clearTimeout(timer);
   }, [isLoading, delay]);
 
   return showLoading;
