@@ -108,6 +108,10 @@ export async function POST(request: Request) {
     }
   }
 
+  if (!selectedBox) {
+    return NextResponse.json({ error: 'No box available' }, { status: 500 });
+  }
+
   // Compute the new derived loan status based on the post-update reservation states.
   const updatedReservationStates = loan.reservations.map((r) =>
     targetIds.includes(r.id) ? { status: ReservationStatus.IN_BOX } : { status: r.status },

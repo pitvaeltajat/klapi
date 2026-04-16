@@ -72,7 +72,7 @@ export default function ItemBrowser({
           <Button
             key="all"
             onClick={() => setCategory('')}
-            variant={category === '' ? 'default' : 'outline'}
+            variant={category === '' ? 'default' : 'outline-solid'}
           >
             Kaikki
           </Button>
@@ -82,7 +82,7 @@ export default function ItemBrowser({
               <Button
                 key={cat.id}
                 onClick={() => setCategory(category === cat.name ? '' : cat.name)}
-                variant={category === cat.name ? 'default' : 'outline'}
+                variant={category === cat.name ? 'default' : 'outline-solid'}
               >
                 {cat.name}
               </Button>
@@ -92,7 +92,7 @@ export default function ItemBrowser({
       <div className="py-8 pl-0 md:hidden">
         <select
           className={cn(
-            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           )}
           value={category}
           onChange={(e) => setCategory(e.target.value)}

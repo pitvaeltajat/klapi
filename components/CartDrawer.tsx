@@ -115,7 +115,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     }
     return (
       <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
-        <DrawerContent side="right" className="flex max-h-[100dvh] flex-col">
+        <DrawerContent side="right" className="flex max-h-dvh flex-col">
           <DrawerHeader className="border-b">
             <DrawerTitle>Ostoskori</DrawerTitle>
           </DrawerHeader>
@@ -142,7 +142,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   return (
     <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
-      <DrawerContent side="right" className="flex max-h-[100dvh] w-full flex-col md:max-w-md">
+      <DrawerContent side="right" className="flex max-h-dvh w-full flex-col md:max-w-md">
         <DrawerHeader className="border-b">
           <DrawerTitle>Ostoskori</DrawerTitle>
         </DrawerHeader>

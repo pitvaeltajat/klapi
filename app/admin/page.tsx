@@ -227,7 +227,7 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Käyttäjien hallinta</h2>
             <p className="text-sm text-muted-foreground">Yhteensä {users.length} käyttäjää</p>

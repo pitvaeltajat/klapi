@@ -200,7 +200,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
         <h1 className="text-4xl font-semibold">Muokkaa lainaa</h1>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -219,7 +219,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold">Kuvaus</h2>
@@ -244,7 +244,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
           />
         </div>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Päivämäärät</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
@@ -297,7 +297,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Varaukset</h2>
             <Button
@@ -393,10 +393,10 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Lisää kama</h2>
           <div className="flex flex-col gap-4 md:flex-row">
-            <div className="flex-[2]">
+            <div className="flex-2">
               <Label>Kama</Label>
               <select
                 value={selectedItem}
@@ -404,7 +404,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                   setSelectedItem(e.target.value);
                   setSelectedItemAmount(0);
                 }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {items.map((item) => (
                   <option key={item.id} value={item.id}>
