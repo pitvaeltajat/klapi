@@ -25,6 +25,7 @@ export function useItemImage(itemId: string): string {
 
   const [imageSrc, setImageSrc] = useState<string>(placeholder);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- async image probe callbacks */
   useEffect(() => {
     if (!compressedUrl || !rootUrl) {
       setImageSrc(placeholder);
@@ -33,26 +34,17 @@ export function useItemImage(itemId: string): string {
 
     let isMounted = true;
 
-    // Try compressed image first
     const compressedImg = new Image();
     compressedImg.onload = () => {
-      if (isMounted) {
-        setImageSrc(compressedUrl);
-      }
+      if (isMounted) setImageSrc(compressedUrl);
     };
     compressedImg.onerror = () => {
-      // If compressed fails, try root image
       const rootImg = new Image();
       rootImg.onload = () => {
-        if (isMounted) {
-          setImageSrc(rootUrl);
-        }
+        if (isMounted) setImageSrc(rootUrl);
       };
       rootImg.onerror = () => {
-        // Keep placeholder if both fail
-        if (isMounted) {
-          setImageSrc(placeholder);
-        }
+        if (isMounted) setImageSrc(placeholder);
       };
       rootImg.src = rootUrl;
     };
@@ -62,6 +54,7 @@ export function useItemImage(itemId: string): string {
       isMounted = false;
     };
   }, [itemId, compressedUrl, rootUrl, placeholder]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return imageSrc;
 }
@@ -79,6 +72,7 @@ export function useItemOriginalImage(itemId: string): string {
 
   const [imageSrc, setImageSrc] = useState<string>(placeholder);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- async image probe callbacks */
   useEffect(() => {
     if (!originalUrl || !rootUrl) {
       setImageSrc(placeholder);
@@ -87,26 +81,17 @@ export function useItemOriginalImage(itemId: string): string {
 
     let isMounted = true;
 
-    // Try original image first
     const originalImg = new Image();
     originalImg.onload = () => {
-      if (isMounted) {
-        setImageSrc(originalUrl);
-      }
+      if (isMounted) setImageSrc(originalUrl);
     };
     originalImg.onerror = () => {
-      // If original fails, try root image
       const rootImg = new Image();
       rootImg.onload = () => {
-        if (isMounted) {
-          setImageSrc(rootUrl);
-        }
+        if (isMounted) setImageSrc(rootUrl);
       };
       rootImg.onerror = () => {
-        // Keep placeholder if both fail
-        if (isMounted) {
-          setImageSrc(placeholder);
-        }
+        if (isMounted) setImageSrc(placeholder);
       };
       rootImg.src = rootUrl;
     };
@@ -116,6 +101,7 @@ export function useItemOriginalImage(itemId: string): string {
       isMounted = false;
     };
   }, [itemId, originalUrl, rootUrl, placeholder]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return imageSrc;
 }

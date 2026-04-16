@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
 import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
-import AllItems from '../pages/productlist';
+import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
 import { Button } from '@/components/ui/button';

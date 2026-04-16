@@ -1,3 +1,5 @@
+'use client';
+
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import React, { useState } from 'react';
@@ -110,6 +112,10 @@ export default function DateSelector() {
                       if (update[0]) {
                         update[0] = setDefaultTime(update[0]);
                         setStartDate(update[0]);
+                        // If no end date yet and the new start is after the current end, reset end to start
+                        if (!update[1] && update[0] > dates.endDate) {
+                          setEndDate(update[0]);
+                        }
                       }
                       if (update[1]) {
                         update[1] = setDefaultTime(update[1]);

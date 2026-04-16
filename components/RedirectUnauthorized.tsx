@@ -1,27 +1,27 @@
+'use client';
+
 import React, { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname } from 'next/navigation';
 import LoadingSpinner from './LoadingSpinner';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
 interface RedirectUnauthorizedProps {
   children: ReactNode;
-  router: ReturnType<typeof useRouter>;
 }
 
-const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({ router, children }) => {
+const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({ children }) => {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
   const isBrowser = () => typeof window !== 'undefined';
   const showLoading = useDelayedLoading(status === 'loading');
 
-  if (status === 'unauthenticated' && isBrowser() && router.pathname !== '/login') {
-    router.push({
-      pathname: '/login',
-      query: { from: router.asPath },
-    });
+  if (status === 'unauthenticated' && isBrowser() && pathname !== '/login') {
+    router.push(`/login?from=${encodeURIComponent(pathname)}`);
   }
 
-  if (session || router.pathname === '/login') {
+  if (session || pathname === '/login') {
     return <>{children}</>;
   }
 

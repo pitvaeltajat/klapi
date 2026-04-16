@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { Loan, User, Reservation, Item } from '@prisma/client';
 import { toast } from 'sonner';
 import { IoMdAlert } from 'react-icons/io';
@@ -98,7 +100,7 @@ export default function StartLoanConfirmation({
         toast.success('Lainaus aloitettu', {
           description: 'Lainaus on nyt käynnissä. Muista palauttaa kamat ajoissa!',
         });
-        router.reload();
+        router.refresh();
       } else {
         const error = await response.json();
         toast.error('Virhe', {

@@ -1,13 +1,14 @@
+'use client';
+
 import { FaBars } from 'react-icons/fa';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
 import { PinInput } from '@/components/ui/pin-input';
 import {
   Dialog,
@@ -33,7 +34,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
       update({ user: { ...session.user, group: 'KIOSK', adminExpiry: null } });
     }
   }, [session?.user, update]);
-  const [isNavigating, setIsNavigating] = useState(false);
   const role = session?.user?.group;
   const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -43,21 +43,21 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const [expiry, setExpiry] = useState<number | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
 
-  useEffect(() => {
-    if (session?.user && 'adminExpiry' in session.user && session.user.adminExpiry) {
-      const exp =
-        typeof session.user.adminExpiry === 'string'
-          ? Date.parse(session.user.adminExpiry)
-          : session.user.adminExpiry;
-      setExpiry(exp);
-    } else {
-      setExpiry(null);
-    }
-  }, [session?.user]);
+  const derivedExpiry =
+    session?.user && 'adminExpiry' in session.user && session.user.adminExpiry
+      ? typeof session.user.adminExpiry === 'string'
+        ? Date.parse(session.user.adminExpiry)
+        : session.user.adminExpiry
+      : null;
 
+  if (derivedExpiry !== expiry) {
+    setExpiry(derivedExpiry);
+  }
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- timer countdown */
   useEffect(() => {
     if (!expiry || effectiveGroup !== 'ADMIN') {
-      setRemaining(0);
+      if (remaining !== 0) setRemaining(0);
       return;
     }
     const update = () => {
@@ -67,6 +67,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [expiry, effectiveGroup]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleAdminSwitch = async (checked: boolean) => {
     if (checked) {
@@ -130,21 +131,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const onClose = () => setIsOpen(false);
 
   const router = useRouter();
-
-  useEffect(() => {
-    const handleStart = () => setIsNavigating(true);
-    const handleComplete = () => setIsNavigating(false);
-
-    router.events.on('routeChangeStart', handleStart);
-    router.events.on('routeChangeComplete', handleComplete);
-    router.events.on('routeChangeError', handleComplete);
-
-    return () => {
-      router.events.off('routeChangeStart', handleStart);
-      router.events.off('routeChangeComplete', handleComplete);
-      router.events.off('routeChangeError', handleComplete);
-    };
-  }, [router]);
+  const pathname = usePathname();
 
   const {
     state: { items },
@@ -155,7 +142,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const handleBrowseClick = () => {
     setBrowseMode(true);
     setDatesSet(false);
-    if (router.pathname !== '/') {
+    if (pathname !== '/') {
       router.push('/');
     }
   };
@@ -249,9 +236,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <NextLink href="/" className="font-medium text-white" onClick={handleReserveClick}>
                 Lainaa
               </NextLink>
-              <NextLink href="/kiosk/return" className="font-medium text-white">
-                Palauta
-              </NextLink>
+              {(role === 'ADMIN' || role === 'KIOSK') && (
+                <NextLink href="/kiosk/return" className="font-medium text-white">
+                  Palauta
+                </NextLink>
+              )}
               <div className="h-6 w-px bg-white/30" />
               {browseLink}
               <NextLink href="/item/announcements" className="font-medium text-white">
@@ -301,11 +290,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      {isNavigating && (
-        <div className="fixed inset-x-0 top-16 z-[999]">
-          <Progress indeterminate />
-        </div>
-      )}
       <div className="h-16" />
       <Drawer open={isOpen} onOpenChange={(o) => (o ? onOpen() : onClose())}>
         <DrawerContent side="top" className="pt-16">

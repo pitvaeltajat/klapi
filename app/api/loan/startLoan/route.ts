@@ -1,0 +1,75 @@
+import { NextResponse } from 'next/server';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
+import prisma from '@/utils/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { logLoanHistory } from '@/utils/loanHistory';
+
+// Converts an approved loan to in-use status
+// Can be called by:
+// - The loan owner (to start their own approved loan)
+// - KIOSK user (to start any approved loan on behalf of the loaner)
+// - ADMIN user (to start any approved loan)
+export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 });
+  }
+
+  const { id } = await request.json();
+
+  if (!id) {
+    return NextResponse.json({ message: 'Lainan ID puuttuu' }, { status: 400 });
+  }
+
+  // Fetch the loan to check ownership and current status
+  const loan = await prisma.loan.findUnique({
+    where: { id },
+    include: { reservations: true },
+  });
+
+  if (!loan) {
+    return NextResponse.json({ message: 'Lainaa ei löydy' }, { status: 404 });
+  }
+
+  // Check if loan is in ACCEPTED status
+  if (loan.status !== LoanStatus.ACCEPTED) {
+    return NextResponse.json({ message: 'Vain hyväksytyn lainan voi aloittaa' }, { status: 400 });
+  }
+
+  // Check authorization: owner, KIOSK, or ADMIN can start the loan
+  const isOwner = session.user.id === loan.userId;
+  const isKiosk = session.user.group === 'KIOSK';
+  const isAdmin = session.user.group === 'ADMIN';
+
+  if (!isOwner && !isKiosk && !isAdmin) {
+    return NextResponse.json({ message: 'Sinulla ei ole oikeutta aloittaa tätä lainaa' }, { status: 403 });
+  }
+
+  // Update loan status and all reservation statuses to INUSE
+  const result = await prisma.loan.update({
+    where: { id },
+    data: {
+      status: LoanStatus.INUSE,
+      // Update start time to now when loan is started
+      startTime: new Date(),
+      reservations: {
+        updateMany: {
+          where: {},
+          data: {
+            status: ReservationStatus.INUSE,
+          },
+        },
+      },
+    },
+  });
+
+  await logLoanHistory({
+    loanId: id,
+    action: 'STARTED',
+    actedById: session.user.id,
+  });
+
+  return NextResponse.json(result);
+}

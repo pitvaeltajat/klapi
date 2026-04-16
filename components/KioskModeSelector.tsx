@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 export default function KioskModeSelector() {

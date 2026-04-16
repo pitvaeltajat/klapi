@@ -1,3 +1,5 @@
+'use client';
+
 import { useRef, useState, useEffect } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { IoMdAlert } from 'react-icons/io';
@@ -57,11 +59,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
   const [localDescription, setLocalDescription] = useState(cart.description);
 
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- reset description when cart empties */
   useEffect(() => {
     if (cart.items.length === 0 && localDescription !== '') {
       setLocalDescription('');
     }
   }, [cart.items.length]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -72,17 +76,15 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const [reportContent, setReportContent] = useState('');
 
-  useEffect(() => {
-    if (!isKiosk && session?.user && !hasInitializedLoaner) {
-      const userDisplayName = session.user.email || session.user.name || '';
-      setLoaner(userDisplayName);
-      setUserId(session.user.id);
-      setHasInitializedLoaner(true);
-    }
-  }, [session, isKiosk, setLoaner, setUserId, hasInitializedLoaner]);
+  if (!isKiosk && session?.user && !hasInitializedLoaner) {
+    const userDisplayName = session.user.email || session.user.name || '';
+    setLoaner(userDisplayName);
+    setUserId(session.user.id);
+    setHasInitializedLoaner(true);
+  }
 
   useEffect(() => {
-    setLoading(true);
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
 
     fetch('/api/availability/getAvailabilities', {
       method: 'POST',
