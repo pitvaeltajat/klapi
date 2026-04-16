@@ -1,27 +1,7 @@
 import { getCompressedImageUrl } from './imageHelpers';
+import { formatDateLong as formatDate, formatDateLongShort as formatDateShort } from './dateFormat';
 
-export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('fi-FI', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Europe/Helsinki',
-  });
-}
-
-export function formatDateShort(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('fi-FI', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'Europe/Helsinki',
-  });
-}
+export { formatDate, formatDateShort };
 
 export function getEmailStyles(): string {
   return `

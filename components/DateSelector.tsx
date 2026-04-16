@@ -7,6 +7,7 @@ import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { formatDateLong } from '@/utils/dateFormat';
 
 export default function DateSelector() {
   const { state: dates, setStartDate, setEndDate, setDatesSet, setBrowseMode } = useDates();
@@ -81,25 +82,13 @@ export default function DateSelector() {
               <div className="flex items-center gap-2">
                 <span className="font-bold">Nouto:</span>
                 <span>
-                  {dates.startDate.toLocaleDateString('fi-FI', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
+                  {formatDateLong(dates.startDate)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Palautus:</span>
                 <span>
-                  {dates.endDate.toLocaleDateString('fi-FI', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
+                  {formatDateLong(dates.endDate)}
                 </span>
               </div>
 

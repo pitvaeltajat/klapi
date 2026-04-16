@@ -8,6 +8,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReservationStatus } from '@prisma/client';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/utils/loanHelpers';
 import { Badge } from '@/components/ui/badge';
+import { formatDateOnly } from '@/utils/dateFormat';
 
 interface LoanWithReservations extends Loan {
   reservations: (Reservation & { item: Item })[];
@@ -98,8 +99,8 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
                                   .join(', ')}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
-                                {new Date(loan.endTime).toLocaleDateString('fi-FI')}
+                                {formatDateOnly(loan.startTime)} -{' '}
+                                {formatDateOnly(loan.endTime)}
                               </p>
                             </div>
                           </div>

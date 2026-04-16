@@ -8,6 +8,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDateNumeric } from '@/utils/dateFormat';
 
 interface AnnouncementsViewProps {
   announcements: (Announcement & { item: Item })[];
@@ -19,15 +20,6 @@ export default function AnnouncementsView({ announcements }: AnnouncementsViewPr
   const [buttonDisabled, setButtonDisabled] = React.useState<string>('');
   const [showExpired, setShowExpired] = React.useState<boolean>(false);
   const router = useRouter();
-
-  const formatDate = (date: Date | string) =>
-    new Date(date).toLocaleString('fi-FI', {
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
   const announcementExpired = (announcement: Announcement) => {
     const now = new Date();
@@ -90,12 +82,12 @@ export default function AnnouncementsView({ announcements }: AnnouncementsViewPr
                 <Badge>Liittyy kamaan: {announcement.item.name}</Badge>
                 <p>{announcement.message}</p>
                 <p className="text-sm text-muted-foreground">
-                  Julkaistu: {formatDate(new Date(announcement.createdAt))}
+                  Julkaistu: {formatDateNumeric(announcement.createdAt)}
                 </p>
                 {showExpired && announcementExpired(announcement) && (
                   <p className="text-sm text-destructive">
                     Vanhentunut{' '}
-                    {announcement.expiresAt && formatDate(new Date(announcement.expiresAt))}
+                    {announcement.expiresAt && formatDateNumeric(announcement.expiresAt)}
                   </p>
                 )}
                 {isAdmin && !announcementExpired(announcement) && (
