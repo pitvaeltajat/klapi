@@ -298,8 +298,7 @@ export default function LoanView({
             <div className="flex flex-col gap-3">
               <h3 className="mb-2 text-xl font-semibold">Merkitse laatikossa olevat palautetuksi</h3>
               <p className="text-sm text-muted-foreground">
-                Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta. Vielä käytössä
-                olevat tavarat (sininen tila) eivät näy tässä eivätkä ne muutu.
+                Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta.
               </p>
               <div className="flex flex-col gap-2">
                 {inBoxReservations.map((r) => (
