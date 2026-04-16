@@ -5,7 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { useCallback, useMemo, memo, MouseEvent } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

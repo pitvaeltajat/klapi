@@ -236,9 +236,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <NextLink href="/" className="font-medium text-white" onClick={handleReserveClick}>
                 Lainaa
               </NextLink>
-              <NextLink href="/kiosk/return" className="font-medium text-white">
-                Palauta
-              </NextLink>
+              {(role === 'ADMIN' || role === 'KIOSK') && (
+                <NextLink href="/kiosk/return" className="font-medium text-white">
+                  Palauta
+                </NextLink>
+              )}
               <div className="h-6 w-px bg-white/30" />
               {browseLink}
               <NextLink href="/item/announcements" className="font-medium text-white">

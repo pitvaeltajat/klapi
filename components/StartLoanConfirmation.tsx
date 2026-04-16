@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { Loan, User, Reservation, Item } from '@prisma/client';
 import { toast } from 'sonner';
 import { IoMdAlert } from 'react-icons/io';

@@ -3,7 +3,6 @@
 import React from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { SWRConfig } from 'swr';
-import { ThemeProvider } from 'next-themes';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import RedirectUnauthorized from '@/components/RedirectUnauthorized';
@@ -28,16 +27,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             },
           }}
         >
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <DatesProvider>
-              <CartProvider>
-                <TooltipProvider>
-                  <Layout>{children}</Layout>
-                  <Toaster />
-                </TooltipProvider>
-              </CartProvider>
-            </DatesProvider>
-          </ThemeProvider>
+          <DatesProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Layout>{children}</Layout>
+                <Toaster />
+              </TooltipProvider>
+            </CartProvider>
+          </DatesProvider>
         </SWRConfig>
       </RedirectUnauthorized>
     </SessionProvider>

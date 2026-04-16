@@ -3,7 +3,7 @@
 import React from 'react';
 import { CartItem } from '../types';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { IoMdAlert } from 'react-icons/io';
 import { useCart } from '@/contexts/CartContext';
