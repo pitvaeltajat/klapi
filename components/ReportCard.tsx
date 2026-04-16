@@ -74,11 +74,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
               )}
             >
               <p className={cn('whitespace-pre-wrap', expanded ? 'text-base' : 'text-sm')}>
-                {expanded
-                  ? report.content
-                  : report.content.length < 100
-                    ? report.content
-                    : report.content.substring(0, 100) + '...'}
+                {report.content}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Luotu:{' '}
