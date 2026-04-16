@@ -4,6 +4,7 @@ import React from 'react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatDateOnly } from '@/utils/dateFormat';
 
 interface Reservation {
   id: string;
@@ -22,8 +23,6 @@ interface Reservation {
     name: string;
   };
 }
-
-const DateTimeToString = (date: Date | string): string => new Date(date).toLocaleDateString('fi-FI');
 
 export default function ReservationTable({ reservations }: { reservations: Reservation[] }) {
   const { data: session } = useSession();
@@ -44,8 +43,8 @@ export default function ReservationTable({ reservations }: { reservations: Reser
           <TableRow key={reservation.id}>
             {isAdmin ? <TableCell>{reservation.item.name}</TableCell> : null}
             <TableCell>{reservation.amount}</TableCell>
-            <TableCell>{DateTimeToString(reservation.loan.startTime)}</TableCell>
-            <TableCell>{DateTimeToString(reservation.loan.endTime)}</TableCell>
+            <TableCell>{formatDateOnly(reservation.loan.startTime)}</TableCell>
+            <TableCell>{formatDateOnly(reservation.loan.endTime)}</TableCell>
           </TableRow>
         ))}
       </TableBody>

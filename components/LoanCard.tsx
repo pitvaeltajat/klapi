@@ -3,6 +3,7 @@
 import { LoanStatus, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import NextLink from 'next/link';
 import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '@/utils/loanHelpers';
+import { formatDateNumeric } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
 
 export interface LoanType {
@@ -34,15 +35,6 @@ export interface LoanType {
 }
 
 export default function LoanCard({ loan }: { loan: LoanType }) {
-  const formatDate = (date: Date | string) =>
-    new Date(date).toLocaleString('fi-FI', {
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
@@ -71,10 +63,10 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
 
       <div className="flex flex-col gap-2 text-sm text-muted-foreground">
         <p>
-          <span className="font-medium">Alku:</span> {formatDate(loan.startTime)}
+          <span className="font-medium">Alku:</span> {formatDateNumeric(loan.startTime)}
         </p>
         <p>
-          <span className="font-medium">Loppu:</span> {formatDate(loan.endTime)}
+          <span className="font-medium">Loppu:</span> {formatDateNumeric(loan.endTime)}
         </p>
       </div>
 

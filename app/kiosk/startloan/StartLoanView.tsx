@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDateOnly } from '@/utils/dateFormat';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -90,8 +91,8 @@ const LoanStartCard = ({
           </Badge>
           <p>Lainaaja: {loan.loaner}</p>
           <p>
-            Laina-aika: {new Date(loan.startTime).toLocaleDateString('fi-FI')} -{' '}
-            {new Date(loan.endTime).toLocaleDateString('fi-FI')}
+            Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
+            {formatDateOnly(loan.endTime)}
           </p>
           <div>
             <p className="mb-2 font-bold">Tavarat:</p>

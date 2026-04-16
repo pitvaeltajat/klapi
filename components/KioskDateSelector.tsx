@@ -7,22 +7,7 @@ import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
 import LoanerAutocomplete from './LoanerAutocomplete';
 import { Label } from '@/components/ui/label';
-
-function formatDateTime(date: Date): string {
-  return (
-    date.toLocaleDateString('fi-FI', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
-    }) +
-    ' klo ' +
-    date.toLocaleTimeString('fi-FI', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  );
-}
+import { formatDateTimeKiosk } from '@/utils/dateFormat';
 
 export default function KioskDateSelector() {
   const { state: dates, setEndDate } = useDates();
@@ -88,12 +73,12 @@ export default function KioskDateSelector() {
       <div className="mb-4 flex flex-wrap items-center justify-center gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
         <div className="flex flex-col items-center">
           <span className="text-xs font-medium text-muted-foreground">Laina alkaa</span>
-          <span className="text-lg font-bold">{formatDateTime(dates.startDate)}</span>
+          <span className="text-lg font-bold">{formatDateTimeKiosk(dates.startDate)}</span>
         </div>
         <span className="px-2 text-xl text-muted-foreground">&rarr;</span>
         <div className="flex flex-col items-center">
           <span className="text-xs font-medium text-muted-foreground">Palautus viimeistään</span>
-          <span className="text-lg font-bold">{formatDateTime(dates.endDate)}</span>
+          <span className="text-lg font-bold">{formatDateTimeKiosk(dates.endDate)}</span>
         </div>
       </div>
     </>

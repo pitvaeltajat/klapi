@@ -7,6 +7,7 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReportAffectedItem } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
+import { formatDateNumeric } from '@/utils/dateFormat';
 
 interface ReportsViewProps {
   reports: {
@@ -29,15 +30,6 @@ export default function ReportsView({ reports }: ReportsViewProps) {
   const { data: session } = useSession();
 
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
-
-  const formatDate = (date: Date | string) =>
-    new Date(date).toLocaleString('fi-FI', {
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
   const statusVariant = (
     status: string,
@@ -73,7 +65,7 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                 </div>
                 <hr />
                 <p>
-                  <strong>Luotu:</strong> {formatDate(new Date(report.createdAt))}
+                  <strong>Luotu:</strong> {formatDateNumeric(report.createdAt)}
                   {report.created === 'AFTER_LOAN'
                     ? ' (Lainauksen jälkeen)'
                     : ' (Ennen lainausta)'}
