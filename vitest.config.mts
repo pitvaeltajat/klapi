@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     environment: 'jsdom',
-    exclude: ['.claude/**', 'node_modules/**'],
+    exclude: ['.claude/**', '.next/**', 'node_modules/**'],
   },
 });
