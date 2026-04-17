@@ -45,13 +45,13 @@ export default function ItemBrowser({
 
   return (
     <>
-      <div className="p-1">
-        <div className="relative mb-4 w-fit">
+      <div className="sticky top-16 z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs">
+        <div className="relative w-full sm:w-fit">
           <Input
             placeholder="Hae kamoja"
             value={search}
             onChange={handleChange}
-            className="pr-9"
+            className="h-9 pr-9"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             {search ? (
@@ -66,74 +66,78 @@ export default function ItemBrowser({
             )}
           </div>
         </div>
-      </div>
-      <div className="hidden py-8 pl-0 md:block">
-        <div className="flex flex-wrap gap-2 p-1">
-          <Button
-            key="all"
-            onClick={() => setCategory('')}
-            variant={category === '' ? 'default' : 'outline-solid'}
-          >
-            Kaikki
-          </Button>
-          {[...categories]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((cat) => (
-              <Button
-                key={cat.id}
-                onClick={() => setCategory(category === cat.name ? '' : cat.name)}
-                variant={category === cat.name ? 'default' : 'outline-solid'}
-              >
-                {cat.name}
-              </Button>
-            ))}
+        <div className="hidden md:block">
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              key="all"
+              size="xs"
+              onClick={() => setCategory('')}
+              variant={category === '' ? 'default' : 'outline-solid'}
+            >
+              Kaikki
+            </Button>
+            {[...categories]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((cat) => (
+                <Button
+                  key={cat.id}
+                  size="xs"
+                  onClick={() => setCategory(category === cat.name ? '' : cat.name)}
+                  variant={category === cat.name ? 'default' : 'outline-solid'}
+                >
+                  {cat.name}
+                </Button>
+              ))}
+          </div>
         </div>
-      </div>
-      <div className="py-8 pl-0 md:hidden">
-        <select
-          className={cn(
-            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          )}
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">Kaikki</option>
-          {[...categories]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((cat) => (
-              <option key={cat.id} value={cat.name}>
-                {cat.name}
-              </option>
-            ))}
-        </select>
-      </div>
-      {showCustomItemLink && (
-        <>
-          <div className="mb-4 flex items-center gap-3 rounded-md border-l-4 border-primary bg-primary/10 p-4">
-            <FaInfoCircle className="h-5 w-5 text-primary" />
+        <div className="md:hidden">
+          <select
+            className={cn(
+              'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            )}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Kaikki</option>
+            {[...categories]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+          </select>
+        </div>
+        {showCustomItemLink && (
+          <div className="flex items-center gap-3 rounded-md border-l-4 border-primary bg-primary/10 px-3 py-2">
+            <FaInfoCircle className="h-4 w-4 shrink-0 text-primary" />
             <p className="text-sm">
               Jos haluamaasi kamaa ei löydy,{' '}
               <button
                 type="button"
-                className="font-semibold text-primary underline hover:text-primary/80"
+                className="cursor-pointer font-semibold text-primary underline hover:text-primary/80"
                 onClick={() => setDialogOpen(true)}
               >
                 klikkaa tästä
               </button>
             </p>
           </div>
-          <CustomItemDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
-        </>
+        )}
+      </div>
+      {showCustomItemLink && (
+        <CustomItemDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
       )}
-      {filteredItems.length > 0 ? (
-        renderItems ? (
-          renderItems(filteredItems)
+      <div className="pt-4">
+        {filteredItems.length > 0 ? (
+          renderItems ? (
+            renderItems(filteredItems)
+          ) : (
+            <AllItems items={filteredItems} categories={categories} />
+          )
         ) : (
-          <AllItems items={filteredItems} categories={categories} />
-        )
-      ) : (
-        <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
-      )}
+          <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
+        )}
+      </div>
     </>
   );
 }

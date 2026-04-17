@@ -164,7 +164,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
       onClick={() => {
         handleBrowseClick();
       }}
-      className="font-medium text-white hover:underline"
+      className="cursor-pointer font-medium text-white hover:underline"
     >
       Kamat
     </button>
@@ -313,7 +313,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 handleBrowseClick();
                 onClose();
               }}
-              className="px-6 py-4 text-left"
+              className="cursor-pointer px-6 py-4 text-left"
             >
               Kamat
             </button>

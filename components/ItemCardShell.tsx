@@ -57,22 +57,22 @@ export default function ItemCardShell({
         />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-5">
+      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4 xl:p-3">
         <p
-          className="truncate text-base font-semibold leading-tight sm:text-2xl"
+          className="truncate text-base font-semibold leading-tight sm:text-lg xl:text-base"
           title={name}
         >
           {name}
         </p>
 
-        <div className="text-sm font-semibold sm:mt-1 sm:text-base">{subtitle}</div>
+        <div className="text-sm font-semibold sm:mt-0.5 sm:text-sm">{subtitle}</div>
 
         {categoryLine !== undefined && (
-          <p className="truncate text-xs text-muted-foreground sm:text-sm">{categoryLine}</p>
+          <p className="truncate text-xs text-muted-foreground sm:text-xs">{categoryLine}</p>
         )}
 
         {Array.isArray(announcements) && announcements.length > 0 && (
-          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-destructive sm:text-sm">
+          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-destructive">
             <LuTriangleAlert className="shrink-0" />
             <span className="truncate">Sisältää ilmoituksen</span>
           </div>
