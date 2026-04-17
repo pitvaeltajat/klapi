@@ -147,6 +147,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       <DrawerContent
         side="right"
         className="flex max-h-dvh w-full flex-col md:max-w-md"
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          firstField.current?.focus();
+        }}
         onPointerDownOutside={(e) => {
           // Prevent Radix from auto-closing when the cart button is clicked,
           // so the button's onClick toggle works without a race condition.
