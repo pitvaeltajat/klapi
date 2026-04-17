@@ -45,26 +45,26 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
 
   const action =
     amountInCart > 0 ? (
-      <div className="flex h-11 sm:mt-4 sm:h-14">
+      <div className="flex h-11 sm:mt-3 sm:h-11">
         <Button
           variant="outline"
           aria-label="decrement"
           onClick={handleDecrement}
-          className="h-full w-12 shrink-0 rounded-r-none text-lg sm:w-16 sm:text-xl"
+          className="h-full w-12 shrink-0 rounded-r-none text-lg sm:w-14 sm:text-lg"
         >
           <FaMinus />
         </Button>
         <Input
           value={amountInCart}
           readOnly
-          className="pointer-events-none h-full min-w-0 select-none rounded-none border-x-0 px-1 text-center text-base font-bold sm:text-lg"
+          className="pointer-events-none h-full min-w-0 select-none rounded-none border-x-0 px-1 text-center text-base font-bold sm:text-base"
         />
         <Button
           variant="outline"
           aria-label="increment"
           onClick={handleIncrement}
           disabled={!canTakeMoreItems}
-          className="h-full w-12 shrink-0 rounded-l-none text-lg sm:w-16 sm:text-xl"
+          className="h-full w-12 shrink-0 rounded-l-none text-lg sm:w-14 sm:text-lg"
         >
           <FaPlus />
         </Button>
@@ -72,7 +72,7 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
     ) : (
       <Button
         onClick={handleAddToCart}
-        className="h-11 w-full gap-2 text-base sm:mt-4 sm:h-14 sm:text-lg"
+        className="h-11 w-full gap-2 text-base sm:mt-3 sm:h-11 sm:text-base"
         disabled={!canTakeMoreItems}
       >
         {canTakeMoreItems ? 'Lisää' : 'Ei saatavilla'}
