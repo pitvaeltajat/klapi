@@ -60,6 +60,7 @@ export default function DateSelector() {
                 inline
                 minDate={new Date()}
                 dateFormat="dd.MM.yyyy"
+                calendarStartDay={1}
               />
             </div>
             <Button
@@ -118,6 +119,7 @@ export default function DateSelector() {
                     inline
                     minDate={new Date()}
                     dateFormat="dd.MM.yyyy"
+                    calendarStartDay={1}
                   />
                 </div>
                 <Button
