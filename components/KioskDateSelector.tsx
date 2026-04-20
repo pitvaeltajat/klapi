@@ -65,6 +65,7 @@ export default function KioskDateSelector() {
               inline
               minDate={new Date()}
               dateFormat="dd.MM.yyyy"
+              calendarStartDay={1}
             />
           </div>
         </div>
