@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '../ses-client';
 import prisma from '@/utils/prisma';
-import { getEmailStyles, renderItemCard, renderLoanDetails } from '@/utils/emailHelpers';
+import {
+  renderEmail,
+  renderItemCard,
+  renderLoanDetails,
+  renderButton,
+} from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
 async function sendCreatedEmail(recipientEmail: string, loanId: string) {
@@ -30,54 +35,27 @@ async function sendCreatedEmail(recipientEmail: string, loanId: string) {
   }
 
   const itemsHtml = loan.reservations
-    .map((reservation) => renderItemCard({ id: reservation.item.id, name: reservation.item.name, amount: reservation.amount }))
+    .map((r) => renderItemCard({ id: r.item.id, name: r.item.name, amount: r.amount }))
     .join('');
 
-  const loanDetailsHtml = renderLoanDetails(loan.startTime, loan.endTime, loan.description);
   const loanUrl = `${getPublicUrl()}/loan/${loanId}`;
-  const subjectText = loan.description || `Varaus ${loanId}`;
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      ${getEmailStyles()}
-    </head>
-    <body>
-      <div class="email-container">
-        <h1>✅ Varaus luotu</h1>
+  const html = renderEmail(`
+    <h1>Varauksesi on luotu</h1>
+    <p>Hei!</p>
+    <p>Varauksesi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
 
-        <p>Hei!</p>
+    ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
-        <p>Varauksesi on luotu onnistuneesti ja se on automaattisesti hyväksytty. Voit noutaa varatut tavarat ilmoittamaasi aikaan.</p>
+    <h2>Varatut tavarat</h2>
+    <div class="item-grid">${itemsHtml}</div>
 
-        ${loanDetailsHtml}
+    ${renderButton(loanUrl, 'Avaa varaus')}
+  `);
 
-        <h2>Varatut tavarat</h2>
-        <div class="item-grid">
-          ${itemsHtml}
-        </div>
-
-        <div class="info-box">
-          <strong>📋 Varaustunnus:</strong> ${loanId}<br />
-          <strong>✅ Tila:</strong> Hyväksytty<br />
-          <br />
-          <strong>⚠️ Muistathan:</strong> Nouda varatut tavarat ilmoittamaasi aikaan. Voit tarkastella varaustasi alla olevasta linkistä.
-        </div>
-
-        <a href="${loanUrl}" class="button">Tarkastele varausta</a>
-
-        <div class="footer">
-          <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
-          <p>Klapi - Kaluston lainausjärjestelmä</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const subject = `Varaus "${subjectText}" luotu`;
+  const subject = loan.description
+    ? `Varauksesi "${loan.description}" on luotu`
+    : 'Varauksesi on luotu';
   await sendEmail([recipientEmail], subject, html);
 }
 

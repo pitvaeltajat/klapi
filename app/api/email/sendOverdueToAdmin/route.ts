@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '../ses-client';
 import prisma from '@/utils/prisma';
-import { getEmailStyles } from '@/utils/emailHelpers';
+import { renderEmail, renderButton, finnishGenitive } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
 interface OverdueLoanInfo {
@@ -12,16 +12,22 @@ interface OverdueLoanInfo {
   daysOverdue: number;
 }
 
+const INTERVAL_TITLES: Record<number, string> = {
+  1: 'Myöhässä 1 päivän',
+  3: 'Myöhässä 3 päivää',
+  7: 'Myöhässä 7 päivää',
+};
+
+const INTERVAL_CLASS: Record<number, string> = {
+  1: 'overdue-mild',
+  3: 'overdue-high',
+  7: 'overdue-critical',
+};
+
 async function sendOverdueAdminEmail(recipientEmail: string, loans: OverdueLoanInfo[]) {
   const publicUrl = getPublicUrl();
 
-  // Group loans by days overdue
-  const loansByInterval: Record<number, OverdueLoanInfo[]> = {
-    1: [],
-    3: [],
-    7: [],
-  };
-
+  const loansByInterval: Record<number, OverdueLoanInfo[]> = { 1: [], 3: [], 7: [] };
   loans.forEach((loan) => {
     if (loan.daysOverdue === 1 || loan.daysOverdue === 3 || loan.daysOverdue === 7) {
       loansByInterval[loan.daysOverdue].push(loan);
@@ -50,17 +56,12 @@ async function sendOverdueAdminEmail(recipientEmail: string, loans: OverdueLoanI
     }),
   );
 
-  // Create a map for quick lookup
   const loanItemsMap = new Map(loanItems.map((item) => [item.loan.id, item]));
 
-  // Generate HTML sections for each interval
   const intervalSections = [1, 3, 7]
     .map((interval) => {
       const intervalLoans = loansByInterval[interval];
       if (intervalLoans.length === 0) return '';
-
-      const intervalColor = interval === 1 ? '#f59e0b' : interval === 3 ? '#dc2626' : '#7f1d1d';
-      const intervalBg = interval === 1 ? '#fef3c7' : interval === 3 ? '#fee2e2' : '#fef2f2';
 
       const loansHtml = intervalLoans
         .map((loan) => {
@@ -74,73 +75,49 @@ async function sendOverdueAdminEmail(recipientEmail: string, loans: OverdueLoanI
           const loanUrl = `${publicUrl}/loan/${loan.id}`;
 
           return `
-            <div style="border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin-bottom: 15px; background-color: ${intervalBg};">
-              <h3 style="margin-top: 0; color: ${intervalColor};">
-                <a href="${loanUrl}" style="color: ${intervalColor}; text-decoration: none;">⚠️ Varaus ${loan.id}</a>
-              </h3>
-              <div style="margin: 10px 0;">
-                <strong>Varaaja:</strong> ${loan.userName}<br />
-                <strong>Email:</strong> ${loan.userEmail || 'Ei tiedossa'}<br />
-                <strong>Palautuspäivä oli:</strong> ${loan.endTime}<br />
-                <strong>Myöhässä:</strong> <span style="color: ${intervalColor}; font-weight: bold;">${loan.daysOverdue} päivää</span><br />
-                <strong>Tavarat:</strong> ${itemsList}
+            <div class="loan-card ${INTERVAL_CLASS[interval]}">
+              <h3><a href="${loanUrl}">${loan.userName}</a></h3>
+              <div class="meta">
+                <div><strong>Sähköposti:</strong> ${loan.userEmail || 'Ei tiedossa'}</div>
+                <div><strong>Palautuspäivä oli:</strong> ${loan.endTime}</div>
+                <div><strong>Tavarat:</strong> ${itemsList}</div>
               </div>
-              <a href="${loanUrl}" style="display: inline-block; padding: 8px 16px; background-color: ${intervalColor}; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 14px;">Tarkastele varausta</a>
+              <a href="${loanUrl}" class="open-link">Avaa varaus →</a>
             </div>
           `;
         })
         .join('');
 
-      const intervalTitle = interval === 1 ? '1 päivä myöhässä (ensimmäinen muistutus)' :
-                           interval === 3 ? '3 päivää myöhässä (toinen muistutus)' :
-                           '7 päivää myöhässä (kolmas muistutus)';
-
       return `
-        <h2 style="color: ${intervalColor}; margin-top: 30px;">${intervalTitle} (${intervalLoans.length} varausta)</h2>
+        <h2>${INTERVAL_TITLES[interval]} (${intervalLoans.length} ${intervalLoans.length === 1 ? 'varaus' : 'varausta'})</h2>
         ${loansHtml}
       `;
     })
     .filter(Boolean)
     .join('');
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      ${getEmailStyles()}
-    </head>
-    <body>
-      <div class="email-container">
-        <h1>⚠️ Myöhästyneitä varauksia!</h1>
+  const html = renderEmail(`
+    <h1>Myöhästyneitä varauksia</h1>
+    <p>Hei!</p>
+    <p>${loans.length === 1
+      ? 'Seuraava varaus on saavuttanut muistutusrajan (1, 3 tai 7 päivää myöhässä):'
+      : `Seuraavat <strong>${loans.length}</strong> varausta ovat saavuttaneet muistutusrajat (1, 3 tai 7 päivää myöhässä):`}</p>
 
-        <p>Hei admin!</p>
+    ${intervalSections}
 
-        <p>Seuraavat <strong>${loans.length}</strong> varausta ovat saavuttaneet muistutusrajat (1, 3 tai 7 päivää myöhässä):</p>
+    <div class="info-box warning">
+      Ota yhteyttä varaajiin ja varmista, että tavarat palautetaan. Mitä pidempään varaus on myöhässä, sitä kiireellisempi toimenpide on.
+    </div>
 
-        <div class="info-box" style="background-color: #eff6ff; border-left: 4px solid #2563eb;">
-          <strong>ℹ️ Muistutuslogiikka:</strong> Saat automaattisesti ilmoituksen varauksista, kun ne ovat täsmälleen 1, 3 tai 7 päivää myöhässä. Tämä vähentää spämmiä ja keskittää huomion kriittisiin ajankohtiin.
-        </div>
+    ${renderButton(`${publicUrl}/admin`, 'Avaa admin-paneeli')}
+  `);
 
-        ${intervalSections}
-
-        <div class="info-box" style="background-color: #fef2f2; border-left: 4px solid #dc2626; margin-top: 30px;">
-          <strong>⚠️ Toiminto vaaditaan:</strong> Ota yhteyttä varaajiin ja varmista, että tavarat palautetaan. Mitä pidempään varaus on myöhässä, sitä kiireellisempi toimenpide on tarpeen.
-        </div>
-
-        <a href="${publicUrl}/admin" class="button">Siirry admin-paneeliin</a>
-
-        <div class="footer">
-          <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
-          <p>Klapi - Kaluston lainausjärjestelmä</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+  const subject = loans.length === 1
+    ? `${finnishGenitive(loans[0].userName)} varaus on myöhässä`
+    : `${loans.length} myöhästynyttä varausta`;
 
   try {
-    await sendEmail(recipientEmail, `⚠️ ${loans.length} myöhästynyttä varausta`, html);
+    await sendEmail(recipientEmail, subject, html);
   } catch (error) {
     console.error('Failed to send overdue admin email:', error);
     throw error;
