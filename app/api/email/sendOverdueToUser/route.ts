@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '../ses-client';
 import prisma from '@/utils/prisma';
-import { getEmailStyles, renderItemCard, renderLoanDetails } from '@/utils/emailHelpers';
+import {
+  renderEmail,
+  renderItemCard,
+  renderLoanDetails,
+  renderButton,
+} from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
 async function sendOverdueEmail(recipientEmail: string, loanId: string) {
@@ -30,52 +35,34 @@ async function sendOverdueEmail(recipientEmail: string, loanId: string) {
   }
 
   const itemsHtml = loan.reservations
-    .map((reservation) => renderItemCard({ id: reservation.item.id, name: reservation.item.name, amount: reservation.amount }))
+    .map((r) => renderItemCard({ id: r.item.id, name: r.item.name, amount: r.amount }))
     .join('');
 
-  const loanDetailsHtml = renderLoanDetails(loan.startTime, loan.endTime, loan.description);
   const loanUrl = `${getPublicUrl()}/loan/${loanId}`;
-  const subjectText = loan.description || `Varaus ${loanId}`;
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      ${getEmailStyles()}
-    </head>
-    <body>
-      <div class="email-container">
-        <h1>⚠️ Varauksesi on myöhässä!</h1>
+  const html = renderEmail(`
+    <h1>Varauksesi on myöhässä</h1>
+    <p>Hei!</p>
+    <p>Varauksesi palautuspäivä on mennyt umpeen. Palauta tavarat mahdollisimman pian — jos tarvitset lisäaikaa, ota yhteyttä ylläpitoon.</p>
 
-        <p>Hei!</p>
+    ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
-        <p>Varauksesi palautuspäivä on mennyt umpeen. Ole hyvä ja palauta tavarat mahdollisimman pian.</p>
+    <h2>Palautettavat tavarat</h2>
+    <div class="item-grid">${itemsHtml}</div>
 
-        ${loanDetailsHtml}
+    ${renderButton(loanUrl, 'Avaa varaus')}
 
-        <div class="info-box">
-          <strong>📦 Varatut tavarat:</strong>
-          ${itemsHtml}
-        </div>
+    <p style="font-size: 12px; color: #6b7280; margin-top: 20px;">
+      Jos olet jo palauttanut tavarat, voit jättää tämän viestin huomiotta.
+    </p>
+  `);
 
-        <div class="info-box" style="background-color: #fef2f2; border-left: 4px solid #dc2626;">
-          <strong>⚠️ Toiminto vaaditaan:</strong> Palauta tavarat mahdollisimman pian. Jos tarvitset lisäaikaa, ota yhteyttä ylläpitoon.
-        </div>
-
-        <a href="${loanUrl}" class="button">Näytä varauksesi</a>
-
-        <div class="footer">
-          <p><i>Tämä on automaattinen muistutus. Jos olet jo palauttanut tavarat, voit jättää tämän viestin huomiotta.</i></p>
-          <p>Klapi - Kaluston lainausjärjestelmä</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+  const subject = loan.description
+    ? `"${loan.description}" on myöhässä`
+    : 'Varauksesi on myöhässä';
 
   try {
-    await sendEmail(recipientEmail, `⚠️ Myöhästynyt varaus: ${subjectText}`, html);
+    await sendEmail(recipientEmail, subject, html);
   } catch (error) {
     console.error('Failed to send overdue email:', error);
     throw error;

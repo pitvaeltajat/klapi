@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '../ses-client';
 import prisma from '@/utils/prisma';
-import { getEmailStyles } from '@/utils/emailHelpers';
+import {
+  renderEmail,
+  renderButton,
+  finnishGenitive,
+} from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
 interface LoanInfo {
@@ -47,55 +51,38 @@ async function sendAdminReminderEmail(recipientEmail: string, loans: LoanInfo[])
       const loanUrl = `${publicUrl}/loan/${loan.id}`;
 
       return `
-        <div style="border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin-bottom: 15px; background-color: #ffffff;">
-          <h3 style="margin-top: 0; color: #1e40af;">
-            <a href="${loanUrl}" style="color: #1e40af; text-decoration: none;">Varaus ${loan.id}</a>
-          </h3>
-          <div style="margin: 10px 0;">
-            <strong>Varaaja:</strong> ${loan.userName}<br />
-            <strong>Boksissa:</strong> ${loan.boxName || 'Tuntematon'}<br />
-            <strong>Aloitettu:</strong> ${loan.startTime}<br />
-            <strong>Tavarat:</strong> ${itemsList}
+        <div class="loan-card">
+          <h3><a href="${loanUrl}">${loan.userName}</a></h3>
+          <div class="meta">
+            <div><strong>Boksi:</strong> ${loan.boxName || 'Tuntematon'}</div>
+            <div><strong>Aloitettu:</strong> ${loan.startTime}</div>
+            <div><strong>Tavarat:</strong> ${itemsList}</div>
           </div>
-          <a href="${loanUrl}" style="display: inline-block; padding: 8px 16px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 14px;">Tarkastele varausta</a>
+          <a href="${loanUrl}" class="open-link">Avaa varaus →</a>
         </div>
       `;
     })
     .join('');
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      ${getEmailStyles()}
-    </head>
-    <body>
-      <div class="email-container">
-        <h1>📦 Viikottainen muistutus: Varauksia odottaa palautusta</h1>
+  const html = renderEmail(`
+    <h1>Varauksia odottaa palautusta</h1>
+    <p>Hei!</p>
+    <p>${loans.length === 1
+      ? 'Seuraava varaus on ollut boksissa yli viikon ja odottaa palautusta:'
+      : `Seuraavat <strong>${loans.length}</strong> varausta ovat olleet bokseissa yli viikon ja odottavat palautusta:`}</p>
 
-        <p>Hei admin!</p>
+    ${loansListHtml}
 
-        <p>Seuraavat <strong>${loans.length}</strong> varausta ovat olleet bokseissa yli viikon ja odottavat palautusta:</p>
+    <div class="info-box">
+      Ota yhteyttä varaajiin ja varmista, että tavarat palautetaan ajoissa.
+    </div>
 
-        ${loansListHtml}
+    ${renderButton(`${publicUrl}/admin`, 'Avaa admin-paneeli')}
+  `);
 
-        <div class="info-box">
-          <strong>⚠️ Toiminto vaaditaan:</strong> Ota yhteyttä varaajiin ja varmista, että tavarat palautetaan ajoissa.
-        </div>
-
-        <a href="${publicUrl}/admin" class="button">Siirry admin-paneeliin</a>
-
-        <div class="footer">
-          <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
-          <p>Klapi - Kaluston lainausjärjestelmä</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const subject = `Viikottainen muistutus: ${loans.length} varausta odottaa palautusta`;
+  const subject = loans.length === 1
+    ? `${finnishGenitive(loans[0].userName)} varaus on ollut boksissa yli viikon`
+    : `${loans.length} varausta bokseissa yli viikon`;
   await sendEmail([recipientEmail], subject, html);
 }
 
