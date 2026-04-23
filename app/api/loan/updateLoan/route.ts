@@ -17,7 +17,12 @@ export async function POST(request: Request) {
     // Check that user is admin or owns this loan
     const existingLoan = await prisma.loan.findUnique({
       where: { id },
-      select: { userId: true, status: true, reservations: { select: { status: true } } },
+      select: {
+        userId: true,
+        status: true,
+        startTime: true,
+        reservations: { select: { status: true, itemId: true, amount: true } },
+      },
     });
 
     if (!existingLoan) {
@@ -29,6 +34,14 @@ export async function POST(request: Request) {
 
     if (!isAdmin && !isOwner) {
       return NextResponse.json({ message: 'Sinulla ei ole oikeutta muokata tätä lainaa' }, { status: 403 });
+    }
+
+    // Non-admin owners can only edit before the loan has started
+    if (!isAdmin && existingLoan.startTime <= new Date()) {
+      return NextResponse.json(
+        { message: 'Lainaa ei voi enää muokata — lainaus on jo alkanut' },
+        { status: 403 },
+      );
     }
 
     // Non-admin users can only edit if reservation statuses allow
@@ -54,7 +67,6 @@ export async function POST(request: Request) {
     const requestedStart = new Date(startTime);
     const requestedEnd = new Date(endTime);
 
-    // Get all other reservations that overlap with the requested date range
     // Only ACCEPTED and INUSE reservations block availability
     // IN_BOX items are available for new loans
     const overlappingReservations = await prisma.reservation.findMany({
@@ -154,6 +166,30 @@ export async function POST(request: Request) {
       }),
     );
 
+    // Build a diff of reservation changes for history
+    const originalByItem = new Map(existingLoan.reservations.map((r) => [r.itemId, r.amount]));
+    const newByItem = new Map(requestedReservations.map((r) => [r.item.connect.id, r.amount]));
+
+    const addedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
+    const changedItems: Array<{ itemId: string; name: string | undefined; from: number; to: number }> = [];
+    const removedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
+
+    for (const [itemId, newAmount] of newByItem.entries()) {
+      if (!originalByItem.has(itemId)) {
+        addedItems.push({ itemId, name: itemMap.get(itemId)?.name, amount: newAmount });
+      } else {
+        const orig = originalByItem.get(itemId)!;
+        if (orig !== newAmount) {
+          changedItems.push({ itemId, name: itemMap.get(itemId)?.name, from: orig, to: newAmount });
+        }
+      }
+    }
+    for (const [itemId, origAmount] of originalByItem.entries()) {
+      if (!newByItem.has(itemId)) {
+        removedItems.push({ itemId, name: itemMap.get(itemId)?.name, amount: origAmount });
+      }
+    }
+
     const result = await prisma.loan.update({
       where: {
         id: id,
@@ -174,10 +210,9 @@ export async function POST(request: Request) {
       action: 'UPDATED',
       actedById: session.user.id,
       details: {
-        startTime,
-        endTime,
-        description: description ?? null,
-        itemCount: reservationsWithStatus.length,
+        added: addedItems,
+        changed: changedItems,
+        removed: removedItems,
       },
     });
 

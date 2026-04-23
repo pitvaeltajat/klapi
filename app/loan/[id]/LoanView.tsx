@@ -81,6 +81,7 @@ export default function LoanView({
   const { data: session } = useSession();
 
   const isAdmin = session?.user?.group === 'ADMIN';
+  const loanStarted = new Date(loan.startTime) <= new Date();
 
   const approveLoan = async () => {
     await fetch('/api/loan/approveLoan', {
@@ -185,11 +186,11 @@ export default function LoanView({
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
-  const canEdit =
-    (isAdmin || session?.user?.id === loan.user.id) &&
-    derivedStatus !== 'INUSE' &&
-    derivedStatus !== 'PARTIALLY_RETURNED' &&
-    derivedStatus !== 'RETURNED';
+  const canEdit = isAdmin
+    ? derivedStatus !== 'INUSE' &&
+      derivedStatus !== 'PARTIALLY_RETURNED' &&
+      derivedStatus !== 'RETURNED'
+    : session?.user?.id === loan.user.id && !loanStarted;
 
   const canApprove =
     isAdmin &&
@@ -349,7 +350,9 @@ export default function LoanView({
                   )}
                   {canEdit && (
                     <Button asChild variant="warning" className="flex-1">
-                      <NextLink href={`/admin/editLoan/${loan.id}`}>Muokkaa</NextLink>
+                      <NextLink href={isAdmin ? `/admin/editLoan/${loan.id}` : `/loan/${loan.id}/edit`}>
+                        Muokkaa
+                      </NextLink>
                     </Button>
                   )}
                   {canApprove && (
