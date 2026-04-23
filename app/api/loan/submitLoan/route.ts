@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
-import { getBaseUrl } from '@/utils/urlHelpers';
 import { logLoanHistory } from '@/utils/loanHistory';
+import { sendNewLoanEmail } from '@/app/api/email/sendNewLoanToAdmin/route';
+import { sendCreatedEmail } from '@/app/api/email/sendNewLoanToUser/route';
+
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
@@ -35,12 +38,17 @@ export async function POST(request: Request) {
 
     // Ensure referenced items exist; for custom items (client-generated ids)
     // create temporary Item records and replace itemId accordingly.
+    const requestedIds = (reservations as { itemId: string }[]).map((r) => r.itemId);
+    const existingItems = await prisma.item.findMany({
+      where: { id: { in: requestedIds } },
+      select: { id: true },
+    });
+    const existingIds = new Set(existingItems.map((i) => i.id));
+
     const processedReservations: { itemId: string; amount: number }[] = [];
     for (const r of reservations) {
       let itemId = r.itemId as string;
-      const existing = await prisma.item.findUnique({ where: { id: itemId } });
-      if (!existing) {
-        // If client provided a name for the custom item, create it as temporary.
+      if (!existingIds.has(itemId)) {
         if (!r.name) {
           return NextResponse.json({ message: `Missing name for custom item ${itemId}` }, { status: 400 });
         }
@@ -109,11 +117,9 @@ export async function POST(request: Request) {
       },
     });
 
-    const baseUrl = getBaseUrl();
-
-    // Send emails for ACCEPTED loans (regular user loans)
+    // Emails are sent after the response is returned so a slow SES call
+    // can't time out the request. Failures are logged; the loan is already committed.
     if (loanStatus === 'ACCEPTED') {
-      // Send email to user only if they have emailNewLoanNotification enabled
       if (user.email && user.group !== 'ADMIN') {
         const userPrefs = await prisma.user.findUnique({
           where: { id: userId },
@@ -121,59 +127,36 @@ export async function POST(request: Request) {
         });
 
         if (userPrefs?.emailNewLoanNotification !== false) {
-          try {
-            await fetch(`${baseUrl}/api/email/sendNewLoanToUser`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                id: result.id,
-                email: user.email,
-              }),
-            });
-          } catch (error) {
-            console.error('Failed to send user email:', error);
-            // Continue execution even if email fails
-          }
+          const recipient = user.email;
+          after(async () => {
+            try {
+              await sendCreatedEmail(recipient, result.id);
+            } catch (error) {
+              console.error('Failed to send user email:', error);
+            }
+          });
         }
       }
 
-      // Send admin notification for regular loans
-      try {
-        await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: result.id,
-            loanCreator: user.name,
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to send admin email:', error);
-        // Continue execution even if email fails
-      }
+      const creatorName = user.name ?? '';
+      after(async () => {
+        try {
+          await sendNewLoanEmail(creatorName, result.id);
+        } catch (error) {
+          console.error('Failed to send admin email:', error);
+        }
+      });
     }
 
-    // Send admin notification for kiosk loans (INUSE status)
     if (loanStatus === 'INUSE' && session.user.group === 'KIOSK') {
-      try {
-        await fetch(`${baseUrl}/api/email/sendNewLoanToAdmin`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: result.id,
-            loanCreator: user.name || 'Kiosk-käyttäjä',
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to send admin email for kiosk loan:', error);
-        // Continue execution even if email fails
-      }
+      const creatorName = user.name || 'Kiosk-käyttäjä';
+      after(async () => {
+        try {
+          await sendNewLoanEmail(creatorName, result.id);
+        } catch (error) {
+          console.error('Failed to send admin email for kiosk loan:', error);
+        }
+      });
     }
 
     return NextResponse.json(result);

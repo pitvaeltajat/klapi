@@ -9,7 +9,7 @@ import {
 } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
-async function sendNewLoanEmail(loanCreator: string, loanId: string) {
+export async function sendNewLoanEmail(loanCreator: string, loanId: string) {
   const adminEmails = (
     await prisma.user.findMany({
       where: {

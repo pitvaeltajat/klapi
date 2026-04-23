@@ -9,7 +9,7 @@ import {
 } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
-async function sendCreatedEmail(recipientEmail: string, loanId: string) {
+export async function sendCreatedEmail(recipientEmail: string, loanId: string) {
   const loan = await prisma.loan.findUnique({
     where: { id: loanId },
     select: {
