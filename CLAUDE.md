@@ -1,8 +1,8 @@
 # Klapi — agent notes
 
-Equipment loan management app. Next.js 16 **Pages Router** (not App Router — do not
-migrate), TypeScript strict, Prisma 7, PostgreSQL, NextAuth, Tailwind + shadcn/ui,
-sonner for toasts, next-themes for dark mode. UI is in Finnish.
+Equipment loan management app. Next.js 16 **App Router**, React 19, TypeScript
+strict, Prisma 7, PostgreSQL, NextAuth v4, Tailwind v4 + shadcn/ui, sonner for
+toasts, next-themes for dark mode, SWR for data fetching. UI is in Finnish.
 
 See `README.md` for the product overview, tech stack, and project layout.
 
@@ -31,10 +31,15 @@ even after the files appear.
 
 ## Router reminder
 
-This project is **Pages Router**. `next/head`, `next/router`, `getServerSideProps`,
-and client-side hooks without `"use client"` are all correct here. Ignore validator
-suggestions that claim otherwise — do not migrate to App Router unless the user
-explicitly asks.
+This project is **App Router** (no `pages/` directory). Route handlers live under
+`app/api/*/route.ts` and use `NextResponse` + `Request`. Pages are server
+components by default; components using hooks or browser APIs must start with
+`'use client'`. The root layout is `app/layout.tsx`; client-side providers
+(NextAuth `SessionProvider`, SWR, Cart/Dates contexts, `Toaster`, `TooltipProvider`,
+`Layout`) are wrapped in `app/providers.tsx`.
+
+Use `next/navigation` (not `next/router`); no `getServerSideProps` — fetch in
+server components or route handlers.
 
 ## UI conventions
 
@@ -44,7 +49,7 @@ explicitly asks.
   Tailwind maps them via `bg-primary`, `text-muted-foreground`, etc.
 - Dark mode is class-based via `next-themes` (`attribute="class"`).
 - Toasts: `import { toast } from 'sonner'` — use `toast.success/error/warning`.
-  The `Toaster` is already mounted in `_app.tsx`.
+  The `Toaster` is already mounted in `app/providers.tsx`.
 - Creatable/multi selects: use `CreatableSelect` from
   `components/ui/creatable-select.tsx` (react-select styled via the `classNames`
   API so it respects dark mode + tokens).
