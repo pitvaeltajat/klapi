@@ -7,7 +7,7 @@ import { logLoanHistory } from '@/utils/loanHistory';
 import { sendNewLoanEmail } from '@/app/api/email/sendNewLoanToAdmin/route';
 import { sendCreatedEmail } from '@/app/api/email/sendNewLoanToUser/route';
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
