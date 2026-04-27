@@ -13,10 +13,11 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { action, ids, categoryName } = body as {
-    action: 'delete' | 'setCategory';
+  const { action, ids, categoryName, locationName } = body as {
+    action: 'delete' | 'setCategory' | 'setLocation';
     ids: string[];
     categoryName?: string;
+    locationName?: string;
   };
 
   if (!action || !ids || ids.length === 0) {
@@ -49,6 +50,25 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ message: `Kategoria asetettu ${ids.length} kamalle`, category });
+  }
+
+  if (action === 'setLocation') {
+    if (!locationName) {
+      return NextResponse.json({ message: 'Sijainti puuttuu' }, { status: 400 });
+    }
+
+    const location = await prisma.location.upsert({
+      where: { id: locationName },
+      create: { name: locationName },
+      update: {},
+    });
+
+    await prisma.item.updateMany({
+      where: { id: { in: ids } },
+      data: { locationId: location.id },
+    });
+
+    return NextResponse.json({ message: `Sijainti asetettu ${ids.length} kamalle`, location });
   }
 
   return NextResponse.json({ message: 'Tuntematon toiminto' }, { status: 400 });

@@ -91,7 +91,7 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
   const isKioskMode = session?.user?.group === 'KIOSK';
   const isAdmin = session?.user?.group === 'ADMIN';
 
-  const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('grid');
+  const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('table');
 
   const handleExitBrowseMode = () => {
     setBrowseMode(false);

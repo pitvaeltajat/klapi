@@ -140,6 +140,8 @@ export default function InventoryView() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
   const [bulkCategoryValue, setBulkCategoryValue] = useState<{ value: string; label: string } | null>(null);
+  const [bulkLocationOpen, setBulkLocationOpen] = useState(false);
+  const [bulkLocationValue, setBulkLocationValue] = useState<{ value: string; label: string } | null>(null);
 
   const [promoteItem, setPromoteItem] = useState<InventoryItem | null>(null);
   const [promoteOpen, setPromoteOpen] = useState(false);
@@ -375,6 +377,30 @@ export default function InventoryView() {
       toast.success(`Kategoria asetettu ${ids.length} kamalle`);
     } catch {
       toast.error('Kategoria-asetus epäonnistui');
+      mutateItems();
+    } finally {
+      ids.forEach(removePending);
+    }
+  };
+
+  const handleBulkSetLocation = async () => {
+    if (!bulkLocationValue) return;
+    setBulkLocationOpen(false);
+    const ids = selectedIds;
+    ids.forEach(addPending);
+    try {
+      const res = await fetch('/api/item/bulkItems', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'setLocation', ids, locationName: bulkLocationValue.label }),
+      });
+      if (!res.ok) throw new Error('Virhe');
+      mutateItems();
+      setRowSelection({});
+      setBulkLocationValue(null);
+      toast.success(`Sijainti asetettu ${ids.length} kamalle`);
+    } catch {
+      toast.error('Sijainnin asetus epäonnistui');
       mutateItems();
     } finally {
       ids.forEach(removePending);
@@ -625,6 +651,10 @@ export default function InventoryView() {
     () => [{ value: '', label: 'Kaikki kategoriat' }, ...categoryOptions],
     [categoryOptions],
   );
+  const locationOptions = useMemo(
+    () => locations.map((l) => ({ value: l.id, label: l.name })),
+    [locations],
+  );
 
   const { pageIndex, pageSize } = table.getState().pagination;
   const pageCount = table.getPageCount();
@@ -687,6 +717,9 @@ export default function InventoryView() {
             </Button>
             <Button size="sm" variant="outline" onClick={() => setBulkCategoryOpen(true)}>
               Aseta kategoria
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setBulkLocationOpen(true)}>
+              Aseta sijainti
             </Button>
           </div>
         )}
@@ -960,6 +993,36 @@ export default function InventoryView() {
             </Button>
             <Button onClick={handleBulkSetCategory} disabled={!bulkCategoryValue}>
               Aseta kategoria
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk set location */}
+      <Dialog open={bulkLocationOpen} onOpenChange={setBulkLocationOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aseta sijainti valituille kamoille</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Sijainti vaihdetaan {selectedIds.length} valitulle kamalle. Voit myös luoda uuden
+            sijainnin kirjoittamalla sen nimen.
+          </p>
+          <CreatableSelect
+            options={locationOptions}
+            value={bulkLocationValue}
+            onChange={(opt) =>
+              setBulkLocationValue(opt as { value: string; label: string } | null)
+            }
+            placeholder="Valitse tai luo sijainti"
+            isClearable
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkLocationOpen(false)}>
+              Peruuta
+            </Button>
+            <Button onClick={handleBulkSetLocation} disabled={!bulkLocationValue}>
+              Aseta sijainti
             </Button>
           </DialogFooter>
         </DialogContent>
