@@ -148,10 +148,46 @@ export default function InventoryView() {
   const [addingSubmitting, setAddingSubmitting] = useState(false);
   const emptyDraft = { name: '', description: '', amount: 1 };
   const [newRow, setNewRow] = useState(emptyDraft);
+  const [newRowImage, setNewRowImage] = useState<File | null>(null);
+  const [newRowPreview, setNewRowPreview] = useState<string | null>(null);
+  const newRowFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNewRowImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setNewRowImage(file);
+    setNewRowPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  };
 
   const cancelAddRow = () => {
     setAddingRow(false);
     setNewRow(emptyDraft);
+    setNewRowImage(null);
+    setNewRowPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    if (newRowFileInputRef.current) newRowFileInputRef.current.value = '';
+  };
+
+  const uploadNewRowImage = async (itemId: string, file: File) => {
+    const presignRes = await fetch('/api/item/uploadImage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: itemId, contentType: file.type }),
+    });
+    if (!presignRes.ok) throw new Error('Kuvan lataus epäonnistui');
+    const { url, fields } = (await presignRes.json()) as {
+      url: string;
+      fields: Record<string, string>;
+    };
+    const formData = new FormData();
+    Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
+    formData.append('file', file);
+    const uploadRes = await fetch(url, { method: 'POST', body: formData });
+    if (!uploadRes.ok) throw new Error('Kuvan tallennus epäonnistui');
   };
 
   const handleAddRow = async () => {
@@ -176,9 +212,25 @@ export default function InventoryView() {
         const data = await res.json() as { message?: string };
         throw new Error(data.message ?? 'Virhe');
       }
+      const created = (await res.json()) as { id: string };
+      if (newRowImage) {
+        try {
+          await uploadNewRowImage(created.id, newRowImage);
+        } catch (uploadErr) {
+          toast.error('Kama lisätty, mutta kuvan lataus epäonnistui', {
+            description: uploadErr instanceof Error ? uploadErr.message : undefined,
+          });
+        }
+      }
       await mutateItems();
       toast.success('Kama lisätty');
       setNewRow(emptyDraft);
+      setNewRowImage(null);
+      setNewRowPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      if (newRowFileInputRef.current) newRowFileInputRef.current.value = '';
       setAddingRow(false);
     } catch (err) {
       toast.error('Lisäys epäonnistui', {
@@ -670,9 +722,32 @@ export default function InventoryView() {
                 <TableRow className="bg-muted/30">
                   <TableCell />
                   <TableCell>
-                    <div className="flex h-9 w-9 items-center justify-center rounded border border-dashed border-border text-muted-foreground">
-                      <Plus className="h-4 w-4" />
-                    </div>
+                    <input
+                      ref={newRowFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleNewRowImageChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => newRowFileInputRef.current?.click()}
+                      className="flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded border border-dashed border-border text-muted-foreground hover:border-ring hover:text-foreground"
+                      aria-label={newRowImage ? 'Vaihda kuva' : 'Lisää kuva'}
+                      title={newRowImage ? 'Vaihda kuva' : 'Lisää kuva'}
+                      disabled={addingSubmitting}
+                    >
+                      {newRowPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- local preview from FileReader URL
+                        <img
+                          src={newRowPreview}
+                          alt="Esikatselu"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                    </button>
                   </TableCell>
                   <TableCell>
                     <input
