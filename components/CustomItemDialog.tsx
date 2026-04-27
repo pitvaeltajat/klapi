@@ -42,7 +42,7 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Lisää oma kama varaukseen</DialogTitle>
+          <DialogTitle>Lisää oma kama lainaan</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>

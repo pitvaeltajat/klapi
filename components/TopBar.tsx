@@ -248,7 +248,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
               </NextLink>
               {(role === 'ADMIN' || role === 'KIOSK') && (
                 <NextLink href="/loan" className="font-medium text-white">
-                  Varaukset
+                  Lainat
                 </NextLink>
               )}
               {role === 'ADMIN' && (
@@ -322,7 +322,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
             </NextLink>
             {(role === 'ADMIN' || role === 'KIOSK') && (
               <NextLink href="/loan" onClick={onClose} className="px-6 py-4">
-                Varaukset
+                Lainat
               </NextLink>
             )}
             {role === 'ADMIN' && (

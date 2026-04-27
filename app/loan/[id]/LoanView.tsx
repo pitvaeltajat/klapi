@@ -211,13 +211,13 @@ export default function LoanView({
     <>
       <Breadcrumbs
         items={[
-          { label: 'Varaukset', href: '/loan' },
+          { label: 'Lainat', href: '/loan' },
           { label: loan.description || 'Ei kuvausta' },
         ]}
       />
       <div className="flex flex-col gap-6">
         <h1 className="mb-4 text-3xl font-semibold">
-          Varaus: {loan.description || 'Ei kuvausta'}
+          Laina: {loan.description || 'Ei kuvausta'}
         </h1>
 
         <div className="rounded-lg border bg-card p-6">
@@ -400,9 +400,9 @@ export default function LoanView({
         <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Hylätäänkö varaus?</DialogTitle>
+              <DialogTitle>Hylätäänkö laina?</DialogTitle>
             </DialogHeader>
-            <p>Varaushakemus hylätään. Oletko varma?</p>
+            <p>Lainahakemus hylätään. Oletko varma?</p>
             <DialogFooter>
               <Button variant="destructive" onClick={rejectLoan}>
                 Hylkää

@@ -225,7 +225,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           {isKiosk && (
             <div className="mt-6 rounded-lg border-2 bg-muted p-4">
               <p className="text-base leading-relaxed">
-                Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja
+                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja
                 mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
                 reikä laavussa tms.)
               </p>

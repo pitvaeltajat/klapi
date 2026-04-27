@@ -113,7 +113,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
         )}
 
         <div className="mt-4">
-          <h2 className="mb-4 text-xl font-semibold">Varaushistoria</h2>
+          <h2 className="mb-4 text-xl font-semibold">Lainahistoria</h2>
           <ReservationTable reservations={item.reservations} />
         </div>
       </div>

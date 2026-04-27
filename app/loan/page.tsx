@@ -42,14 +42,14 @@ export default function LoanListPage() {
 
   if (!session?.user) return <NotAuthenticated />;
   if (isLoading) return <LoadingSpinner fullWidth />;
-  if (error) return <p className="text-destructive">Virhe ladattaessa varauksia</p>;
+  if (error) return <p className="text-destructive">Virhe ladattaessa lainoja</p>;
 
   if (!loans || loans.length === 0) {
     return (
       <div>
-        <h1 className="text-3xl font-semibold">Ei varauksia</h1>
+        <h1 className="text-3xl font-semibold">Ei lainoja</h1>
         <Button asChild className="mt-4">
-          <NextLink href="/">Luo varaus etusivulla</NextLink>
+          <NextLink href="/">Luo laina etusivulla</NextLink>
         </Button>
       </div>
     );
@@ -82,10 +82,10 @@ export default function LoanListPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Varaukset' }]} />
+      <Breadcrumbs items={[{ label: 'Lainat' }]} />
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="mb-4 text-3xl font-semibold">Varaukset</h1>
+          <h1 className="mb-4 text-3xl font-semibold">Lainat</h1>
           <div className="py-4">
             <div className="flex flex-col gap-3">
               <label className="flex items-center gap-2 font-medium">

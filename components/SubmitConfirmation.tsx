@@ -135,8 +135,8 @@ export default function SubmitConfirmation({
 
       setReportContent('');
       clearCart();
-      toast.success('Varaus lähetetty', {
-        description: 'Varaus rekisteröitiin onnistuneesti.',
+      toast.success('Laina lähetetty', {
+        description: 'Laina rekisteröitiin onnistuneesti.',
         duration: 9000,
       });
       if (session?.user?.group === 'KIOSK') {
@@ -147,7 +147,7 @@ export default function SubmitConfirmation({
         router.push('/account');
       }
     } else {
-      toast.error('Error', { description: 'Varauksen lähetyksessä tapahtui virhe' });
+      toast.error('Error', { description: 'Lainan lähetyksessä tapahtui virhe' });
     }
 
     onClose();
@@ -159,7 +159,7 @@ export default function SubmitConfirmation({
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tarkista varauksen tiedot:</DialogTitle>
+          <DialogTitle>Tarkista lainan tiedot:</DialogTitle>
         </DialogHeader>
         <div>
           {inBoxItems.length > 0 && (
@@ -198,7 +198,7 @@ export default function SubmitConfirmation({
               minute: '2-digit',
             })}
           </p>
-          <p className="mt-4">Varattavat kamat:</p>
+          <p className="mt-4">Lainattavat kamat:</p>
 
           <Table>
             <TableHeader>
@@ -223,7 +223,7 @@ export default function SubmitConfirmation({
             Peruuta
           </Button>
           <Button variant="success" onClick={handleSubmit} isLoading={isLoading || isCheckingBox}>
-            Lähetä varaus
+            Lähetä laina
           </Button>
         </DialogFooter>
       </DialogContent>

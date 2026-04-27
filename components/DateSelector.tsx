@@ -68,7 +68,7 @@ export default function DateSelector() {
               className="mt-4 w-full"
               onClick={() => setBrowseMode(true)}
             >
-              Selaa katalogia ilman varausta
+              Selaa katalogia ilman lainaa
             </Button>
           </div>
         </>

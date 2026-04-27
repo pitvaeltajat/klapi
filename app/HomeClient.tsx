@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import NextLink from 'next/link';
+import { FaPlus } from 'react-icons/fa';
 import DateSelector from '@/components/DateSelector';
 import KioskModeSelector from '@/components/KioskModeSelector';
 import KioskDateSelector from '@/components/KioskDateSelector';
@@ -11,17 +13,30 @@ import ItemBrowser from '@/components/ItemBrowser';
 import BrowseItemCard from '@/components/BrowseItemCard';
 import { Button } from '@/components/ui/button';
 
-function BrowseModeHeader({ onExitBrowseMode }: { onExitBrowseMode: () => void }) {
+function BrowseModeHeader({
+  onExitBrowseMode,
+  isAdmin,
+}: {
+  onExitBrowseMode: () => void;
+  isAdmin: boolean;
+}) {
   return (
     <div className="mb-4 flex flex-col gap-4">
       <div>
         <h2 className="mb-2 text-2xl font-semibold">Selaa katalogia</h2>
         <p className="text-muted-foreground">
-          Selaat katalogia ilman varaustoimintoa. Voit tarkastella saatavilla olevia kamoja.
+          Selaat katalogia ilman lainatoimintoa. Voit tarkastella saatavilla olevia kamoja.
         </p>
       </div>
-      <div>
-        <Button onClick={onExitBrowseMode}>Siirry varaamaan</Button>
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
+        {isAdmin && (
+          <Button asChild variant="success" className="gap-2">
+            <NextLink href="/admin/createItem">
+              <FaPlus /> Luo uusi kama
+            </NextLink>
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -44,6 +59,7 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
   const { data: session } = useSession();
 
   const isKioskMode = session?.user?.group === 'KIOSK';
+  const isAdmin = session?.user?.group === 'ADMIN';
 
   const handleExitBrowseMode = () => {
     setBrowseMode(false);
@@ -69,7 +85,7 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
     <>
       {dates.browseMode ? (
         <>
-          <BrowseModeHeader onExitBrowseMode={handleExitBrowseMode} />
+          <BrowseModeHeader onExitBrowseMode={handleExitBrowseMode} isAdmin={isAdmin} />
           <ItemBrowser
             items={filteredItems}
             categories={categories}
