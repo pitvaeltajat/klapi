@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,22 +39,18 @@ export default function PromoteDialog({
   onOpenChange,
   onSuccess,
 }: Props) {
-  const [name, setName] = useState(item?.name ?? '');
-  const [description, setDescription] = useState(item?.description ?? '');
-  const [amount, setAmount] = useState(item?.amount ?? 1);
-  const [selectedCategories, setSelectedCategories] = useState<SelectOption[]>(
-    item?.categories.map((c) => ({ value: c.id, label: c.name })) ?? [],
-  );
-  const [selectedLocation, setSelectedLocation] = useState<SelectOption | null>(
-    item?.location ? { value: item.location.id, label: item.location.name } : null,
-  );
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState(1);
+  const [selectedCategories, setSelectedCategories] = useState<SelectOption[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<SelectOption | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
   const locationOptions = locations.map((l) => ({ value: l.id, label: l.name }));
 
-  const handleOpen = (nextOpen: boolean) => {
-    if (nextOpen && item) {
+  useEffect(() => {
+    if (open && item) {
       setName(item.name);
       setDescription(item.description ?? '');
       setAmount(item.amount);
@@ -63,8 +59,7 @@ export default function PromoteDialog({
         item.location ? { value: item.location.id, label: item.location.name } : null,
       );
     }
-    onOpenChange(nextOpen);
-  };
+  }, [open, item]);
 
   const handleConfirm = async () => {
     if (!item || !name.trim()) {
@@ -103,7 +98,7 @@ export default function PromoteDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Siirrä kirjastoon</DialogTitle>
