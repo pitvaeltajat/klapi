@@ -104,7 +104,11 @@ async function bulkDeleteDirect(ids: string[], session: { group: Group } | null)
   const guard = adminGuard(session);
   if (guard) return guard;
 
-  await prisma.item.deleteMany({ where: { id: { in: ids } } });
+  // Soft-delete: stamp deletedAt so reservations + loan history stay intact.
+  await prisma.item.updateMany({
+    where: { id: { in: ids } },
+    data: { deletedAt: new Date() },
+  });
   return { status: 200, deleted: ids.length };
 }
 
@@ -361,8 +365,9 @@ describe('bulkItems delete – authorization', () => {
     const result = await bulkDeleteDirect([a.id, b.id], { group: Group.ADMIN });
     expect(result.status).toBe(200);
 
-    const remaining = await prisma.item.findMany({ where: { id: { in: [a.id, b.id] } } });
-    expect(remaining).toHaveLength(0);
+    const rows = await prisma.item.findMany({ where: { id: { in: [a.id, b.id] } } });
+    expect(rows).toHaveLength(2);
+    expect(rows.every((it) => it.deletedAt !== null)).toBe(true);
   });
 
   it('blocks unauthenticated', async () => {
@@ -381,7 +386,7 @@ describe('bulkItems delete – authorization', () => {
 });
 
 describe('bulkItems delete – correctness', () => {
-  it('removes exactly the specified items', async () => {
+  it('soft-archives exactly the specified items and leaves others active', async () => {
     const a = await makeItem(ItemType.normal, 'del-a');
     const b = await makeItem(ItemType.normal, 'del-b');
     const c = await makeItem(ItemType.normal, 'del-c-keep');
@@ -389,9 +394,38 @@ describe('bulkItems delete – correctness', () => {
 
     await bulkDeleteDirect([a.id, b.id], { group: Group.ADMIN });
 
-    const surviving = await prisma.item.findMany({ where: { id: { in: [a.id, b.id, c.id] } } });
-    expect(surviving).toHaveLength(1);
-    expect(surviving[0].id).toBe(c.id);
+    const all = await prisma.item.findMany({ where: { id: { in: [a.id, b.id, c.id] } } });
+    expect(all).toHaveLength(3);
+    const byId = Object.fromEntries(all.map((it) => [it.id, it]));
+    expect(byId[a.id].deletedAt).not.toBeNull();
+    expect(byId[b.id].deletedAt).not.toBeNull();
+    expect(byId[c.id].deletedAt).toBeNull();
+  });
+
+  it('preserves the reservations of soft-archived items', async () => {
+    const item = await makeItem(ItemType.normal, 'del-history');
+    const user = await makeUser();
+    createdItemIds.push(item.id);
+    createdUserIds.push(user.id);
+
+    const loan = await prisma.loan.create({
+      data: {
+        loaner: 'tester',
+        startTime: new Date('2026-01-01'),
+        endTime: new Date('2026-01-02'),
+        userId: user.id,
+        status: LoanStatus.RETURNED,
+        reservations: {
+          create: [{ item: { connect: { id: item.id } }, amount: 1, status: ReservationStatus.RETURNED }],
+        },
+      },
+    });
+
+    await bulkDeleteDirect([item.id], { group: Group.ADMIN });
+
+    const reservations = await prisma.reservation.findMany({ where: { loanId: loan.id } });
+    expect(reservations).toHaveLength(1);
+    expect(reservations[0].itemId).toBe(item.id);
   });
 });
 

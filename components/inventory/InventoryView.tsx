@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Plus, Check, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Plus, Check, X, RotateCcw } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { useItemImage } from '@/hooks/useItemImage';
 import PromoteDialog from './PromoteDialog';
@@ -63,6 +63,7 @@ export interface InventoryItem {
   amount: number;
   locationId: string | null;
   type: 'normal' | 'temporary';
+  deletedAt: string | null;
   location: InventoryLocation | null;
   categories: InventoryCategory[];
 }
@@ -113,10 +114,19 @@ interface CellEditState {
 const colHelper = createColumnHelper<InventoryItem>();
 
 export default function InventoryView() {
+  const [showArchived, setShowArchived] = useState(false);
+  const inventoryUrl = `/api/item/getInventory${showArchived ? '?archived=all' : ''}`;
   const { data: items = [], mutate: mutateItems, isLoading: itemsLoading } = useSWR<InventoryItem[]>(
-    '/api/item/getInventory',
+    inventoryUrl,
     fetcher,
   );
+  const { mutate: globalMutate } = useSWRConfig();
+  // Both views share the same item set; invalidate both cache keys so toggling
+  // never shows stale data after an archive/restore.
+  const invalidateBothViews = () => {
+    globalMutate('/api/item/getInventory');
+    globalMutate('/api/item/getInventory?archived=all');
+  };
   const { data: categories = [] } = useSWR<InventoryCategory[]>(
     '/api/category/getCategories',
     fetcher,
@@ -324,11 +334,45 @@ export default function InventoryView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item.id),
       });
-      if (!res.ok) throw new Error('Poisto epäonnistui');
-      mutateItems((current) => current?.filter((it) => it.id !== item.id) ?? [], false);
-      toast.success('Kama poistettu');
+      if (!res.ok) throw new Error('Arkistointi epäonnistui');
+      // When the archive view is on we keep the row (now muted); otherwise drop it.
+      mutateItems(
+        (current) =>
+          showArchived
+            ? current?.map((it) =>
+                it.id === item.id ? { ...it, deletedAt: new Date().toISOString() } : it,
+              ) ?? []
+            : current?.filter((it) => it.id !== item.id) ?? [],
+        false,
+      );
+      invalidateBothViews();
+      toast.success('Kama arkistoitu');
     } catch {
-      toast.error('Poisto epäonnistui');
+      toast.error('Arkistointi epäonnistui');
+      mutateItems();
+    } finally {
+      removePending(item.id);
+    }
+  };
+
+  const handleRestoreRow = async (item: InventoryItem) => {
+    addPending(item.id);
+    try {
+      const res = await fetch('/api/item/restoreItem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.id),
+      });
+      if (!res.ok) throw new Error('Palautus epäonnistui');
+      mutateItems(
+        (current) =>
+          current?.map((it) => (it.id === item.id ? { ...it, deletedAt: null } : it)) ?? [],
+        false,
+      );
+      invalidateBothViews();
+      toast.success('Kama palautettu');
+    } catch {
+      toast.error('Palautus epäonnistui');
       mutateItems();
     } finally {
       removePending(item.id);
@@ -348,9 +392,19 @@ export default function InventoryView() {
         body: JSON.stringify({ action: 'delete', ids }),
       });
       if (!res.ok) throw new Error('Virhe');
-      mutateItems((current) => current?.filter((it) => !ids.includes(it.id)) ?? [], false);
+      // In archive view: stamp deletedAt; otherwise drop the rows.
+      mutateItems(
+        (current) =>
+          showArchived
+            ? current?.map((it) =>
+                ids.includes(it.id) ? { ...it, deletedAt: new Date().toISOString() } : it,
+              ) ?? []
+            : current?.filter((it) => !ids.includes(it.id)) ?? [],
+        false,
+      );
+      invalidateBothViews();
       setRowSelection({});
-      toast.success(`${ids.length} kamaa poistettu`);
+      toast.success(`${ids.length} kamaa arkistoitu`);
     } catch {
       toast.error('Massapoisto epäonnistui');
       mutateItems();
@@ -580,9 +634,10 @@ export default function InventoryView() {
       header: 'Toiminnot',
       cell: ({ row }) => {
         const item = row.original;
+        const isArchived = !!item.deletedAt;
         return (
           <div className="flex items-center gap-1">
-            {item.type === 'temporary' && (
+            {item.type === 'temporary' && !isArchived && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -601,20 +656,37 @@ export default function InventoryView() {
                 <TooltipContent>Siirrä kirjastoon</TooltipContent>
               </Tooltip>
             )}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-destructive hover:bg-destructive/10"
-                  onClick={() => setDeleteTarget(item)}
-                  aria-label="Poista kama"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Poista</TooltipContent>
-            </Tooltip>
+            {isArchived ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-success hover:bg-success/10"
+                    onClick={() => handleRestoreRow(item)}
+                    aria-label="Palauta kama"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Palauta</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => setDeleteTarget(item)}
+                    aria-label="Arkistoi kama"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Arkistoi</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         );
       },
@@ -699,6 +771,13 @@ export default function InventoryView() {
           </div>
           <Button
             size="sm"
+            variant={showArchived ? 'default' : 'outline'}
+            onClick={() => setShowArchived((v) => !v)}
+          >
+            Näytä arkistoidut
+          </Button>
+          <Button
+            size="sm"
             variant="success"
             className="ml-auto gap-2"
             onClick={() => setAddingRow(true)}
@@ -713,7 +792,7 @@ export default function InventoryView() {
           <div className="flex items-center gap-3 rounded-md border border-ring/30 bg-muted/40 px-4 py-2">
             <span className="text-sm font-medium">{selectedIds.length} valittu</span>
             <Button size="sm" variant="destructive" onClick={() => setBulkDeleteOpen(true)}>
-              <Trash2 className="mr-1 h-3 w-3" /> Poista valitut
+              <Trash2 className="mr-1 h-3 w-3" /> Arkistoi valitut
             </Button>
             <Button size="sm" variant="outline" onClick={() => setBulkCategoryOpen(true)}>
               Aseta kategoria
@@ -873,12 +952,18 @@ export default function InventoryView() {
                   </TableCell>
                 </TableRow>
               ) : (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row) => {
+                  const isArchived = !!row.original.deletedAt;
+                  const classes = [
+                    pendingRows.has(row.id) ? 'border-l-2 border-l-warning opacity-70' : '',
+                    isArchived ? 'opacity-50 italic' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ');
+                  return (
                   <TableRow
                     key={row.id}
-                    className={
-                      pendingRows.has(row.id) ? 'border-l-2 border-l-warning opacity-70' : ''
-                    }
+                    className={classes}
                     data-state={row.getIsSelected() ? 'selected' : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -887,7 +972,8 @@ export default function InventoryView() {
                       </TableCell>
                     ))}
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -923,15 +1009,16 @@ export default function InventoryView() {
         </div>
       </div>
 
-      {/* Single delete confirm */}
+      {/* Single archive confirm */}
       <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Poista kama</DialogTitle>
+            <DialogTitle>Arkistoi kama</DialogTitle>
           </DialogHeader>
           <p>
-            Haluatko varmasti poistaa kaman{' '}
-            <span className="font-bold">{deleteTarget?.name}</span>? Tätä ei voi perua.
+            Haluatko varmasti arkistoida kaman{' '}
+            <span className="font-bold">{deleteTarget?.name}</span>? Lainahistoria säilyy ja
+            voit palauttaa kaman myöhemmin.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
@@ -941,28 +1028,29 @@ export default function InventoryView() {
               variant="destructive"
               onClick={() => deleteTarget && handleDeleteRow(deleteTarget)}
             >
-              Poista
+              Arkistoi
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Bulk delete confirm */}
+      {/* Bulk archive confirm */}
       <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Poista valitut kamat</DialogTitle>
+            <DialogTitle>Arkistoi valitut kamat</DialogTitle>
           </DialogHeader>
           <p>
-            Haluatko varmasti poistaa{' '}
-            <span className="font-bold">{selectedIds.length}</span> kamaa? Tätä ei voi perua.
+            Haluatko varmasti arkistoida{' '}
+            <span className="font-bold">{selectedIds.length}</span> kamaa? Lainahistoria säilyy
+            ja voit palauttaa kamat myöhemmin.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
               Peruuta
             </Button>
             <Button variant="destructive" onClick={handleBulkDelete}>
-              Poista kaikki valitut
+              Arkistoi valitut
             </Button>
           </DialogFooter>
         </DialogContent>

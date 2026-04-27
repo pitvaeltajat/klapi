@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   }
 
   const items = await prisma.item.findMany({
+    where: { deletedAt: null },
     include: {
       reservations: {
         include: {

@@ -30,7 +30,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     },
   });
 
-  if (!item) notFound();
+  if (!item || item.deletedAt) notFound();
 
   return <ItemView item={serialize(item)} />;
 }

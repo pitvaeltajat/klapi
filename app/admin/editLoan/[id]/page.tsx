@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import prisma from '@/utils/prisma';
+import { activeItemsWhere } from '@/utils/itemQueries';
 import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import EditLoanView from './EditLoanView';
@@ -17,7 +18,7 @@ export default async function EditLoanPage({ params }: { params: Promise<{ id: s
 
   if (!loan) notFound();
 
-  const items = await prisma.item.findMany({});
+  const items = await prisma.item.findMany({ where: activeItemsWhere });
 
   return <EditLoanView loan={serialize(loan)} items={serialize(items)} />;
 }
