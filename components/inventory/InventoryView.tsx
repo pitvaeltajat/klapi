@@ -39,7 +39,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle } from 'lucide-react';
-import Breadcrumbs from '@/components/Breadcrumbs';
 import PromoteDialog from './PromoteDialog';
 
 // Inline types so we don't depend on @prisma/client direct exports
@@ -64,12 +63,6 @@ export interface InventoryItem {
   type: 'normal' | 'temporary';
   location: InventoryLocation | null;
   categories: InventoryCategory[];
-}
-
-interface Props {
-  initialItems: InventoryItem[];
-  categories: InventoryCategory[];
-  locations: InventoryLocation[];
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -104,11 +97,18 @@ interface CellEditState {
 
 const colHelper = createColumnHelper<InventoryItem>();
 
-export default function InventoryView({ initialItems, categories, locations }: Props) {
-  const { data: items = initialItems, mutate: mutateItems } = useSWR<InventoryItem[]>(
+export default function InventoryView() {
+  const { data: items = [], mutate: mutateItems } = useSWR<InventoryItem[]>(
     '/api/item/getInventory',
     fetcher,
-    { fallbackData: initialItems },
+  );
+  const { data: categories = [] } = useSWR<InventoryCategory[]>(
+    '/api/category/getCategories',
+    fetcher,
+  );
+  const { data: locations = [] } = useSWR<InventoryLocation[]>(
+    '/api/location/getLocations',
+    fetcher,
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -513,12 +513,8 @@ export default function InventoryView({ initialItems, categories, locations }: P
 
   return (
     <>
-      <Breadcrumbs
-        items={[{ label: 'Admin', href: '/admin' }, { label: 'Varastonhallinta' }]}
-      />
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-semibold">Varastonhallinta</h1>
+        <div className="flex items-center justify-end">
           <span className="text-sm text-muted-foreground">
             {filteredItems.length} / {items.length} kamaa
           </span>

@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import NextLink from 'next/link';
 import { FaPlus } from 'react-icons/fa';
+import { LayoutGrid, Table as TableIcon } from 'lucide-react';
 import DateSelector from '@/components/DateSelector';
 import KioskModeSelector from '@/components/KioskModeSelector';
 import KioskDateSelector from '@/components/KioskDateSelector';
@@ -11,14 +12,21 @@ import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
 import ItemBrowser from '@/components/ItemBrowser';
 import BrowseItemCard from '@/components/BrowseItemCard';
+import InventoryView from '@/components/inventory/InventoryView';
 import { Button } from '@/components/ui/button';
+
+type BrowseViewMode = 'grid' | 'table';
 
 function BrowseModeHeader({
   onExitBrowseMode,
   isAdmin,
+  viewMode,
+  onViewModeChange,
 }: {
   onExitBrowseMode: () => void;
   isAdmin: boolean;
+  viewMode: BrowseViewMode;
+  onViewModeChange: (mode: BrowseViewMode) => void;
 }) {
   return (
     <div className="mb-4 flex flex-col gap-4">
@@ -28,7 +36,7 @@ function BrowseModeHeader({
           Selaat katalogia ilman lainatoimintoa. Voit tarkastella saatavilla olevia kamoja.
         </p>
       </div>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
         {isAdmin && (
           <Button asChild variant="success" className="gap-2">
@@ -36,6 +44,28 @@ function BrowseModeHeader({
               <FaPlus /> Luo uusi kama
             </NextLink>
           </Button>
+        )}
+        {isAdmin && (
+          <div className="ml-auto flex gap-1">
+            <Button
+              size="sm"
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              onClick={() => onViewModeChange('grid')}
+              aria-label="Ruudukkonäkymä"
+              className="gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" /> Ruudukko
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              onClick={() => onViewModeChange('table')}
+              aria-label="Taulukkonäkymä"
+              className="gap-2"
+            >
+              <TableIcon className="h-4 w-4" /> Taulukko
+            </Button>
+          </div>
         )}
       </div>
     </div>
@@ -61,6 +91,8 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
   const isKioskMode = session?.user?.group === 'KIOSK';
   const isAdmin = session?.user?.group === 'ADMIN';
 
+  const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('grid');
+
   const handleExitBrowseMode = () => {
     setBrowseMode(false);
     if (isKioskMode) {
@@ -85,19 +117,28 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
     <>
       {dates.browseMode ? (
         <>
-          <BrowseModeHeader onExitBrowseMode={handleExitBrowseMode} isAdmin={isAdmin} />
-          <ItemBrowser
-            items={filteredItems}
-            categories={categories}
-            showCustomItemLink={false}
-            renderItems={(items) => (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
-                {items.map((item) => (
-                  <BrowseItemCard key={item.id} item={item} />
-                ))}
-              </div>
-            )}
+          <BrowseModeHeader
+            onExitBrowseMode={handleExitBrowseMode}
+            isAdmin={isAdmin}
+            viewMode={browseViewMode}
+            onViewModeChange={setBrowseViewMode}
           />
+          {isAdmin && browseViewMode === 'table' ? (
+            <InventoryView />
+          ) : (
+            <ItemBrowser
+              items={filteredItems}
+              categories={categories}
+              showCustomItemLink={false}
+              renderItems={(items) => (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
+                  {items.map((item) => (
+                    <BrowseItemCard key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
+            />
+          )}
         </>
       ) : isKioskMode ? (
         <>
