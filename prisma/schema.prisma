@@ -66,11 +66,14 @@ model Item {
   amount              Int
   locationId          String?
   type                ItemType             @default(normal)
+  deletedAt           DateTime?
   location            Location?            @relation(fields: [locationId], references: [id], onDelete: Cascade)
   reservations        Reservation[]
   categories          Category[]           @relation("CategoryToItem")
   announcements       Announcement[]
   reportAffectedItems ReportAffectedItem[]
+
+  @@index([deletedAt])
 }
 
 model Announcement {

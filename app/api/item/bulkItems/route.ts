@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { action, ids, categoryName, locationName } = body as {
-    action: 'delete' | 'setCategory' | 'setLocation';
+    action: 'delete' | 'restore' | 'setCategory' | 'setLocation';
     ids: string[];
     categoryName?: string;
     locationName?: string;
@@ -25,8 +25,20 @@ export async function POST(request: Request) {
   }
 
   if (action === 'delete') {
-    await prisma.item.deleteMany({ where: { id: { in: ids } } });
-    return NextResponse.json({ message: `${ids.length} kamaa poistettu` });
+    // Soft-delete: stamp deletedAt so reservations + loan history stay intact.
+    await prisma.item.updateMany({
+      where: { id: { in: ids } },
+      data: { deletedAt: new Date() },
+    });
+    return NextResponse.json({ message: `${ids.length} kamaa arkistoitu` });
+  }
+
+  if (action === 'restore') {
+    await prisma.item.updateMany({
+      where: { id: { in: ids } },
+      data: { deletedAt: null },
+    });
+    return NextResponse.json({ message: `${ids.length} kamaa palautettu` });
   }
 
   if (action === 'setCategory') {

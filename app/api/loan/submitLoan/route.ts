@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     // create temporary Item records and replace itemId accordingly.
     const requestedIds = (reservations as { itemId: string }[]).map((r) => r.itemId);
     const existingItems = await prisma.item.findMany({
-      where: { id: { in: requestedIds } },
+      where: { id: { in: requestedIds }, deletedAt: null },
       select: { id: true },
     });
     const existingIds = new Set(existingItems.map((i) => i.id));

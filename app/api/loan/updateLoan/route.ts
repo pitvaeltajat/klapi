@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
+import { activeItemsWhere } from '@/utils/itemQueries';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
@@ -59,8 +60,9 @@ export async function POST(request: Request) {
       item: { connect: { id: string } };
     }>;
 
-    // Get all items to check their total amounts
-    const items = await prisma.item.findMany({});
+    // Get all items to check their total amounts. Skip archived items so an
+    // edit cannot pull a previously soft-deleted item back into a loan.
+    const items = await prisma.item.findMany({ where: activeItemsWhere });
     const itemMap = new Map(items.map((item) => [item.id, item]));
 
     // Get all other reservations that overlap with the requested date range
