@@ -11,7 +11,7 @@ import {
   type SortingState,
   type RowSelectionState,
 } from '@tanstack/react-table';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
@@ -102,6 +102,8 @@ interface CellEditState {
   value: string;
 }
 
+const colHelper = createColumnHelper<InventoryItem>();
+
 export default function InventoryView({ initialItems, categories, locations }: Props) {
   const { data: items = initialItems, mutate: mutateItems } = useSWR<InventoryItem[]>(
     '/api/item/getInventory',
@@ -127,11 +129,15 @@ export default function InventoryView({ initialItems, categories, locations }: P
   const [promoteItem, setPromoteItem] = useState<InventoryItem | null>(null);
   const [promoteOpen, setPromoteOpen] = useState(false);
 
-  const filteredItems = items.filter((item) => {
-    if (typeFilter !== 'all' && item.type !== typeFilter) return false;
-    if (categoryFilter && !item.categories.some((c) => c.id === categoryFilter)) return false;
-    return true;
-  });
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+        if (categoryFilter && !item.categories.some((c) => c.id === categoryFilter)) return false;
+        return true;
+      }),
+    [items, typeFilter, categoryFilter],
+  );
 
   const addPending = (id: string) => setPendingRows((prev) => new Set(prev).add(id));
   const removePending = (id: string) =>
@@ -151,12 +157,12 @@ export default function InventoryView({ initialItems, categories, locations }: P
     [mutateItems],
   );
 
-  const startEdit = (rowId: string, field: EditableField, currentValue: string) => {
+  const startEdit = useCallback((rowId: string, field: EditableField, currentValue: string) => {
     setEditState({ rowId, field, value: currentValue });
     setTimeout(() => editInputRef.current?.focus(), 0);
-  };
+  }, []);
 
-  const commitEdit = async (state: CellEditState) => {
+  const commitEdit = useCallback(async (state: CellEditState) => {
     setEditState(null);
     const { rowId, field, value } = state;
 
@@ -193,7 +199,7 @@ export default function InventoryView({ initialItems, categories, locations }: P
     } finally {
       removePending(rowId);
     }
-  };
+  }, [items, mutateItems, updateItemLocal]);
 
   const handleDeleteRow = async (item: InventoryItem) => {
     addPending(item.id);
@@ -263,9 +269,7 @@ export default function InventoryView({ initialItems, categories, locations }: P
     }
   };
 
-  const colHelper = createColumnHelper<InventoryItem>();
-
-  const columns = [
+  const columns = useMemo(() => [
     colHelper.display({
       id: 'select',
       header: ({ table }) => (
@@ -471,7 +475,7 @@ export default function InventoryView({ initialItems, categories, locations }: P
         );
       },
     }),
-  ];
+  ], [editState, startEdit, commitEdit]);
 
   const table = useReactTable({
     data: filteredItems,
@@ -495,11 +499,14 @@ export default function InventoryView({ initialItems, categories, locations }: P
     },
   });
 
-  const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
-  const categoryFilterOptions = [
-    { value: '', label: 'Kaikki kategoriat' },
-    ...categoryOptions,
-  ];
+  const categoryOptions = useMemo(
+    () => categories.map((c) => ({ value: c.id, label: c.name })),
+    [categories],
+  );
+  const categoryFilterOptions = useMemo(
+    () => [{ value: '', label: 'Kaikki kategoriat' }, ...categoryOptions],
+    [categoryOptions],
+  );
 
   const { pageIndex, pageSize } = table.getState().pagination;
   const pageCount = table.getPageCount();
