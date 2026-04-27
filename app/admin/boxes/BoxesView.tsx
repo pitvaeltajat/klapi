@@ -62,12 +62,12 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
 
                 <div>
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-semibold">Varaukset</p>
+                    <p className="text-sm font-semibold">Lainat</p>
                     <Badge>{box.loans.length}</Badge>
                   </div>
 
                   {box.loans.length === 0 ? (
-                    <p className="text-sm italic text-muted-foreground">Ei varauksia</p>
+                    <p className="text-sm italic text-muted-foreground">Ei lainoja</p>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {box.loans.map((loan) => (

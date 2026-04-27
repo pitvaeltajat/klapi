@@ -131,7 +131,7 @@ const LoanStartCard = ({
             </div>
             <div className="mb-4 rounded-md border bg-muted p-3">
               <p className="leading-relaxed">
-                Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja
+                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja
                 mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
                 reikä laavussa tms.)
               </p>

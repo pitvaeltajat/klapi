@@ -188,22 +188,22 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
             {session?.user?.group === 'ADMIN' ? (
               <>
                 <PrefRow
-                  title="Uudet varaukset"
-                  description="Ilmoitukset uusista varauksista (myös kiosk-käytöstä)"
+                  title="Uudet lainat"
+                  description="Ilmoitukset uusista lainoista (myös kiosk-käytöstä)"
                   checked={emailNewLoanNotification}
                   disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
                   title="Viikottaiset muistutukset vanhoista bokseista"
-                  description="Muistutukset varauksista, jotka ovat olleet boksissa yli viikon"
+                  description="Muistutukset lainoista, jotka ovat olleet boksissa yli viikon"
                   checked={emailOldBoxNotification}
                   disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('oldBox', v)}
                 />
                 <PrefRow
-                  title="Myöhässä olevat varaukset"
-                  description="Ilmoitukset varauksista, joiden palautusaika on ylittynyt"
+                  title="Myöhässä olevat lainat"
+                  description="Ilmoitukset lainoista, joiden palautusaika on ylittynyt"
                   checked={emailOverdueNotification}
                   disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('overdue', v)}
@@ -212,15 +212,15 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
             ) : (
               <>
                 <PrefRow
-                  title="Ilmoitukset uusista varauksista"
-                  description="Sähköpostit kun luot uuden varauksen"
+                  title="Ilmoitukset uusista lainoista"
+                  description="Sähköpostit kun luot uuden lainan"
                   checked={emailNewLoanNotification}
                   disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
-                  title="Muistutukset varauksista"
-                  description="Muistutukset varauksiesi päättymisestä"
+                  title="Muistutukset lainoista"
+                  description="Muistutukset lainojesi päättymisestä"
                   checked={emailWeeklyReminder}
                   disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
@@ -262,7 +262,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
 
         {session?.user?.group !== 'KIOSK' && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold">Oma varaushistoria</h2>
+            <h2 className="mb-4 text-xl font-semibold">Oma lainahistoria</h2>
             {loansSorted.length > 0 ? (
               <div className="flex flex-col gap-4">
                 {loansSorted.map((loan) => (
@@ -270,7 +270,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
                 ))}
               </div>
             ) : (
-              <p className="py-8 text-center text-muted-foreground">Ei varauksia</p>
+              <p className="py-8 text-center text-muted-foreground">Ei lainoja</p>
             )}
           </div>
         )}

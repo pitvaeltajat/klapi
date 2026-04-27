@@ -172,7 +172,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
     <>
       <Breadcrumbs
         items={[
-          { label: 'Varaukset', href: '/loan' },
+          { label: 'Lainat', href: '/loan' },
           { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
           { label: 'Muokkaa' },
         ]}
@@ -299,9 +299,9 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
         <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Varaukset</h2>
+            <h2 className="text-xl font-semibold">Lainaukset</h2>
             <Button
-              aria-label="Palauta kaikki varaukset"
+              aria-label="Palauta kaikki lainaukset"
               size="icon-sm"
               variant="ghost"
               onClick={() => setReservations(loan.reservations)}
@@ -312,7 +312,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
           <div className="flex flex-col gap-3">
             {reservations.length === 0 ? (
-              <p className="italic text-muted-foreground">Ei varauksia</p>
+              <p className="italic text-muted-foreground">Ei lainauksia</p>
             ) : (
               reservations.map((reservation) => (
                 <div
@@ -375,7 +375,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                         <FaPlus />
                       </Button>
                       <Button
-                        aria-label="Poista varaus"
+                        aria-label="Poista laina"
                         size="icon-sm"
                         variant="ghost"
                         className="text-destructive hover:bg-destructive/10"

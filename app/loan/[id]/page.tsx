@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     where: { id },
     select: { description: true },
   });
-  return { title: `Varaus: ${loan?.description || 'Ei kuvausta'} | Klapi` };
+  return { title: `Laina: ${loan?.description || 'Ei kuvausta'} | Klapi` };
 }
 
 export default async function LoanPage({ params }: { params: Promise<{ id: string }> }) {

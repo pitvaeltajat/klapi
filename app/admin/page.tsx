@@ -1,7 +1,6 @@
 'use client';
 
-import NextLink from 'next/link';
-import { FaTrash, FaPlus } from 'react-icons/fa';
+import { FaTrash } from 'react-icons/fa';
 import { MdOutlinePassword } from 'react-icons/md';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
@@ -176,11 +175,6 @@ export default function AdminPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-semibold">Admin</h1>
-          <Button asChild variant="success" size="lg" className="gap-2">
-            <NextLink href="/admin/createItem">
-              <FaPlus /> Luo uusi kama
-            </NextLink>
-          </Button>
         </div>
 
         <div className="flex justify-end">

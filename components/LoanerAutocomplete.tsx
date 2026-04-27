@@ -131,7 +131,7 @@ export default function LoanerAutocomplete({
           )}
         >
           {selectedUserId
-            ? '✓ Käyttäjä valittu. Varaus yhdistetään tähän tiliin.'
+            ? '✓ Käyttäjä valittu. Laina yhdistetään tähän tiliin.'
             : 'Valitse sähköposti listalta tai kirjoita vapaamuotoinen nimi.'}
         </p>
       )}
