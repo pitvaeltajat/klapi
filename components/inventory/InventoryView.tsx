@@ -38,7 +38,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Plus, Check, X } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { useItemImage } from '@/hooks/useItemImage';
 import PromoteDialog from './PromoteDialog';
 
 // Inline types so we don't depend on @prisma/client direct exports
@@ -81,6 +83,19 @@ function Truncated({ text }: { text: string | null | undefined }) {
   );
 }
 
+function RowImage({ itemId, name }: { itemId: string; name: string }) {
+  const src = useItemImage(itemId);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with hook-based fallback
+    <img
+      src={src}
+      alt={name}
+      className="h-9 w-9 rounded border border-border object-cover"
+      loading="lazy"
+    />
+  );
+}
+
 function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
   if (sorted === 'asc') return <ChevronUp className="ml-1 inline h-3 w-3" />;
   if (sorted === 'desc') return <ChevronDown className="ml-1 inline h-3 w-3" />;
@@ -98,7 +113,7 @@ interface CellEditState {
 const colHelper = createColumnHelper<InventoryItem>();
 
 export default function InventoryView() {
-  const { data: items = [], mutate: mutateItems } = useSWR<InventoryItem[]>(
+  const { data: items = [], mutate: mutateItems, isLoading: itemsLoading } = useSWR<InventoryItem[]>(
     '/api/item/getInventory',
     fetcher,
   );
@@ -128,6 +143,51 @@ export default function InventoryView() {
 
   const [promoteItem, setPromoteItem] = useState<InventoryItem | null>(null);
   const [promoteOpen, setPromoteOpen] = useState(false);
+
+  const [addingRow, setAddingRow] = useState(false);
+  const [addingSubmitting, setAddingSubmitting] = useState(false);
+  const emptyDraft = { name: '', description: '', amount: 1 };
+  const [newRow, setNewRow] = useState(emptyDraft);
+
+  const cancelAddRow = () => {
+    setAddingRow(false);
+    setNewRow(emptyDraft);
+  };
+
+  const handleAddRow = async () => {
+    if (!newRow.name.trim()) {
+      toast.error('Nimi on pakollinen');
+      return;
+    }
+    setAddingSubmitting(true);
+    try {
+      const res = await fetch('/api/item/createItem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newRow.name.trim(),
+          description: newRow.description.trim() || null,
+          amount: newRow.amount,
+          type: 'normal',
+          categories: [],
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { message?: string };
+        throw new Error(data.message ?? 'Virhe');
+      }
+      await mutateItems();
+      toast.success('Kama lisätty');
+      setNewRow(emptyDraft);
+      setAddingRow(false);
+    } catch (err) {
+      toast.error('Lisäys epäonnistui', {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setAddingSubmitting(false);
+    }
+  };
 
   const filteredItems = useMemo(
     () =>
@@ -291,6 +351,12 @@ export default function InventoryView() {
         />
       ),
       size: 36,
+    }),
+    colHelper.display({
+      id: 'image',
+      header: '',
+      cell: ({ row }) => <RowImage itemId={row.original.id} name={row.original.name} />,
+      size: 52,
     }),
     colHelper.accessor((row) => row.name, {
       id: 'name',
@@ -549,6 +615,15 @@ export default function InventoryView() {
               </Button>
             ))}
           </div>
+          <Button
+            size="sm"
+            variant="success"
+            className="ml-auto gap-2"
+            onClick={() => setAddingRow(true)}
+            disabled={addingRow}
+          >
+            <Plus className="h-4 w-4" /> Uusi rivi
+          </Button>
         </div>
 
         {/* Bulk actions */}
@@ -591,7 +666,96 @@ export default function InventoryView() {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
+              {addingRow && (
+                <TableRow className="bg-muted/30">
+                  <TableCell />
+                  <TableCell>
+                    <div className="flex h-9 w-9 items-center justify-center rounded border border-dashed border-border text-muted-foreground">
+                      <Plus className="h-4 w-4" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <input
+                      autoFocus
+                      placeholder="Nimi *"
+                      value={newRow.name}
+                      onChange={(e) => setNewRow((r) => ({ ...r, name: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddRow();
+                        if (e.key === 'Escape') cancelAddRow();
+                      }}
+                      className="w-full rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input
+                      placeholder="Kuvaus"
+                      value={newRow.description}
+                      onChange={(e) => setNewRow((r) => ({ ...r, description: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddRow();
+                        if (e.key === 'Escape') cancelAddRow();
+                      }}
+                      className="w-full rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input
+                      type="number"
+                      min={1}
+                      value={newRow.amount}
+                      onChange={(e) =>
+                        setNewRow((r) => ({ ...r, amount: Math.max(1, Number(e.target.value) || 1) }))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddRow();
+                        if (e.key === 'Escape') cancelAddRow();
+                      }}
+                      className="w-20 rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Badge>Normaali</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="success"
+                        size="icon-sm"
+                        onClick={handleAddRow}
+                        isLoading={addingSubmitting}
+                        aria-label="Tallenna"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={cancelAddRow}
+                        disabled={addingSubmitting}
+                        aria-label="Peruuta"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {itemsLoading && items.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="py-8 text-center text-muted-foreground"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Spinner size="md" />
+                      <span>Ladataan…</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
