@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -8,6 +8,8 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReportAffectedItem } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { formatDateNumeric } from '@/utils/dateFormat';
+
+const CONTENT_PREVIEW_LENGTH = 200;
 
 interface ReportsViewProps {
   reports: {
@@ -28,8 +30,17 @@ interface ReportsViewProps {
 
 export default function ReportsView({ reports }: ReportsViewProps) {
   const { data: session } = useSession();
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
+
+  const toggleExpanded = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const statusVariant = (
     status: string,
@@ -70,12 +81,28 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                     ? ' (Lainauksen jälkeen)'
                     : ' (Ennen lainausta)'}
                 </p>
-                <p>
+                <div>
                   <strong>Sisältö:</strong>{' '}
-                  {report.content.length > 200
-                    ? report.content.substring(0, 200) + '...'
-                    : report.content}
-                </p>
+                  {report.content.length > CONTENT_PREVIEW_LENGTH ? (
+                    <>
+                      <p className="mt-1 whitespace-pre-wrap break-words">
+                        {expanded.has(report.id)
+                          ? report.content
+                          : report.content.substring(0, CONTENT_PREVIEW_LENGTH) + '…'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(report.id)}
+                        className="mt-1 text-sm text-primary hover:underline"
+                        aria-expanded={expanded.has(report.id)}
+                      >
+                        {expanded.has(report.id) ? 'Näytä vähemmän' : 'Näytä koko raportti'}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="whitespace-pre-wrap break-words">{report.content}</span>
+                  )}
+                </div>
                 {report.affectedItems.length > 0 && (
                   <div>
                     <p className="mb-2 font-bold">Kamat joihin raportti vaikuttaa:</p>
