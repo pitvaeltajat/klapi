@@ -270,6 +270,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   <NextLink href="/admin/reports" className={linkClass(isPathActive('/admin/reports'))}>
                     Raportit
                   </NextLink>
+                  <div className="h-6 w-px bg-white/30" />
                   <NextLink
                     href="/admin"
                     className={linkClass(pathname === '/admin')}

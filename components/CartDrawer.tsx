@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
 interface AvailabilityData {
@@ -131,15 +132,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const { availabilities } = data;
 
-  const timeStringWithoutTimeZone = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
-  };
-
   const isDescriptionValid = localDescription.trim().length > 0;
 
   return (
@@ -211,11 +203,11 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             </div>
             <div>
               <Label htmlFor="startTime">Lainaus alkaa</Label>
-              <Input id="startTime" value={timeStringWithoutTimeZone(startTime)} readOnly />
+              <Input id="startTime" value={formatDateNumeric(startTime)} readOnly />
             </div>
             <div>
               <Label htmlFor="endTime">Lainaus loppuu</Label>
-              <Input id="endTime" value={timeStringWithoutTimeZone(endTime)} readOnly />
+              <Input id="endTime" value={formatDateNumeric(endTime)} readOnly />
             </div>
           </div>
 

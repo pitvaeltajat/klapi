@@ -27,6 +27,7 @@ import {
 import { LoanHistoryAction } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DateTime } from '@/components/DateTime';
 import {
   Dialog,
   DialogContent,
@@ -224,18 +225,10 @@ export default function LoanView({
           <h2 className="mb-4 text-2xl font-semibold">Perustiedot</h2>
           <div className="flex flex-col gap-3">
             <p>
-              Aloitusaika:{' '}
-              {new Date(loan.startTime).toLocaleString('fi-FI', {
-                dateStyle: 'full',
-                timeStyle: 'short',
-              })}
+              Aloitusaika: <DateTime value={loan.startTime} format="long" />
             </p>
             <p>
-              Lopetusaika:{' '}
-              {new Date(loan.endTime).toLocaleString('fi-FI', {
-                dateStyle: 'full',
-                timeStyle: 'short',
-              })}
+              Lopetusaika: <DateTime value={loan.endTime} format="long" />
             </p>
             <p>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</p>
             {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
@@ -379,15 +372,15 @@ export default function LoanView({
             <div className="flex flex-col gap-3">
               {history.map((entry) => {
                 const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
-                const when = new Date(entry.createdAt).toLocaleString('fi-FI', {
-                  dateStyle: 'short',
-                  timeStyle: 'short',
-                });
                 return (
                   <div key={entry.id} className="rounded-md border p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="font-semibold">{getLoanHistoryActionLabel(entry.action)}</p>
-                      <p className="text-sm text-muted-foreground">{when}</p>
+                      <DateTime
+                        value={entry.createdAt}
+                        format="numeric"
+                        className="text-sm text-muted-foreground"
+                      />
                     </div>
                     <p className="text-sm text-muted-foreground">{who}</p>
                   </div>

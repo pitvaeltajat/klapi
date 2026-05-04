@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { DateTime } from '@/components/DateTime';
 
 interface InBoxItem {
   itemId: string;
@@ -141,13 +142,7 @@ export default function StartLoanConfirmation({
           </p>
           <p className="mb-2">
             <b>Palautus: </b>
-            {new Date(loan.endTime).toLocaleString('fi', {
-              day: 'numeric',
-              month: 'numeric',
-              year: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
+            <DateTime value={loan.endTime} format="numeric" />
           </p>
 
           <p className="mb-2 mt-4 font-bold">Lainattavat kamat:</p>

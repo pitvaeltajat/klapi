@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { NumberInput } from '@/components/ui/number-input';
+import { DateTime } from '@/components/DateTime';
 import {
   Dialog,
   DialogContent,
@@ -181,21 +182,11 @@ export default function UserEditLoanView({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Aloitusaika</p>
-              <p className="font-medium">
-                {new Date(loan.startTime).toLocaleString('fi-FI', {
-                  dateStyle: 'full',
-                  timeStyle: 'short',
-                })}
-              </p>
+              <DateTime value={loan.startTime} format="long" className="font-medium" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Lopetusaika</p>
-              <p className="font-medium">
-                {new Date(loan.endTime).toLocaleString('fi-FI', {
-                  dateStyle: 'full',
-                  timeStyle: 'short',
-                })}
-              </p>
+              <DateTime value={loan.endTime} format="long" className="font-medium" />
             </div>
           </div>
         </div>

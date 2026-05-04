@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { DateTime } from '@/components/DateTime';
 import {
   Table,
   TableBody,
@@ -181,22 +182,10 @@ export default function SubmitConfirmation({
             <br />
             <br />
             <b>Kamojen nouto: </b>
-            {dates.startDate.toLocaleString('fi', {
-              day: 'numeric',
-              year: 'numeric',
-              month: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
+            <DateTime value={dates.startDate} format="numeric" />
             <br />
             <b>Kamojen palautus: </b>
-            {dates.endDate.toLocaleString('fi', {
-              day: 'numeric',
-              year: 'numeric',
-              month: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
+            <DateTime value={dates.endDate} format="numeric" />
           </p>
           <p className="mt-4">Lainattavat kamat:</p>
 
