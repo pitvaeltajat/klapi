@@ -240,6 +240,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
               </DialogContent>
             </Dialog>
 
+            {session && (
             <div className="hidden items-center gap-6 md:flex">
               <NextLink href="/" className={linkClass(isLainaaActive)} onClick={handleReserveClick}>
                 Lainaa
@@ -294,6 +295,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 )}
               </div>
             </div>
+            )}
 
             {session && (
               <div className="relative md:hidden">
