@@ -9,18 +9,23 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
-  const { pin, userId } = await request.json();
+  const { pin } = await request.json();
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { kioskElevatePin: true },
-  });
-
-  if (!user || !user.kioskElevatePin) {
+  if (typeof pin !== 'string' || !/^\d{4}$/.test(pin)) {
     return NextResponse.json({ isValidPin: false });
   }
 
-  const isValidPin: boolean = await bcrypt.compare(pin, user.kioskElevatePin);
+  const admins = await prisma.user.findMany({
+    where: { group: 'ADMIN', kioskElevatePin: { not: null } },
+    select: { kioskElevatePin: true },
+  });
+
+  let isValidPin = false;
+  for (const admin of admins) {
+    if (admin.kioskElevatePin && (await bcrypt.compare(pin, admin.kioskElevatePin))) {
+      isValidPin = true;
+    }
+  }
 
   return NextResponse.json({ isValidPin });
 }

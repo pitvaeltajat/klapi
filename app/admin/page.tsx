@@ -183,17 +183,23 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <div className="flex justify-end">
-          <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
-            <MdOutlinePassword /> Aseta admin pin-koodi
-          </Button>
-        </div>
+        {!session?.user?.adminExpiry && (
+          <div className="flex justify-end">
+            <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
+              <MdOutlinePassword /> Aseta oma admin-PIN
+            </Button>
+          </div>
+        )}
 
         <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Aseta admin PIN-koodi</DialogTitle>
+              <DialogTitle>Aseta oma admin-PIN</DialogTitle>
             </DialogHeader>
+            <p className="mb-2">
+              PIN on henkilökohtainen — se toimii kioskilla vain sinun admin-tiliisi
+              korottautumiseen eikä vaikuta muihin admineihin.
+            </p>
             <p className="mb-2">Syötä uusi 4-merkkinen PIN-koodi:</p>
             <div className="mb-4 flex justify-center">
               <PinInput value={pinValue} onChange={setPinValue} />

@@ -57,7 +57,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isAdmin = session?.user?.group === 'ADMIN';
   const isKiosk = session?.user?.group === 'KIOSK';
 
-  const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
+  const hasInitializedLoaner = useRef(false);
   const [localDescription, setLocalDescription] = useState(cart.description);
 
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- reset description when cart empties */
@@ -78,13 +78,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [reportContent, setReportContent] = useState('');
 
   useEffect(() => {
-    if (!isKiosk && session?.user && !hasInitializedLoaner) {
+    if (!isKiosk && session?.user && !hasInitializedLoaner.current) {
       const userDisplayName = session.user.email || session.user.name || '';
       setLoaner(userDisplayName);
       setUserId(session.user.id);
-      setHasInitializedLoaner(true);
+      hasInitializedLoaner.current = true;
     }
-  }, [isKiosk, session, hasInitializedLoaner, setLoaner, setUserId]);
+  }, [isKiosk, session, setLoaner, setUserId]);
 
   useEffect(() => {
     setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch

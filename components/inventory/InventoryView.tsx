@@ -123,10 +123,10 @@ export default function InventoryView() {
   const { mutate: globalMutate } = useSWRConfig();
   // Both views share the same item set; invalidate both cache keys so toggling
   // never shows stale data after an archive/restore.
-  const invalidateBothViews = () => {
+  const invalidateBothViews = useCallback(() => {
     globalMutate('/api/item/getInventory');
     globalMutate('/api/item/getInventory?archived=all');
-  };
+  }, [globalMutate]);
   const { data: categories = [] } = useSWR<InventoryCategory[]>(
     '/api/category/getCategories',
     fetcher,
@@ -355,7 +355,7 @@ export default function InventoryView() {
     }
   };
 
-  const handleRestoreRow = async (item: InventoryItem) => {
+  const handleRestoreRow = useCallback(async (item: InventoryItem) => {
     addPending(item.id);
     try {
       const res = await fetch('/api/item/restoreItem', {
@@ -377,7 +377,7 @@ export default function InventoryView() {
     } finally {
       removePending(item.id);
     }
-  };
+  }, [mutateItems, invalidateBothViews]);
 
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
 
@@ -691,7 +691,7 @@ export default function InventoryView() {
         );
       },
     }),
-  ], [editState, startEdit, commitEdit]);
+  ], [editState, startEdit, commitEdit, handleRestoreRow]);
 
   const table = useReactTable({
     data: filteredItems,

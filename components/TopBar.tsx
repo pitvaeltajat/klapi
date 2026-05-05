@@ -85,7 +85,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
     return await fetch('/api/auth/validatePin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin: inputPin, userId: session?.user?.id }),
+      body: JSON.stringify({ pin: inputPin }),
     })
       .then((res) => res.json())
       .then((data) => data.isValidPin);
