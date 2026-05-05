@@ -60,8 +60,11 @@ export default function LoanerAutocomplete({
       .catch((err) => console.error('Failed to fetch users:', err));
   }, []);
 
-  const filteredUsers = users.filter((user) =>
-    user.email?.toLowerCase().includes(value.toLowerCase()),
+  const query = value.toLowerCase();
+  const filteredUsers = users.filter(
+    (user) =>
+      user.email?.toLowerCase().includes(query) ||
+      user.name?.toLowerCase().includes(query),
   );
 
   const handleUserSelect = (user: User) => {
