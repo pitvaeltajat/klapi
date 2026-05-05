@@ -31,14 +31,16 @@ export async function POST(request: Request) {
     }
 
     const isAdmin = session.user.group === 'ADMIN';
+    const isKiosk = session.user.group === 'KIOSK';
     const isOwner = session.user.id === existingLoan.userId;
 
-    if (!isAdmin && !isOwner) {
+    if (!isAdmin && !isKiosk && !isOwner) {
       return NextResponse.json({ message: 'Sinulla ei ole oikeutta muokata tätä lainaa' }, { status: 403 });
     }
 
-    // Non-admin owners can only edit before the loan has started
-    if (!isAdmin && existingLoan.startTime <= new Date()) {
+    // Non-admin owners can only edit before the loan has started.
+    // Kiosk is exempt — they edit at the checkout moment, when the start time has typically passed.
+    if (!isAdmin && !isKiosk && existingLoan.startTime <= new Date()) {
       return NextResponse.json(
         { message: 'Lainaa ei voi enää muokata — lainaus on jo alkanut' },
         { status: 403 },
