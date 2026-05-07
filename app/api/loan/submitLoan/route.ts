@@ -16,7 +16,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Ei kirjautunut' }, { status: 401 });
     }
 
-    const { reservations, startTime, endTime, userId, description, loaner, reportContent } = await request.json();
+    const { reservations, startTime, endTime, userId, description, loaner, reportContent } =
+      await request.json();
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -24,10 +25,6 @@ export async function POST(request: Request) {
     });
     if (!user) {
       return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
-    }
-
-    if (session.user.group === 'KIOSK' && user.group === 'KIOSK') {
-      return NextResponse.json({ message: 'Kioskilainaa ei voi yhdistää kioskitiliin' }, { status: 400 });
     }
 
     // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
@@ -45,11 +42,15 @@ export async function POST(request: Request) {
     });
     const existingIds = new Set(existingItems.map((i) => i.id));
 
-    const customReservations = (reservations as { itemId: string; name?: string; amount: number }[])
-      .filter((r) => !existingIds.has(r.itemId));
+    const customReservations = (
+      reservations as { itemId: string; name?: string; amount: number }[]
+    ).filter((r) => !existingIds.has(r.itemId));
     for (const r of customReservations) {
       if (!r.name) {
-        return NextResponse.json({ message: `Missing name for custom item ${r.itemId}` }, { status: 400 });
+        return NextResponse.json(
+          { message: `Missing name for custom item ${r.itemId}` },
+          { status: 400 },
+        );
       }
     }
     const createdCustomItems = await Promise.all(
