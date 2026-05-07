@@ -73,6 +73,7 @@ const LoanReturnCard = ({
   onReturn: (
     id: string,
     reservationIds: string[],
+    reportContent: string,
   ) => Promise<{ name: string; description: string | null } | null>;
   onReturnComplete: () => void;
 }) => {
@@ -104,26 +105,11 @@ const LoanReturnCard = ({
   const isPartialReturn = selectedIds.size > 0 && selectedIds.size < inuseReservations.length;
 
   const handleConfirmReturn = async () => {
-    const box = await onReturn(loan.id, Array.from(selectedIds));
+    const box = await onReturn(loan.id, Array.from(selectedIds), reportContent);
     if (box) {
       setBoxInfo(box);
       setReturnOpen(false);
       setBoxOpen(true);
-    }
-    if (reportContent.trim() !== '') {
-      try {
-        await fetch('/api/loan/createReport', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            loanId: loan.id,
-            content: reportContent,
-            created: 'AFTER_LOAN',
-          }),
-        });
-      } catch (error) {
-        console.error('Virhe raportin lähettämisessä:', error);
-      }
     }
   };
 
@@ -327,12 +313,13 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
   const handleReturn = async (
     loanId: string,
     reservationIds: string[],
+    reportContent: string,
   ): Promise<{ name: string; description: string | null } | null> => {
     try {
       const response = await fetch('/api/loan/loanReturned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loanId, reservationIds }),
+        body: JSON.stringify({ id: loanId, reservationIds, reportContent }),
       });
 
       if (response.ok) {

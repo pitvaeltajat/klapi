@@ -332,7 +332,7 @@ const LoanStartCard = ({
 }: {
   loan: LoanType;
   items: Item[];
-  onStart: (id: string) => Promise<void>;
+  onStart: (id: string, reportContent: string) => Promise<void>;
   onStartComplete: () => void;
 }) => {
   const [loan, setLoan] = useState<LoanType>(initialLoan);
@@ -347,18 +347,7 @@ const LoanStartCard = ({
   );
 
   const handleStartLoan = async () => {
-    if (reportContent.trim() !== '') {
-      try {
-        await fetch('/api/loan/createReport', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ loanId: loan.id, content: reportContent, created: 'BEFORE_LOAN' }),
-        });
-      } catch (e) {
-        console.error('Virhe luotaessa raporttia:', e);
-      }
-    }
-    await onStart(loan.id);
+    await onStart(loan.id, reportContent);
     setOpen(false);
     onStartComplete();
   };
@@ -480,12 +469,12 @@ export default function StartLoanView({ loans, items }: { loans: LoanType[]; ite
   const { data: session } = useSession();
   const router = useRouter();
 
-  const handleStart = async (loanId: string) => {
+  const handleStart = async (loanId: string, reportContent: string) => {
     try {
       const response = await fetch('/api/loan/startLoan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loanId }),
+        body: JSON.stringify({ id: loanId, reportContent }),
       });
       if (response.ok) {
         toast.success('Lainaus aloitettu!');

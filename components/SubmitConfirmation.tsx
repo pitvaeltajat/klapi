@@ -112,6 +112,7 @@ export default function SubmitConfirmation({
       userId,
       description: cart.description,
       loaner: cart.loaner,
+      reportContent: reportContent ?? '',
     };
 
     const response = await fetch('/api/loan/submitLoan', {
@@ -119,21 +120,8 @@ export default function SubmitConfirmation({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const responseData = await response.json();
 
     if (response.ok) {
-      if (reportContent && reportContent.trim().length > 0) {
-        await fetch('/api/loan/createReport', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: reportContent,
-            loanId: responseData.id,
-            created: 'BEFORE_LOAN',
-          }),
-        });
-      }
-
       setReportContent('');
       clearCart();
       toast.success('Laina lähetetty', {

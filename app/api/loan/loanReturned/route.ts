@@ -14,7 +14,11 @@ export async function POST(request: Request) {
     }, { status: 401 });
   }
 
-  const { id, reservationIds } = await request.json() as { id: string; reservationIds?: string[] };
+  const { id, reservationIds, reportContent } = await request.json() as {
+    id: string;
+    reservationIds?: string[];
+    reportContent?: string;
+  };
 
   // Get the loan with its reservations
   const loan = await prisma.loan.findUnique({
@@ -134,6 +138,17 @@ export async function POST(request: Request) {
       box: true,
     },
   });
+
+  const trimmedReport = reportContent?.trim() ?? '';
+  if (trimmedReport !== '') {
+    await prisma.report.create({
+      data: {
+        loanId: id,
+        content: trimmedReport,
+        created: 'AFTER_LOAN',
+      },
+    });
+  }
 
   const returnedItems = loan.reservations
     .filter((r) => targetIds.includes(r.id))

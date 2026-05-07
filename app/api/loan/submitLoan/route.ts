@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Ei kirjautunut' }, { status: 401 });
     }
 
-    const { reservations, startTime, endTime, userId, description, loaner } = await request.json();
+    const { reservations, startTime, endTime, userId, description, loaner, reportContent } = await request.json();
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -104,6 +104,17 @@ export async function POST(request: Request) {
         status: loanStatus,
       },
     });
+
+    const trimmedReport = typeof reportContent === 'string' ? reportContent.trim() : '';
+    if (trimmedReport !== '') {
+      await prisma.report.create({
+        data: {
+          loanId: result.id,
+          content: trimmedReport,
+          created: 'BEFORE_LOAN',
+        },
+      });
+    }
 
     await logLoanHistory({
       loanId: result.id,

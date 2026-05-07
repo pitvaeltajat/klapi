@@ -17,7 +17,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 });
   }
 
-  const { id } = await request.json();
+  const { id, reportContent } = await request.json() as {
+    id: string;
+    reportContent?: string;
+  };
 
   if (!id) {
     return NextResponse.json({ message: 'Lainan ID puuttuu' }, { status: 400 });
@@ -64,6 +67,17 @@ export async function POST(request: Request) {
       },
     },
   });
+
+  const trimmedReport = reportContent?.trim() ?? '';
+  if (trimmedReport !== '') {
+    await prisma.report.create({
+      data: {
+        loanId: id,
+        content: trimmedReport,
+        created: 'BEFORE_LOAN',
+      },
+    });
+  }
 
   await logLoanHistory({
     loanId: id,
