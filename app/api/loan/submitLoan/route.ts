@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true, group: true },
+      select: { name: true, email: true, group: true, emailNewLoanNotification: true },
     });
     if (!user) {
       return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
@@ -45,25 +45,36 @@ export async function POST(request: Request) {
     });
     const existingIds = new Set(existingItems.map((i) => i.id));
 
-    const processedReservations: { itemId: string; amount: number }[] = [];
-    for (const r of reservations) {
-      let itemId = r.itemId as string;
-      if (!existingIds.has(itemId)) {
-        if (!r.name) {
-          return NextResponse.json({ message: `Missing name for custom item ${itemId}` }, { status: 400 });
-        }
-        const created = await prisma.item.create({
+    const customReservations = (reservations as { itemId: string; name?: string; amount: number }[])
+      .filter((r) => !existingIds.has(r.itemId));
+    for (const r of customReservations) {
+      if (!r.name) {
+        return NextResponse.json({ message: `Missing name for custom item ${r.itemId}` }, { status: 400 });
+      }
+    }
+    const createdCustomItems = await Promise.all(
+      customReservations.map((r) =>
+        prisma.item.create({
           data: {
-            name: r.name,
+            name: r.name!,
             description: 'Automaattisesti luotu väliaikainen item',
             amount: r.amount ?? 1,
             type: 'temporary',
           },
-        });
-        itemId = created.id;
-      }
-      processedReservations.push({ itemId, amount: r.amount });
-    }
+          select: { id: true },
+        }),
+      ),
+    );
+    const customIdByOriginal = new Map(
+      customReservations.map((r, i) => [r.itemId, createdCustomItems[i].id]),
+    );
+
+    const processedReservations: { itemId: string; amount: number }[] = (
+      reservations as { itemId: string; amount: number }[]
+    ).map((r) => ({
+      itemId: customIdByOriginal.get(r.itemId) ?? r.itemId,
+      amount: r.amount,
+    }));
 
     // Find any IN_BOX reservations for the items being reserved
     // These need to be marked as RETURNED since the items are being taken from the box
@@ -131,22 +142,15 @@ export async function POST(request: Request) {
     // Emails are sent after the response is returned so a slow SES call
     // can't time out the request. Failures are logged; the loan is already committed.
     if (loanStatus === 'ACCEPTED') {
-      if (user.email && user.group !== 'ADMIN') {
-        const userPrefs = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { emailNewLoanNotification: true },
+      if (user.email && user.group !== 'ADMIN' && user.emailNewLoanNotification !== false) {
+        const recipient = user.email;
+        after(async () => {
+          try {
+            await sendCreatedEmail(recipient, result.id);
+          } catch (error) {
+            console.error('Failed to send user email:', error);
+          }
         });
-
-        if (userPrefs?.emailNewLoanNotification !== false) {
-          const recipient = user.email;
-          after(async () => {
-            try {
-              await sendCreatedEmail(recipient, result.id);
-            } catch (error) {
-              console.error('Failed to send user email:', error);
-            }
-          });
-        }
       }
 
       const creatorName = user.name ?? '';

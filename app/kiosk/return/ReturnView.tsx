@@ -82,6 +82,7 @@ const LoanReturnCard = ({
   const [boxInfo, setBoxInfo] = useState<{ name: string; description: string | null } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [reportContent, setReportContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const inuseReservations = React.useMemo(
     () => loan.reservations.filter((r) => r.status === ReservationStatus.INUSE),
@@ -105,11 +106,17 @@ const LoanReturnCard = ({
   const isPartialReturn = selectedIds.size > 0 && selectedIds.size < inuseReservations.length;
 
   const handleConfirmReturn = async () => {
-    const box = await onReturn(loan.id, Array.from(selectedIds), reportContent);
-    if (box) {
-      setBoxInfo(box);
-      setReturnOpen(false);
-      setBoxOpen(true);
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const box = await onReturn(loan.id, Array.from(selectedIds), reportContent);
+      if (box) {
+        setBoxInfo(box);
+        setReturnOpen(false);
+        setBoxOpen(true);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -259,6 +266,7 @@ const LoanReturnCard = ({
               size="lg"
               onClick={handleConfirmReturn}
               className="h-[60px] text-xl"
+              isLoading={isLoading}
               disabled={!termsAccepted || selectedIds.size === 0}
             >
               {isPartialReturn

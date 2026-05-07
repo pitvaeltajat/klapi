@@ -19,10 +19,11 @@ export const visibleItemsWhere: Prisma.ItemWhereInput = {
 };
 
 /**
- * Standard include for items with their relations
+ * Standard include for items with their relations.
+ * Reservation/loan data is intentionally omitted — clients fetch availability
+ * separately via /api/availability/getAvailabilities.
  */
 export const itemsWithRelationsInclude = {
   categories: true,
-  reservations: { include: { loan: true } },
   announcements: { orderBy: { createdAt: 'desc' } },
 } as const;

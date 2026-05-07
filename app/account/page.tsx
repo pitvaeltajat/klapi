@@ -26,26 +26,37 @@ export default async function AccountPage() {
     );
   }
 
-  const rawLoans = await prisma.loan.findMany({
-    where: { user: { id: session.user.id } },
-    include: {
-      user: true,
-      reservations: {
-        include: {
-          item: { select: { id: true, name: true } },
+  const [rawLoans, user] = await Promise.all([
+    prisma.loan.findMany({
+      where: { user: { id: session.user.id } },
+      include: {
+        user: true,
+        reservations: {
+          include: {
+            item: { select: { id: true, name: true } },
+          },
+        },
+        reports: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            created: true,
+            status: true,
+          },
         },
       },
-      reports: {
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          created: true,
-          status: true,
-        },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        emailWeeklyReminder: true,
+        emailNewLoanNotification: true,
+        emailOldBoxNotification: true,
+        emailOverdueNotification: true,
       },
-    },
-  });
+    }),
+  ]);
 
   const loans = rawLoans.map((loan) => ({
     ...loan,
@@ -55,16 +66,6 @@ export default async function AccountPage() {
       status: report.status as ReportStatus,
     })),
   }));
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      emailWeeklyReminder: true,
-      emailNewLoanNotification: true,
-      emailOldBoxNotification: true,
-      emailOverdueNotification: true,
-    },
-  });
 
   return (
     <AccountView

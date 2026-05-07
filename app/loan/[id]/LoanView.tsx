@@ -79,36 +79,48 @@ export default function LoanView({
   });
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const [startLoanOpen, setStartLoanOpen] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
   const { data: session } = useSession();
+
+  const guard = async (fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const isAdmin = session?.user?.group === 'ADMIN';
   const loanStarted = new Date(loan.startTime) <= new Date();
 
-  const approveLoan = async () => {
-    await fetch('/api/loan/approveLoan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id }),
+  const approveLoan = () =>
+    guard(async () => {
+      await fetch('/api/loan/approveLoan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: loan.id }),
+      });
+      toast.success('Laina hyväksytty');
+      router.push('/loan');
     });
-    toast.success('Laina hyväksytty');
-    router.push('/loan');
-  };
 
-  const rejectLoan = async () => {
-    await fetch('/api/loan/rejectLoan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id }),
-    })
-      .then((res) => res.json())
-      .then(() => {
+  const rejectLoan = () =>
+    guard(async () => {
+      try {
+        const res = await fetch('/api/loan/rejectLoan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: loan.id }),
+        });
+        await res.json();
         toast.success('Laina hylätty', { description: 'Laina hylätty onnistuneesti' });
         router.push('/loan');
-      })
-      .catch((err) => {
-        toast.error('Error', { description: err.message });
-      });
-  };
+      } catch (err) {
+        toast.error('Error', { description: err instanceof Error ? err.message : 'Tuntematon virhe' });
+      }
+    });
 
   const [processingIds, setProcessingIds] = React.useState<Set<string>>(
     () =>
@@ -117,16 +129,17 @@ export default function LoanView({
       ),
   );
 
-  const loanProcessed = async () => {
-    const reservationIds = Array.from(processingIds);
-    await fetch('/api/loan/loanProcessed', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id, reservationIds }),
+  const loanProcessed = () =>
+    guard(async () => {
+      const reservationIds = Array.from(processingIds);
+      await fetch('/api/loan/loanProcessed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: loan.id, reservationIds }),
+      });
+      toast.success('Kamat palautettu');
+      router.push('/loan');
     });
-    toast.success('Kamat palautettu');
-    router.push('/loan');
-  };
 
   const toggleProcessing = (id: string) => {
     setProcessingIds((prev) => {
@@ -137,37 +150,40 @@ export default function LoanView({
     });
   };
 
-  const setReportToProcessing = async (
+  const setReportToProcessing = (
     reportId: string,
     affectedItems?: { [key: string]: number },
-  ) => {
-    await fetch('/api/loan/editReport', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
+  ) =>
+    guard(async () => {
+      await fetch('/api/loan/editReport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
+      });
+      toast.success('Raportti otettu käsittelyyn');
+      router.refresh();
     });
-    toast.success('Raportti otettu käsittelyyn');
-    router.refresh();
-  };
 
-  const resolveReport = async (reportId: string, affectedItems?: { [key: string]: number }) => {
-    await fetch('/api/loan/editReport', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
+  const resolveReport = (reportId: string, affectedItems?: { [key: string]: number }) =>
+    guard(async () => {
+      await fetch('/api/loan/editReport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
+      });
+      toast.success('Raportti merkitty käsitellyksi');
+      router.refresh();
     });
-    toast.success('Raportti merkitty käsitellyksi');
-    router.refresh();
-  };
 
-  const sendAnnouncement = async (itemId: string, content: string) => {
-    await fetch('/api/item/createAnnouncement', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ announcement: { itemId, message: content } }),
+  const sendAnnouncement = (itemId: string, content: string) =>
+    guard(async () => {
+      await fetch('/api/item/createAnnouncement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ announcement: { itemId, message: content } }),
+      });
+      toast.success('Ilmoitus lähetetty');
     });
-    toast.success('Ilmoitus lähetetty');
-  };
 
   const isKiosk = session?.user?.group === 'KIOSK';
 
@@ -322,6 +338,7 @@ export default function LoanView({
                 variant="success"
                 size="lg"
                 className="w-full"
+                isLoading={busy}
                 disabled={processingIds.size === 0}
               >
                 {processingIds.size === inBoxReservations.length
@@ -337,7 +354,7 @@ export default function LoanView({
                 <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
                 <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
-                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1">
+                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1" disabled={busy}>
                       Hylkää
                     </Button>
                   )}
@@ -349,12 +366,12 @@ export default function LoanView({
                     </Button>
                   )}
                   {canApprove && (
-                    <Button variant="success" onClick={approveLoan} className="flex-1">
+                    <Button variant="success" onClick={approveLoan} className="flex-1" isLoading={busy}>
                       Hyväksy
                     </Button>
                   )}
                   {canStartUse && (
-                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1">
+                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1" disabled={busy}>
                       Aloita lainaus
                     </Button>
                   )}
@@ -397,10 +414,10 @@ export default function LoanView({
             </DialogHeader>
             <p>Lainahakemus hylätään. Oletko varma?</p>
             <DialogFooter>
-              <Button variant="destructive" onClick={rejectLoan}>
+              <Button variant="destructive" onClick={rejectLoan} isLoading={busy}>
                 Hylkää
               </Button>
-              <Button variant="secondary" onClick={() => setRejectOpen(false)}>
+              <Button variant="secondary" onClick={() => setRejectOpen(false)} disabled={busy}>
                 Peruuta
               </Button>
             </DialogFooter>

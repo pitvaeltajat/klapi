@@ -37,17 +37,29 @@ const RoleSwitch: React.FC<{ user: UserWithGroup }> = ({ user }) => {
   const { mutate } = useSWRConfig();
 
   const updateRole = async (userId: string, group: 'ADMIN' | 'USER' | 'KIOSK') => {
-    const newGroup = group === 'ADMIN' ? 'USER' : 'ADMIN';
+    const newGroup: 'ADMIN' | 'USER' = group === 'ADMIN' ? 'USER' : 'ADMIN';
     try {
-      await fetch(`/api/user/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ group: newGroup }),
-      });
+      await mutate<UserWithGroup[]>(
+        '/api/user/getUsers',
+        async (current) => {
+          const res = await fetch(`/api/user/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group: newGroup }),
+          });
+          if (!res.ok) throw new Error('Roolin päivitys epäonnistui');
+          return current?.map((u) => (u.id === userId ? { ...u, group: newGroup } : u));
+        },
+        {
+          optimisticData: (current) =>
+            current?.map((u) => (u.id === userId ? { ...u, group: newGroup } : u)) ?? [],
+          rollbackOnError: true,
+          revalidate: false,
+        },
+      );
       toast.success('Rooli päivitetty', {
         description: `Käyttäjän rooli vaihdettu: ${newGroup}`,
       });
-      mutate('/api/user/getUsers');
     } catch {
       toast.error('Virhe', { description: 'Roolin päivitys epäonnistui' });
     }

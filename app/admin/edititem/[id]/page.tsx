@@ -17,17 +17,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const item = await prisma.item.findUnique({
-    where: { id },
-    include: {
-      categories: true,
-      reservations: { include: { loan: true } },
-    },
-  });
+  const [item, categories] = await Promise.all([
+    prisma.item.findUnique({
+      where: { id },
+      include: {
+        categories: true,
+        reservations: { include: { loan: true } },
+      },
+    }),
+    prisma.category.findMany({ orderBy: { name: 'asc' } }),
+  ]);
 
   if (!item) notFound();
-
-  const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
 
   return <EditItemView item={serialize(item)} categories={serialize(categories)} />;
 }

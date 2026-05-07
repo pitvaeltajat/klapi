@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { FaMinus, FaPlus, FaTrash, FaHistory } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -48,28 +49,31 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
   const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
+  const debouncedStartDate = useDebouncedValue(startDate);
+  const debouncedEndDate = useDebouncedValue(endDate);
 
   useEffect(() => {
-    const fetchAvailability = async () => {
-      setLoadingAvailability(true);
-      try {
-        const response = await fetch('/api/availability/getAvailabilities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            StartDate: new Date(startDate),
-            EndDate: new Date(endDate),
-          }),
-        });
-        const data = await response.json();
+    const ctrl = new AbortController();
+    setLoadingAvailability(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
+    fetch('/api/availability/getAvailabilities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        StartDate: new Date(debouncedStartDate),
+        EndDate: new Date(debouncedEndDate),
+      }),
+      signal: ctrl.signal,
+    })
+      .then((response) => response.json())
+      .then((data) => {
         setAvailabilityData(data);
-      } catch (error) {
-        console.error('Failed to fetch availability:', error);
-      }
-      setLoadingAvailability(false);
-    };
-    fetchAvailability();
-  }, [startDate, endDate]);
+        setLoadingAvailability(false);
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') console.error('Failed to fetch availability:', error);
+      });
+    return () => ctrl.abort();
+  }, [debouncedStartDate, debouncedEndDate]);
 
   const getEffectiveAvailability = (itemId: string): number => {
     if (!availabilityData?.availabilities?.[itemId]) return 0;

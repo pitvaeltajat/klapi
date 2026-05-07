@@ -69,7 +69,6 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     userEmailPreferences.emailOverdueNotification,
   );
 
-  const [isSaving, setIsSaving] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -85,7 +84,21 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue',
     value: boolean,
   ) => {
-    setIsSaving(true);
+    const setters = {
+      weekly: setEmailWeeklyReminder,
+      newLoan: setEmailNewLoanNotification,
+      oldBox: setEmailOldBoxNotification,
+      overdue: setEmailOverdueNotification,
+    } as const;
+    const previous = {
+      weekly: emailWeeklyReminder,
+      newLoan: emailNewLoanNotification,
+      oldBox: emailOldBoxNotification,
+      overdue: emailOverdueNotification,
+    }[preference];
+
+    setters[preference](value);
+
     try {
       const response = await fetch('/api/user/updateEmailPreferences', {
         method: 'POST',
@@ -99,15 +112,9 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
       });
 
       if (!response.ok) throw new Error('Failed to update preferences');
-
-      if (preference === 'weekly') setEmailWeeklyReminder(value);
-      else if (preference === 'newLoan') setEmailNewLoanNotification(value);
-      else if (preference === 'oldBox') setEmailOldBoxNotification(value);
-      else if (preference === 'overdue') setEmailOverdueNotification(value);
     } catch (error) {
       console.error('Error updating email preferences:', error);
-    } finally {
-      setIsSaving(false);
+      setters[preference](previous);
     }
   };
 
@@ -191,21 +198,18 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
                   title="Uudet lainat"
                   description="Ilmoitukset uusista lainoista (myös kiosk-käytöstä)"
                   checked={emailNewLoanNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
                   title="Viikottaiset muistutukset vanhoista bokseista"
                   description="Muistutukset lainoista, jotka ovat olleet boksissa yli viikon"
                   checked={emailOldBoxNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('oldBox', v)}
                 />
                 <PrefRow
                   title="Myöhässä olevat lainat"
                   description="Ilmoitukset lainoista, joiden palautusaika on ylittynyt"
                   checked={emailOverdueNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('overdue', v)}
                 />
               </>
@@ -215,14 +219,12 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
                   title="Ilmoitukset uusista lainoista"
                   description="Sähköpostit kun luot uuden lainan"
                   checked={emailNewLoanNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
                   title="Muistutukset lainoista"
                   description="Muistutukset lainojesi päättymisestä"
                   checked={emailWeeklyReminder}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
                 />
               </>

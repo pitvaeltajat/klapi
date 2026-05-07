@@ -340,6 +340,7 @@ const LoanStartCard = ({
   const [editOpen, setEditOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [reportContent, setReportContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
   const acceptedReservations = loan.reservations.filter(
@@ -347,9 +348,15 @@ const LoanStartCard = ({
   );
 
   const handleStartLoan = async () => {
-    await onStart(loan.id, reportContent);
-    setOpen(false);
-    onStartComplete();
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await onStart(loan.id, reportContent);
+      setOpen(false);
+      onStartComplete();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -452,10 +459,10 @@ const LoanStartCard = ({
             </label>
           </div>
           <DialogFooter>
-            <Button variant="success" onClick={handleStartLoan} disabled={!termsAccepted}>
+            <Button variant="success" onClick={handleStartLoan} disabled={!termsAccepted} isLoading={isLoading}>
               Aloita lainaus
             </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={isLoading}>
               Peruuta
             </Button>
           </DialogFooter>

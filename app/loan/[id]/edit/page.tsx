@@ -16,10 +16,13 @@ export default async function UserEditLoanPage({ params }: { params: Promise<{ i
 
   if (!session?.user) redirect('/api/auth/signin');
 
-  const loan = await prisma.loan.findUnique({
-    where: { id },
-    include: { reservations: { include: { item: true } }, user: true },
-  });
+  const [loan, items] = await Promise.all([
+    prisma.loan.findUnique({
+      where: { id },
+      include: { reservations: { include: { item: true } }, user: true },
+    }),
+    prisma.item.findMany({ where: activeItemsWhere }),
+  ]);
 
   if (!loan) notFound();
 
@@ -34,8 +37,6 @@ export default async function UserEditLoanPage({ params }: { params: Promise<{ i
 
   // Gate: can only edit before the loan has started
   if (loan.startTime <= new Date()) redirect(`/loan/${id}`);
-
-  const items = await prisma.item.findMany({ where: activeItemsWhere });
 
   return <UserEditLoanView loan={serialize(loan)} items={serialize(items)} />;
 }

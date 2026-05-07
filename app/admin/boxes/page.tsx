@@ -8,17 +8,18 @@ import BoxesView from './BoxesView';
 export const metadata = { title: 'Laatikot | Klapi' };
 
 export default async function BoxesPage() {
-  const boxes = await prisma.box.findMany({
-    include: {
-      loans: {
-        include: { reservations: { include: { item: true } } },
-        where: { reservations: { some: { status: ReservationStatus.IN_BOX } } },
+  const [boxes, reports] = await Promise.all([
+    prisma.box.findMany({
+      include: {
+        loans: {
+          include: { reservations: { include: { item: true } } },
+          where: { reservations: { some: { status: ReservationStatus.IN_BOX } } },
+        },
       },
-    },
-    orderBy: { name: 'asc' },
-  });
-
-  const reports = await prisma.report.findMany();
+      orderBy: { name: 'asc' },
+    }),
+    prisma.report.findMany(),
+  ]);
 
   return <BoxesView boxes={serialize(boxes)} reports={serialize(reports)} />;
 }

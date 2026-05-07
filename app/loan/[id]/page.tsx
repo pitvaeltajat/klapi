@@ -17,29 +17,29 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function LoanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const loan = await prisma.loan.findUnique({
-    where: { id },
-    include: {
-      user: true,
-      box: true,
-      reservations: { include: { item: true } },
-    },
-  });
+  const [loan, reports, history] = await Promise.all([
+    prisma.loan.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        box: true,
+        reservations: { include: { item: true } },
+      },
+    }),
+    prisma.report.findMany({
+      where: { loanId: id },
+      select: { id: true, content: true, createdAt: true, status: true },
+    }),
+    prisma.loanHistory.findMany({
+      where: { loanId: id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        actedBy: { select: { id: true, name: true, email: true } },
+      },
+    }),
+  ]);
 
   if (!loan) notFound();
-
-  const reports = await prisma.report.findMany({
-    where: { loanId: id },
-    select: { id: true, content: true, createdAt: true, status: true },
-  });
-
-  const history = await prisma.loanHistory.findMany({
-    where: { loanId: id },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      actedBy: { select: { id: true, name: true, email: true } },
-    },
-  });
 
   return (
     <LoanView

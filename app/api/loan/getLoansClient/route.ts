@@ -13,19 +13,22 @@ export async function GET() {
 
   const loans = await prisma.loan.findMany({
     where: isAdminOrKiosk ? {} : { userId: session.user.id },
-    include: {
-      user: true,
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      description: true,
+      loaner: true,
+      startTime: true,
+      endTime: true,
+      user: { select: { name: true, email: true } },
       reservations: {
-        include: {
-          item: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+        select: {
+          status: true,
+          item: { select: { id: true, name: true } },
         },
       },
-      reports: true,
+      reports: { select: { status: true } },
     },
   });
 

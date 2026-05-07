@@ -7,7 +7,7 @@ import { LayoutGrid, Table as TableIcon } from 'lucide-react';
 import DateSelector from '@/components/DateSelector';
 import KioskModeSelector from '@/components/KioskModeSelector';
 import KioskDateSelector from '@/components/KioskDateSelector';
-import { Item, Category, Loan, Reservation, ItemType, Announcement } from '@prisma/client';
+import { Item, Category, ItemType, Announcement } from '@prisma/client';
 import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
 import ItemBrowser from '@/components/ItemBrowser';
@@ -75,7 +75,6 @@ function BrowseModeHeader({
 interface ItemWithRelations extends Item {
   categories: Category[];
   type: ItemType;
-  reservations: (Reservation & { loan: Loan })[];
   announcements: Announcement[];
 }
 
