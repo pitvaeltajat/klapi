@@ -197,7 +197,9 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 required
                 aria-invalid={!isDescriptionValid && cart.items.length > 0}
                 className={cn(
-                  !isDescriptionValid && cart.items.length > 0 && 'border-destructive focus-visible:ring-destructive',
+                  !isDescriptionValid &&
+                    cart.items.length > 0 &&
+                    'border-destructive focus-visible:ring-destructive',
                 )}
               />
             </div>
@@ -217,9 +219,9 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           {isKiosk && (
             <div className="mt-6 rounded-lg border-2 bg-muted p-4">
               <p className="text-base leading-relaxed">
-                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja
-                mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
-                reikä laavussa tms.)
+                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja mahdolliset
+                vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat, reikä
+                laavussa tms.)
               </p>
               <p className="mt-2 text-base leading-relaxed text-destructive">
                 <IoMdAlert className="mr-2 inline" />
@@ -297,7 +299,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             <Button
               onClick={() => setConfirmOpen(true)}
               disabled={
-                cart.items.length === 0 || !isDescriptionValid || !cart.loaner || (isKiosk && !cart.userId)
+                cart.items.length === 0 ||
+                !isDescriptionValid ||
+                !cart.loaner?.trim() ||
+                (isKiosk && !cart.userId)
               }
             >
               Lainaa
