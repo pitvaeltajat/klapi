@@ -154,7 +154,6 @@ export default function InventoryView() {
   const [bulkLocationValue, setBulkLocationValue] = useState<{ value: string; label: string } | null>(null);
 
   const [promoteItem, setPromoteItem] = useState<InventoryItem | null>(null);
-  const [promoteOpen, setPromoteOpen] = useState(false);
 
   const [addingRow, setAddingRow] = useState(false);
   const [addingSubmitting, setAddingSubmitting] = useState(false);
@@ -646,7 +645,6 @@ export default function InventoryView() {
                     className="text-success hover:bg-success/10"
                     onClick={() => {
                       setPromoteItem(item);
-                      setPromoteOpen(true);
                     }}
                     aria-label="Siirrä kirjastoon"
                   >
@@ -693,6 +691,7 @@ export default function InventoryView() {
     }),
   ], [editState, startEdit, commitEdit, handleRestoreRow]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 returns non-memoizable functions; safe under React Compiler skip
   const table = useReactTable({
     data: filteredItems,
     columns,
@@ -1117,17 +1116,21 @@ export default function InventoryView() {
       </Dialog>
 
       {/* Promote dialog */}
-      <PromoteDialog
-        item={promoteItem}
-        categories={categories}
-        locations={locations}
-        open={promoteOpen}
-        onOpenChange={setPromoteOpen}
-        onSuccess={(updated) => {
-          updateItemLocal(updated as InventoryItem);
-          setPromoteItem(null);
-        }}
-      />
+      {promoteItem && (
+        <PromoteDialog
+          key={promoteItem.id}
+          item={promoteItem}
+          categories={categories}
+          locations={locations}
+          onOpenChange={(open) => {
+            if (!open) setPromoteItem(null);
+          }}
+          onSuccess={(updated) => {
+            updateItemLocal(updated as InventoryItem);
+            setPromoteItem(null);
+          }}
+        />
+      )}
     </>
   );
 }

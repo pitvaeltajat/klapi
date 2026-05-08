@@ -83,3 +83,17 @@ server components or route handlers.
   variants now (`success`, `destructive`, `warning`, `default`, `secondary`,
   `gray`). Keep them returning those literals — the `BadgeVariant` type is
   exported from that file.
+
+## Package versions held back
+
+When running a dependency update sweep, leave these on their current major and
+revisit deliberately:
+
+- **eslint 9 → 10**: held back. Major bump and the Next 16 ecosystem
+  (`eslint-config-next`, `typescript-eslint`) hasn't fully caught up — wait for
+  Next/typescript-eslint to publish v10-ready releases before bumping.
+- **@vitejs/plugin-react 5 → 6**: held back. v6 requires Vite 7; we're on
+  Vitest 4 which still resolves Vite 6. Bump together with the next Vitest
+  major when it lands.
+- **@types/node**: track the runtime (currently Node 24 LTS) — don't jump to
+  `^25` until we're actually running Node 25.
