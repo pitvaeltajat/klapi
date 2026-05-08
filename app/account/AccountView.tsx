@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import LoanCard from '@/components/LoanCard';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import React from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
 import { useTheme } from 'next-themes';
@@ -70,11 +70,11 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   );
 
   const [signOutOpen, setSignOutOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime)),

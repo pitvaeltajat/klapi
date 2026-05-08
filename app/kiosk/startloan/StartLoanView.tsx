@@ -56,13 +56,11 @@ interface AvailabilityData {
 }
 
 const EditItemsDialog = ({
-  open,
   onOpenChange,
   loan,
   items,
   onSaved,
 }: {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
   loan: LoanType;
   items: Item[];
@@ -76,10 +74,6 @@ const EditItemsDialog = ({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
-    setReservations(loan.reservations);
-    setSelectedItemAmount(0);
-    setLoadingAvailability(true);
     fetch('/api/availability/getAvailabilities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,7 +86,7 @@ const EditItemsDialog = ({
       .then((data) => setAvailabilityData(data))
       .catch((e) => console.error('Failed to fetch availability:', e))
       .finally(() => setLoadingAvailability(false));
-  }, [open, loan.startTime, loan.endTime, loan.reservations]);
+  }, [loan.startTime, loan.endTime]);
 
   const getEffectiveAvailability = (itemId: string): number => {
     if (!availabilityData?.availabilities?.[itemId]) return 0;
@@ -165,7 +159,7 @@ const EditItemsDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Muokkaa lainan kamoja</DialogTitle>
@@ -402,15 +396,16 @@ const LoanStartCard = ({
         </div>
       </div>
 
-      <EditItemsDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        loan={loan}
-        items={items}
-        onSaved={(nextReservations) => {
-          setLoan((prev) => ({ ...prev, reservations: nextReservations }));
-        }}
-      />
+      {editOpen && (
+        <EditItemsDialog
+          onOpenChange={setEditOpen}
+          loan={loan}
+          items={items}
+          onSaved={(nextReservations) => {
+            setLoan((prev) => ({ ...prev, reservations: nextReservations }));
+          }}
+        />
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,10 +23,9 @@ interface SelectOption {
 }
 
 interface Props {
-  item: InventoryItem | null;
+  item: InventoryItem;
   categories: InventoryCategory[];
   locations: InventoryLocation[];
-  open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (updated: InventoryItem) => void;
 }
@@ -35,34 +34,25 @@ export default function PromoteDialog({
   item,
   categories,
   locations,
-  open,
   onOpenChange,
   onSuccess,
 }: Props) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState(1);
-  const [selectedCategories, setSelectedCategories] = useState<SelectOption[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<SelectOption | null>(null);
+  const [name, setName] = useState(item.name);
+  const [description, setDescription] = useState(item.description ?? '');
+  const [amount, setAmount] = useState(item.amount);
+  const [selectedCategories, setSelectedCategories] = useState<SelectOption[]>(
+    item.categories.map((c) => ({ value: c.id, label: c.name })),
+  );
+  const [selectedLocation, setSelectedLocation] = useState<SelectOption | null>(
+    item.location ? { value: item.location.id, label: item.location.name } : null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
   const locationOptions = locations.map((l) => ({ value: l.id, label: l.name }));
 
-  useEffect(() => {
-    if (open && item) {
-      setName(item.name);
-      setDescription(item.description ?? '');
-      setAmount(item.amount);
-      setSelectedCategories(item.categories.map((c) => ({ value: c.id, label: c.name })));
-      setSelectedLocation(
-        item.location ? { value: item.location.id, label: item.location.name } : null,
-      );
-    }
-  }, [open, item]);
-
   const handleConfirm = async () => {
-    if (!item || !name.trim()) {
+    if (!name.trim()) {
       toast.error('Nimi on pakollinen');
       return;
     }
@@ -98,7 +88,7 @@ export default function PromoteDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Siirrä kirjastoon</DialogTitle>
