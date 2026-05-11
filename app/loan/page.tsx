@@ -94,9 +94,7 @@ export default function LoanListPage() {
               className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
                 allChecked
                   ? 'border-primary bg-primary text-primary-foreground'
-                  : isIndeterminate
-                    ? 'border-primary/50 bg-primary/10 text-foreground'
-                    : 'border-input bg-background text-muted-foreground hover:bg-accent'
+                  : 'border-input bg-background text-muted-foreground hover:bg-accent'
               }`}
             >
               Kaikki
