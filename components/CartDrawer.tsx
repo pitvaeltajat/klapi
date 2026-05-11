@@ -143,14 +143,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           e.preventDefault();
           firstField.current?.focus();
         }}
-        onPointerDownOutside={(e) => {
-          // Prevent Radix from auto-closing when the cart button is clicked,
-          // so the button's onClick toggle works without a race condition.
-          const target = e.target as HTMLElement;
-          if (target.closest('[data-cart-button]')) {
-            e.preventDefault();
-          }
-        }}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <DrawerHeader>
           <DrawerTitle>Ostoskori</DrawerTitle>
