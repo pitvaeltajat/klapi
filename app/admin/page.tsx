@@ -185,23 +185,19 @@ export default function AdminPage() {
     <>
       <Breadcrumbs items={[{ label: 'Admin' }]} />
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-4xl font-semibold">Admin</h1>
-        </div>
-
-        <div className="flex justify-end">
-          <Button onClick={getOTP} variant="warning" className="gap-2">
-            <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
-          </Button>
-        </div>
-
-        {!session?.user?.adminExpiry && (
-          <div className="flex justify-end">
-            <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
-              <MdOutlinePassword /> Aseta oma admin-PIN
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={getOTP} variant="warning" className="gap-2">
+              <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
             </Button>
+            {!session?.user?.adminExpiry && (
+              <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
+                <MdOutlinePassword /> Aseta oma admin-PIN
+              </Button>
+            )}
           </div>
-        )}
+        </div>
 
         <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
           <DialogContent>
