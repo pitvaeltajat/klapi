@@ -302,7 +302,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 cart.items.length === 0 ||
                 !isDescriptionValid ||
                 !cart.loaner?.trim() ||
-                (isKiosk && !cart.userId)
+                (!isKiosk && !cart.userId)
               }
             >
               Lainaa
