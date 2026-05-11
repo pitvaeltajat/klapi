@@ -6,16 +6,13 @@ export async function POST(request: Request) {
 
   // Add validation for dates
   if (!StartDate || !EndDate) {
-    return NextResponse.json(
-      {
-        error: 'Missing required dates',
-        details: {
-          StartDate: StartDate ? 'present' : 'missing',
-          EndDate: EndDate ? 'present' : 'missing',
-        },
+    return NextResponse.json({
+      error: 'Missing required dates',
+      details: {
+        StartDate: StartDate ? 'present' : 'missing',
+        EndDate: EndDate ? 'present' : 'missing',
       },
-      { status: 400 },
-    );
+    }, { status: 400 });
   }
 
   // Validate that the dates are valid
@@ -23,30 +20,24 @@ export async function POST(request: Request) {
   const endDate = new Date(EndDate);
 
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    return NextResponse.json(
-      {
-        error: 'Invalid date format',
-        details: {
-          StartDate: isNaN(startDate.getTime()) ? 'invalid' : 'valid',
-          EndDate: isNaN(endDate.getTime()) ? 'invalid' : 'valid',
-        },
+    return NextResponse.json({
+      error: 'Invalid date format',
+      details: {
+        StartDate: isNaN(startDate.getTime()) ? 'invalid' : 'valid',
+        EndDate: isNaN(endDate.getTime()) ? 'invalid' : 'valid',
       },
-      { status: 400 },
-    );
+    }, { status: 400 });
   }
 
   // Validate that end date is after start date
   if (endDate < startDate) {
-    return NextResponse.json(
-      {
-        error: 'End date must be after start date',
-        dates: {
-          StartDate,
-          EndDate,
-        },
+    return NextResponse.json({
+      error: 'End date must be after start date',
+      dates: {
+        StartDate,
+        EndDate,
       },
-      { status: 400 },
-    );
+    }, { status: 400 });
   }
 
   const items = await prisma.item.findMany({
@@ -60,10 +51,8 @@ export async function POST(request: Request) {
       },
     },
   });
-  // Filter out orphaned reservations (loan === null tai item === null)
-  const reservations = items
-    .flatMap((item) => item.reservations)
-    .filter((r) => r.loan !== null && r.item !== null);
+  // Filter out orphaned reservations (loan === null)
+  const reservations = items.flatMap((item) => item.reservations).filter(r => r.loan !== null);
 
   const availabilities: Record<string, { byDate: Record<string, number>; available: number }> = {};
 
