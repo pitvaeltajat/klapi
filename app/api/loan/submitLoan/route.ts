@@ -16,15 +16,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Ei kirjautunut' }, { status: 401 });
     }
 
-    const { reservations, startTime, endTime, userId, description, loaner, reportContent } =
-      await request.json();
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true, email: true, group: true, emailNewLoanNotification: true },
-    });
-    if (!user) {
-      return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
+    const { reservations, startTime, endTime, userId, description, loaner, reportContent } = await request.json();
+
+    let user = null;
+    if (userId) {
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true, group: true, emailNewLoanNotification: true },
+      });
+      if (!user) {
+        return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
+      }
+    } else if (session.user.group !== 'KIOSK') {
+      // Ei kioskikäyttäjä, userId vaaditaan
+      return NextResponse.json({ message: 'Käyttäjä puuttuu' }, { status: 400 });
     }
 
     // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
@@ -105,17 +111,20 @@ export async function POST(request: Request) {
       status: reservationStatus,
     }));
 
-    const result = await prisma.loan.create({
-      data: {
-        reservations: { create: createReservations },
-        startTime: startTime,
-        endTime: endTime,
-        user: { connect: { id: userId } },
-        description,
-        loaner,
-        status: loanStatus,
-      },
-    });
+
+    // Jos userId on annettu, yhdistä käyttäjä lainaan. Jos ei, luo laina ilman user-yhdistystä (vain loaner-nimi, sallittu vain kioskilla).
+    const loanData: any = {
+      reservations: { create: createReservations },
+      startTime: startTime,
+      endTime: endTime,
+      description,
+      loaner,
+      status: loanStatus,
+    };
+    if (userId) {
+      loanData.user = { connect: { id: userId } };
+    }
+    const result = await prisma.loan.create({ data: loanData });
 
     const trimmedReport = typeof reportContent === 'string' ? reportContent.trim() : '';
     if (trimmedReport !== '') {
@@ -142,7 +151,8 @@ export async function POST(request: Request) {
 
     // Emails are sent after the response is returned so a slow SES call
     // can't time out the request. Failures are logged; the loan is already committed.
-    if (loanStatus === 'ACCEPTED') {
+
+    if (loanStatus === 'ACCEPTED' && user) {
       if (user.email && user.group !== 'ADMIN' && user.emailNewLoanNotification !== false) {
         const recipient = user.email;
         after(async () => {
@@ -165,7 +175,7 @@ export async function POST(request: Request) {
     }
 
     if (loanStatus === 'INUSE' && session.user.group === 'KIOSK') {
-      const creatorName = user.name || 'Kiosk-käyttäjä';
+      const creatorName = (user && user.name) || loaner || 'Kiosk-käyttäjä';
       after(async () => {
         try {
           await sendNewLoanEmail(creatorName, result.id);
