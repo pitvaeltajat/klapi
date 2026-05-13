@@ -52,6 +52,8 @@ export interface ItemCardProps {
     announcements: Announcement[];
   };
   availableAmount: number;
+  availabilityLoading?: boolean;
+  availabilityKnown?: boolean;
 }
 
 export interface LoanCardProps {

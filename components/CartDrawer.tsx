@@ -5,8 +5,8 @@ import { FaPlus, FaMinus } from 'react-icons/fa';
 import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
-import LoadingSpinner from './LoadingSpinner';
 import LoanerAutocomplete from './LoanerAutocomplete';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
@@ -122,8 +122,15 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <DrawerHeader>
             <DrawerTitle>Ostoskori</DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 overflow-auto">
-            <LoadingSpinner fullWidth />
+          <div className="flex-1 space-y-4 overflow-auto p-6">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-24 w-full" />
+            {Array.from({ length: Math.max(cartItems.length, 3) }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            ))}
           </div>
         </DrawerContent>
       </Drawer>

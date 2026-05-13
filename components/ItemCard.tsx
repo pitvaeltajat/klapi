@@ -10,8 +10,14 @@ import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ItemCardShell from './ItemCardShell';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps) {
+const ItemCard = memo(function ItemCard({
+  item,
+  availableAmount,
+  availabilityLoading = false,
+  availabilityKnown = true,
+}: ItemCardProps) {
   const {
     addToCart,
     incrementAmount,
@@ -43,6 +49,14 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
   const handleCardClick = useCallback(() => router.push(`/item/${item.id}`), [router, item.id]);
   const stopPropagation = useCallback((e: MouseEvent) => e.stopPropagation(), []);
 
+  const subtitle = availabilityKnown ? (
+    `Vapaana: ${amountLeft} / ${item.amount} kpl`
+  ) : (
+    <Skeleton className="h-4 w-32" />
+  );
+
+  const actionDisabled = !canTakeMoreItems || (availabilityLoading && !availabilityKnown);
+
   const action =
     amountInCart > 0 ? (
       <div className="flex h-11 sm:mt-3 sm:h-11">
@@ -73,7 +87,7 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
       <Button
         onClick={handleAddToCart}
         className="h-11 w-full gap-2 text-base sm:mt-3 sm:h-11 sm:text-base"
-        disabled={!canTakeMoreItems}
+        disabled={actionDisabled}
       >
         {canTakeMoreItems ? 'Lisää' : 'Ei saatavilla'}
         {canTakeMoreItems && <FaCartArrowDown />}
@@ -85,7 +99,7 @@ const ItemCard = memo(function ItemCard({ item, availableAmount }: ItemCardProps
       name={item.name}
       imageSrc={imageSrc}
       placeholder={placeholder}
-      subtitle={`Vapaana: ${amountLeft} / ${item.amount} kpl`}
+      subtitle={subtitle}
       categoryLine={item.categories.map((cat) => cat.name).join(', ')}
       announcements={item.announcements}
       onClick={handleCardClick}
