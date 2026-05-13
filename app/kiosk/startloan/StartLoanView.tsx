@@ -18,6 +18,7 @@ import { NumberInput } from '@/components/ui/number-input';
 import { formatDateOnly } from '@/utils/dateFormat';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -166,7 +167,14 @@ const EditItemsDialog = ({
         </DialogHeader>
 
         {loadingAvailability ? (
-          <p className="py-6 text-center text-muted-foreground">Ladataan saatavuustietoja…</p>
+          <div className="flex flex-col gap-3 py-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="ml-auto h-10 w-32" />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">

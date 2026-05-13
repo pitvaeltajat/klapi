@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -175,9 +176,56 @@ export default function AdminPage() {
 
   if (!users) {
     return (
-      <div className="p-6">
-        <p>Ladataan...</p>
-      </div>
+      <>
+        <Breadcrumbs items={[{ label: 'Admin' }]} />
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Skeleton className="h-10 w-32" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-10 w-48" />
+            </div>
+          </div>
+          <div className="rounded-lg border bg-card p-6 shadow-xs">
+            <div className="mb-4 flex items-center justify-between">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nimi</TableHead>
+                  <TableHead>Sähköposti</TableHead>
+                  <TableHead>Rooli</TableHead>
+                  <TableHead>Admin-oikeudet</TableHead>
+                  <TableHead className="w-[100px]">Toiminnot</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-10 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </>
     );
   }
 

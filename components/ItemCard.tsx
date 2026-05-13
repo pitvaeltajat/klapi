@@ -89,8 +89,12 @@ const ItemCard = memo(function ItemCard({
         className="h-11 w-full gap-2 text-base sm:mt-3 sm:h-11 sm:text-base"
         disabled={actionDisabled}
       >
-        {canTakeMoreItems ? 'Lisää' : 'Ei saatavilla'}
-        {canTakeMoreItems && <FaCartArrowDown />}
+        {!availabilityKnown
+          ? 'Ladataan…'
+          : canTakeMoreItems
+            ? 'Lisää'
+            : 'Ei saatavilla'}
+        {availabilityKnown && canTakeMoreItems && <FaCartArrowDown />}
       </Button>
     );
 
