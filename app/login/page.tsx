@@ -7,8 +7,23 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+
+function LoginSkeleton() {
+  return (
+    <div className="flex min-h-screen items-start justify-center pt-[15vh]">
+      <div className="flex w-full max-w-sm flex-col items-stretch gap-6 px-6">
+        <div className="space-y-3">
+          <Skeleton className="mx-auto h-9 w-2/3" />
+          <Skeleton className="mx-auto h-4 w-full" />
+        </div>
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="mx-auto h-8 w-40" />
+      </div>
+    </div>
+  );
+}
 
 function GoogleLogo() {
   return (
@@ -51,7 +66,7 @@ function LoginContent() {
 
   if (status === 'loading' || session) {
     if (!showLoading) return null;
-    return <LoadingSpinner fullWidth minHeight="100vh" />;
+    return <LoginSkeleton />;
   }
 
   const callbackUrl = decodeURIComponent(searchParams.get('from') || '') || '/';
@@ -136,7 +151,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoadingSpinner fullWidth minHeight="100vh" />}>
+    <Suspense fallback={<LoginSkeleton />}>
       <LoginContent />
     </Suspense>
   );

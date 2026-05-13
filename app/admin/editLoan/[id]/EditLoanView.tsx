@@ -7,8 +7,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import NotAuthenticated from '@/components/NotAuthenticated';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Loan, Item, User, Reservation, ReservationStatus, LoanStatus } from '@prisma/client';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
@@ -167,7 +167,30 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
     !loan.reservations.find((r) => r.id === reservation.id);
 
   if (loadingAvailability) {
-    return <LoadingSpinner />;
+    return (
+      <>
+        <Breadcrumbs
+          items={[
+            { label: 'Lainat', href: '/loan' },
+            { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
+            { label: 'Muokkaa' },
+          ]}
+        />
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-10 w-64" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card p-6 shadow-xs">
+              <Skeleton className="mb-4 h-6 w-40" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          ))}
+          <Skeleton className="h-11 w-full md:w-48" />
+        </div>
+      </>
+    );
   }
 
   const dirty = (modified: boolean) => (modified ? 'border-2 border-warning' : '');

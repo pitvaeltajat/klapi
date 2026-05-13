@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface SelectOption {
   value: string;
@@ -137,7 +138,21 @@ export default function CreateItemPage() {
 
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
   if (locationsError || categoriesError) return <div>failed to load</div>;
-  if (!categories || !locations) return <div>loading...</div>;
+  if (!categories || !locations)
+    return (
+      <>
+        <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Luo uusi kama' }]} />
+        <Skeleton className="mb-6 h-10 w-64" />
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      </>
+    );
 
   const locationOptions = locations.map((l) => ({ ...l, label: l.name, value: l.id }));
   const categoryOptions = categories.map((c) => ({ ...c, label: c.name, value: c.id }));

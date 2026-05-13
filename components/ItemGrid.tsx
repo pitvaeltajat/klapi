@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ItemCard from '@/components/ItemCard';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { useDates } from '@/contexts/DatesContext';
-import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { Item, Category, Announcement } from '@prisma/client';
 
@@ -31,9 +29,8 @@ export default function ItemGrid({ items }: ItemGridProps) {
     state: { startDate, endDate },
   } = useDates();
 
-  const [data, setData] = useState<AvailabilityResponse | null>(null);
+  const [availabilities, setAvailabilities] = useState<Record<string, Availability> | null>(null);
   const [loading, setLoading] = useState(true);
-  const showLoading = useDelayedLoading(loading);
 
   const debouncedStart = useDebouncedValue(startDate);
   const debouncedEnd = useDebouncedValue(endDate);
@@ -49,7 +46,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
     })
       .then((response) => response.json())
       .then((data: AvailabilityResponse) => {
-        setData(data);
+        setAvailabilities(data.availabilities);
         setLoading(false);
       })
       .catch((error) => {
@@ -61,29 +58,34 @@ export default function ItemGrid({ items }: ItemGridProps) {
     return () => ctrl.abort();
   }, [debouncedStart, debouncedEnd]);
 
-  const availabilities = data?.availabilities;
-
-  if (loading) {
-    if (!showLoading) return null;
-    return <LoadingSpinner minHeight="30vh" />;
-  }
+  const isRefetching = loading && availabilities !== null;
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5 2xl:grid-cols-6">
-      {items.map((item) => (
-        <ItemCard
-          key={item.id}
-          item={{
-            id: item.id,
-            name: item.name,
-            description: item.description || undefined,
-            amount: item.amount,
-            categories: item.categories.map((cat) => ({ id: cat.id, name: cat.name })),
-            announcements: item.announcements || null,
-          }}
-          availableAmount={availabilities?.[item.id]?.available ?? 0}
-        />
-      ))}
+    <div
+      className={`grid grid-cols-1 gap-3 transition-opacity duration-150 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5 2xl:grid-cols-6 ${
+        isRefetching ? 'opacity-80' : 'opacity-100'
+      }`}
+      aria-busy={loading}
+    >
+      {items.map((item) => {
+        const known = availabilities !== null;
+        return (
+          <ItemCard
+            key={item.id}
+            item={{
+              id: item.id,
+              name: item.name,
+              description: item.description || undefined,
+              amount: item.amount,
+              categories: item.categories.map((cat) => ({ id: cat.id, name: cat.name })),
+              announcements: item.announcements || null,
+            }}
+            availableAmount={availabilities?.[item.id]?.available ?? 0}
+            availabilityLoading={loading}
+            availabilityKnown={known}
+          />
+        );
+      })}
     </div>
   );
 }

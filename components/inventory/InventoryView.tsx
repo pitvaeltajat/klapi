@@ -39,7 +39,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Plus, Check, X, RotateCcw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useItemImage } from '@/hooks/useItemImage';
 import PromoteDialog from './PromoteDialog';
 
@@ -930,17 +930,15 @@ export default function InventoryView() {
                 </TableRow>
               )}
               {itemsLoading && items.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Spinner size="md" />
-                      <span>Ladataan…</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 8 }).map((_, rowIdx) => (
+                  <TableRow key={`skeleton-${rowIdx}`}>
+                    {columns.map((_col, colIdx) => (
+                      <TableCell key={colIdx} className="py-3">
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell
