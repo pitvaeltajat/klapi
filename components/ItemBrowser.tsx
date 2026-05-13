@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/contexts/CartContext';
+import { useAvailabilities } from '@/hooks/useAvailabilities';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -38,6 +39,7 @@ export default function ItemBrowser({
     addToCart,
     state: { items: cartItems },
   } = useCart();
+  const { availabilities } = useAvailabilities();
 
   useEffect(() => {
     searchRef.current?.focus({ preventScroll: true });
@@ -64,6 +66,15 @@ export default function ItemBrowser({
     if (filteredItems.length !== 1) return;
     const only = filteredItems[0];
     const current = cartItems.find((c) => c.id === only.id)?.amount ?? 0;
+    if (availabilities === null) return;
+    const available = availabilities[only.id]?.available ?? 0;
+    if (current + 1 > available) {
+      toast.warning('Ei saatavilla', {
+        description: `${only.name} ei ole enempää vapaana valitulla ajanjaksolla`,
+        duration: 2000,
+      });
+      return;
+    }
     addToCart({ id: only.id, name: only.name, amount: current + 1 });
     toast.success('Lisättiin kama', {
       description: `${only.name} lisätty ostoskoriin`,

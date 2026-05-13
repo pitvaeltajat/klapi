@@ -1,22 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import ItemCard from '@/components/ItemCard';
-import { useDates } from '@/contexts/DatesContext';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useAvailabilities } from '@/hooks/useAvailabilities';
 import { Item, Category, Announcement } from '@prisma/client';
 
 interface ItemWithCategories extends Item {
   categories: Category[];
   announcements: Announcement[];
-}
-
-interface Availability {
-  available: number;
-}
-
-interface AvailabilityResponse {
-  availabilities: Record<string, Availability>;
 }
 
 interface ItemGridProps {
@@ -25,38 +16,7 @@ interface ItemGridProps {
 }
 
 export default function ItemGrid({ items }: ItemGridProps) {
-  const {
-    state: { startDate, endDate },
-  } = useDates();
-
-  const [availabilities, setAvailabilities] = useState<Record<string, Availability> | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const debouncedStart = useDebouncedValue(startDate);
-  const debouncedEnd = useDebouncedValue(endDate);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
-    fetch('/api/availability/getAvailabilities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ StartDate: debouncedStart, EndDate: debouncedEnd }),
-      signal: ctrl.signal,
-    })
-      .then((response) => response.json())
-      .then((data: AvailabilityResponse) => {
-        setAvailabilities(data.availabilities);
-        setLoading(false);
-      })
-      .catch((error) => {
-        if (error.name !== 'AbortError') {
-          console.log(error);
-          setLoading(false);
-        }
-      });
-    return () => ctrl.abort();
-  }, [debouncedStart, debouncedEnd]);
+  const { availabilities, loading } = useAvailabilities();
 
   const isRefetching = loading && availabilities !== null;
 
