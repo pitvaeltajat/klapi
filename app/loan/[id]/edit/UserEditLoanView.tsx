@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AvailabilityData {
   availabilities: Record<string, { available: number }>;
@@ -142,9 +143,27 @@ export default function UserEditLoanView({
 
   if (loadingAvailability) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Ladataan saatavuustietoja…</p>
-      </div>
+      <>
+        <Breadcrumbs
+          items={[
+            { label: 'Varaukset', href: '/loan' },
+            { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
+            { label: 'Muokkaa' },
+          ]}
+        />
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-10 w-64" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card p-6 shadow-xs">
+              <Skeleton className="mb-4 h-6 w-40" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
     );
   }
 
