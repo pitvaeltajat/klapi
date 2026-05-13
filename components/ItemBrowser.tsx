@@ -55,6 +55,10 @@ export default function ItemBrowser({
     });
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setSearch('');
+      return;
+    }
     if (e.key !== 'Enter') return;
     if (!search.trim()) return;
     if (filteredItems.length !== 1) return;
@@ -65,7 +69,6 @@ export default function ItemBrowser({
       description: `${only.name} lisätty ostoskoriin`,
       duration: 1500,
     });
-    setSearch('');
   };
 
   return (
