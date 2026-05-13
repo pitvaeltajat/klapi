@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
+import { toast } from 'sonner';
 import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/contexts/CartContext';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -31,6 +33,15 @@ export default function ItemBrowser({
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const {
+    addToCart,
+    state: { items: cartItems },
+  } = useCart();
+
+  useEffect(() => {
+    searchRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -43,15 +54,31 @@ export default function ItemBrowser({
       return item.categories.some((cat) => cat.name === category);
     });
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    if (!search.trim()) return;
+    if (filteredItems.length !== 1) return;
+    const only = filteredItems[0];
+    const current = cartItems.find((c) => c.id === only.id)?.amount ?? 0;
+    addToCart({ id: only.id, name: only.name, amount: current + 1 });
+    toast.success('Lisättiin kama', {
+      description: `${only.name} lisätty ostoskoriin`,
+      duration: 1500,
+    });
+    setSearch('');
+  };
+
   return (
     <>
       <div className="sticky top-16 z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative w-full sm:w-fit">
             <Input
+              ref={searchRef}
               placeholder="Hae kamoja"
               value={search}
               onChange={handleChange}
+              onKeyDown={handleSearchKeyDown}
               className="h-9 pr-9"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
