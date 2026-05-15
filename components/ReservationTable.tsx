@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useSession } from 'next-auth/react';
 import { LoanStatus } from '@prisma/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDateOnly } from '@/utils/dateFormat';
@@ -24,15 +23,13 @@ interface Reservation {
   };
 }
 
+// Rendered on a single item's detail page, so every row is the same item —
+// no "Tuote" column needed (it was redundant and crowded the table on mobile).
 export default function ReservationTable({ reservations }: { reservations: Reservation[] }) {
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.group === 'ADMIN';
-
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          {isAdmin ? <TableHead>Tuote</TableHead> : null}
           <TableHead>Määrä</TableHead>
           <TableHead>Nouto</TableHead>
           <TableHead>Palautus</TableHead>
@@ -41,7 +38,6 @@ export default function ReservationTable({ reservations }: { reservations: Reser
       <TableBody>
         {[...reservations].sort((a, b) => new Date(b.loan.startTime).getTime() - new Date(a.loan.startTime).getTime()).map((reservation) => (
           <TableRow key={reservation.id}>
-            {isAdmin ? <TableCell>{reservation.item.name}</TableCell> : null}
             <TableCell>{reservation.amount}</TableCell>
             <TableCell>{formatDateOnly(reservation.loan.startTime)}</TableCell>
             <TableCell>{formatDateOnly(reservation.loan.endTime)}</TableCell>

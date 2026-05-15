@@ -96,8 +96,72 @@ export default function ReportsView({ reports }: ReportsViewProps) {
           <p className="text-muted-foreground">Ei raportteja</p>
         </div>
       ) : (
-        <div className="rounded-lg border bg-card shadow-xs">
-          <Table>
+        <>
+          {/* Mobile: stacked cards — a 5-column table does not fit a phone. */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {sortedReports.map((report) => {
+              const isExpanded = expanded.has(report.id);
+              const isLong = report.content.length > CONTENT_PREVIEW_LENGTH;
+              const displayed =
+                !isLong || isExpanded
+                  ? report.content
+                  : report.content.substring(0, CONTENT_PREVIEW_LENGTH) + '…';
+              return (
+                <div
+                  key={report.id}
+                  className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant={statusVariant(report.status)}>
+                      {statusLabel(report.status)}
+                    </Badge>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <div>{formatDateNumeric(report.createdAt)}</div>
+                      <div>
+                        {report.created === 'AFTER_LOAN'
+                          ? 'Lainauksen jälkeen'
+                          : 'Ennen lainausta'}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm">{displayed}</p>
+                  {isLong && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(report.id)}
+                      className="self-start text-xs text-primary hover:underline"
+                      aria-expanded={isExpanded}
+                    >
+                      {isExpanded ? 'Näytä vähemmän' : 'Näytä koko raportti'}
+                    </button>
+                  )}
+                  {report.affectedItems.length > 0 && (
+                    <div className="text-sm">
+                      <p className="font-medium">Vaikuttaa kamoihin:</p>
+                      <ul className="list-disc pl-5">
+                        {report.affectedItems.map((item) => (
+                          <li key={item.id}>
+                            {item.item.name} ({item.amount} kpl)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <NextLink
+                    href={`/loan/${report.loanId}`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {report.loan.loaner || report.loan.user.name}
+                    {report.loan.description ? ` — ${report.loan.description}` : ''}
+                  </NextLink>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: full table. */}
+          <div className="hidden rounded-lg border bg-card shadow-xs md:block">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[140px]">Tila</TableHead>
@@ -170,7 +234,8 @@ export default function ReportsView({ reports }: ReportsViewProps) {
               })}
             </TableBody>
           </Table>
-        </div>
+          </div>
+        </>
       )}
     </>
   );

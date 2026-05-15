@@ -67,7 +67,7 @@ export default function DateSelector() {
 
           <div className="rounded-lg border bg-card p-4 shadow-xs">
             <Label className="font-bold">Valitse lainausaika</Label>
-            <div className="mt-2">
+            <div className="mt-2 flex justify-center">
               <DatePicker
                 selected={startDate}
                 onChange={handleRangeChange}
@@ -113,7 +113,7 @@ export default function DateSelector() {
 
               <div className="pt-2">
                 <Label className="font-bold">Muokkaa aikaa</Label>
-                <div className="mt-2">
+                <div className="mt-2 flex justify-center">
                   <DatePicker
                     selected={dates.startDate}
                     onChange={(update: [Date | null, Date | null]) => {

@@ -289,46 +289,85 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">Yhteensä {users.length} käyttäjää</p>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nimi</TableHead>
-                <TableHead>Sähköposti</TableHead>
-                <TableHead>Rooli</TableHead>
-                <TableHead>Admin-oikeudet</TableHead>
-                <TableHead className="w-[100px]">Toiminnot</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name || '-'}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{getGroupBadge(user.group)}</TableCell>
-                  <TableCell>
+          {/* Mobile: stacked cards — the 5-column table does not fit a phone. */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {users.map((user) => (
+              <div key={user.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{user.name || '-'}</p>
+                    <p className="break-all text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                  {getGroupBadge(user.group)}
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 text-sm">
                     <RoleSwitch user={user} />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      aria-label="Poista käyttäjä"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleDeleteClick(user)}
-                      disabled={user.id === session?.user?.id}
-                      title={
-                        user.id === session?.user?.id
-                          ? 'Et voi poistaa itseäsi'
-                          : 'Poista käyttäjä'
-                      }
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <FaTrash />
-                    </Button>
-                  </TableCell>
+                    Admin-oikeudet
+                  </label>
+                  <Button
+                    aria-label="Poista käyttäjä"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDeleteClick(user)}
+                    disabled={user.id === session?.user?.id}
+                    title={
+                      user.id === session?.user?.id
+                        ? 'Et voi poistaa itseäsi'
+                        : 'Poista käyttäjä'
+                    }
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <FaTrash />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: full table. */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nimi</TableHead>
+                  <TableHead>Sähköposti</TableHead>
+                  <TableHead>Rooli</TableHead>
+                  <TableHead>Admin-oikeudet</TableHead>
+                  <TableHead className="w-[100px]">Toiminnot</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name || '-'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{getGroupBadge(user.group)}</TableCell>
+                    <TableCell>
+                      <RoleSwitch user={user} />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        aria-label="Poista käyttäjä"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleDeleteClick(user)}
+                        disabled={user.id === session?.user?.id}
+                        title={
+                          user.id === session?.user?.id
+                            ? 'Et voi poistaa itseäsi'
+                            : 'Poista käyttäjä'
+                        }
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <FaTrash />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         <Dialog open={kioskDialogOpen} onOpenChange={setKioskDialogOpen}>
