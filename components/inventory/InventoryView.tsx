@@ -3,17 +3,15 @@
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type SortingState,
   type RowSelectionState,
+  type PaginationState,
 } from '@tanstack/react-table';
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +66,11 @@ export interface InventoryItem {
   categories: InventoryCategory[];
 }
 
+export interface InventoryListResponse {
+  items: InventoryItem[];
+  total: number;
+}
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 const TRUNCATE_LEN = 40;
 
@@ -114,19 +117,53 @@ interface CellEditState {
 const colHelper = createColumnHelper<InventoryItem>();
 
 export default function InventoryView() {
+  // Filtering, sorting, and pagination all happen server-side: the Item table
+  // is unbounded (every custom loan leaves a permanent temporary item behind),
+  // so the editor only ever fetches and renders a single page of rows.
   const [showArchived, setShowArchived] = useState(false);
-  const inventoryUrl = `/api/item/getInventory${showArchived ? '?archived=all' : ''}`;
-  const { data: items = [], mutate: mutateItems, isLoading: itemsLoading } = useSWR<InventoryItem[]>(
-    inventoryUrl,
-    fetcher,
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
+  const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'temporary'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  const toFirstPage = useCallback(
+    () => setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 })),
+    [],
   );
-  const { mutate: globalMutate } = useSWRConfig();
-  // Both views share the same item set; invalidate both cache keys so toggling
-  // never shows stale data after an archive/restore.
-  const invalidateBothViews = useCallback(() => {
-    globalMutate('/api/item/getInventory');
-    globalMutate('/api/item/getInventory?archived=all');
-  }, [globalMutate]);
+
+  // Debounce the search box so typing doesn't fire a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      toFirstPage();
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput, toFirstPage]);
+
+  const sortId = sorting[0]?.id ?? 'name';
+  const sortDir = sorting[0]?.desc ? 'desc' : 'asc';
+  const inventoryUrl = useMemo(() => {
+    const q = new URLSearchParams({
+      page: String(pagination.pageIndex + 1),
+      pageSize: String(pagination.pageSize),
+      sort: sortId,
+      dir: sortDir,
+    });
+    if (search) q.set('search', search);
+    if (typeFilter !== 'all') q.set('type', typeFilter);
+    if (categoryFilter) q.set('category', categoryFilter);
+    if (showArchived) q.set('archived', 'all');
+    return `/api/item/getInventory?${q.toString()}`;
+  }, [pagination, sortId, sortDir, search, typeFilter, categoryFilter, showArchived]);
+
+  const { data, mutate: mutateItems, isLoading: itemsLoading } =
+    useSWR<InventoryListResponse>(inventoryUrl, fetcher, { keepPreviousData: true });
+  const items = useMemo(() => data?.items ?? [], [data]);
+  const total = data?.total ?? 0;
+
   const { data: categories = [] } = useSWR<InventoryCategory[]>(
     '/api/category/getCategories',
     fetcher,
@@ -135,12 +172,6 @@ export default function InventoryView() {
     '/api/location/getLocations',
     fetcher,
   );
-
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'temporary'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const [pendingRows, setPendingRows] = useState<Set<string>>(new Set());
   const [editState, setEditState] = useState<CellEditState | null>(null);
@@ -252,16 +283,6 @@ export default function InventoryView() {
     }
   };
 
-  const filteredItems = useMemo(
-    () =>
-      items.filter((item) => {
-        if (typeFilter !== 'all' && item.type !== typeFilter) return false;
-        if (categoryFilter && !item.categories.some((c) => c.id === categoryFilter)) return false;
-        return true;
-      }),
-    [items, typeFilter, categoryFilter],
-  );
-
   const addPending = (id: string) => setPendingRows((prev) => new Set(prev).add(id));
   const removePending = (id: string) =>
     setPendingRows((prev) => {
@@ -273,7 +294,13 @@ export default function InventoryView() {
   const updateItemLocal = useCallback(
     (updated: InventoryItem) => {
       mutateItems(
-        (current) => current?.map((it) => (it.id === updated.id ? updated : it)) ?? [updated],
+        (current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.map((it) => (it.id === updated.id ? updated : it)),
+              }
+            : current,
         false,
       );
     },
@@ -334,23 +361,14 @@ export default function InventoryView() {
         body: JSON.stringify(item.id),
       });
       if (!res.ok) throw new Error('Arkistointi epäonnistui');
-      // When the archive view is on we keep the row (now muted); otherwise drop it.
-      mutateItems(
-        (current) =>
-          showArchived
-            ? current?.map((it) =>
-                it.id === item.id ? { ...it, deletedAt: new Date().toISOString() } : it,
-              ) ?? []
-            : current?.filter((it) => it.id !== item.id) ?? [],
-        false,
-      );
-      invalidateBothViews();
       toast.success('Kama arkistoitu');
     } catch {
       toast.error('Arkistointi epäonnistui');
-      mutateItems();
     } finally {
       removePending(item.id);
+      // Revalidate the current page so the archived row leaves (or stays muted
+      // when the archive toggle is on) and the page backfills from the server.
+      mutateItems();
     }
   };
 
@@ -363,20 +381,14 @@ export default function InventoryView() {
         body: JSON.stringify(item.id),
       });
       if (!res.ok) throw new Error('Palautus epäonnistui');
-      mutateItems(
-        (current) =>
-          current?.map((it) => (it.id === item.id ? { ...it, deletedAt: null } : it)) ?? [],
-        false,
-      );
-      invalidateBothViews();
       toast.success('Kama palautettu');
     } catch {
       toast.error('Palautus epäonnistui');
-      mutateItems();
     } finally {
       removePending(item.id);
+      mutateItems();
     }
-  }, [mutateItems, invalidateBothViews]);
+  }, [mutateItems]);
 
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
 
@@ -391,24 +403,13 @@ export default function InventoryView() {
         body: JSON.stringify({ action: 'delete', ids }),
       });
       if (!res.ok) throw new Error('Virhe');
-      // In archive view: stamp deletedAt; otherwise drop the rows.
-      mutateItems(
-        (current) =>
-          showArchived
-            ? current?.map((it) =>
-                ids.includes(it.id) ? { ...it, deletedAt: new Date().toISOString() } : it,
-              ) ?? []
-            : current?.filter((it) => !ids.includes(it.id)) ?? [],
-        false,
-      );
-      invalidateBothViews();
       setRowSelection({});
       toast.success(`${ids.length} kamaa arkistoitu`);
     } catch {
       toast.error('Massapoisto epäonnistui');
-      mutateItems();
     } finally {
       ids.forEach(removePending);
+      mutateItems();
     }
   };
 
@@ -604,11 +605,6 @@ export default function InventoryView() {
       id: 'location',
       header: 'Sijainti',
       cell: ({ getValue }) => <Truncated text={getValue()?.name} />,
-      sortingFn: (a, b) => {
-        const an = a.original.location?.name ?? '';
-        const bn = b.original.location?.name ?? '';
-        return an.localeCompare(bn, 'fi');
-      },
     }),
     colHelper.accessor((row) => row.categories, {
       id: 'categories',
@@ -691,27 +687,27 @@ export default function InventoryView() {
     }),
   ], [editState, startEdit, commitEdit, handleRestoreRow]);
 
+  const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize));
+
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 returns non-memoizable functions; safe under React Compiler skip
   const table = useReactTable({
-    data: filteredItems,
+    data: items,
     columns,
-    state: { sorting, globalFilter, rowSelection },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
+    state: { sorting, rowSelection, pagination },
+    // Server does the filtering/sorting/paging; the table just renders one page.
+    manualSorting: true,
+    manualFiltering: true,
+    manualPagination: true,
+    pageCount,
+    rowCount: total,
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      toFirstPage();
+    },
+    onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 50 } },
     getRowId: (row) => row.id,
-    globalFilterFn: (row, _colId, filterValue: string) => {
-      const q = filterValue.toLowerCase();
-      return (
-        row.original.name.toLowerCase().includes(q) ||
-        (row.original.description ?? '').toLowerCase().includes(q)
-      );
-    },
   });
 
   const categoryOptions = useMemo(
@@ -727,15 +723,14 @@ export default function InventoryView() {
     [locations],
   );
 
-  const { pageIndex, pageSize } = table.getState().pagination;
-  const pageCount = table.getPageCount();
+  const { pageIndex, pageSize } = pagination;
 
   return (
     <>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-end">
           <span className="text-sm text-muted-foreground">
-            {filteredItems.length} / {items.length} kamaa
+            {total} kamaa
           </span>
         </div>
 
@@ -743,15 +738,18 @@ export default function InventoryView() {
         <div className="flex flex-wrap items-center gap-3">
           <Input
             placeholder="Hae nimellä tai kuvauksella…"
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-64"
           />
           <div className="w-52">
             <CreatableSelect
               options={categoryFilterOptions}
               value={categoryFilterOptions.find((o) => o.value === categoryFilter) ?? null}
-              onChange={(opt) => setCategoryFilter((opt as { value: string } | null)?.value ?? '')}
+              onChange={(opt) => {
+                setCategoryFilter((opt as { value: string } | null)?.value ?? '');
+                toFirstPage();
+              }}
               placeholder="Kategoria"
               isClearable
             />
@@ -762,7 +760,10 @@ export default function InventoryView() {
                 key={t}
                 size="sm"
                 variant={typeFilter === t ? 'default' : 'outline'}
-                onClick={() => setTypeFilter(t)}
+                onClick={() => {
+                  setTypeFilter(t);
+                  toFirstPage();
+                }}
               >
                 {t === 'all' ? 'Kaikki' : t === 'normal' ? 'Normaali' : 'Väliaikainen'}
               </Button>
@@ -771,7 +772,10 @@ export default function InventoryView() {
           <Button
             size="sm"
             variant={showArchived ? 'default' : 'outline'}
-            onClick={() => setShowArchived((v) => !v)}
+            onClick={() => {
+              setShowArchived((v) => !v);
+              toFirstPage();
+            }}
           >
             Näytä arkistoidut
           </Button>
@@ -979,7 +983,7 @@ export default function InventoryView() {
         {/* Pagination */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            Sivu {pageIndex + 1} / {pageCount || 1}
+            Sivu {pageIndex + 1} / {pageCount}
           </span>
           <div className="flex gap-2">
             <Button
@@ -1000,8 +1004,8 @@ export default function InventoryView() {
             </Button>
           </div>
           <span className="text-sm text-muted-foreground">
-            {pageIndex * pageSize + 1}–
-            {Math.min((pageIndex + 1) * pageSize, filteredItems.length)} / {filteredItems.length}
+            {total === 0 ? 0 : pageIndex * pageSize + 1}–
+            {Math.min((pageIndex + 1) * pageSize, total)} / {total}
           </span>
         </div>
       </div>
