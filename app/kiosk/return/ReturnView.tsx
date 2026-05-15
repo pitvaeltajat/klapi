@@ -129,31 +129,49 @@ const LoanReturnCard = ({
 
   return (
     <>
-      <div className="mb-4 overflow-hidden rounded-lg border p-4">
-        <div className="flex flex-col gap-3">
-          <h3 className="text-lg font-semibold">{loan.description || loan.loaner}</h3>
-          <Badge variant={getLoanStatusColor(derivedStatus)} className="w-fit">
+      <div className="flex h-full flex-col gap-3 overflow-hidden rounded-lg border bg-card p-4 shadow-xs">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="flex-1 text-lg font-semibold">{loan.description || loan.loaner}</h3>
+          <Badge variant={getLoanStatusColor(derivedStatus)} className="shrink-0">
             {getLoanStatusLabel(derivedStatus)}
           </Badge>
-          <p>Lainaaja: {loan.loaner}</p>
+        </div>
+
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
           <p>
-            Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
+            <span className="font-medium">Lainaaja:</span> {loan.loaner}
+          </p>
+          <p>
+            <span className="font-medium">Laina-aika:</span> {formatDateOnly(loan.startTime)} –{' '}
             {formatDateOnly(loan.endTime)}
           </p>
+        </div>
+
+        {inuseReservations.length > 0 && (
           <div>
-            <p className="mb-2 font-bold">Tavarat (käytössä):</p>
+            <p className="mb-2 text-sm font-medium">
+              Tavarat käytössä ({inuseReservations.length}):
+            </p>
             <div className="flex flex-wrap gap-2">
-              {inuseReservations.map((reservation) => (
-                <Badge key={reservation.id} className="rounded-full">
+              {inuseReservations.slice(0, 5).map((reservation) => (
+                <Badge key={reservation.id} variant="default">
                   {reservation.item.name} ({reservation.amount})
                 </Badge>
               ))}
+              {inuseReservations.length > 5 && (
+                <Badge variant="gray">+{inuseReservations.length - 5} lisää</Badge>
+              )}
             </div>
           </div>
-          <Button variant="success" size="lg" onClick={() => setReturnOpen(true)}>
-            Palauta
-          </Button>
-        </div>
+        )}
+
+        <Button
+          variant="success"
+          onClick={() => setReturnOpen(true)}
+          className="mt-auto"
+        >
+          Palauta
+        </Button>
       </div>
 
       <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
@@ -364,14 +382,16 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
               </h2>
             </div>
           ) : (
-            loans.map((loan) => (
-              <LoanReturnCard
-                key={loan.id}
-                loan={loan}
-                onReturn={handleReturn}
-                onReturnComplete={handleReturnComplete}
-              />
-            ))
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {loans.map((loan) => (
+                <LoanReturnCard
+                  key={loan.id}
+                  loan={loan}
+                  onReturn={handleReturn}
+                  onReturnComplete={handleReturnComplete}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>
