@@ -78,6 +78,7 @@ export default function LoanView({
     content: '',
   });
   const [rejectOpen, setRejectOpen] = React.useState(false);
+  const [cancelOpen, setCancelOpen] = React.useState(false);
   const [startLoanOpen, setStartLoanOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const { data: session } = useSession();
@@ -104,6 +105,27 @@ export default function LoanView({
       });
       toast.success('Laina hyväksytty');
       router.push('/loan');
+    });
+
+  const cancelLoan = () =>
+    guard(async () => {
+      try {
+        const res = await fetch('/api/loan/cancelLoan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: loan.id }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Lainan peruminen epäonnistui');
+        }
+        toast.success('Laina peruttu', { description: 'Laina peruttiin onnistuneesti' });
+        router.push('/loan');
+      } catch (err) {
+        toast.error('Virhe', {
+          description: err instanceof Error ? err.message : 'Tuntematon virhe',
+        });
+      }
     });
 
   const rejectLoan = () =>
@@ -196,22 +218,33 @@ export default function LoanView({
     return <NotAuthenticated />;
   }
 
+  const isOwner = session?.user?.id === loan.user.id;
+
+  // The owner withdraws their own not-yet-picked-up loan: "Peru laina".
+  const canCancel = isOwner && derivedStatus === 'ACCEPTED';
+
+  // An admin rejects someone else's loan request: "Hylkää". The owner uses
+  // cancel instead, so reject is reserved for admins acting on others' loans.
   const canReject =
-    (isAdmin || session?.user?.id === loan.user.id) &&
+    isAdmin &&
+    !isOwner &&
     derivedStatus !== 'REJECTED' &&
+    derivedStatus !== 'CANCELLED' &&
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
   const canEdit = isAdmin
-    ? derivedStatus !== 'INUSE' &&
+    ? derivedStatus !== 'CANCELLED' &&
+      derivedStatus !== 'INUSE' &&
       derivedStatus !== 'PARTIALLY_RETURNED' &&
       derivedStatus !== 'RETURNED'
-    : session?.user?.id === loan.user.id && !loanStarted;
+    : isOwner && !loanStarted && derivedStatus === 'ACCEPTED';
 
   const canApprove =
     isAdmin &&
     derivedStatus !== 'ACCEPTED' &&
+    derivedStatus !== 'CANCELLED' &&
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
@@ -348,7 +381,7 @@ export default function LoanView({
             </div>
           </div>
         ) : (
-          (canReject || canEdit || canApprove || canStartUse) && (
+          (canReject || canCancel || canEdit || canApprove || canStartUse) && (
             <div className="rounded-lg border bg-card p-6">
               <div className="flex flex-col gap-3">
                 <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
@@ -366,6 +399,16 @@ export default function LoanView({
                   {canReject && (
                     <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1" disabled={busy}>
                       Hylkää
+                    </Button>
+                  )}
+                  {canCancel && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setCancelOpen(true)}
+                      className="flex-1"
+                      disabled={busy}
+                    >
+                      Peru laina
                     </Button>
                   )}
                   {canEdit && (
@@ -429,6 +472,26 @@ export default function LoanView({
               </Button>
               <Button variant="secondary" onClick={() => setRejectOpen(false)} disabled={busy}>
                 Peruuta
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Perutaanko laina?</DialogTitle>
+            </DialogHeader>
+            <p>
+              Laina perutaan ja varatut tavarat vapautuvat muille. Et voi enää noutaa tavaroita
+              tällä varauksella. Oletko varma?
+            </p>
+            <DialogFooter>
+              <Button variant="destructive" onClick={cancelLoan} isLoading={busy}>
+                Peru laina
+              </Button>
+              <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={busy}>
+                Älä peru
               </Button>
             </DialogFooter>
           </DialogContent>
