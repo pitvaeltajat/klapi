@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import LoanCard from '@/components/LoanCard';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import PendingPickupBanner from '@/components/PendingPickupBanner';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import { useState, useSyncExternalStore } from 'react';
 import React from 'react';
@@ -134,6 +135,8 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     <>
       <Breadcrumbs items={[{ label: 'Oma tili' }]} />
       <h1 className="mb-6 text-4xl font-semibold">Oma tili</h1>
+
+      <PendingPickupBanner />
 
       <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
         <DialogContent>

@@ -352,6 +352,16 @@ export default function LoanView({
             <div className="rounded-lg border bg-card p-6">
               <div className="flex flex-col gap-3">
                 <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
+                {canStartUse && (
+                  <div className="rounded-md border border-warning/50 bg-warning/10 p-4">
+                    <p className="font-semibold text-warning">Oletko hakenut tavarat varastosta?</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Laina on hyväksytty, mutta sitä ei ole vielä merkitty käyttöön. Kun olet
+                      noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
+                      silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
+                    </p>
+                  </div>
+                )}
                 <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
                     <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1" disabled={busy}>

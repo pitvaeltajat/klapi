@@ -39,8 +39,14 @@ export async function POST(request: Request) {
   }
 
   // Determine which reservations to mark as IN_BOX.
-  // Only INUSE reservations are eligible (can't re-return something already in a box).
-  const eligible = loan.reservations.filter((r) => r.status === ReservationStatus.INUSE);
+  // INUSE reservations are eligible, and so are ACCEPTED ones: a borrower may
+  // have picked up the items without ever marking the loan in use, but they
+  // still physically have them and must be able to return them.
+  // Items already in a box (IN_BOX/RETURNED) cannot be re-returned.
+  const eligible = loan.reservations.filter(
+    (r) =>
+      r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
+  );
   const targetIds =
     Array.isArray(reservationIds) && reservationIds.length > 0
       ? eligible.filter((r) => reservationIds.includes(r.id)).map((r) => r.id)

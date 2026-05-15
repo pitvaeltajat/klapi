@@ -84,13 +84,19 @@ const LoanReturnCard = ({
   const [reportContent, setReportContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const inuseReservations = React.useMemo(
-    () => loan.reservations.filter((r) => r.status === ReservationStatus.INUSE),
+  // Returnable = items the borrower physically has. Normally INUSE, but also
+  // ACCEPTED for "stuck" loans that were picked up without being marked in use.
+  const returnableReservations = React.useMemo(
+    () =>
+      loan.reservations.filter(
+        (r) =>
+          r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
+      ),
     [loan.reservations],
   );
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(inuseReservations.map((r) => r.id)),
+    () => new Set(returnableReservations.map((r) => r.id)),
   );
 
   const toggleSelected = (id: string) => {
@@ -102,8 +108,9 @@ const LoanReturnCard = ({
     });
   };
 
-  const allSelected = selectedIds.size === inuseReservations.length;
-  const isPartialReturn = selectedIds.size > 0 && selectedIds.size < inuseReservations.length;
+  const allSelected = selectedIds.size === returnableReservations.length;
+  const isPartialReturn =
+    selectedIds.size > 0 && selectedIds.size < returnableReservations.length;
 
   const handleConfirmReturn = async () => {
     if (isLoading) return;
@@ -147,19 +154,19 @@ const LoanReturnCard = ({
           </p>
         </div>
 
-        {inuseReservations.length > 0 && (
+        {returnableReservations.length > 0 && (
           <div>
             <p className="mb-2 text-sm font-medium">
-              Tavarat käytössä ({inuseReservations.length}):
+              Palautettavat tavarat ({returnableReservations.length}):
             </p>
             <div className="flex flex-wrap gap-2">
-              {inuseReservations.slice(0, 5).map((reservation) => (
+              {returnableReservations.slice(0, 5).map((reservation) => (
                 <Badge key={reservation.id} variant="default">
                   {reservation.item.name} ({reservation.amount})
                 </Badge>
               ))}
-              {inuseReservations.length > 5 && (
-                <Badge variant="gray">+{inuseReservations.length - 5} lisää</Badge>
+              {returnableReservations.length > 5 && (
+                <Badge variant="gray">+{returnableReservations.length - 5} lisää</Badge>
               )}
             </div>
           </div>
@@ -198,7 +205,7 @@ const LoanReturnCard = ({
             </div>
 
             <div className="flex flex-col gap-4">
-              {inuseReservations.map((reservation) => {
+              {returnableReservations.map((reservation) => {
                 const checked = selectedIds.has(reservation.id);
                 return (
                   <div
@@ -232,7 +239,7 @@ const LoanReturnCard = ({
             {isPartialReturn && (
               <div className="rounded-lg border-2 border-warning bg-warning/10 p-4">
                 <p className="font-bold text-warning">
-                  Osittainen palautus: {selectedIds.size} / {inuseReservations.length} tavaraa
+                  Osittainen palautus: {selectedIds.size} / {returnableReservations.length} tavaraa
                 </p>
                 <p className="mt-1 text-sm">
                   Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.

@@ -13,6 +13,7 @@ import { useSession } from 'next-auth/react';
 import ItemBrowser from '@/components/ItemBrowser';
 import BrowseItemCard from '@/components/BrowseItemCard';
 import InventoryView from '@/components/inventory/InventoryView';
+import PendingPickupBanner from '@/components/PendingPickupBanner';
 import { Button } from '@/components/ui/button';
 
 type BrowseViewMode = 'grid' | 'table';
@@ -114,6 +115,7 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
 
   return (
     <>
+      <PendingPickupBanner />
       {dates.browseMode ? (
         <>
           <BrowseModeHeader

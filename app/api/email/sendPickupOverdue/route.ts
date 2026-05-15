@@ -6,10 +6,11 @@ import {
   renderItemCard,
   renderLoanDetails,
   renderButton,
+  formatDate,
 } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 
-export async function sendCreatedEmail(recipientEmail: string, loanId: string) {
+async function sendPickupOverdueEmail(recipientEmail: string, loanId: string) {
   const loan = await prisma.loan.findUnique({
     where: { id: loanId },
     select: {
@@ -41,34 +42,37 @@ export async function sendCreatedEmail(recipientEmail: string, loanId: string) {
   const loanUrl = `${getPublicUrl()}/loan/${loanId}`;
 
   const html = renderEmail(`
-    <h1>Varauksesi on luotu</h1>
+    <h1>Muista merkitä lainasi käyttöön</h1>
     <p>Hei!</p>
-    <p>Varauksesi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
     <p>
-      <strong>Muista:</strong> kun olet hakenut tavarat varastosta, avaa varaus ja paina
-      <strong>"Aloita lainaus"</strong>. Vasta silloin laina on merkitty käyttöön — muuten
-      tavarat näkyvät järjestelmässä yhä vapaina etkä voi myöhemmin palauttaa niitä normaalisti.
+      Varauksesi nouto alkoi <strong>${formatDate(loan.startTime)}</strong>, mutta lainaa ei ole
+      vielä merkitty käyttöön.
     </p>
+    <p>
+      Jos olet jo hakenut tavarat varastosta, avaa varaus ja paina <strong>"Aloita lainaus"</strong>.
+      Näin varasto pysyy ajan tasalla ja voit myöhemmin palauttaa tavarat normaalisti.
+    </p>
+    <p>Jos et enää tarvitse varausta, voit perua sen samasta näkymästä.</p>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
     <h2>Varatut tavarat</h2>
     <div class="item-grid">${itemsHtml}</div>
 
-    ${renderButton(loanUrl, 'Avaa varaus')}
+    ${renderButton(loanUrl, 'Avaa varaus ja aloita lainaus')}
   `);
 
   const subject = loan.description
-    ? `Varauksesi "${loan.description}" on luotu`
-    : 'Varauksesi on luotu';
+    ? `Muistutus: merkitse laina "${loan.description}" käyttöön`
+    : 'Muistutus: merkitse lainasi käyttöön';
   await sendEmail([recipientEmail], subject, html);
 }
 
 export async function POST(request: Request) {
   const { email, id } = await request.json();
   try {
-    await sendCreatedEmail(email, id);
-    return NextResponse.json({ message: 'Email sent' });
+    await sendPickupOverdueEmail(email, id);
+    return NextResponse.json({ message: 'Pickup overdue reminder email sent' });
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ message: error.message }, { status: 500 });
