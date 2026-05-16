@@ -35,6 +35,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import LoanReturnDialog from '@/components/LoanReturnDialog';
 
 interface Report {
   id: string;
@@ -203,8 +204,14 @@ export default function LoanView({
   const inBoxReservations = loan.reservations.filter(
     (r) => r.status === ReservationStatus.IN_BOX,
   );
+  const inuseReservations = loan.reservations.filter(
+    (r) => r.status === ReservationStatus.INUSE,
+  );
   const canMarkReturned = isAdmin && inBoxReservations.length > 0;
   const canSeeReports = isAdmin && reports.length > 0;
+
+  const isOwner = session?.user?.id === loan.user.id;
+  const canReturn = (isOwner || isAdmin || isKiosk) && inuseReservations.length > 0;
 
   return (
     <>
@@ -285,6 +292,25 @@ export default function LoanView({
             onSetResolved={resolveReport}
             onSendAnnouncement={sendAnnouncement}
           />
+        )}
+
+        {canReturn && (
+          <div className="rounded-lg border bg-card p-6">
+            <h2 className="mb-2 text-2xl font-semibold">Palauta laina</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Merkitse käytössä olevat tavarat palautetuksi ja saat ohjeet oikeaan laatikkoon.
+            </p>
+            <LoanReturnDialog
+              loanId={loan.id}
+              reservations={inuseReservations.map((r) => ({
+                id: r.id,
+                amount: r.amount,
+                status: r.status,
+                item: { id: r.item.id, name: r.item.name },
+              }))}
+              onReturnComplete={() => router.refresh()}
+            />
+          </div>
         )}
 
         {derivedStatus === 'RETURNED' ? (
