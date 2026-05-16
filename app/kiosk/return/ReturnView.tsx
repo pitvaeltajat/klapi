@@ -391,7 +391,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
     router.push('/');
   };
 
-  if (session?.user?.group !== 'KIOSK' && session?.user?.group !== 'ADMIN') {
+  if (!session?.user) {
     return <NotAuthenticated />;
   }
 

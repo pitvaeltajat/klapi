@@ -6,12 +6,15 @@ import { authOptions } from '@/lib/auth';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
 import { logLoanHistory } from '@/utils/loanHistory';
 
+// Marks loan items as returned to a box.
+// Can be called by:
+// - The loan owner (to return their own loan)
+// - KIOSK user (to return any loan on behalf of the loaner)
+// - ADMIN user (to return any loan)
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.group !== 'ADMIN' && session?.user?.group !== 'KIOSK') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 });
   }
 
   const { id, reservationIds, reportContent } = await request.json() as {
@@ -36,6 +39,16 @@ export async function POST(request: Request) {
 
   if (!loan) {
     return NextResponse.json({ message: 'Loan not found' }, { status: 404 });
+  }
+
+  const isOwner = session.user.id === loan.userId;
+  const isKiosk = session.user.group === 'KIOSK';
+  const isAdmin = session.user.group === 'ADMIN';
+
+  if (!isOwner && !isKiosk && !isAdmin) {
+    return NextResponse.json({
+      message: 'Sinulla ei ole oikeutta tähän toimintoon',
+    }, { status: 401 });
   }
 
   // Determine which reservations to mark as IN_BOX.
