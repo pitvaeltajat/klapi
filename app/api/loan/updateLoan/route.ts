@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
+import { activeItemsWhere } from '@/utils/itemQueries';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
@@ -17,7 +18,12 @@ export async function POST(request: Request) {
     // Check that user is admin or owns this loan
     const existingLoan = await prisma.loan.findUnique({
       where: { id },
-      select: { userId: true, status: true, reservations: { select: { status: true } } },
+      select: {
+        userId: true,
+        status: true,
+        startTime: true,
+        reservations: { select: { status: true, itemId: true, amount: true } },
+      },
     });
 
     if (!existingLoan) {
@@ -25,10 +31,20 @@ export async function POST(request: Request) {
     }
 
     const isAdmin = session.user.group === 'ADMIN';
+    const isKiosk = session.user.group === 'KIOSK';
     const isOwner = session.user.id === existingLoan.userId;
 
-    if (!isAdmin && !isOwner) {
+    if (!isAdmin && !isKiosk && !isOwner) {
       return NextResponse.json({ message: 'Sinulla ei ole oikeutta muokata tätä lainaa' }, { status: 403 });
+    }
+
+    // Non-admin owners can only edit before the loan has started.
+    // Kiosk is exempt — they edit at the checkout moment, when the start time has typically passed.
+    if (!isAdmin && !isKiosk && existingLoan.startTime <= new Date()) {
+      return NextResponse.json(
+        { message: 'Lainaa ei voi enää muokata — lainaus on jo alkanut' },
+        { status: 403 },
+      );
     }
 
     // Non-admin users can only edit if reservation statuses allow
@@ -46,15 +62,15 @@ export async function POST(request: Request) {
       item: { connect: { id: string } };
     }>;
 
-    // Get all items to check their total amounts
-    const items = await prisma.item.findMany({});
+    // Get all items to check their total amounts. Skip archived items so an
+    // edit cannot pull a previously soft-deleted item back into a loan.
+    const items = await prisma.item.findMany({ where: activeItemsWhere });
     const itemMap = new Map(items.map((item) => [item.id, item]));
 
     // Get all other reservations that overlap with the requested date range
     const requestedStart = new Date(startTime);
     const requestedEnd = new Date(endTime);
 
-    // Get all other reservations that overlap with the requested date range
     // Only ACCEPTED and INUSE reservations block availability
     // IN_BOX items are available for new loans
     const overlappingReservations = await prisma.reservation.findMany({
@@ -154,6 +170,30 @@ export async function POST(request: Request) {
       }),
     );
 
+    // Build a diff of reservation changes for history
+    const originalByItem = new Map(existingLoan.reservations.map((r) => [r.itemId, r.amount]));
+    const newByItem = new Map(requestedReservations.map((r) => [r.item.connect.id, r.amount]));
+
+    const addedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
+    const changedItems: Array<{ itemId: string; name: string | undefined; from: number; to: number }> = [];
+    const removedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
+
+    for (const [itemId, newAmount] of newByItem.entries()) {
+      if (!originalByItem.has(itemId)) {
+        addedItems.push({ itemId, name: itemMap.get(itemId)?.name, amount: newAmount });
+      } else {
+        const orig = originalByItem.get(itemId)!;
+        if (orig !== newAmount) {
+          changedItems.push({ itemId, name: itemMap.get(itemId)?.name, from: orig, to: newAmount });
+        }
+      }
+    }
+    for (const [itemId, origAmount] of originalByItem.entries()) {
+      if (!newByItem.has(itemId)) {
+        removedItems.push({ itemId, name: itemMap.get(itemId)?.name, amount: origAmount });
+      }
+    }
+
     const result = await prisma.loan.update({
       where: {
         id: id,
@@ -174,10 +214,9 @@ export async function POST(request: Request) {
       action: 'UPDATED',
       actedById: session.user.id,
       details: {
-        startTime,
-        endTime,
-        description: description ?? null,
-        itemCount: reservationsWithStatus.length,
+        added: addedItems,
+        changed: changedItems,
+        removed: removedItems,
       },
     });
 

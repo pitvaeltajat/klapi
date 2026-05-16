@@ -3,7 +3,7 @@
 import React, { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import LoadingSpinner from './LoadingSpinner';
+import PageSkeleton from './PageSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
 interface RedirectUnauthorizedProps {
@@ -29,7 +29,7 @@ const RedirectUnauthorized: React.FC<RedirectUnauthorizedProps> = ({ children })
     if (!showLoading) {
       return null;
     }
-    return <LoadingSpinner />;
+    return <PageSkeleton />;
   }
 
   return null;

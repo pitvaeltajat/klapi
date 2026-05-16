@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { DateTime } from '@/components/DateTime';
 import {
   Table,
   TableBody,
@@ -111,6 +112,7 @@ export default function SubmitConfirmation({
       userId,
       description: cart.description,
       loaner: cart.loaner,
+      reportContent: reportContent ?? '',
     };
 
     const response = await fetch('/api/loan/submitLoan', {
@@ -118,25 +120,12 @@ export default function SubmitConfirmation({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const responseData = await response.json();
 
     if (response.ok) {
-      if (reportContent && reportContent.trim().length > 0) {
-        await fetch('/api/loan/createReport', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: reportContent,
-            loanId: responseData.id,
-            created: 'BEFORE_LOAN',
-          }),
-        });
-      }
-
       setReportContent('');
       clearCart();
-      toast.success('Varaus lähetetty', {
-        description: 'Varaus rekisteröitiin onnistuneesti.',
+      toast.success('Laina lähetetty', {
+        description: 'Laina rekisteröitiin onnistuneesti.',
         duration: 9000,
       });
       if (session?.user?.group === 'KIOSK') {
@@ -147,7 +136,7 @@ export default function SubmitConfirmation({
         router.push('/account');
       }
     } else {
-      toast.error('Error', { description: 'Varauksen lähetyksessä tapahtui virhe' });
+      toast.error('Error', { description: 'Lainan lähetyksessä tapahtui virhe' });
     }
 
     onClose();
@@ -159,7 +148,7 @@ export default function SubmitConfirmation({
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tarkista varauksen tiedot:</DialogTitle>
+          <DialogTitle>Tarkista lainan tiedot:</DialogTitle>
         </DialogHeader>
         <div>
           {inBoxItems.length > 0 && (
@@ -181,24 +170,12 @@ export default function SubmitConfirmation({
             <br />
             <br />
             <b>Kamojen nouto: </b>
-            {dates.startDate.toLocaleString('fi', {
-              day: 'numeric',
-              year: 'numeric',
-              month: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
+            <DateTime value={dates.startDate} format="numeric" />
             <br />
             <b>Kamojen palautus: </b>
-            {dates.endDate.toLocaleString('fi', {
-              day: 'numeric',
-              year: 'numeric',
-              month: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
+            <DateTime value={dates.endDate} format="numeric" />
           </p>
-          <p className="mt-4">Varattavat kamat:</p>
+          <p className="mt-4">Lainattavat kamat:</p>
 
           <Table>
             <TableHeader>
@@ -223,7 +200,7 @@ export default function SubmitConfirmation({
             Peruuta
           </Button>
           <Button variant="success" onClick={handleSubmit} isLoading={isLoading || isCheckingBox}>
-            Lähetä varaus
+            Lähetä laina
           </Button>
         </DialogFooter>
       </DialogContent>

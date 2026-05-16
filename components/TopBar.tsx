@@ -85,7 +85,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
     return await fetch('/api/auth/validatePin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin: inputPin, userId: session?.user?.id }),
+      body: JSON.stringify({ pin: inputPin }),
     })
       .then((res) => res.json())
       .then((data) => data.isValidPin);
@@ -136,7 +136,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const {
     state: { items },
   } = useCart();
-  const { setBrowseMode, setDatesSet } = useDates();
+  const { state: dates, setBrowseMode, setDatesSet } = useDates();
   const totalItems = items.reduce((sum, item) => sum + item.amount, 0);
 
   const handleBrowseClick = () => {
@@ -151,6 +151,14 @@ export default function TopBar({ children }: { children: ReactNode }) {
     setBrowseMode(false);
   };
 
+  const isOnRoot = pathname === '/';
+  const isLainaaActive = isOnRoot && !dates.browseMode;
+  const isKamatActive = isOnRoot && dates.browseMode;
+  const isPathActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+  const linkClass = (active: boolean) =>
+    `font-medium text-white transition ${active ? 'font-bold underline underline-offset-4 decoration-2' : 'hover:underline'}`;
+
   const navLinks = [
     { href: '/', label: 'Lainaa', onClick: handleReserveClick },
     ...(role ? [{ href: '/kiosk/return', label: 'Palauta' }] : []),
@@ -162,7 +170,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
       onClick={() => {
         handleBrowseClick();
       }}
-      className="cursor-pointer font-medium text-white hover:underline"
+      className={`cursor-pointer ${linkClass(isKamatActive)}`}
     >
       Kamat
     </button>
@@ -230,40 +238,52 @@ export default function TopBar({ children }: { children: ReactNode }) {
               </DialogContent>
             </Dialog>
 
+            {session && (
             <div className="hidden items-center gap-6 md:flex">
-              <NextLink href="/" className="font-medium text-white" onClick={handleReserveClick}>
+              <NextLink href="/" className={linkClass(isLainaaActive)} onClick={handleReserveClick}>
                 Lainaa
               </NextLink>
               {role && (
-                <NextLink href="/kiosk/return" className="font-medium text-white">
+                <NextLink href="/kiosk/return" className={linkClass(isPathActive('/kiosk/return'))}>
+
                   Palauta
                 </NextLink>
               )}
               <div className="h-6 w-px bg-white/30" />
               {browseLink}
-              <NextLink href="/item/announcements" className="font-medium text-white">
+              <NextLink
+                href="/item/announcements"
+                className={linkClass(isPathActive('/item/announcements'))}
+              >
                 Ilmoitukset
               </NextLink>
               {(role === 'ADMIN' || role === 'KIOSK') && (
-                <NextLink href="/loan" className="font-medium text-white">
-                  Varaukset
+                <NextLink href="/loan" className={linkClass(isPathActive('/loan'))}>
+                  Lainat
                 </NextLink>
               )}
               {role === 'ADMIN' && (
                 <>
-                  <NextLink href="/admin/boxes" className="font-medium text-white">
+                  <NextLink href="/admin/boxes" className={linkClass(isPathActive('/admin/boxes'))}>
                     Laatikot
                   </NextLink>
-                  <NextLink href="/admin/reports" className="font-medium text-white">
+                  <NextLink href="/admin/reports" className={linkClass(isPathActive('/admin/reports'))}>
                     Raportit
                   </NextLink>
-                  <NextLink href="/admin" className="font-medium text-white">
+                  <div className="h-6 w-px bg-white/30" />
+                  <NextLink
+                    href="/admin"
+                    className={linkClass(pathname === '/admin')}
+                  >
                     Admin
                   </NextLink>
                 </>
               )}
               <div className="relative flex items-center">
-                <NextLink href="/account" className="mr-6 font-medium text-white">
+                <NextLink
+                  href="/account"
+                  className={`mr-6 ${linkClass(isPathActive('/account'))}`}
+                >
                   Oma tili
                 </NextLink>
                 {children}
@@ -274,6 +294,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 )}
               </div>
             </div>
+            )}
 
             {session && (
               <div className="relative md:hidden">
@@ -292,51 +313,78 @@ export default function TopBar({ children }: { children: ReactNode }) {
       <Drawer open={isOpen} onOpenChange={(o) => (o ? onOpen() : onClose())}>
         <DrawerContent side="top" className="pt-16">
           <nav className="flex flex-col divide-y">
-            {navLinks.map((l) => (
-              <NextLink
-                key={l.href}
-                href={l.href}
-                onClick={() => {
-                  l.onClick?.();
-                  onClose();
-                }}
-                className="px-6 py-4"
-              >
-                {l.label}
-              </NextLink>
-            ))}
+            {navLinks.map((l) => {
+              const active = l.href === '/' ? isLainaaActive : isPathActive(l.href);
+              return (
+                <NextLink
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => {
+                    l.onClick?.();
+                    onClose();
+                  }}
+                  className={`px-6 py-4 ${active ? 'font-bold' : ''}`}
+                >
+                  {l.label}
+                </NextLink>
+              );
+            })}
             <button
               type="button"
               onClick={() => {
                 handleBrowseClick();
                 onClose();
               }}
-              className="cursor-pointer px-6 py-4 text-left"
+              className={`cursor-pointer px-6 py-4 text-left ${isKamatActive ? 'font-bold' : ''}`}
             >
               Kamat
             </button>
-            <NextLink href="/item/announcements" onClick={onClose} className="px-6 py-4">
+            <NextLink
+              href="/item/announcements"
+              onClick={onClose}
+              className={`px-6 py-4 ${isPathActive('/item/announcements') ? 'font-bold' : ''}`}
+            >
               Ilmoitukset
             </NextLink>
             {(role === 'ADMIN' || role === 'KIOSK') && (
-              <NextLink href="/loan" onClick={onClose} className="px-6 py-4">
-                Varaukset
+              <NextLink
+                href="/loan"
+                onClick={onClose}
+                className={`px-6 py-4 ${isPathActive('/loan') ? 'font-bold' : ''}`}
+              >
+                Lainat
               </NextLink>
             )}
             {role === 'ADMIN' && (
               <>
-                <NextLink href="/admin/boxes" onClick={onClose} className="px-6 py-4">
+                <NextLink
+                  href="/admin/boxes"
+                  onClick={onClose}
+                  className={`px-6 py-4 ${isPathActive('/admin/boxes') ? 'font-bold' : ''}`}
+                >
                   Laatikot
                 </NextLink>
-                <NextLink href="/admin/reports" onClick={onClose} className="px-6 py-4">
+                <NextLink
+                  href="/admin/reports"
+                  onClick={onClose}
+                  className={`px-6 py-4 ${isPathActive('/admin/reports') ? 'font-bold' : ''}`}
+                >
                   Raportit
                 </NextLink>
-                <NextLink href="/admin" onClick={onClose} className="px-6 py-4">
+                <NextLink
+                  href="/admin"
+                  onClick={onClose}
+                  className={`px-6 py-4 ${pathname === '/admin' ? 'font-bold' : ''}`}
+                >
                   Admin
                 </NextLink>
               </>
             )}
-            <NextLink href="/account" onClick={onClose} className="px-6 py-4">
+            <NextLink
+              href="/account"
+              onClick={onClose}
+              className={`px-6 py-4 ${isPathActive('/account') ? 'font-bold' : ''}`}
+            >
               Oma tili
             </NextLink>
           </nav>

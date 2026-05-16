@@ -19,6 +19,7 @@ export default function CartButton({ onOpen, onClose, isOpen }: CartButtonProps)
       aria-label="open cart"
       size="icon"
       data-cart-button
+      onPointerDown={(e) => e.stopPropagation()}
       onClick={isOpen ? onClose : onOpen}
       disabled={!dates.datesSet}
     >

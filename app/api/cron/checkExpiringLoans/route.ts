@@ -109,6 +109,74 @@ export async function GET(request: Request) {
       }
     });
 
+    // Find loans whose pickup time has already passed but are still not marked
+    // in use (all reservations still ACCEPTED). These are loans the borrower
+    // likely picked up physically but forgot to start. We nudge daily for up to
+    // a week after the start time; the 23h email-log dedup keeps it to one/day.
+    const overduePickupLoans = await prisma.loan.findMany({
+      where: {
+        startTime: {
+          lt: now,
+          gte: oneWeekAgo,
+        },
+      },
+      include: {
+        user: true,
+        reservations: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    const loansNeedingPickupNudge = overduePickupLoans.filter(
+      (loan) =>
+        loan.reservations.length > 0 &&
+        loan.reservations.every((res) => res.status === ReservationStatus.ACCEPTED),
+    );
+
+    console.log(`Found ${loansNeedingPickupNudge.length} loans not marked in use after pickup`);
+
+    const pickupOverduePromises = loansNeedingPickupNudge.map(async (loan) => {
+      if (!loan.user.email) {
+        console.log(`Loan ${loan.id} has no user email`);
+        return;
+      }
+
+      if (!loan.user.emailWeeklyReminder) {
+        console.log(`User ${loan.userId} has disabled reminder emails`);
+        return;
+      }
+
+      const canSend = await shouldSendEmail(
+        loan.id,
+        loan.userId,
+        EmailType.PICKUP_OVERDUE_REMINDER,
+      );
+
+      if (!canSend) {
+        console.log(`Skipping pickup overdue reminder for loan ${loan.id} - already sent recently`);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/api/email/sendPickupOverdue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: loan.user.email, id: loan.id }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to send pickup overdue email for loan ${loan.id}`);
+        }
+
+        console.log(`Sent pickup overdue reminder email for loan ${loan.id}`);
+      } catch (error) {
+        console.error(`Error sending pickup overdue email for loan ${loan.id}:`, error);
+      }
+    });
+
     // Find loans that expire in the next 24-25 hours and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
       where: {
@@ -277,11 +345,17 @@ export async function GET(request: Request) {
       });
     }
 
-    await Promise.all([...pickupReminderPromises, ...userEmailPromises, ...adminEmailPromises]);
+    await Promise.all([
+      ...pickupReminderPromises,
+      ...pickupOverduePromises,
+      ...userEmailPromises,
+      ...adminEmailPromises,
+    ]);
 
     return NextResponse.json({
       message: 'Cron job completed',
       upcomingPickupLoansChecked: upcomingPickupLoans.length,
+      overduePickupLoansChecked: loansNeedingPickupNudge.length,
       expiringLoansChecked: expiringLoans.length,
       oldBoxLoansChecked: oldBoxLoans.length,
     });

@@ -58,11 +58,12 @@ export default function KioskDateSelector() {
 
         <div className="h-full rounded-lg border bg-card p-6 shadow-xs">
           <Label className="mb-2 block text-lg font-bold">Palautuspäivä</Label>
-          <div className="flex flex-col gap-3">
+          <div className="flex justify-center overflow-x-auto">
             <DatePicker
               selected={dates.endDate}
               onChange={handleDateChange}
               inline
+              monthsShown={2}
               minDate={new Date()}
               dateFormat="dd.MM.yyyy"
               calendarStartDay={1}

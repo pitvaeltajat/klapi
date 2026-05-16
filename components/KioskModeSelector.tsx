@@ -27,7 +27,7 @@ export default function KioskModeSelector() {
         <div className="rounded-lg border border-primary/30 bg-primary/10 p-5 text-base leading-relaxed shadow-xs text-foreground/90">
           <p className="mb-3">
             Merkkaa Klapiin jokainen tavara jonka lainaat. Jos tavara ei löydy Klapista, voit lisätä
-            sen itse varauksen yhteydessä.
+            sen itse lainauksen yhteydessä.
           </p>
           <p className="mb-3">Palauta tavarat sovittuna ajankohtana hyvässä kunnossa.</p>
           <p>
@@ -49,7 +49,7 @@ export default function KioskModeSelector() {
           </Button>
         </div>
         <Button variant="outline" onClick={() => router.push('/kiosk/startloan')}>
-          Merkkaa ennakkoon tehty varaus noudetuksi
+          Merkkaa ennakkoon tehty laina noudetuksi
         </Button>
       </div>
     </div>

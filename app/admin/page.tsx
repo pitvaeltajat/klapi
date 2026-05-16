@@ -1,7 +1,6 @@
 'use client';
 
-import NextLink from 'next/link';
-import { FaTrash, FaPlus } from 'react-icons/fa';
+import { FaTrash } from 'react-icons/fa';
 import { MdOutlinePassword } from 'react-icons/md';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
@@ -22,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -38,17 +38,29 @@ const RoleSwitch: React.FC<{ user: UserWithGroup }> = ({ user }) => {
   const { mutate } = useSWRConfig();
 
   const updateRole = async (userId: string, group: 'ADMIN' | 'USER' | 'KIOSK') => {
-    const newGroup = group === 'ADMIN' ? 'USER' : 'ADMIN';
+    const newGroup: 'ADMIN' | 'USER' = group === 'ADMIN' ? 'USER' : 'ADMIN';
     try {
-      await fetch(`/api/user/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ group: newGroup }),
-      });
+      await mutate<UserWithGroup[]>(
+        '/api/user/getUsers',
+        async (current) => {
+          const res = await fetch(`/api/user/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group: newGroup }),
+          });
+          if (!res.ok) throw new Error('Roolin päivitys epäonnistui');
+          return current?.map((u) => (u.id === userId ? { ...u, group: newGroup } : u));
+        },
+        {
+          optimisticData: (current) =>
+            current?.map((u) => (u.id === userId ? { ...u, group: newGroup } : u)) ?? [],
+          rollbackOnError: true,
+          revalidate: false,
+        },
+      );
       toast.success('Rooli päivitetty', {
         description: `Käyttäjän rooli vaihdettu: ${newGroup}`,
       });
-      mutate('/api/user/getUsers');
     } catch {
       toast.error('Virhe', { description: 'Roolin päivitys epäonnistui' });
     }
@@ -164,9 +176,56 @@ export default function AdminPage() {
 
   if (!users) {
     return (
-      <div className="p-6">
-        <p>Ladataan...</p>
-      </div>
+      <>
+        <Breadcrumbs items={[{ label: 'Admin' }]} />
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Skeleton className="h-10 w-32" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-10 w-48" />
+            </div>
+          </div>
+          <div className="rounded-lg border bg-card p-6 shadow-xs">
+            <div className="mb-4 flex items-center justify-between">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nimi</TableHead>
+                  <TableHead>Sähköposti</TableHead>
+                  <TableHead>Rooli</TableHead>
+                  <TableHead>Admin-oikeudet</TableHead>
+                  <TableHead className="w-[100px]">Toiminnot</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-10 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -174,32 +233,29 @@ export default function AdminPage() {
     <>
       <Breadcrumbs items={[{ label: 'Admin' }]} />
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-4xl font-semibold">Admin</h1>
-          <Button asChild variant="success" size="lg" className="gap-2">
-            <NextLink href="/admin/createItem">
-              <FaPlus /> Luo uusi kama
-            </NextLink>
-          </Button>
-        </div>
-
-        <div className="flex justify-end">
-          <Button onClick={getOTP} variant="warning" className="gap-2">
-            <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
-          </Button>
-        </div>
-
-        <div className="flex justify-end">
-          <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
-            <MdOutlinePassword /> Aseta admin pin-koodi
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={getOTP} variant="warning" className="gap-2">
+              <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
+            </Button>
+            {!session?.user?.adminExpiry && (
+              <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
+                <MdOutlinePassword /> Aseta oma admin-PIN
+              </Button>
+            )}
+          </div>
         </div>
 
         <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Aseta admin PIN-koodi</DialogTitle>
+              <DialogTitle>Aseta oma admin-PIN</DialogTitle>
             </DialogHeader>
+            <p className="mb-2">
+              PIN on henkilökohtainen — se toimii kioskilla vain sinun admin-tiliisi
+              korottautumiseen eikä vaikuta muihin admineihin.
+            </p>
             <p className="mb-2">Syötä uusi 4-merkkinen PIN-koodi:</p>
             <div className="mb-4 flex justify-center">
               <PinInput value={pinValue} onChange={setPinValue} />
@@ -233,46 +289,85 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">Yhteensä {users.length} käyttäjää</p>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nimi</TableHead>
-                <TableHead>Sähköposti</TableHead>
-                <TableHead>Rooli</TableHead>
-                <TableHead>Admin-oikeudet</TableHead>
-                <TableHead className="w-[100px]">Toiminnot</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name || '-'}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{getGroupBadge(user.group)}</TableCell>
-                  <TableCell>
+          {/* Mobile: stacked cards — the 5-column table does not fit a phone. */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {users.map((user) => (
+              <div key={user.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{user.name || '-'}</p>
+                    <p className="break-all text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                  {getGroupBadge(user.group)}
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 text-sm">
                     <RoleSwitch user={user} />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      aria-label="Poista käyttäjä"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleDeleteClick(user)}
-                      disabled={user.id === session?.user?.id}
-                      title={
-                        user.id === session?.user?.id
-                          ? 'Et voi poistaa itseäsi'
-                          : 'Poista käyttäjä'
-                      }
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <FaTrash />
-                    </Button>
-                  </TableCell>
+                    Admin-oikeudet
+                  </label>
+                  <Button
+                    aria-label="Poista käyttäjä"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDeleteClick(user)}
+                    disabled={user.id === session?.user?.id}
+                    title={
+                      user.id === session?.user?.id
+                        ? 'Et voi poistaa itseäsi'
+                        : 'Poista käyttäjä'
+                    }
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <FaTrash />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: full table. */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nimi</TableHead>
+                  <TableHead>Sähköposti</TableHead>
+                  <TableHead>Rooli</TableHead>
+                  <TableHead>Admin-oikeudet</TableHead>
+                  <TableHead className="w-[100px]">Toiminnot</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name || '-'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{getGroupBadge(user.group)}</TableCell>
+                    <TableCell>
+                      <RoleSwitch user={user} />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        aria-label="Poista käyttäjä"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleDeleteClick(user)}
+                        disabled={user.id === session?.user?.id}
+                        title={
+                          user.id === session?.user?.id
+                            ? 'Et voi poistaa itseäsi'
+                            : 'Poista käyttäjä'
+                        }
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <FaTrash />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         <Dialog open={kioskDialogOpen} onOpenChange={setKioskDialogOpen}>

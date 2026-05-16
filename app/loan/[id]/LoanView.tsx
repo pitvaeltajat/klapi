@@ -27,6 +27,7 @@ import {
 import { LoanHistoryAction } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DateTime } from '@/components/DateTime';
 import {
   Dialog,
   DialogContent,
@@ -77,36 +78,71 @@ export default function LoanView({
     content: '',
   });
   const [rejectOpen, setRejectOpen] = React.useState(false);
+  const [cancelOpen, setCancelOpen] = React.useState(false);
   const [startLoanOpen, setStartLoanOpen] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
   const { data: session } = useSession();
 
-  const isAdmin = session?.user?.group === 'ADMIN';
-
-  const approveLoan = async () => {
-    await fetch('/api/loan/approveLoan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id }),
-    });
-    toast.success('Laina hyväksytty');
-    router.push('/loan');
+  const guard = async (fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const rejectLoan = async () => {
-    await fetch('/api/loan/rejectLoan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id }),
-    })
-      .then((res) => res.json())
-      .then(() => {
+  const isAdmin = session?.user?.group === 'ADMIN';
+  const loanStarted = new Date(loan.startTime) <= new Date();
+
+  const approveLoan = () =>
+    guard(async () => {
+      await fetch('/api/loan/approveLoan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: loan.id }),
+      });
+      toast.success('Laina hyväksytty');
+      router.push('/loan');
+    });
+
+  const cancelLoan = () =>
+    guard(async () => {
+      try {
+        const res = await fetch('/api/loan/cancelLoan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: loan.id }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Lainan peruminen epäonnistui');
+        }
+        toast.success('Laina peruttu', { description: 'Laina peruttiin onnistuneesti' });
+        router.push('/loan');
+      } catch (err) {
+        toast.error('Virhe', {
+          description: err instanceof Error ? err.message : 'Tuntematon virhe',
+        });
+      }
+    });
+
+  const rejectLoan = () =>
+    guard(async () => {
+      try {
+        const res = await fetch('/api/loan/rejectLoan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: loan.id }),
+        });
+        await res.json();
         toast.success('Laina hylätty', { description: 'Laina hylätty onnistuneesti' });
         router.push('/loan');
-      })
-      .catch((err) => {
-        toast.error('Error', { description: err.message });
-      });
-  };
+      } catch (err) {
+        toast.error('Error', { description: err instanceof Error ? err.message : 'Tuntematon virhe' });
+      }
+    });
 
   const [processingIds, setProcessingIds] = React.useState<Set<string>>(
     () =>
@@ -115,16 +151,17 @@ export default function LoanView({
       ),
   );
 
-  const loanProcessed = async () => {
-    const reservationIds = Array.from(processingIds);
-    await fetch('/api/loan/loanProcessed', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: loan.id, reservationIds }),
+  const loanProcessed = () =>
+    guard(async () => {
+      const reservationIds = Array.from(processingIds);
+      await fetch('/api/loan/loanProcessed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: loan.id, reservationIds }),
+      });
+      toast.success('Kamat palautettu');
+      router.push('/loan');
     });
-    toast.success('Kamat palautettu');
-    router.push('/loan');
-  };
 
   const toggleProcessing = (id: string) => {
     setProcessingIds((prev) => {
@@ -135,37 +172,40 @@ export default function LoanView({
     });
   };
 
-  const setReportToProcessing = async (
+  const setReportToProcessing = (
     reportId: string,
     affectedItems?: { [key: string]: number },
-  ) => {
-    await fetch('/api/loan/editReport', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
+  ) =>
+    guard(async () => {
+      await fetch('/api/loan/editReport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
+      });
+      toast.success('Raportti otettu käsittelyyn');
+      router.refresh();
     });
-    toast.success('Raportti otettu käsittelyyn');
-    router.refresh();
-  };
 
-  const resolveReport = async (reportId: string, affectedItems?: { [key: string]: number }) => {
-    await fetch('/api/loan/editReport', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
+  const resolveReport = (reportId: string, affectedItems?: { [key: string]: number }) =>
+    guard(async () => {
+      await fetch('/api/loan/editReport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
+      });
+      toast.success('Raportti merkitty käsitellyksi');
+      router.refresh();
     });
-    toast.success('Raportti merkitty käsitellyksi');
-    router.refresh();
-  };
 
-  const sendAnnouncement = async (itemId: string, content: string) => {
-    await fetch('/api/item/createAnnouncement', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ announcement: { itemId, message: content } }),
+  const sendAnnouncement = (itemId: string, content: string) =>
+    guard(async () => {
+      await fetch('/api/item/createAnnouncement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ announcement: { itemId, message: content } }),
+      });
+      toast.success('Ilmoitus lähetetty');
     });
-    toast.success('Ilmoitus lähetetty');
-  };
 
   const isKiosk = session?.user?.group === 'KIOSK';
 
@@ -178,22 +218,33 @@ export default function LoanView({
     return <NotAuthenticated />;
   }
 
+  const isOwner = session?.user?.id === loan.user.id;
+
+  // The owner withdraws their own not-yet-picked-up loan: "Peru laina".
+  const canCancel = isOwner && derivedStatus === 'ACCEPTED';
+
+  // An admin rejects someone else's loan request: "Hylkää". The owner uses
+  // cancel instead, so reject is reserved for admins acting on others' loans.
   const canReject =
-    (isAdmin || session?.user?.id === loan.user.id) &&
+    isAdmin &&
+    !isOwner &&
     derivedStatus !== 'REJECTED' &&
+    derivedStatus !== 'CANCELLED' &&
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
-  const canEdit =
-    (isAdmin || session?.user?.id === loan.user.id) &&
-    derivedStatus !== 'INUSE' &&
-    derivedStatus !== 'PARTIALLY_RETURNED' &&
-    derivedStatus !== 'RETURNED';
+  const canEdit = isAdmin
+    ? derivedStatus !== 'CANCELLED' &&
+      derivedStatus !== 'INUSE' &&
+      derivedStatus !== 'PARTIALLY_RETURNED' &&
+      derivedStatus !== 'RETURNED'
+    : isOwner && !loanStarted && derivedStatus === 'ACCEPTED';
 
   const canApprove =
     isAdmin &&
     derivedStatus !== 'ACCEPTED' &&
+    derivedStatus !== 'CANCELLED' &&
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
@@ -210,31 +261,23 @@ export default function LoanView({
     <>
       <Breadcrumbs
         items={[
-          { label: 'Varaukset', href: '/loan' },
+          { label: 'Lainat', href: '/loan' },
           { label: loan.description || 'Ei kuvausta' },
         ]}
       />
       <div className="flex flex-col gap-6">
         <h1 className="mb-4 text-3xl font-semibold">
-          Varaus: {loan.description || 'Ei kuvausta'}
+          Laina: {loan.description || 'Ei kuvausta'}
         </h1>
 
         <div className="rounded-lg border bg-card p-6">
           <h2 className="mb-4 text-2xl font-semibold">Perustiedot</h2>
           <div className="flex flex-col gap-3">
             <p>
-              Aloitusaika:{' '}
-              {new Date(loan.startTime).toLocaleString('fi-FI', {
-                dateStyle: 'full',
-                timeStyle: 'short',
-              })}
+              Aloitusaika: <DateTime value={loan.startTime} format="long" />
             </p>
             <p>
-              Lopetusaika:{' '}
-              {new Date(loan.endTime).toLocaleString('fi-FI', {
-                dateStyle: 'full',
-                timeStyle: 'short',
-              })}
+              Lopetusaika: <DateTime value={loan.endTime} format="long" />
             </p>
             <p>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</p>
             {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
@@ -328,6 +371,7 @@ export default function LoanView({
                 variant="success"
                 size="lg"
                 className="w-full"
+                isLoading={busy}
                 disabled={processingIds.size === 0}
               >
                 {processingIds.size === inBoxReservations.length
@@ -337,28 +381,50 @@ export default function LoanView({
             </div>
           </div>
         ) : (
-          (canReject || canEdit || canApprove || canStartUse) && (
+          (canReject || canCancel || canEdit || canApprove || canStartUse) && (
             <div className="rounded-lg border bg-card p-6">
               <div className="flex flex-col gap-3">
                 <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
+                {canStartUse && (
+                  <div className="rounded-md border border-warning/50 bg-warning/10 p-4">
+                    <p className="font-semibold text-warning">Oletko hakenut tavarat varastosta?</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Laina on hyväksytty, mutta sitä ei ole vielä merkitty käyttöön. Kun olet
+                      noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
+                      silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
+                    </p>
+                  </div>
+                )}
                 <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
-                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1">
+                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1" disabled={busy}>
                       Hylkää
+                    </Button>
+                  )}
+                  {canCancel && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setCancelOpen(true)}
+                      className="flex-1"
+                      disabled={busy}
+                    >
+                      Peru laina
                     </Button>
                   )}
                   {canEdit && (
                     <Button asChild variant="warning" className="flex-1">
-                      <NextLink href={`/admin/editLoan/${loan.id}`}>Muokkaa</NextLink>
+                      <NextLink href={isAdmin ? `/admin/editLoan/${loan.id}` : `/loan/${loan.id}/edit`}>
+                        Muokkaa
+                      </NextLink>
                     </Button>
                   )}
                   {canApprove && (
-                    <Button variant="success" onClick={approveLoan} className="flex-1">
+                    <Button variant="success" onClick={approveLoan} className="flex-1" isLoading={busy}>
                       Hyväksy
                     </Button>
                   )}
                   {canStartUse && (
-                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1">
+                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1" disabled={busy}>
                       Aloita lainaus
                     </Button>
                   )}
@@ -376,15 +442,15 @@ export default function LoanView({
             <div className="flex flex-col gap-3">
               {history.map((entry) => {
                 const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
-                const when = new Date(entry.createdAt).toLocaleString('fi-FI', {
-                  dateStyle: 'short',
-                  timeStyle: 'short',
-                });
                 return (
                   <div key={entry.id} className="rounded-md border p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="font-semibold">{getLoanHistoryActionLabel(entry.action)}</p>
-                      <p className="text-sm text-muted-foreground">{when}</p>
+                      <DateTime
+                        value={entry.createdAt}
+                        format="numeric"
+                        className="text-sm text-muted-foreground"
+                      />
                     </div>
                     <p className="text-sm text-muted-foreground">{who}</p>
                   </div>
@@ -397,15 +463,35 @@ export default function LoanView({
         <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Hylätäänkö varaus?</DialogTitle>
+              <DialogTitle>Hylätäänkö laina?</DialogTitle>
             </DialogHeader>
-            <p>Varaushakemus hylätään. Oletko varma?</p>
+            <p>Lainahakemus hylätään. Oletko varma?</p>
             <DialogFooter>
-              <Button variant="destructive" onClick={rejectLoan}>
+              <Button variant="destructive" onClick={rejectLoan} isLoading={busy}>
                 Hylkää
               </Button>
-              <Button variant="secondary" onClick={() => setRejectOpen(false)}>
+              <Button variant="secondary" onClick={() => setRejectOpen(false)} disabled={busy}>
                 Peruuta
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Perutaanko laina?</DialogTitle>
+            </DialogHeader>
+            <p>
+              Laina perutaan ja varatut tavarat vapautuvat muille. Et voi enää noutaa tavaroita
+              tällä varauksella. Oletko varma?
+            </p>
+            <DialogFooter>
+              <Button variant="destructive" onClick={cancelLoan} isLoading={busy}>
+                Peru laina
+              </Button>
+              <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={busy}>
+                Älä peru
               </Button>
             </DialogFooter>
           </DialogContent>

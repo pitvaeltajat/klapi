@@ -13,13 +13,13 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
-  // delete the item from the database
-  await prisma.item.delete({
-    where: {
-      id: body,
-    },
+  // Soft-delete: stamp deletedAt so reservations and loan history stay
+  // intact. Already-archived items become a no-op.
+  await prisma.item.update({
+    where: { id: body },
+    data: { deletedAt: new Date() },
   });
   return NextResponse.json({
-    message: 'Kama poistettu',
+    message: 'Kama arkistoitu',
   });
 }

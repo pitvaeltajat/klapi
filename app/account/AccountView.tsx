@@ -3,8 +3,9 @@
 import { useSession, signOut } from 'next-auth/react';
 import LoanCard from '@/components/LoanCard';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import PendingPickupBanner from '@/components/PendingPickupBanner';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import React from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
 import { useTheme } from 'next-themes';
@@ -69,13 +70,12 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     userEmailPreferences.emailOverdueNotification,
   );
 
-  const [isSaving, setIsSaving] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const loansSorted = loans.sort((a, b) =>
     compareDates(new Date(a.startTime), new Date(b.startTime)),
@@ -85,7 +85,21 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue',
     value: boolean,
   ) => {
-    setIsSaving(true);
+    const setters = {
+      weekly: setEmailWeeklyReminder,
+      newLoan: setEmailNewLoanNotification,
+      oldBox: setEmailOldBoxNotification,
+      overdue: setEmailOverdueNotification,
+    } as const;
+    const previous = {
+      weekly: emailWeeklyReminder,
+      newLoan: emailNewLoanNotification,
+      oldBox: emailOldBoxNotification,
+      overdue: emailOverdueNotification,
+    }[preference];
+
+    setters[preference](value);
+
     try {
       const response = await fetch('/api/user/updateEmailPreferences', {
         method: 'POST',
@@ -99,15 +113,9 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
       });
 
       if (!response.ok) throw new Error('Failed to update preferences');
-
-      if (preference === 'weekly') setEmailWeeklyReminder(value);
-      else if (preference === 'newLoan') setEmailNewLoanNotification(value);
-      else if (preference === 'oldBox') setEmailOldBoxNotification(value);
-      else if (preference === 'overdue') setEmailOverdueNotification(value);
     } catch (error) {
       console.error('Error updating email preferences:', error);
-    } finally {
-      setIsSaving(false);
+      setters[preference](previous);
     }
   };
 
@@ -127,6 +135,8 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     <>
       <Breadcrumbs items={[{ label: 'Oma tili' }]} />
       <h1 className="mb-6 text-4xl font-semibold">Oma tili</h1>
+
+      <PendingPickupBanner />
 
       <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
         <DialogContent>
@@ -188,41 +198,36 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
             {session?.user?.group === 'ADMIN' ? (
               <>
                 <PrefRow
-                  title="Uudet varaukset"
-                  description="Ilmoitukset uusista varauksista (myös kiosk-käytöstä)"
+                  title="Uudet lainat"
+                  description="Ilmoitukset uusista lainoista (myös kiosk-käytöstä)"
                   checked={emailNewLoanNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
                   title="Viikottaiset muistutukset vanhoista bokseista"
-                  description="Muistutukset varauksista, jotka ovat olleet boksissa yli viikon"
+                  description="Muistutukset lainoista, jotka ovat olleet boksissa yli viikon"
                   checked={emailOldBoxNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('oldBox', v)}
                 />
                 <PrefRow
-                  title="Myöhässä olevat varaukset"
-                  description="Ilmoitukset varauksista, joiden palautusaika on ylittynyt"
+                  title="Myöhässä olevat lainat"
+                  description="Ilmoitukset lainoista, joiden palautusaika on ylittynyt"
                   checked={emailOverdueNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('overdue', v)}
                 />
               </>
             ) : (
               <>
                 <PrefRow
-                  title="Ilmoitukset uusista varauksista"
-                  description="Sähköpostit kun luot uuden varauksen"
+                  title="Ilmoitukset uusista lainoista"
+                  description="Sähköpostit kun luot uuden lainan"
                   checked={emailNewLoanNotification}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
-                  title="Muistutukset varauksista"
-                  description="Muistutukset varauksiesi päättymisestä"
+                  title="Muistutukset lainoista"
+                  description="Muistutukset lainojesi päättymisestä"
                   checked={emailWeeklyReminder}
-                  disabled={isSaving}
                   onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
                 />
               </>
@@ -262,7 +267,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
 
         {session?.user?.group !== 'KIOSK' && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold">Oma varaushistoria</h2>
+            <h2 className="mb-4 text-xl font-semibold">Oma lainahistoria</h2>
             {loansSorted.length > 0 ? (
               <div className="flex flex-col gap-4">
                 {loansSorted.map((loan) => (
@@ -270,7 +275,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
                 ))}
               </div>
             ) : (
-              <p className="py-8 text-center text-muted-foreground">Ei varauksia</p>
+              <p className="py-8 text-center text-muted-foreground">Ei lainoja</p>
             )}
           </div>
         )}

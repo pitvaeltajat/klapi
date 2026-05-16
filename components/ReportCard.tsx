@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { DateTime } from '@/components/DateTime';
 import { cn } from '@/lib/utils';
 
 interface Report {
@@ -77,11 +78,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
                 {report.content}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Luotu:{' '}
-                {new Date(report.createdAt).toLocaleString('fi-FI', {
-                  dateStyle: 'full',
-                  timeStyle: 'short',
-                })}
+                Luotu: <DateTime value={report.createdAt} format="long" />
               </p>
               {isResolved ? (
                 <Badge variant="success" className="mt-2">

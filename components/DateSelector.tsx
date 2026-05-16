@@ -18,15 +18,33 @@ export default function DateSelector() {
 
   const setDefaultTime = (date: Date): Date => {
     const newDate = new Date(date);
-    newDate.setHours(18, 0, 0);
+    newDate.setHours(18, 0, 0, 0);
     return newDate;
   };
 
+  const setEndOfDay = (date: Date): Date => {
+    const newDate = new Date(date);
+    newDate.setHours(23, 59, 0, 0);
+    return newDate;
+  };
+
+  const isSameCalendarDay = (a: Date, b: Date): boolean =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const applyRangeTimes = (
+    start: Date | null,
+    end: Date | null,
+  ): [Date | null, Date | null] => {
+    if (!start) return [null, end ? setDefaultTime(end) : null];
+    if (!end) return [setDefaultTime(start), null];
+    const sameDay = isSameCalendarDay(start, end);
+    return [setDefaultTime(start), sameDay ? setEndOfDay(end) : setDefaultTime(end)];
+  };
+
   const handleRangeChange = (update: [Date | null, Date | null]) => {
-    const next: [Date | null, Date | null] = [
-      update[0] ? setDefaultTime(update[0]) : null,
-      update[1] ? setDefaultTime(update[1]) : null,
-    ];
+    const next = applyRangeTimes(update[0], update[1]);
     setDateRange(next);
     if (next[0] && next[1]) {
       clearCart();
@@ -49,7 +67,7 @@ export default function DateSelector() {
 
           <div className="rounded-lg border bg-card p-4 shadow-xs">
             <Label className="font-bold">Valitse lainausaika</Label>
-            <div className="mt-2">
+            <div className="mt-2 flex justify-center">
               <DatePicker
                 selected={startDate}
                 onChange={handleRangeChange}
@@ -68,7 +86,7 @@ export default function DateSelector() {
               className="mt-4 w-full"
               onClick={() => setBrowseMode(true)}
             >
-              Selaa katalogia ilman varausta
+              Selaa katalogia ilman lainaa
             </Button>
           </div>
         </>
@@ -95,21 +113,20 @@ export default function DateSelector() {
 
               <div className="pt-2">
                 <Label className="font-bold">Muokkaa aikaa</Label>
-                <div className="mt-2">
+                <div className="mt-2 flex justify-center">
                   <DatePicker
                     selected={dates.startDate}
                     onChange={(update: [Date | null, Date | null]) => {
-                      if (update[0]) {
-                        update[0] = setDefaultTime(update[0]);
-                        setStartDate(update[0]);
+                      const [nextStart, nextEnd] = applyRangeTimes(update[0], update[1]);
+                      if (nextStart) {
+                        setStartDate(nextStart);
                         // If no end date yet and the new start is after the current end, reset end to start
-                        if (!update[1] && update[0] > dates.endDate) {
-                          setEndDate(update[0]);
+                        if (!nextEnd && nextStart > dates.endDate) {
+                          setEndDate(setEndOfDay(nextStart));
                         }
                       }
-                      if (update[1]) {
-                        update[1] = setDefaultTime(update[1]);
-                        setEndDate(update[1]);
+                      if (nextEnd) {
+                        setEndDate(nextEnd);
                       }
                     }}
                     startDate={dates.startDate}

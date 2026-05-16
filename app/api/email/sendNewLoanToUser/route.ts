@@ -44,6 +44,11 @@ export async function sendCreatedEmail(recipientEmail: string, loanId: string) {
     <h1>Varauksesi on luotu</h1>
     <p>Hei!</p>
     <p>Varauksesi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
+    <p>
+      <strong>Muista:</strong> kun olet hakenut tavarat varastosta, avaa varaus ja paina
+      <strong>"Aloita lainaus"</strong>. Vasta silloin laina on merkitty käyttöön — muuten
+      tavarat näkyvät järjestelmässä yhä vapaina etkä voi myöhemmin palauttaa niitä normaalisti.
+    </p>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 

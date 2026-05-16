@@ -5,8 +5,8 @@ import { FaPlus, FaMinus } from 'react-icons/fa';
 import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
-import LoadingSpinner from './LoadingSpinner';
 import LoanerAutocomplete from './LoanerAutocomplete';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
 interface AvailabilityData {
@@ -56,7 +57,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const isAdmin = session?.user?.group === 'ADMIN';
   const isKiosk = session?.user?.group === 'KIOSK';
 
-  const [hasInitializedLoaner, setHasInitializedLoaner] = useState(false);
+  const hasInitializedLoaner = useRef(false);
   const [localDescription, setLocalDescription] = useState(cart.description);
 
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- reset description when cart empties */
@@ -77,13 +78,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [reportContent, setReportContent] = useState('');
 
   useEffect(() => {
-    if (!isKiosk && session?.user && !hasInitializedLoaner) {
+    if (!isKiosk && session?.user && !hasInitializedLoaner.current) {
       const userDisplayName = session.user.email || session.user.name || '';
       setLoaner(userDisplayName);
       setUserId(session.user.id);
-      setHasInitializedLoaner(true);
+      hasInitializedLoaner.current = true;
     }
-  }, [isKiosk, session, hasInitializedLoaner, setLoaner, setUserId]);
+  }, [isKiosk, session, setLoaner, setUserId]);
 
   useEffect(() => {
     setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
@@ -121,8 +122,15 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <DrawerHeader>
             <DrawerTitle>Ostoskori</DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 overflow-auto">
-            <LoadingSpinner fullWidth />
+          <div className="flex-1 space-y-4 overflow-auto p-6">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-24 w-full" />
+            {Array.from({ length: Math.max(cartItems.length, 3) }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            ))}
           </div>
         </DrawerContent>
       </Drawer>
@@ -130,15 +138,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   }
 
   const { availabilities } = data;
-
-  const timeStringWithoutTimeZone = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
-  };
 
   const isDescriptionValid = localDescription.trim().length > 0;
 
@@ -151,14 +150,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           e.preventDefault();
           firstField.current?.focus();
         }}
-        onPointerDownOutside={(e) => {
-          // Prevent Radix from auto-closing when the cart button is clicked,
-          // so the button's onClick toggle works without a race condition.
-          const target = e.target as HTMLElement;
-          if (target.closest('[data-cart-button]')) {
-            e.preventDefault();
-          }
-        }}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <DrawerHeader>
           <DrawerTitle>Ostoskori</DrawerTitle>
@@ -205,17 +198,19 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 required
                 aria-invalid={!isDescriptionValid && cart.items.length > 0}
                 className={cn(
-                  !isDescriptionValid && cart.items.length > 0 && 'border-destructive focus-visible:ring-destructive',
+                  !isDescriptionValid &&
+                    cart.items.length > 0 &&
+                    'border-destructive focus-visible:ring-destructive',
                 )}
               />
             </div>
             <div>
               <Label htmlFor="startTime">Lainaus alkaa</Label>
-              <Input id="startTime" value={timeStringWithoutTimeZone(startTime)} readOnly />
+              <Input id="startTime" value={formatDateNumeric(startTime)} readOnly />
             </div>
             <div>
               <Label htmlFor="endTime">Lainaus loppuu</Label>
-              <Input id="endTime" value={timeStringWithoutTimeZone(endTime)} readOnly />
+              <Input id="endTime" value={formatDateNumeric(endTime)} readOnly />
             </div>
           </div>
 
@@ -225,9 +220,9 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           {isKiosk && (
             <div className="mt-6 rounded-lg border-2 bg-muted p-4">
               <p className="text-base leading-relaxed">
-                Tarkista ennen varauksen vahvistamista, että kaikki kamat ovat kunnossa ja
-                mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
-                reikä laavussa tms.)
+                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja mahdolliset
+                vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat, reikä
+                laavussa tms.)
               </p>
               <p className="mt-2 text-base leading-relaxed text-destructive">
                 <IoMdAlert className="mr-2 inline" />
@@ -305,7 +300,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             <Button
               onClick={() => setConfirmOpen(true)}
               disabled={
-                cart.items.length === 0 || !isDescriptionValid || !cart.loaner || (isKiosk && !cart.userId)
+                cart.items.length === 0 ||
+                !isDescriptionValid ||
+                !cart.loaner?.trim() ||
+                (!isKiosk && !cart.userId)
               }
             >
               Lainaa

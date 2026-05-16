@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { FaMinus, FaPlus, FaTrash, FaHistory } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import NotAuthenticated from '@/components/NotAuthenticated';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Loan, Item, User, Reservation, ReservationStatus, LoanStatus } from '@prisma/client';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
@@ -48,28 +49,31 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
   const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
+  const debouncedStartDate = useDebouncedValue(startDate);
+  const debouncedEndDate = useDebouncedValue(endDate);
 
   useEffect(() => {
-    const fetchAvailability = async () => {
-      setLoadingAvailability(true);
-      try {
-        const response = await fetch('/api/availability/getAvailabilities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            StartDate: new Date(startDate),
-            EndDate: new Date(endDate),
-          }),
-        });
-        const data = await response.json();
+    const ctrl = new AbortController();
+    setLoadingAvailability(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
+    fetch('/api/availability/getAvailabilities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        StartDate: new Date(debouncedStartDate),
+        EndDate: new Date(debouncedEndDate),
+      }),
+      signal: ctrl.signal,
+    })
+      .then((response) => response.json())
+      .then((data) => {
         setAvailabilityData(data);
-      } catch (error) {
-        console.error('Failed to fetch availability:', error);
-      }
-      setLoadingAvailability(false);
-    };
-    fetchAvailability();
-  }, [startDate, endDate]);
+        setLoadingAvailability(false);
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') console.error('Failed to fetch availability:', error);
+      });
+    return () => ctrl.abort();
+  }, [debouncedStartDate, debouncedEndDate]);
 
   const getEffectiveAvailability = (itemId: string): number => {
     if (!availabilityData?.availabilities?.[itemId]) return 0;
@@ -163,7 +167,30 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
     !loan.reservations.find((r) => r.id === reservation.id);
 
   if (loadingAvailability) {
-    return <LoadingSpinner />;
+    return (
+      <>
+        <Breadcrumbs
+          items={[
+            { label: 'Lainat', href: '/loan' },
+            { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
+            { label: 'Muokkaa' },
+          ]}
+        />
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-10 w-64" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card p-6 shadow-xs">
+              <Skeleton className="mb-4 h-6 w-40" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          ))}
+          <Skeleton className="h-11 w-full md:w-48" />
+        </div>
+      </>
+    );
   }
 
   const dirty = (modified: boolean) => (modified ? 'border-2 border-warning' : '');
@@ -172,7 +199,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
     <>
       <Breadcrumbs
         items={[
-          { label: 'Varaukset', href: '/loan' },
+          { label: 'Lainat', href: '/loan' },
           { label: loan.description || 'Ei kuvausta', href: `/loan/${loan.id}` },
           { label: 'Muokkaa' },
         ]}
@@ -299,9 +326,9 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
         <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Varaukset</h2>
+            <h2 className="text-xl font-semibold">Lainaukset</h2>
             <Button
-              aria-label="Palauta kaikki varaukset"
+              aria-label="Palauta kaikki lainaukset"
               size="icon-sm"
               variant="ghost"
               onClick={() => setReservations(loan.reservations)}
@@ -312,7 +339,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
           <div className="flex flex-col gap-3">
             {reservations.length === 0 ? (
-              <p className="italic text-muted-foreground">Ei varauksia</p>
+              <p className="italic text-muted-foreground">Ei lainauksia</p>
             ) : (
               reservations.map((reservation) => (
                 <div
@@ -375,7 +402,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                         <FaPlus />
                       </Button>
                       <Button
-                        aria-label="Poista varaus"
+                        aria-label="Poista laina"
                         size="icon-sm"
                         variant="ghost"
                         className="text-destructive hover:bg-destructive/10"

@@ -10,6 +10,8 @@ export const getLoanHistoryActionLabel = (action: LoanHistoryAction): string => 
       return 'Laina hyväksytty';
     case 'REJECTED':
       return 'Laina hylätty';
+    case 'CANCELLED':
+      return 'Laina peruttu';
     case 'STARTED':
       return 'Lainaus aloitettu';
     case 'RETURNED_TO_BOX':
@@ -27,6 +29,8 @@ export const getLoanStatusLabel = (status: LoanStatus): string => {
       return 'Hyväksytty';
     case LoanStatus.REJECTED:
       return 'Hylätty';
+    case LoanStatus.CANCELLED:
+      return 'Peruttu';
     case LoanStatus.INUSE:
       return 'Käytössä';
     case LoanStatus.IN_BOX:
@@ -55,6 +59,8 @@ export const getLoanStatusColor = (status: LoanStatus): BadgeVariant => {
       return 'success';
     case LoanStatus.REJECTED:
       return 'destructive';
+    case LoanStatus.CANCELLED:
+      return 'gray';
     case LoanStatus.INUSE:
       return 'default';
     case LoanStatus.IN_BOX:
@@ -106,6 +112,8 @@ export const getReservationStatusColor = (status: ReservationStatus): BadgeVaria
  * Derives the overall loan status from its reservations.
  *
  * Priority order:
+ * 0. Loan-level CANCELLED -> CANCELLED (cancelled loans keep REJECTED
+ *    reservations, so this must be checked before the reservation rules)
  * 1. All RETURNED -> RETURNED
  * 2. All REJECTED -> REJECTED
  * 3. Mix of INUSE + (IN_BOX or RETURNED) -> PARTIALLY_RETURNED
@@ -117,6 +125,7 @@ export const deriveLoanStatus = (
   reservations: { status: ReservationStatus }[],
   loanStatus: LoanStatus,
 ): LoanStatus => {
+  if (loanStatus === LoanStatus.CANCELLED) return LoanStatus.CANCELLED;
   if (reservations.length === 0) return loanStatus;
 
   if (reservations.every((r) => r.status === ReservationStatus.RETURNED)) {

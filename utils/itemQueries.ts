@@ -1,18 +1,29 @@
 import { Prisma } from '@prisma/client';
 
 /**
- * Base where clause for fetching items that should be visible to users.
- * Excludes temporary items which are only created for custom loan requests.
+ * Items that have not been soft-archived. Use anywhere a "live" item is
+ * required (loan creation, availability, public detail pages).
  */
-export const visibleItemsWhere: Prisma.ItemWhereInput = {
-  type: 'normal',
+export const activeItemsWhere: Prisma.ItemWhereInput = {
+  deletedAt: null,
 };
 
 /**
- * Standard include for items with their relations
+ * Base where clause for fetching items that should be visible to users.
+ * Excludes temporary items (only created for custom loan requests) and
+ * soft-archived items.
+ */
+export const visibleItemsWhere: Prisma.ItemWhereInput = {
+  type: 'normal',
+  deletedAt: null,
+};
+
+/**
+ * Standard include for items with their relations.
+ * Reservation/loan data is intentionally omitted — clients fetch availability
+ * separately via /api/availability/getAvailabilities.
  */
 export const itemsWithRelationsInclude = {
   categories: true,
-  reservations: { include: { loan: true } },
   announcements: { orderBy: { createdAt: 'desc' } },
 } as const;
