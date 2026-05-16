@@ -184,115 +184,132 @@ const LoanReturnCard = ({
       </div>
 
       <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
-        <DialogContent className="max-h-screen max-w-4xl overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="inset-0 left-0 top-0 h-screen max-h-screen w-screen max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 rounded-none p-0 sm:rounded-none">
+          <DialogHeader className="border-b px-6 py-4 sm:text-center">
             <DialogTitle className="text-center text-3xl text-primary">Palautat kamoja</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-6">
             <p className="text-center text-muted-foreground">
               Valitse mitkä tavarat palautat. Jos sinulla ei ole kaikkia käsillä, voit palauttaa
               osan nyt ja loput myöhemmin.
             </p>
+          </DialogHeader>
 
-            <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
-              <p className="font-bold text-primary">
-                💡 Vinkki: Ota kuva palautettavista kamoista
-              </p>
-              <p className="mt-1 text-sm">
-                Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
-                laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva puhelimessasi
-                toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään — säilytä se
-                omassa puhelimessasi.
-              </p>
-            </div>
+          <div className="overflow-y-auto px-6 py-6">
+            <div className="mx-auto grid max-w-[1600px] items-start gap-6 lg:grid-cols-[1.7fr_1fr]">
+              {/* Left: item selection */}
+              <div className="flex flex-col gap-4">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Palautettavat tavarat ({returnableReservations.length})
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {returnableReservations.map((reservation) => {
+                    const checked = selectedIds.has(reservation.id);
+                    return (
+                      <div
+                        key={reservation.id}
+                        onClick={() => toggleSelected(reservation.id)}
+                        className={cn(
+                          'flex cursor-pointer items-center gap-3 rounded-lg border-2 bg-muted p-3',
+                          checked ? 'border-success' : 'border-border',
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 shrink-0"
+                          checked={checked}
+                          onChange={() => toggleSelected(reservation.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <ReservationItemImage
+                          itemId={reservation.item.id}
+                          itemName={reservation.item.name}
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <p className="truncate text-base font-bold">{reservation.item.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Määrä: {reservation.amount} kpl
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-            <div className="flex flex-col gap-4">
-              {returnableReservations.map((reservation) => {
-                const checked = selectedIds.has(reservation.id);
-                return (
-                  <div
-                    key={reservation.id}
-                    onClick={() => toggleSelected(reservation.id)}
-                    className={cn(
-                      'flex cursor-pointer items-center gap-4 rounded-lg border-2 bg-muted p-4',
-                      checked ? 'border-success' : 'border-border',
-                    )}
-                  >
+                {isPartialReturn && (
+                  <div className="rounded-lg border-2 border-warning bg-warning/10 p-4">
+                    <p className="font-bold text-warning">
+                      Osittainen palautus: {selectedIds.size} / {returnableReservations.length}{' '}
+                      tavaraa
+                    </p>
+                    <p className="mt-1 text-sm">
+                      Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: tip, damage report, terms */}
+              <div className="flex flex-col gap-4">
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
+                  <p className="font-bold text-primary">
+                    💡 Vinkki: Ota kuva palautettavista kamoista
+                  </p>
+                  <p className="mt-1 text-sm">
+                    Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
+                    laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva
+                    puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään —
+                    säilytä se omassa puhelimessasi.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border-2 bg-muted p-4">
+                  <p className="text-sm leading-relaxed">
+                    Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
+                    siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden
+                    vahinkojen osalta et ole lähtökohtaisesti korvausvastuussa kunhan raportoit
+                    niistä.
+                  </p>
+                  <p className="mt-2 text-sm font-bold leading-relaxed text-destructive">
+                    <IoMdAlert className="mr-2 inline" />
+                    Huomio: Tapahtuneiden vahinkojen ilmoittamatta jättäminen johtaa
+                    automaattisesti kaluston lainauskieltoon sekä korvausvastuuseen
+                    vahingoittuneen kaluston koko arvoon asti.
+                  </p>
+                  <Textarea
+                    placeholder="Kirjoita raportti tähän..."
+                    value={reportContent}
+                    onChange={(e) => setReportContent(e.target.value)}
+                    className="mt-2 min-h-[100px] resize-y text-base"
+                  />
+                </div>
+
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
+                  <p className="text-sm leading-relaxed">
+                    Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
+                    mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
+                    Palauta tavarat oikeaan laatikkoon.
+                  </p>
+                  <label className="mt-3 flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
-                      className="h-5 w-5"
-                      checked={checked}
-                      onChange={() => toggleSelected(reservation.id)}
-                      onClick={(e) => e.stopPropagation()}
+                      required
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
                     />
-                    <ReservationItemImage
-                      itemId={reservation.item.id}
-                      itemName={reservation.item.name}
-                    />
-                    <div className="flex flex-1 flex-col">
-                      <p className="text-lg font-bold">{reservation.item.name}</p>
-                      <p className="text-muted-foreground">Määrä: {reservation.amount} kpl</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {isPartialReturn && (
-              <div className="rounded-lg border-2 border-warning bg-warning/10 p-4">
-                <p className="font-bold text-warning">
-                  Osittainen palautus: {selectedIds.size} / {returnableReservations.length} tavaraa
-                </p>
-                <p className="mt-1 text-sm">
-                  Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
-                </p>
+                    {allSelected
+                      ? 'Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.'
+                      : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
+                  </label>
+                </div>
               </div>
-            )}
-
-            <div className="rounded-lg border-2 bg-muted p-6">
-              <p className="leading-relaxed">
-                Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
-                siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden vahinkojen
-                osalta et ole lähtökohtaisesti korvausvastuussa kunhan raportoit niistä.
-              </p>
-              <p className="mt-2 font-bold leading-relaxed text-destructive">
-                <IoMdAlert className="mr-2 inline" />
-                Huomio: Tapahtuneiden vahinkojen ilmoittamatta jättäminen johtaa automaattisesti
-                kaluston lainauskieltoon sekä korvausvastuuseen vahingoittuneen kaluston koko
-                arvoon asti.
-              </p>
-              <Textarea
-                placeholder="Kirjoita raportti tähän..."
-                value={reportContent}
-                onChange={(e) => setReportContent(e.target.value)}
-                className="mt-2 min-h-[120px] resize-y text-base"
-              />
             </div>
+          </div>
 
-            <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-6">
-              <p className="leading-relaxed">
-                Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
-                mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
-                Palauta tavarat oikeaan laatikkoon.
-              </p>
-              <label className="mt-4 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  required
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                />
-                {allSelected
-                  ? 'Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.'
-                  : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
-              </label>
-            </div>
-
+          <DialogFooter className="border-t px-6 py-4 sm:justify-center">
             <Button
               variant="success"
               size="lg"
               onClick={handleConfirmReturn}
-              className="h-[60px] text-xl"
+              className="h-[60px] w-full max-w-md text-xl"
               isLoading={isLoading}
               disabled={!termsAccepted || selectedIds.size === 0}
             >
@@ -300,7 +317,7 @@ const LoanReturnCard = ({
                 ? `Vahvista osittainen palautus (${selectedIds.size})`
                 : 'Vahvista palautus'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
