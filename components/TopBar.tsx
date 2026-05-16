@@ -153,9 +153,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   const navLinks = [
     { href: '/', label: 'Lainaa', onClick: handleReserveClick },
-    ...(role === 'ADMIN' || role === 'KIOSK'
-      ? [{ href: '/kiosk/return', label: 'Palauta' }]
-      : []),
+    ...(role ? [{ href: '/kiosk/return', label: 'Palauta' }] : []),
   ];
 
   const browseLink = (
@@ -236,7 +234,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <NextLink href="/" className="font-medium text-white" onClick={handleReserveClick}>
                 Lainaa
               </NextLink>
-              {(role === 'ADMIN' || role === 'KIOSK') && (
+              {role && (
                 <NextLink href="/kiosk/return" className="font-medium text-white">
                   Palauta
                 </NextLink>
