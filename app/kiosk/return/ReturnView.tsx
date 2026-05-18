@@ -193,8 +193,9 @@ const LoanReturnCard = ({
             </p>
           </DialogHeader>
 
-          <div className="overflow-y-auto px-6 py-6">
-            <div className="mx-auto grid max-w-[1600px] items-start gap-6 lg:grid-cols-[1.7fr_1fr]">
+          <div className="overflow-y-auto">
+            <div className="flex min-h-full items-center px-6 py-6">
+              <div className="mx-auto grid w-full max-w-[1600px] items-start gap-6 lg:grid-cols-[1.7fr_1fr]">
               {/* Left: item selection */}
               <div className="flex flex-col gap-4">
                 <p className="text-sm font-medium text-muted-foreground">
@@ -301,6 +302,7 @@ const LoanReturnCard = ({
                   </label>
                 </div>
               </div>
+            </div>
             </div>
           </div>
 
