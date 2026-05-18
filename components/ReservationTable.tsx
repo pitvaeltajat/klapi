@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { LoanStatus } from '@prisma/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDateOnly } from '@/utils/dateFormat';
@@ -25,7 +26,14 @@ interface Reservation {
 
 // Rendered on a single item's detail page, so every row is the same item —
 // no "Tuote" column needed (it was redundant and crowded the table on mobile).
-export default function ReservationTable({ reservations }: { reservations: Reservation[] }) {
+// Admins additionally get a per-row link to the loan the reservation belongs to.
+export default function ReservationTable({
+  reservations,
+  isAdmin = false,
+}: {
+  reservations: Reservation[];
+  isAdmin?: boolean;
+}) {
   return (
     <Table>
       <TableHeader>
@@ -33,6 +41,7 @@ export default function ReservationTable({ reservations }: { reservations: Reser
           <TableHead>Määrä</TableHead>
           <TableHead>Nouto</TableHead>
           <TableHead>Palautus</TableHead>
+          {isAdmin && <TableHead>Laina</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -41,6 +50,16 @@ export default function ReservationTable({ reservations }: { reservations: Reser
             <TableCell>{reservation.amount}</TableCell>
             <TableCell>{formatDateOnly(reservation.loan.startTime)}</TableCell>
             <TableCell>{formatDateOnly(reservation.loan.endTime)}</TableCell>
+            {isAdmin && (
+              <TableCell>
+                <Link
+                  href={`/loan/${reservation.loan.id}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  Avaa
+                </Link>
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>

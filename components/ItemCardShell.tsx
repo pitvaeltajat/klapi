@@ -4,6 +4,7 @@ import React from 'react';
 import NextLink from 'next/link';
 import { LuTriangleAlert } from 'react-icons/lu';
 import type { Announcement } from '@prisma/client';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface ItemCardShellProps {
@@ -43,6 +44,11 @@ export default function ItemCardShell({
   action,
   onActionPointerDown,
 }: ItemCardShellProps) {
+  // Expired announcements shouldn't surface on the card — only live ones.
+  const activeAnnouncements = Array.isArray(announcements)
+    ? announcements.filter((a) => !a.expiresAt || new Date(a.expiresAt) > new Date())
+    : [];
+
   const Inner = (
     <>
       <div className="relative aspect-square w-28 shrink-0 overflow-hidden bg-muted sm:aspect-5/3 sm:w-full">
@@ -71,11 +77,24 @@ export default function ItemCardShell({
           <p className="truncate text-xs text-muted-foreground sm:text-xs">{categoryLine}</p>
         )}
 
-        {Array.isArray(announcements) && announcements.length > 0 && (
-          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-destructive">
-            <LuTriangleAlert className="shrink-0" />
-            <span className="truncate">Sisältää ilmoituksen</span>
-          </div>
+        {activeAnnouncements.length > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="mt-1 flex w-fit max-w-full items-center gap-1 text-xs font-semibold text-destructive">
+                <LuTriangleAlert className="shrink-0" />
+                <span className="truncate">
+                  Sisältää ilmoitukse{activeAnnouncements.length > 1 ? 't' : 'n'}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs whitespace-pre-wrap bg-destructive text-sm text-destructive-foreground">
+              <div className="flex flex-col gap-2">
+                {activeAnnouncements.map((a) => (
+                  <p key={a.id}>{a.message}</p>
+                ))}
+              </div>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {action && (

@@ -10,9 +10,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Ei kirjautunut sisään' }, { status: 401 });
     }
 
-    const { announcement } = await request.json();
+    if (session.user.group !== 'ADMIN') {
+      return NextResponse.json({ message: 'Ei oikeutta tähän toimintoon' }, { status: 403 });
+    }
 
-    console.log('Creating announcement:', announcement);
+    const { announcement } = await request.json();
 
     const createdAnnouncement = await prisma.announcement.create({
       data: {

@@ -3,13 +3,15 @@
 import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
 import { useItemOriginalImage, usePlaceholder } from '@/hooks/useItemImage';
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -17,9 +19,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import ItemAnnouncements, { type ItemAnnouncement } from './ItemAnnouncements';
+
+interface ReportAffectedItemWithReport {
+  id: string;
+  amount: number;
+  report: {
+    id: string;
+    content: string;
+    status: string;
+    created: string;
+    createdAt: string | Date;
+    loan: {
+      id: string;
+      description: string | null;
+      user: { name: string | null };
+    };
+  };
+}
 
 interface ItemWithRelations extends Item {
   categories: Category[];
+  location: { id: string; name: string } | null;
+  announcements: ItemAnnouncement[];
   reservations: (Reservation & {
     loan: {
       id: string;
@@ -31,16 +53,29 @@ interface ItemWithRelations extends Item {
     };
     item: { name: string };
   })[];
+  reportAffectedItems: ReportAffectedItemWithReport[];
 }
+
+const REPORT_STATUS: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
+  OPEN: { label: 'Käsittelemättä', variant: 'destructive' },
+  IN_PROGRESS: { label: 'Käsittelyssä', variant: 'warning' },
+  RESOLVED: { label: 'Ratkaistu', variant: 'success' },
+};
 
 export default function ItemView({ item }: { item: ItemWithRelations }) {
   const router = useRouter();
   const { data: session } = useSession();
+  const isAdmin = session?.user?.group === 'ADMIN';
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
   const imageSrc = useItemOriginalImage(item.id);
   const placeholder = usePlaceholder();
+
+  const reportAffectedItems = [...item.reportAffectedItems].sort(
+    (a, b) =>
+      new Date(b.report.createdAt).getTime() - new Date(a.report.createdAt).getTime(),
+  );
 
   const deleteItem = async () => {
     try {
@@ -74,11 +109,17 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
           <p className="text-base text-foreground/90 md:text-lg">{item.description}</p>
         )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           <div>
             <p className="text-sm font-semibold text-muted-foreground">Määrä:</p>
             <p className="text-lg font-bold">{item.amount} kpl</p>
           </div>
+          {item.location && (
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">Sijainti:</p>
+              <p className="text-lg font-bold">{item.location.name}</p>
+            </div>
+          )}
           {item.categories && item.categories.length > 0 && (
             <div>
               <p className="mb-2 text-sm font-semibold text-muted-foreground">Kategoriat:</p>
@@ -103,7 +144,7 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
           />
         </div>
 
-        {session?.user?.group === 'ADMIN' && (
+        {isAdmin && (
           <div className="flex gap-3">
             <Button onClick={() => router.push(`/admin/edititem/${item.id}`)}>Muokkaa</Button>
             <Button variant="destructive" onClick={() => setOpen(true)}>
@@ -112,9 +153,57 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
           </div>
         )}
 
+        <ItemAnnouncements
+          itemId={item.id}
+          announcements={item.announcements}
+          isAdmin={isAdmin}
+        />
+
+        {isAdmin && reportAffectedItems.length > 0 && (
+          <section className="rounded-lg border bg-card p-4 md:p-6">
+            <h2 className="mb-4 text-xl font-semibold">
+              Raportit ({reportAffectedItems.length})
+            </h2>
+            <ul className="flex flex-col gap-3">
+              {reportAffectedItems.map(({ id, amount, report }) => {
+                const status = REPORT_STATUS[report.status] ?? {
+                  label: report.status,
+                  variant: 'secondary' as const,
+                };
+                return (
+                  <li key={id} className="rounded-md border bg-muted p-3">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {report.created === 'BEFORE_LOAN' ? 'Ennen lainaa' : 'Lainan jälkeen'}
+                        {' · '}
+                        <DateTime value={report.createdAt} format="numeric" />
+                        {' · koski '}
+                        {amount} kpl
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm">{report.content}</p>
+                    <Link
+                      href={`/loan/${report.loan.id}`}
+                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+                    >
+                      Avaa laina
+                      {report.loan.user.name ? ` — ${report.loan.user.name}` : ''}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
         <div className="mt-4">
           <h2 className="mb-4 text-xl font-semibold">Lainahistoria</h2>
-          <ReservationTable reservations={item.reservations} />
+          {item.reservations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Ei lainahistoriaa.</p>
+          ) : (
+            <ReservationTable reservations={item.reservations} isAdmin={isAdmin} />
+          )}
         </div>
       </div>
 

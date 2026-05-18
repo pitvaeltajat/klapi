@@ -21,10 +21,21 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     where: { id },
     include: {
       categories: true,
+      location: true,
+      announcements: { orderBy: { createdAt: 'desc' } },
       reservations: {
         include: {
           loan: true,
           item: { select: { name: true } },
+        },
+      },
+      reportAffectedItems: {
+        include: {
+          report: {
+            include: {
+              loan: { include: { user: { select: { name: true } } } },
+            },
+          },
         },
       },
     },
