@@ -37,9 +37,16 @@ export interface LoanType {
 export default function LoanCard({ loan }: { loan: LoanType }) {
   const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
+  const isOverdue =
+    (derivedStatus === LoanStatus.INUSE || derivedStatus === LoanStatus.ACCEPTED) &&
+    new Date(loan.endTime) < new Date();
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-hidden rounded-lg border bg-card p-4 shadow-xs">
+    <div
+      className={`flex h-full flex-col gap-3 overflow-hidden rounded-lg border p-4 shadow-xs ${
+        isOverdue ? 'border-destructive/40 bg-destructive/10' : 'bg-card'
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h3 className="text-lg font-semibold">
