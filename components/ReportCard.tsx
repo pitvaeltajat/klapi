@@ -1,33 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Loan, Reservation } from '@prisma/client';
+import { Reservation } from '@prisma/client';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DateTime } from '@/components/DateTime';
-import { cn } from '@/lib/utils';
+import HandleReportDialog from '@/components/HandleReportDialog';
 
 interface Report {
   id: string;
   content: string;
   createdAt: string | Date;
   status: string;
-}
-
-interface ReportCardProps {
-  reports: Report[];
-  loan: Loan & { reservations: ReservationWithItem[] };
-  expandedReportId: string | null;
-  setExpandedReportId: (id: string | null) => void;
-  announcement: { itemId: string; content: string };
-  setAnnouncement: (a: { itemId: string; content: string }) => void;
-  affectedItems: { [key: string]: number };
-  setAffectedItems: (a: { [key: string]: number }) => void;
-  onSetProcessing: (reportId: string, affectedItems?: { [key: string]: number }) => void;
-  onSetResolved: (reportId: string, affectedItems?: { [key: string]: number }) => void;
-  onSendAnnouncement: (itemId: string, content: string) => void;
 }
 
 interface ReservationWithItem extends Reservation {
@@ -38,216 +22,91 @@ interface ReservationWithItem extends Reservation {
   };
 }
 
-const ReportCard: React.FC<ReportCardProps> = ({
-  reports,
-  loan,
-  expandedReportId,
-  setExpandedReportId,
-  announcement,
-  setAnnouncement,
-  affectedItems,
-  setAffectedItems,
-  onSetProcessing,
-  onSetResolved,
-  onSendAnnouncement,
-}) => {
+interface ReportCardProps {
+  reports: Report[];
+  reservations: ReservationWithItem[];
+}
+
+const STATUS_ORDER: Record<string, number> = {
+  OPEN: 0,
+  IN_PROGRESS: 1,
+  RESOLVED: 2,
+};
+
+const ReportCard: React.FC<ReportCardProps> = ({ reports, reservations }) => {
+  const [activeReportId, setActiveReportId] = React.useState<string | null>(null);
+  const activeReport = reports.find((r) => r.id === activeReportId) ?? null;
+
   const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED');
+  const sortedReports = [...reports].sort((a, b) => {
+    const statusDiff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+    if (statusDiff !== 0) return statusDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const statusVariant = (
+    status: string,
+  ): 'default' | 'secondary' | 'destructive' | 'success' | 'warning' | 'gray' => {
+    if (status === 'IN_PROGRESS') return 'warning';
+    if (status === 'RESOLVED') return 'success';
+    return 'gray';
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === 'IN_PROGRESS') return 'Käsittelyssä';
+    if (status === 'RESOLVED') return 'Ratkaistu';
+    return 'Käsittelemättä';
+  };
+
   return (
     <div className="rounded-lg border bg-card p-6">
       <h2 className="mb-4 text-2xl font-semibold">
         Raportit {unresolvedReports.length > 0 ? `(${unresolvedReports.length})` : ''}
       </h2>
-      <div className="flex flex-col gap-4">
-        {reports.map((report) => {
-          const expanded = expandedReportId === report.id;
-          const inProgress = report.status === 'IN_PROGRESS';
-          const isResolved = report.status === 'RESOLVED';
-          const resetSelections = () => {
-            setAnnouncement({ itemId: '', content: '' });
-            setAffectedItems({});
-          };
-          return (
-            <div
-              key={report.id}
-              className={cn(
-                'rounded-md border bg-muted',
-                expanded ? 'p-6 shadow-lg' : 'p-4',
-              )}
-            >
-              <p className={cn('whitespace-pre-wrap', expanded ? 'text-base' : 'text-sm')}>
-                {report.content}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Luotu: <DateTime value={report.createdAt} format="long" />
-              </p>
-              {isResolved ? (
-                <Badge variant="success" className="mt-2">
-                  Ratkaistu
-                </Badge>
-              ) : !expanded ? (
-                <Button
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => !isResolved && setExpandedReportId(report.id)}
-                >
-                  Käsittele raportti
-                </Button>
-              ) : (
-                <div>
-                  <div className="mb-2 mt-4 rounded-md border bg-card p-4 text-lg font-semibold">
-                    <p className="mb-2">Lisää ilmoitus kamalle:</p>
-                    <div role="radiogroup" className="flex flex-wrap gap-3">
-                      {loan.reservations.map((reservation: ReservationWithItem) => (
-                        <label key={reservation.item.id} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="announcement-item"
-                            value={reservation.item.id}
-                            disabled={inProgress}
-                            checked={announcement.itemId === reservation.item.id}
-                            onChange={() =>
-                              setAnnouncement({
-                                itemId: reservation.item.id,
-                                content: announcement.content,
-                              })
-                            }
-                          />
-                          {reservation.item.name}
-                        </label>
-                      ))}
-                    </div>
-                    <Textarea
-                      className="mt-2"
-                      placeholder="Kirjoita ilmoitus"
-                      rows={3}
-                      value={announcement.content}
-                      disabled={inProgress}
-                      onChange={(e) =>
-                        setAnnouncement({
-                          itemId: announcement.itemId,
-                          content: e.target.value,
-                        })
-                      }
-                    />
-                    <Button
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => {
-                        if (announcement.itemId && announcement.content) {
-                          onSendAnnouncement(announcement.itemId, announcement.content);
-                          resetSelections();
-                        }
-                      }}
-                      disabled={!announcement.itemId || !announcement.content || inProgress}
-                    >
-                      Lähetä ilmoitus
-                    </Button>
-                  </div>
-                  {!inProgress && (
-                    <div className="mb-2 mt-4 rounded-md border bg-card p-4 text-lg font-semibold">
-                      <p className="mb-2">Poista kama valikoimista käsittelyn ajaksi:</p>
-                      <div className="flex flex-col gap-2">
-                        {loan.reservations.map((reservation: ReservationWithItem) => (
-                          <React.Fragment key={reservation.item.id}>
-                            <hr />
-                            <div className="flex items-center justify-between gap-2">
-                              <label className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  value={reservation.item.id}
-                                  checked={
-                                    reservation.item.id in affectedItems &&
-                                    affectedItems[reservation.item.id] > 0
-                                  }
-                                  disabled={inProgress || isResolved}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setAffectedItems({
-                                        ...affectedItems,
-                                        [reservation.item.id]: reservation.amount,
-                                      });
-                                    } else {
-                                      setAffectedItems({
-                                        ...affectedItems,
-                                        [reservation.item.id]: 0,
-                                      });
-                                    }
-                                  }}
-                                />
-                                {reservation.item.name}
-                                {affectedItems[reservation.item.id] > 0 &&
-                                  ` - ${affectedItems[reservation.item.id]} kpl`}
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  max={reservation.item.amount}
-                                  value={affectedItems[reservation.item.id] || 0}
-                                  className="h-9 w-20"
-                                  disabled={
-                                    inProgress ||
-                                    isResolved ||
-                                    !(reservation.item.id in affectedItems) ||
-                                    affectedItems[reservation.item.id] === 0
-                                  }
-                                  onChange={(e) => {
-                                    setAffectedItems({
-                                      ...affectedItems,
-                                      [reservation.item.id]: Number(e.target.value) || 0,
-                                    });
-                                  }}
-                                />
-                                <span>kpl</span>
-                              </div>
-                            </div>
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      disabled={inProgress}
-                      onClick={() => {
-                        onSetProcessing(report.id, affectedItems);
-                        resetSelections();
-                      }}
-                    >
-                      Ota käsittelyyn
-                    </Button>
-                    <Button
-                      variant="success"
-                      size="sm"
-                      disabled={
-                        Object.values(affectedItems).filter((v) => v > 0).length !== 0 || isResolved
-                      }
-                      onClick={() => {
-                        onSetResolved(report.id, affectedItems);
-                        resetSelections();
-                      }}
-                    >
-                      Aseta käsitellyksi
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setExpandedReportId(null);
-                        resetSelections();
-                      }}
-                    >
-                      Käsittele myöhemmin
-                    </Button>
-                  </div>
-                </div>
-              )}
+      <div className="flex flex-col gap-3">
+        {sortedReports.map((report) => (
+          <div key={report.id} className="rounded-md border bg-muted p-4">
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <Badge variant={statusVariant(report.status)}>
+                {statusLabel(report.status)}
+              </Badge>
+              <DateTime
+                value={report.createdAt}
+                format="numeric"
+                className="text-xs text-muted-foreground"
+              />
             </div>
-          );
-        })}
+            <p className="whitespace-pre-wrap text-sm">{report.content}</p>
+            {report.status !== 'RESOLVED' && (
+              <Button
+                size="sm"
+                className="mt-3"
+                onClick={() => setActiveReportId(report.id)}
+              >
+                Käsittele
+              </Button>
+            )}
+          </div>
+        ))}
       </div>
+
+      {activeReport && (
+        <HandleReportDialog
+          report={activeReport}
+          reservations={reservations.map((r) => ({
+            amount: r.amount,
+            item: {
+              id: r.item.id,
+              name: r.item.name,
+              amount: r.item.amount,
+            },
+          }))}
+          open={activeReportId !== null}
+          onOpenChange={(open) => {
+            if (!open) setActiveReportId(null);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -71,12 +71,6 @@ export default function LoanView({
   history: HistoryEntry[];
 }) {
   const router = useRouter();
-  const [expandedReportId, setExpandedReportId] = React.useState<string | null>(null);
-  const [affectedItems, setAffectedItems] = React.useState<{ [key: string]: number }>({});
-  const [announcement, setAnnouncement] = React.useState<{ itemId: string; content: string }>({
-    itemId: '',
-    content: '',
-  });
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const [startLoanOpen, setStartLoanOpen] = React.useState(false);
@@ -171,41 +165,6 @@ export default function LoanView({
       return next;
     });
   };
-
-  const setReportToProcessing = (
-    reportId: string,
-    affectedItems?: { [key: string]: number },
-  ) =>
-    guard(async () => {
-      await fetch('/api/loan/editReport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: reportId, status: 'IN_PROGRESS', affectedItems }),
-      });
-      toast.success('Raportti otettu käsittelyyn');
-      router.refresh();
-    });
-
-  const resolveReport = (reportId: string, affectedItems?: { [key: string]: number }) =>
-    guard(async () => {
-      await fetch('/api/loan/editReport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: reportId, status: 'RESOLVED', affectedItems }),
-      });
-      toast.success('Raportti merkitty käsitellyksi');
-      router.refresh();
-    });
-
-  const sendAnnouncement = (itemId: string, content: string) =>
-    guard(async () => {
-      await fetch('/api/item/createAnnouncement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ announcement: { itemId, message: content } }),
-      });
-      toast.success('Ilmoitus lähetetty');
-    });
 
   const isKiosk = session?.user?.group === 'KIOSK';
 
@@ -315,19 +274,7 @@ export default function LoanView({
         </div>
 
         {canSeeReports && (
-          <ReportCard
-            reports={reports}
-            loan={loan}
-            expandedReportId={expandedReportId}
-            setExpandedReportId={setExpandedReportId}
-            announcement={announcement}
-            setAnnouncement={setAnnouncement}
-            affectedItems={affectedItems}
-            setAffectedItems={setAffectedItems}
-            onSetProcessing={setReportToProcessing}
-            onSetResolved={resolveReport}
-            onSendAnnouncement={sendAnnouncement}
-          />
+          <ReportCard reports={reports} reservations={loan.reservations} />
         )}
 
         {derivedStatus === 'RETURNED' ? (
