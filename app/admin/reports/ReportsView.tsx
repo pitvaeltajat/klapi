@@ -7,6 +7,7 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReportAffectedItem } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDateNumeric } from '@/utils/dateFormat';
+import HandleReportDialog from '@/components/HandleReportDialog';
 
 const CONTENT_PREVIEW_LENGTH = 200;
 
@@ -45,6 +47,8 @@ interface ReportsViewProps {
 export default function ReportsView({ reports }: ReportsViewProps) {
   const { data: session } = useSession();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const activeReport = reports.find((r) => r.id === activeReportId) ?? null;
 
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
 
@@ -85,9 +89,10 @@ export default function ReportsView({ reports }: ReportsViewProps) {
         <p className="mb-1 font-semibold">Mitä raportit ovat?</p>
         <p className="text-muted-foreground">
           Raportit ovat lainaajien tekemiä ilmoituksia kamojen kunnosta tai puutteista lainan
-          alussa tai sen päättyessä. Käsittelemättömät raportit näkyvät ylimpänä. Avaa raporttiin
-          liittyvä laina linkistä, jossa voit ottaa raportin käsittelyyn, lähettää ilmoituksen
-          kamasta tai merkitä raportin ratkaistuksi.
+          alussa tai sen päättyessä. Käsittelemättömät raportit näkyvät ylimpänä. Paina{' '}
+          <strong>Käsittele</strong> ottaaksesi raportin käsittelyyn, lähettääksesi ilmoituksen
+          kamasta tai merkitäksesi raportin ratkaistuksi — tai avaa raporttiin liittyvä laina
+          linkistä.
         </p>
       </div>
 
@@ -154,6 +159,15 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                     {report.loan.loaner || report.loan.user.name}
                     {report.loan.description ? ` — ${report.loan.description}` : ''}
                   </NextLink>
+                  {report.status !== 'RESOLVED' && (
+                    <Button
+                      size="sm"
+                      className="self-start"
+                      onClick={() => setActiveReportId(report.id)}
+                    >
+                      Käsittele
+                    </Button>
+                  )}
                 </div>
               );
             })}
@@ -169,6 +183,7 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                 <TableHead>Sisältö</TableHead>
                 <TableHead>Vaikuttaa kamoihin</TableHead>
                 <TableHead className="w-[220px]">Laina</TableHead>
+                <TableHead className="w-[120px]">Toiminnot</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -229,6 +244,13 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                         {report.loan.description ? ` — ${report.loan.description}` : ''}
                       </NextLink>
                     </TableCell>
+                    <TableCell>
+                      {report.status !== 'RESOLVED' && (
+                        <Button size="sm" onClick={() => setActiveReportId(report.id)}>
+                          Käsittele
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -236,6 +258,24 @@ export default function ReportsView({ reports }: ReportsViewProps) {
           </Table>
           </div>
         </>
+      )}
+
+      {activeReport && (
+        <HandleReportDialog
+          report={activeReport}
+          reservations={activeReport.loan.reservations.map((r) => ({
+            amount: r.amount,
+            item: {
+              id: r.item.id,
+              name: r.item.name,
+              amount: r.item.amount,
+            },
+          }))}
+          open={activeReportId !== null}
+          onOpenChange={(open) => {
+            if (!open) setActiveReportId(null);
+          }}
+        />
       )}
     </>
   );
