@@ -5,6 +5,7 @@ import NextLink from 'next/link';
 import { FaPlus } from 'react-icons/fa';
 import { LayoutGrid, Table as TableIcon } from 'lucide-react';
 import DateSelector from '@/components/DateSelector';
+import DateSummaryBar from '@/components/DateSummaryBar';
 import KioskModeSelector from '@/components/KioskModeSelector';
 import KioskDateSelector from '@/components/KioskDateSelector';
 import { Item, Category, ItemType, Announcement } from '@prisma/client';
@@ -155,10 +156,12 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
       ) : (
         <>
           {dates.datesSet ? (
-            <>
-              <DateSelector />
-              <ItemBrowser items={filteredItems} categories={categories} showCustomItemLink />
-            </>
+            <ItemBrowser
+              items={filteredItems}
+              categories={categories}
+              showCustomItemLink
+              headerSlot={<DateSummaryBar />}
+            />
           ) : (
             <DateSelector />
           )}

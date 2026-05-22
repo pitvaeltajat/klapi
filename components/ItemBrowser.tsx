@@ -23,6 +23,9 @@ interface ItemBrowserProps {
   categories: Category[];
   showCustomItemLink?: boolean;
   renderItems?: (items: ItemWithRelations[]) => React.ReactNode;
+  /** Optional content pinned above the search row inside the sticky header
+   *  (e.g. the chosen loan dates), so it stays visible while items scroll. */
+  headerSlot?: React.ReactNode;
 }
 
 export default function ItemBrowser({
@@ -30,6 +33,7 @@ export default function ItemBrowser({
   categories,
   showCustomItemLink = false,
   renderItems,
+  headerSlot,
 }: ItemBrowserProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -99,6 +103,7 @@ export default function ItemBrowser({
   return (
     <>
       <div className="sticky top-16 z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs">
+        {headerSlot && <div className="border-b pb-2">{headerSlot}</div>}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative w-full sm:w-fit">
             <Input

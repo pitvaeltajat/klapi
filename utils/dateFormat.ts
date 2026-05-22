@@ -45,6 +45,16 @@ export function formatDateLongShort(date: Date | string): string {
   });
 }
 
+/** "ma 23.5." — short weekday + day.month, for compact date summaries */
+export function formatDateShortWeekday(date: Date | string): string {
+  return new Date(date).toLocaleDateString('fi-FI', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'numeric',
+    timeZone: 'Europe/Helsinki',
+  });
+}
+
 /** "ma 1.1.2025 klo 09:30" — short weekday + date + "klo" + time (kiosk) */
 export function formatDateTimeKiosk(date: Date | string): string {
   const d = new Date(date);
