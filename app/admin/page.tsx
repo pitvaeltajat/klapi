@@ -3,7 +3,7 @@
 import { FaTrash } from 'react-icons/fa';
 import { MdOutlinePassword } from 'react-icons/md';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -33,6 +33,34 @@ import {
 interface UserWithGroup extends User {
   group: 'ADMIN' | 'USER' | 'KIOSK';
 }
+
+// Kiosk first, then admins, then everyone else.
+const GROUP_ORDER: Record<UserWithGroup['group'], number> = {
+  KIOSK: 0,
+  ADMIN: 1,
+  USER: 2,
+};
+
+// Names are stored as a single "Etunimi Sukunimi" string; sort by the last
+// token (surname) then the rest (first name), using Finnish collation so
+// ä/ö order correctly. Missing names sink to the bottom of their group.
+const sortKey = (name: string | null) => {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return ['￿', ''];
+  const surname = parts[parts.length - 1];
+  const firstName = parts.slice(0, -1).join(' ');
+  return [surname, firstName];
+};
+
+const compareUsers = (a: UserWithGroup, b: UserWithGroup) => {
+  const groupDiff = GROUP_ORDER[a.group] - GROUP_ORDER[b.group];
+  if (groupDiff !== 0) return groupDiff;
+  const [aSurname, aFirst] = sortKey(a.name);
+  const [bSurname, bFirst] = sortKey(b.name);
+  return (
+    aSurname.localeCompare(bSurname, 'fi') || aFirst.localeCompare(bFirst, 'fi')
+  );
+};
 
 const RoleSwitch: React.FC<{ user: UserWithGroup }> = ({ user }) => {
   const { mutate } = useSWRConfig();
@@ -87,6 +115,11 @@ export default function AdminPage() {
 
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinValue, setPinValue] = useState('');
+
+  const sortedUsers = useMemo(
+    () => (users ? [...users].sort(compareUsers) : undefined),
+    [users],
+  );
 
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
@@ -174,7 +207,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!users) {
+  if (!users || !sortedUsers) {
     return (
       <>
         <Breadcrumbs items={[{ label: 'Admin' }]} />
@@ -291,7 +324,7 @@ export default function AdminPage() {
 
           {/* Mobile: stacked cards — the 5-column table does not fit a phone. */}
           <div className="flex flex-col gap-3 md:hidden">
-            {users.map((user) => (
+            {sortedUsers.map((user) => (
               <div key={user.id} className="flex flex-col gap-3 rounded-lg border p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -338,7 +371,7 @@ export default function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {sortedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name || '-'}</TableCell>
                     <TableCell>{user.email}</TableCell>
