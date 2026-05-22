@@ -41,8 +41,26 @@ export default function ItemBrowser({
   } = useCart();
   const { availabilities } = useAvailabilities();
 
+  // Only autofocus on devices with a precise pointer (desktop/kiosk with a real
+  // keyboard). On touch devices autofocusing pops up the on-screen keyboard,
+  // which is especially disruptive while the date picker is on screen.
   useEffect(() => {
-    searchRef.current?.focus({ preventScroll: true });
+    if (window.matchMedia('(pointer: fine)').matches) {
+      searchRef.current?.focus({ preventScroll: true });
+    }
+  }, []);
+
+  // Escape clears the search and refocuses it from anywhere on the page — but
+  // not while a dialog/drawer is open, so Escape can still close those instead.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      setSearch('');
+      searchRef.current?.focus({ preventScroll: true });
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,10 +75,6 @@ export default function ItemBrowser({
     });
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      setSearch('');
-      return;
-    }
     if (e.key !== 'Enter') return;
     if (!search.trim()) return;
     if (filteredItems.length !== 1) return;

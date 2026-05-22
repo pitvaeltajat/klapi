@@ -133,6 +133,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Navigating from the top menu should just hide the mobile nav drawer — close
+  // it on every route change, without touching cart/dates/browse state.
+  useEffect(() => {
+    setIsOpen(false); // eslint-disable-line react-hooks/set-state-in-effect -- sync drawer visibility to the URL
+  }, [pathname]);
+
   const {
     state: { items },
   } = useCart();

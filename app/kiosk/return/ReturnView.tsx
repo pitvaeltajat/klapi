@@ -184,7 +184,7 @@ const LoanReturnCard = ({
       </div>
 
       <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
-        <DialogContent className="inset-0 left-0 top-0 h-screen max-h-screen w-screen max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 rounded-none p-0 sm:rounded-none">
+        <DialogContent className="inset-0 left-0 top-0 h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 rounded-none p-0 sm:rounded-none">
           <DialogHeader className="border-b px-6 py-4 sm:text-center">
             <DialogTitle className="text-center text-3xl text-primary">Palautat kamoja</DialogTitle>
             <p className="text-center text-muted-foreground">
@@ -262,6 +262,25 @@ const LoanReturnCard = ({
                   </p>
                 </div>
 
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
+                  <p className="text-sm leading-relaxed">
+                    Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
+                    mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
+                    Palauta tavarat oikeaan laatikkoon.
+                  </p>
+                  <label className="mt-3 flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                    />
+                    {allSelected
+                      ? 'Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.'
+                      : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
+                  </label>
+                </div>
+
                 <div className="rounded-lg border-2 bg-muted p-4">
                   <p className="text-sm leading-relaxed">
                     Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
@@ -282,31 +301,12 @@ const LoanReturnCard = ({
                     className="mt-2 min-h-[100px] resize-y text-base"
                   />
                 </div>
-
-                <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
-                  <p className="text-sm leading-relaxed">
-                    Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
-                    mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
-                    Palauta tavarat oikeaan laatikkoon.
-                  </p>
-                  <label className="mt-3 flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      required
-                      checked={termsAccepted}
-                      onChange={(e) => setTermsAccepted(e.target.checked)}
-                    />
-                    {allSelected
-                      ? 'Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.'
-                      : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
-                  </label>
-                </div>
               </div>
             </div>
             </div>
           </div>
 
-          <DialogFooter className="border-t px-6 py-4 sm:justify-center">
+          <DialogFooter className="border-t px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-center">
             <Button
               variant="success"
               size="lg"

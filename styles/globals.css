@@ -281,3 +281,16 @@
 @utility slide-out-to-bottom {
   --tw-exit-translate-y: 100%;
 }
+
+/* Touch browsers (iOS Safari especially) zoom the viewport when focusing a
+   form control whose font-size is below 16px. Pin form controls to 16px on
+   coarse pointers so focusing the cart description, the search field, the
+   loaner autocomplete, etc. never triggers an annoying auto-zoom. Left in the
+   un-layered cascade on purpose so it wins over Tailwind's `text-sm` utility. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

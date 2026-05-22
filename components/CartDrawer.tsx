@@ -77,6 +77,27 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const [reportContent, setReportContent] = useState('');
 
+  // The cart is a non-modal drawer (so the cart toggle button in the header
+  // stays clickable), which means Radix doesn't lock body scroll. Lock it here
+  // so the page behind the cart can't be scrolled while it's open. Pinning the
+  // body with `position: fixed` is the reliable way to stop iOS touch-scroll.
+  useEffect(() => {
+    if (!isOpen) return;
+    const { body } = document;
+    const scrollY = window.scrollY;
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.insetInline = '0';
+    body.style.width = '100%';
+    return () => {
+      body.style.position = '';
+      body.style.top = '';
+      body.style.insetInline = '';
+      body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isKiosk && session?.user && !hasInitializedLoaner.current) {
       const userDisplayName = session.user.email || session.user.name || '';
