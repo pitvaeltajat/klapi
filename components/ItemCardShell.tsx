@@ -11,7 +11,7 @@ interface ItemCardShellProps {
   name: string;
   imageSrc: string;
   placeholder: string;
-  subtitle: React.ReactNode;
+  subtitle?: React.ReactNode;
   categoryLine?: string;
   announcements?: Announcement[] | null;
   /**
@@ -27,10 +27,17 @@ interface ItemCardShellProps {
    * doesn't bubble to the card-level click that navigates to the detail page.
    */
   onActionPointerDown?: (e: React.MouseEvent | React.PointerEvent) => void;
+  /**
+   * Compact mode keeps the always-horizontal "mobile" layout (image left,
+   * content right) at every breakpoint and uses a smaller image — used in the
+   * cart drawer where the card lives in a narrow column.
+   */
+  compact?: boolean;
+  /**
+   * Optional control pinned to the top-right corner (e.g. a remove button).
+   */
+  cornerAction?: React.ReactNode;
 }
-
-const shellClasses =
-  'relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-xs transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl';
 
 export default function ItemCardShell({
   name,
@@ -43,7 +50,14 @@ export default function ItemCardShell({
   onClick,
   action,
   onActionPointerDown,
+  compact = false,
+  cornerAction,
 }: ItemCardShellProps) {
+  const shellClasses = cn(
+    'relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-xs',
+    !compact &&
+      'transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl',
+  );
   // Expired announcements shouldn't surface on the card — only live ones.
   const activeAnnouncements = Array.isArray(announcements)
     ? announcements.filter((a) => !a.expiresAt || new Date(a.expiresAt) > new Date())
@@ -51,7 +65,12 @@ export default function ItemCardShell({
 
   const Inner = (
     <>
-      <div className="relative aspect-square w-28 shrink-0 overflow-hidden bg-muted sm:aspect-5/3 sm:w-full">
+      <div
+        className={cn(
+          'relative shrink-0 overflow-hidden bg-muted',
+          compact ? 'aspect-square w-20' : 'aspect-square w-28 sm:aspect-5/3 sm:w-full',
+        )}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */}
         <img
           src={imageSrc}
@@ -63,15 +82,21 @@ export default function ItemCardShell({
         />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4 xl:p-3">
+      <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'p-2.5' : 'p-3 sm:p-4 xl:p-3')}>
         <p
-          className="truncate text-base font-semibold leading-tight sm:text-lg xl:text-base"
+          className={cn(
+            'truncate font-semibold leading-tight',
+            compact ? 'text-sm' : 'text-base sm:text-lg xl:text-base',
+            cornerAction && 'pr-6',
+          )}
           title={name}
         >
           {name}
         </p>
 
-        <div className="text-sm font-semibold sm:mt-0.5 sm:text-sm">{subtitle}</div>
+        {subtitle !== undefined && (
+          <div className="text-sm font-semibold sm:mt-0.5 sm:text-sm">{subtitle}</div>
+        )}
 
         {categoryLine !== undefined && (
           <p className="truncate text-xs text-muted-foreground sm:text-xs">{categoryLine}</p>
@@ -99,7 +124,7 @@ export default function ItemCardShell({
 
         {action && (
           <div
-            className="mt-auto pt-2 sm:pt-0"
+            className={cn('mt-auto', compact ? 'pt-1.5' : 'pt-2 sm:pt-0')}
             onClick={onActionPointerDown}
             onMouseDown={onActionPointerDown}
           >
@@ -107,6 +132,16 @@ export default function ItemCardShell({
           </div>
         )}
       </div>
+
+      {cornerAction && (
+        <div
+          className="absolute right-1.5 top-1.5 z-10"
+          onClick={onActionPointerDown}
+          onMouseDown={onActionPointerDown}
+        >
+          {cornerAction}
+        </div>
+      )}
     </>
   );
 

@@ -1,11 +1,11 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { FaPlus, FaMinus } from 'react-icons/fa';
 import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoanerAutocomplete from './LoanerAutocomplete';
+import CartItemRow from './CartItemRow';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
@@ -35,6 +35,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     state: cart,
     incrementAmount,
     decrementAmount,
+    removeFromCart,
     setDescription,
     setLoaner,
     setUserId,
@@ -270,38 +271,14 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     getCartAmount(item.id) >= availabilities[item.id].available;
 
                 return (
-                  <div key={item.id}>
-                    <Label htmlFor={`item-${item.id}`}>{item.name}</Label>
-                    <div className="flex">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        aria-label="decrement"
-                        onClick={() => decrementAmount(item.id)}
-                        className="rounded-r-none"
-                      >
-                        <FaMinus />
-                      </Button>
-                      <Input
-                        id={`item-${item.id}`}
-                        value={item.amount}
-                        readOnly
-                        className="pointer-events-none select-none rounded-none border-x-0 text-center font-bold"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        aria-label="increment"
-                        onClick={() => incrementAmount(item.id)}
-                        disabled={isIncrementDisabled}
-                        className="rounded-l-none"
-                      >
-                        <FaPlus />
-                      </Button>
-                    </div>
-                  </div>
+                  <CartItemRow
+                    key={item.id}
+                    item={item}
+                    incrementDisabled={isIncrementDisabled}
+                    onIncrement={() => incrementAmount(item.id)}
+                    onDecrement={() => decrementAmount(item.id)}
+                    onRemove={() => removeFromCart(item.id)}
+                  />
                 );
               })}
             </div>
