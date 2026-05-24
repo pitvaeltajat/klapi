@@ -237,9 +237,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             </div>
           </div>
 
-          <div className="mt-4 text-sm">
-            <span className="text-destructive">*</span> Pakollinen kenttä
-          </div>
           {isKiosk && (
             <div className="mt-6 rounded-lg border-2 bg-muted p-4">
               <p className="text-base leading-relaxed">
