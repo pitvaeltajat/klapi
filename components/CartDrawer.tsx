@@ -79,11 +79,14 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [reportContent, setReportContent] = useState('');
 
   // The cart is a non-modal drawer (so the cart toggle button in the header
-  // stays clickable), which means Radix doesn't lock body scroll. Lock it here
-  // so the page behind the cart can't be scrolled while it's open. Pinning the
+  // stays clickable), which means Radix doesn't lock body scroll. On mobile the
+  // drawer covers the whole screen, so lock the page behind it — pinning the
   // body with `position: fixed` is the reliable way to stop iOS touch-scroll.
+  // On desktop the drawer is a sidebar and the catalog stays visible beside it,
+  // so leave the page scrollable to keep browsing while the cart is open.
   useEffect(() => {
     if (!isOpen) return;
+    if (window.matchMedia('(min-width: 768px)').matches) return;
     const { body } = document;
     const scrollY = window.scrollY;
     body.style.position = 'fixed';
@@ -139,7 +142,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       return null;
     }
     return (
-      <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
+      <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)} modal={false}>
         <DrawerContent side="right" className="flex max-h-dvh flex-col">
           <DrawerHeader>
             <DrawerTitle>Ostoskori</DrawerTitle>
@@ -172,8 +175,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           e.preventDefault();
           firstField.current?.focus();
         }}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
       >
         <DrawerHeader>
           <DrawerTitle>Ostoskori</DrawerTitle>
@@ -188,6 +189,26 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             setReportContent={setReportContent}
           />
           <div className="space-y-1">
+            <div>
+              <Label htmlFor="description">
+                Kuvaus <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                ref={firstField}
+                id="description"
+                name="description"
+                placeholder="Pikachujen maastoretki"
+                value={localDescription}
+                onChange={(e) => setLocalDescription(e.target.value)}
+                required
+                aria-invalid={!isDescriptionValid && cart.items.length > 0}
+                className={cn(
+                  !isDescriptionValid &&
+                    cart.items.length > 0 &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
+              />
+            </div>
             <div>
               <Label htmlFor="loaner">
                 Lainaaja <span className="text-destructive">*</span>
@@ -205,26 +226,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               ) : (
                 <Input id="loaner" value={cart.loaner || ''} disabled className="bg-muted" />
               )}
-            </div>
-            <div>
-              <Label htmlFor="description">
-                Kuvaus <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                ref={firstField}
-                id="description"
-                name="description"
-                placeholder="Kuvaus (pakollinen)"
-                value={localDescription}
-                onChange={(e) => setLocalDescription(e.target.value)}
-                required
-                aria-invalid={!isDescriptionValid && cart.items.length > 0}
-                className={cn(
-                  !isDescriptionValid &&
-                    cart.items.length > 0 &&
-                    'border-destructive focus-visible:ring-destructive',
-                )}
-              />
             </div>
             <div>
               <Label htmlFor="startTime">Lainaus alkaa</Label>
