@@ -39,6 +39,7 @@ import {
 import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Plus, Check, X, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useItemImage } from '@/hooks/useItemImage';
+import { cn } from '@/lib/utils';
 import PromoteDialog from './PromoteDialog';
 
 // Inline types so we don't depend on @prisma/client direct exports
@@ -73,6 +74,15 @@ export interface InventoryListResponse {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 const TRUNCATE_LEN = 40;
+
+// Resting state of an inline-editable cell. It reads as plain text until hovered,
+// then reveals a text-field outline (matching the editing input's box model) so it
+// is obvious the value is click-to-edit, with no layout jump once editing starts.
+const EDITABLE_DISPLAY_CLASS =
+  'cursor-text rounded border border-transparent px-2 py-1 transition-colors hover:border-input hover:bg-background';
+// Box model shared by the resting display and the active input so they line up.
+const EDITABLE_INPUT_CLASS =
+  'rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none';
 
 function Truncated({ text }: { text: string | null | undefined }) {
   if (!text) return <span className="text-muted-foreground">—</span>;
@@ -501,7 +511,7 @@ export default function InventoryView() {
           return (
             <input
               ref={editInputRef}
-              className="w-full rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+              className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
               value={es.value}
               onChange={(e) => setEditState({ ...es, value: e.target.value })}
               onBlur={() => commitEdit(es)}
@@ -514,7 +524,7 @@ export default function InventoryView() {
         }
         return (
           <span
-            className="cursor-text hover:underline"
+            className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
             onClick={() => startEdit(id, 'name', getValue())}
           >
             <Truncated text={getValue()} />
@@ -534,7 +544,7 @@ export default function InventoryView() {
           return (
             <input
               ref={editInputRef}
-              className="w-full rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+              className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
               value={es.value}
               onChange={(e) => setEditState({ ...es, value: e.target.value })}
               onBlur={() => commitEdit(es)}
@@ -547,7 +557,7 @@ export default function InventoryView() {
         }
         return (
           <span
-            className="cursor-text hover:underline"
+            className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
             onClick={() => startEdit(id, 'description', val ?? '')}
           >
             <Truncated text={val} />
@@ -568,7 +578,7 @@ export default function InventoryView() {
               ref={editInputRef}
               type="number"
               min={1}
-              className="w-20 rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+              className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
               value={es.value}
               onChange={(e) => setEditState({ ...es, value: e.target.value })}
               onBlur={() => commitEdit(es)}
@@ -581,7 +591,7 @@ export default function InventoryView() {
         }
         return (
           <span
-            className="cursor-text hover:underline"
+            className={cn(EDITABLE_DISPLAY_CLASS, 'inline-block w-20')}
             onClick={() => startEdit(id, 'amount', String(getValue()))}
           >
             {getValue()}
