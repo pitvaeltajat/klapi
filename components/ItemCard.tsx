@@ -5,12 +5,15 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { useCallback, useMemo, memo, MouseEvent } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
+import { Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ItemCardShell from './ItemCardShell';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const ItemCard = memo(function ItemCard({
   item,
@@ -50,7 +53,21 @@ const ItemCard = memo(function ItemCard({
   const stopPropagation = useCallback((e: MouseEvent) => e.stopPropagation(), []);
 
   const subtitle = availabilityKnown ? (
-    `Vapaana: ${amountLeft} / ${item.amount} kpl`
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            'inline-flex w-fit items-center gap-1.5',
+            amountLeft > 0 ? 'text-success' : 'text-destructive',
+          )}
+          aria-label={`Vapaana ${amountLeft} / ${item.amount} kpl`}
+        >
+          <Package className="size-4 shrink-0" aria-hidden />
+          {amountLeft} / {item.amount} kpl
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>Vapaana</TooltipContent>
+    </Tooltip>
   ) : (
     <Skeleton className="h-4 w-32" />
   );
