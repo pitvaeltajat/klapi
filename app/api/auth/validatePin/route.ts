@@ -17,15 +17,20 @@ export async function POST(request: Request) {
 
   const admins = await prisma.user.findMany({
     where: { group: 'ADMIN', kioskElevatePin: { not: null } },
-    select: { kioskElevatePin: true },
+    select: { id: true, name: true, kioskElevatePin: true },
   });
 
-  let isValidPin = false;
+  let matched: { id: string; name: string | null } | null = null;
   for (const admin of admins) {
     if (admin.kioskElevatePin && (await bcrypt.compare(pin, admin.kioskElevatePin))) {
-      isValidPin = true;
+      matched = { id: admin.id, name: admin.name };
+      break;
     }
   }
 
-  return NextResponse.json({ isValidPin });
+  return NextResponse.json({
+    isValidPin: matched !== null,
+    adminId: matched?.id ?? null,
+    adminName: matched?.name ?? null,
+  });
 }

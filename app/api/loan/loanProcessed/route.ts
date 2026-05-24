@@ -4,7 +4,7 @@ import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
-import { logLoanHistory } from '@/utils/loanHistory';
+import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   await logLoanHistory({
     loanId: id,
     action: 'PROCESSED_FROM_BOX',
-    actedById: session.user.id,
+    ...resolveLoanActor(session),
     details: {
       reservationIds: targetIds,
       count: targetIds.length,

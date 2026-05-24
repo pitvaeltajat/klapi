@@ -9,6 +9,8 @@ declare module 'next-auth/jwt' {
     group: 'ADMIN' | 'USER' | 'KIOSK';
     userId?: string;
     adminExpiry?: string | null;
+    elevatedById?: string | null;
+    elevatedByName?: string | null;
   }
 }
 
@@ -81,6 +83,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.userId as string;
         session.user.group = token.group || 'USER';
         session.user.adminExpiry = token.adminExpiry || null;
+        session.user.elevatedById = token.elevatedById || null;
+        session.user.elevatedByName = token.elevatedByName || null;
         // If group is KIOSK and login was via CredentialsProvider, set session expiration to one year
         if (session.user.group === 'KIOSK' && token.provider === 'credentials') {
           const oneYearMs = 365 * 24 * 60 * 60 * 1000;
@@ -115,6 +119,8 @@ export const authOptions: NextAuthOptions = {
       if (trigger === 'update' && session?.user) {
         if (session.user.group) token.group = session.user.group;
         if ('adminExpiry' in session.user) token.adminExpiry = session.user.adminExpiry;
+        if ('elevatedById' in session.user) token.elevatedById = session.user.elevatedById;
+        if ('elevatedByName' in session.user) token.elevatedByName = session.user.elevatedByName;
       }
 
       return token;

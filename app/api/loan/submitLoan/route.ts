@@ -3,7 +3,7 @@ import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
-import { logLoanHistory } from '@/utils/loanHistory';
+import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { sendNewLoanEmail } from '@/app/api/email/sendNewLoanToAdmin/route';
 import { sendCreatedEmail } from '@/app/api/email/sendNewLoanToUser/route';
 
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
     await logLoanHistory({
       loanId: result.id,
       action: 'CREATED',
-      actedById: session.user.id,
+      ...resolveLoanActor(session),
       details: {
         status: loanStatus,
         itemCount: createReservations.length,

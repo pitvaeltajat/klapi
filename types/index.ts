@@ -8,6 +8,11 @@ declare module 'next-auth' {
       id: string;
       group: 'ADMIN' | 'USER' | 'KIOSK';
       adminExpiry?: string | null;
+      // When a kiosk session is PIN-elevated, the id/name of the admin who
+      // elevated it — used to attribute loan-history events to the real admin
+      // and to show their initials in the top bar.
+      elevatedById?: string | null;
+      elevatedByName?: string | null;
     } & DefaultSession['user'];
   }
   interface User {

@@ -3,7 +3,7 @@ import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { logLoanHistory } from '@/utils/loanHistory';
+import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 
 // Lets the loan owner (or an admin) cancel an approved loan that has not yet
 // been picked up. Distinct from admin rejection: cancelling is the borrower
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   await logLoanHistory({
     loanId: id,
     action: 'CANCELLED',
-    actedById: session.user.id,
+    ...resolveLoanActor(session),
   });
 
   return NextResponse.json(result);

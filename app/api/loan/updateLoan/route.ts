@@ -4,7 +4,7 @@ import { activeItemsWhere } from '@/utils/itemQueries';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
-import { logLoanHistory } from '@/utils/loanHistory';
+import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 
 export async function POST(request: Request) {
   try {
@@ -212,7 +212,7 @@ export async function POST(request: Request) {
     await logLoanHistory({
       loanId: id,
       action: 'UPDATED',
-      actedById: session.user.id,
+      ...resolveLoanActor(session),
       details: {
         added: addedItems,
         changed: changedItems,

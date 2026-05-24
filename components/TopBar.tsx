@@ -19,6 +19,16 @@ import {
 } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 
+// "Eero Sahlberg" -> "ES", "Eero" -> "EE". Used to label the elevated admin
+// in the top bar without showing their full name on a shared kiosk screen.
+const getInitials = (name?: string | null): string => {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session, update } = useSession();
   useEffect(() => {
@@ -31,10 +41,19 @@ export default function TopBar({ children }: { children: ReactNode }) {
           ? Date.parse(session.user.adminExpiry)
           : session.user.adminExpiry)
     ) {
-      update({ user: { ...session.user, group: 'KIOSK', adminExpiry: null } });
+      update({
+        user: {
+          ...session.user,
+          group: 'KIOSK',
+          adminExpiry: null,
+          elevatedById: null,
+          elevatedByName: null,
+        },
+      });
     }
   }, [session?.user, update]);
   const role = session?.user?.group;
+  const adminInitials = getInitials(session?.user?.elevatedByName);
   const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
@@ -76,28 +95,41 @@ export default function TopBar({ children }: { children: ReactNode }) {
       setPinError('');
     } else {
       setAdminSwitchLoading(true);
-      await update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
+      await update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null, elevatedById: null, elevatedByName: null } });
       setAdminSwitchLoading(false);
     }
   };
 
-  const comparePins = async (inputPin: string) => {
+  const comparePins = async (
+    inputPin: string,
+  ): Promise<{ isValidPin: boolean; adminId: string | null; adminName: string | null }> => {
     return await fetch('/api/auth/validatePin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: inputPin }),
     })
       .then((res) => res.json())
-      .then((data) => data.isValidPin);
+      .then((data) => ({
+        isValidPin: data.isValidPin,
+        adminId: data.adminId ?? null,
+        adminName: data.adminName ?? null,
+      }));
   };
 
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (await comparePins(pinInput)) {
+    const { isValidPin, adminId, adminName } = await comparePins(pinInput);
+    if (isValidPin) {
       setAdminSwitchLoading(true);
       const expiryDate = new Date(Date.now() + 30 * 60 * 1000);
       await update({
-        user: { ...session?.user, group: 'ADMIN', adminExpiry: expiryDate.toISOString() },
+        user: {
+          ...session?.user,
+          group: 'ADMIN',
+          adminExpiry: expiryDate.toISOString(),
+          elevatedById: adminId,
+          elevatedByName: adminName,
+        },
       });
       setPinDialogOpen(false);
       setPinError('');
@@ -111,12 +143,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
     let timeout: NodeJS.Timeout | null = null;
     function checkAndRevert() {
       if (effectiveGroup === 'ADMIN' && expiry && Date.now() >= expiry) {
-        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
+        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null, elevatedById: null, elevatedByName: null } });
       }
     }
     if (effectiveGroup === 'ADMIN' && expiry && Date.now() < expiry) {
       timeout = setTimeout(() => {
-        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null } });
+        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null, elevatedById: null, elevatedByName: null } });
       }, expiry - Date.now());
       document.addEventListener('visibilitychange', checkAndRevert);
     }
@@ -207,7 +239,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
               </div>
               {session && (role === 'KIOSK' || (role === 'ADMIN' && session.user.adminExpiry)) && (
                 <div className="ml-4 flex items-center gap-2">
-                  <span className="text-sm text-white">ADMIN</span>
+                  <span className="text-sm text-white">
+                    {effectiveGroup === 'ADMIN' && adminInitials
+                      ? `Admin (${adminInitials})`
+                      : 'ADMIN'}
+                  </span>
                   <Switch
                     checked={effectiveGroup === 'ADMIN'}
                     onCheckedChange={handleAdminSwitch}

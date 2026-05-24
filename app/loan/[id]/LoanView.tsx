@@ -389,6 +389,11 @@ export default function LoanView({
             <div className="flex flex-col gap-3">
               {history.map((entry) => {
                 const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
+                const viaKiosk =
+                  typeof entry.details === 'object' &&
+                  entry.details !== null &&
+                  'viaKiosk' in entry.details &&
+                  (entry.details as { viaKiosk?: boolean }).viaKiosk === true;
                 return (
                   <div key={entry.id} className="rounded-md border p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -399,7 +404,10 @@ export default function LoanView({
                         className="text-sm text-muted-foreground"
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">{who}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {who}
+                      {viaKiosk && ' · kaluston koneella'}
+                    </p>
                   </div>
                 );
               })}

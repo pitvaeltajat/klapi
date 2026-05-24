@@ -4,7 +4,7 @@ import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
-import { logLoanHistory } from '@/utils/loanHistory';
+import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 
 // Marks loan items as returned to a box.
 // Can be called by:
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
   await logLoanHistory({
     loanId: id,
     action: 'RETURNED_TO_BOX',
-    actedById: session.user.id,
+    ...resolveLoanActor(session),
     details: {
       boxId: selectedBox.id,
       boxName: selectedBox.name,

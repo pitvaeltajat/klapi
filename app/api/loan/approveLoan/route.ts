@@ -3,7 +3,7 @@ import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { logLoanHistory } from '@/utils/loanHistory';
+import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   await logLoanHistory({
     loanId: id,
     action: 'APPROVED',
-    actedById: session.user.id,
+    ...resolveLoanActor(session),
   });
   return NextResponse.json(result);
 }
