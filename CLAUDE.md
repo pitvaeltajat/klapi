@@ -23,6 +23,40 @@ If `pnpm dev` was started before the env files existed, **kill and restart it** 
 Next caches the env at boot and will keep failing with `ECONNREFUSED` / SASL errors
 even after the files appear.
 
+## Landing work (git workflow in a worktree)
+
+Sessions are started with `claude --worktree` (the `c` shell alias), so you begin
+on an auto-named `worktree-<adjective-animal>` branch in
+`.claude/worktrees/<name>/`. `main` is checked out in the **primary** worktree
+(`/Users/petrusholm/pitva/klapi`) — this is normal. You **cannot** `git checkout
+main` here and you must not `cd` into the primary worktree; that is expected, not
+an error, so don't narrate it. Land work with this exact procedure instead:
+
+```bash
+# 1. Rename the throwaway branch to match the task, once the task is clear.
+git branch -m feat/<slug>            # or fix/… chore/… — descriptive, not the random name
+
+# 2. Commit your work on that branch.
+git add -A && git commit -m "…"
+
+# 3. Catch up to remote main, THEN replay onto it (main may have moved since the
+#    worktree was created — skipping this makes the push in step 4 get rejected).
+git fetch origin main
+git rebase origin/main               # no-op if already current; stop & resolve if it conflicts
+
+# 4. Push straight to main (this is the chosen workflow — no PR).
+git push origin HEAD:main
+
+# 5. Fast-forward the LOCAL main (checked out in the primary worktree) so it never
+#    goes stale. ff-only + clean-tree guarded: if the primary has uncommitted
+#    changes this aborts harmlessly — then just tell the user to run
+#    `git pull --ff-only` there when convenient. NEVER force-update the ref.
+git -C "$(git worktree list --porcelain | awk 'NR==1{print $2}')" pull --ff-only origin main
+```
+
+Only push when the user asks to land the work. Commit message footer convention is
+in the global notes (`Co-Authored-By: Claude …`).
+
 ## Seeded credentials (local dev only)
 
 - **Admin**: username `admin`, password `admin123`
