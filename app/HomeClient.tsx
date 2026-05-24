@@ -78,6 +78,8 @@ interface ItemWithRelations extends Item {
   categories: Category[];
   type: ItemType;
   announcements: Announcement[];
+  /** Bookings within the rolling window; drives the "Suosituimmat" sort. */
+  popularity: number;
 }
 
 interface HomeClientProps {

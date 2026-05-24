@@ -16,7 +16,15 @@ interface ItemWithRelations extends Item {
   categories: Category[];
   reservations?: (Reservation & { loan: Loan })[];
   announcements: Announcement[];
+  /** Bookings within the rolling window; drives the "Suosituimmat" sort. */
+  popularity?: number;
 }
+
+type SortMode = 'popular' | 'name';
+
+// Finnish collation: ä/å/ö sort at the END of the alphabet, not next to a/o.
+// The DB collation can't be relied on for this, so order client-side instead.
+const fiCollator = new Intl.Collator('fi');
 
 interface ItemBrowserProps {
   items: ItemWithRelations[];
@@ -37,6 +45,7 @@ export default function ItemBrowser({
 }: ItemBrowserProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [sortBy, setSortBy] = useState<SortMode>('popular');
   const [dialogOpen, setDialogOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const {
@@ -76,6 +85,14 @@ export default function ItemBrowser({
     .filter((item) => {
       if (category === '') return true;
       return item.categories.some((cat) => cat.name === category);
+    })
+    .sort((a, b) => {
+      if (sortBy === 'popular') {
+        const diff = (b.popularity ?? 0) - (a.popularity ?? 0);
+        if (diff !== 0) return diff;
+      }
+      // Alphabetical for the "name" mode and as the tiebreaker for "popular".
+      return fiCollator.compare(a.name, b.name);
     });
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -142,6 +159,23 @@ export default function ItemBrowser({
               </p>
             </div>
           )}
+          <div className="flex items-center gap-1 text-sm sm:ml-auto">
+            <span className="hidden text-muted-foreground sm:inline">Järjestys:</span>
+            <Button
+              size="xs"
+              onClick={() => setSortBy('popular')}
+              variant={sortBy === 'popular' ? 'default' : 'outline-solid'}
+            >
+              Suosituimmat
+            </Button>
+            <Button
+              size="xs"
+              onClick={() => setSortBy('name')}
+              variant={sortBy === 'name' ? 'default' : 'outline-solid'}
+            >
+              Nimi
+            </Button>
+          </div>
         </div>
         <div className="hidden md:block">
           <div className="flex flex-wrap gap-1.5">
@@ -154,7 +188,7 @@ export default function ItemBrowser({
               Kaikki
             </Button>
             {[...categories]
-              .sort((a, b) => a.name.localeCompare(b.name))
+              .sort((a, b) => fiCollator.compare(a.name, b.name))
               .map((cat) => (
                 <Button
                   key={cat.id}
@@ -177,7 +211,7 @@ export default function ItemBrowser({
           >
             <option value="">Kaikki</option>
             {[...categories]
-              .sort((a, b) => a.name.localeCompare(b.name))
+              .sort((a, b) => fiCollator.compare(a.name, b.name))
               .map((cat) => (
                 <option key={cat.id} value={cat.name}>
                   {cat.name}
