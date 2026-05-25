@@ -6,6 +6,12 @@ toasts, next-themes for dark mode, SWR for data fetching. UI is in Finnish.
 
 See `README.md` for the product overview, tech stack, and project layout.
 
+**Before exploring the codebase to answer "where is X done?", read
+`ARCHITECTURE.md`** — it's a lookup map of every API route, the Prisma models,
+the page list, the auth/audit patterns, and the Finnish→code vocabulary. It
+exists to save you a fan-out search across `app/api/**`; keep it in sync when you
+add or rename routes/models.
+
 ## Worktree bootstrap (important)
 
 Git worktrees under `.claude/worktrees/*` do **not** inherit `.env` files from the
