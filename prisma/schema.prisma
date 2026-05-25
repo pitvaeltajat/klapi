@@ -57,6 +57,7 @@ model User {
   sessions                 Session[]
   emailLogs                EmailLog[]
   loanHistoryEntries       LoanHistory[]
+  itemHistoryEntries       ItemHistory[]
 }
 
 model Item {
@@ -72,8 +73,30 @@ model Item {
   categories          Category[]           @relation("CategoryToItem")
   announcements       Announcement[]
   reportAffectedItems ReportAffectedItem[]
+  history             ItemHistory[]
 
   @@index([deletedAt])
+}
+
+model ItemHistory {
+  id        String            @id @default(cuid())
+  itemId    String
+  action    ItemHistoryAction
+  details   Json?
+  actedById String?
+  createdAt DateTime          @default(now())
+  item      Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  actedBy   User?             @relation(fields: [actedById], references: [id], onDelete: SetNull)
+
+  @@index([itemId, createdAt])
+}
+
+enum ItemHistoryAction {
+  CREATED
+  UPDATED
+  ARCHIVED
+  RESTORED
+  PROMOTED
 }
 
 model Announcement {

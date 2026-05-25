@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { logItemHistory } from '@/utils/itemHistory';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -24,20 +25,55 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Puuttuvat kentät' }, { status: 400 });
   }
 
+  const actedById = session.user.id;
+
   if (action === 'delete') {
+    // Read current state first so we only log items that actually transition.
+    const affected = await prisma.item.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, deletedAt: true },
+    });
     // Soft-delete: stamp deletedAt so reservations + loan history stay intact.
     await prisma.item.updateMany({
       where: { id: { in: ids } },
       data: { deletedAt: new Date() },
     });
+    await Promise.all(
+      affected
+        .filter((i) => !i.deletedAt)
+        .map((i) =>
+          logItemHistory({
+            itemId: i.id,
+            action: 'ARCHIVED',
+            actedById,
+            details: { name: i.name, bulk: true },
+          }),
+        ),
+    );
     return NextResponse.json({ message: `${ids.length} kamaa arkistoitu` });
   }
 
   if (action === 'restore') {
+    const affected = await prisma.item.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, deletedAt: true },
+    });
     await prisma.item.updateMany({
       where: { id: { in: ids } },
       data: { deletedAt: null },
     });
+    await Promise.all(
+      affected
+        .filter((i) => i.deletedAt)
+        .map((i) =>
+          logItemHistory({
+            itemId: i.id,
+            action: 'RESTORED',
+            actedById,
+            details: { name: i.name, bulk: true },
+          }),
+        ),
+    );
     return NextResponse.json({ message: `${ids.length} kamaa palautettu` });
   }
 
@@ -60,6 +96,16 @@ export async function POST(request: Request) {
         }),
       ),
     );
+    await Promise.all(
+      ids.map((id) =>
+        logItemHistory({
+          itemId: id,
+          action: 'UPDATED',
+          actedById,
+          details: { note: `Lisätty kategoria: ${category.name}`, bulk: true },
+        }),
+      ),
+    );
 
     return NextResponse.json({ message: `Kategoria asetettu ${ids.length} kamalle`, category });
   }
@@ -79,6 +125,16 @@ export async function POST(request: Request) {
       where: { id: { in: ids } },
       data: { locationId: location.id },
     });
+    await Promise.all(
+      ids.map((id) =>
+        logItemHistory({
+          itemId: id,
+          action: 'UPDATED',
+          actedById,
+          details: { note: `Sijainti asetettu: ${location.name}`, bulk: true },
+        }),
+      ),
+    );
 
     return NextResponse.json({ message: `Sijainti asetettu ${ids.length} kamalle`, location });
   }

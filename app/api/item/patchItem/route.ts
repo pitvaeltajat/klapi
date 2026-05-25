@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { diffItemFields, logItemHistory, type ItemFieldValue } from '@/utils/itemHistory';
 
 export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
@@ -38,11 +39,36 @@ export async function PATCH(request: Request) {
     data[field] = num;
   }
 
+  // Snapshot the field being changed (resolving location ids to names) before
+  // the update, so the history entry reads e.g. "Sijainti: Varasto A → B".
+  const before = await prisma.item.findUnique({
+    where: { id },
+    include: { location: true },
+  });
+
   const updated = await prisma.item.update({
     where: { id },
     data,
     include: { categories: true, location: true },
   });
+
+  if (before) {
+    const fieldKey = field === 'locationId' ? 'location' : field;
+    const fromValue: ItemFieldValue =
+      field === 'locationId' ? (before.location?.name ?? null) : before[field];
+    const toValue: ItemFieldValue =
+      field === 'locationId' ? (updated.location?.name ?? null) : (data[field] as ItemFieldValue);
+
+    const changed = diffItemFields({ [fieldKey]: fromValue }, { [fieldKey]: toValue });
+    if (Object.keys(changed).length > 0) {
+      await logItemHistory({
+        itemId: id,
+        action: 'UPDATED',
+        actedById: session.user.id,
+        details: { changed },
+      });
+    }
+  }
 
   return NextResponse.json(updated);
 }

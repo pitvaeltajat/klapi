@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { logItemHistory } from '@/utils/itemHistory';
 
 interface CategoryInput {
   value: string;
@@ -48,5 +49,18 @@ export async function POST(request: Request) {
       categories: { connectOrCreate: categoryJSON },
     },
   });
+
+  await logItemHistory({
+    itemId: item.id,
+    action: 'CREATED',
+    actedById: session.user.id,
+    details: {
+      name: item.name,
+      amount: item.amount,
+      location: locationObject?.label ?? null,
+      categories: (categoriesList as CategoryInput[] | undefined)?.map((c) => c.label) ?? [],
+    },
+  });
+
   return NextResponse.json(item);
 }

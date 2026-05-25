@@ -1,6 +1,6 @@
 'use client';
 
-import { Item, Category, Reservation, LoanStatus } from '@prisma/client';
+import { Item, Category, Reservation, LoanStatus, ItemHistoryAction } from '@prisma/client';
 import { useItemOriginalImage, usePlaceholder } from '@/hooks/useItemImage';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -19,7 +19,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  getItemHistoryActionLabel,
+  formatItemHistoryChanges,
+  isBulkItemHistory,
+} from '@/utils/itemHelpers';
 import ItemAnnouncements, { type ItemAnnouncement } from './ItemAnnouncements';
+
+interface ItemHistoryEntry {
+  id: string;
+  action: ItemHistoryAction;
+  details: unknown;
+  createdAt: string | Date;
+  actedBy: { id: string; name: string | null; email: string | null } | null;
+}
 
 interface ReportAffectedItemWithReport {
   id: string;
@@ -62,7 +75,13 @@ const REPORT_STATUS: Record<string, { label: string; variant: BadgeProps['varian
   RESOLVED: { label: 'Ratkaistu', variant: 'success' },
 };
 
-export default function ItemView({ item }: { item: ItemWithRelations }) {
+export default function ItemView({
+  item,
+  history,
+}: {
+  item: ItemWithRelations;
+  history: ItemHistoryEntry[];
+}) {
   const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = session?.user?.group === 'ADMIN';
@@ -205,6 +224,48 @@ export default function ItemView({ item }: { item: ItemWithRelations }) {
             <ReservationTable reservations={item.reservations} isAdmin={isAdmin} />
           )}
         </div>
+
+        {isAdmin && (
+          <section className="rounded-lg border bg-card p-4 md:p-6">
+            <h2 className="mb-4 text-xl font-semibold">Muokkaushistoria</h2>
+            {history.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Ei muokkaushistoriaa.</p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {history.map((entry) => {
+                  const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
+                  const changes = formatItemHistoryChanges(entry.details);
+                  const bulk = isBulkItemHistory(entry.details);
+                  return (
+                    <li key={entry.id} className="rounded-md border p-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <p className="font-semibold">
+                          {getItemHistoryActionLabel(entry.action)}
+                        </p>
+                        <DateTime
+                          value={entry.createdAt}
+                          format="numeric"
+                          className="text-sm text-muted-foreground"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {who}
+                        {bulk && ' · joukkotoiminto'}
+                      </p>
+                      {changes.length > 0 && (
+                        <ul className="mt-2 flex flex-col gap-0.5 text-sm text-foreground/90">
+                          {changes.map((line, i) => (
+                            <li key={i}>{line}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

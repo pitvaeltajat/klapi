@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { diffItemFields, logItemHistory } from '@/utils/itemHistory';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -26,7 +27,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Puuttuvat pakolliset kentät' }, { status: 400 });
   }
 
-  const item = await prisma.item.findUnique({ where: { id } });
+  const item = await prisma.item.findUnique({
+    where: { id },
+    include: { categories: true, location: true },
+  });
   if (!item) {
     return NextResponse.json({ message: 'Kamaa ei löydy' }, { status: 404 });
   }
@@ -56,6 +60,31 @@ export async function POST(request: Request) {
   console.log(
     `[promoteItem] Admin ${session.user.email ?? session.user.id} promoted item ${id} ("${item.name}" → "${name}") from temporary to normal`,
   );
+
+  // Promotion is always meaningful (type temporary → normal), so log it even
+  // when no other field changed; include any field diffs that did happen.
+  const changed = diffItemFields(
+    {
+      name: item.name,
+      description: item.description,
+      amount: item.amount,
+      location: item.location?.name ?? null,
+      categories: item.categories.map((c) => c.name),
+    },
+    {
+      name: updated.name,
+      description: updated.description,
+      amount: updated.amount,
+      location: updated.location?.name ?? null,
+      categories: updated.categories.map((c) => c.name),
+    },
+  );
+  await logItemHistory({
+    itemId: id,
+    action: 'PROMOTED',
+    actedById: session.user.id,
+    details: Object.keys(changed).length > 0 ? { changed } : undefined,
+  });
 
   return NextResponse.json(updated);
 }
