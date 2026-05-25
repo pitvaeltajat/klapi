@@ -194,14 +194,13 @@ const LoanReturnCard = ({
           </DialogHeader>
 
           <div className="overflow-y-auto">
-            <div className="flex min-h-full items-center px-6 py-6">
-              <div className="mx-auto grid w-full max-w-[1600px] items-start gap-6 lg:grid-cols-[1.7fr_1fr]">
+            <div className="mx-auto grid min-h-full w-full max-w-[1600px] items-stretch gap-6 px-6 py-6 lg:grid-cols-[1.7fr_1fr]">
               {/* Left: item selection */}
               <div className="flex flex-col gap-4">
                 <p className="text-sm font-medium text-muted-foreground">
                   Palautettavat tavarat ({returnableReservations.length})
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-fr xl:grid-cols-3">
                   {returnableReservations.map((reservation) => {
                     const checked = selectedIds.has(reservation.id);
                     return (
@@ -281,7 +280,7 @@ const LoanReturnCard = ({
                   </label>
                 </div>
 
-                <div className="rounded-lg border-2 bg-muted p-4">
+                <div className="rounded-lg border-2 bg-muted p-4 lg:flex lg:flex-1 lg:flex-col">
                   <p className="text-sm leading-relaxed">
                     Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
                     siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden
@@ -298,11 +297,10 @@ const LoanReturnCard = ({
                     placeholder="Kirjoita raportti tähän..."
                     value={reportContent}
                     onChange={(e) => setReportContent(e.target.value)}
-                    className="mt-2 min-h-[100px] resize-y text-base"
+                    className="mt-2 min-h-[100px] resize-y text-base lg:flex-1"
                   />
                 </div>
               </div>
-            </div>
             </div>
           </div>
 
