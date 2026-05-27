@@ -1,7 +1,7 @@
 'use client';
 
 import { Item, Category, Reservation, LoanStatus, ItemHistoryAction } from '@prisma/client';
-import { useItemOriginalImage, usePlaceholder } from '@/hooks/useItemImage';
+import { useItemOriginalImageState } from '@/hooks/useItemImage';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,7 @@ import {
   formatItemHistoryChanges,
   isBulkItemHistory,
 } from '@/utils/itemHelpers';
+import { Skeleton } from '@/components/ui/skeleton';
 import ItemAnnouncements, { type ItemAnnouncement } from './ItemAnnouncements';
 
 interface ItemHistoryEntry {
@@ -88,8 +89,7 @@ export default function ItemView({
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const imageSrc = useItemOriginalImage(item.id);
-  const placeholder = usePlaceholder();
+  const { src: imageSrc, status: imageStatus, placeholder } = useItemOriginalImageState(item.id);
 
   const reportAffectedItems = [...item.reportAffectedItems].sort(
     (a, b) =>
@@ -154,13 +154,17 @@ export default function ItemView({
         <hr />
 
         <div>
-          {/* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */}
-          <img
-            src={imgError ? placeholder : imageSrc}
-            alt={item.name}
-            onError={() => setImgError(true)}
-            className="max-h-[300px] max-w-full rounded-md object-contain md:max-h-[500px]"
-          />
+          {imageStatus === 'loading' ? (
+            <Skeleton className="h-[300px] w-full max-w-xl rounded-md md:h-[500px]" />
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
+            <img
+              src={imgError ? placeholder : imageSrc}
+              alt={item.name}
+              onError={() => setImgError(true)}
+              className="max-h-[300px] max-w-full rounded-md object-contain md:max-h-[500px]"
+            />
+          )}
         </div>
 
         {isAdmin && (

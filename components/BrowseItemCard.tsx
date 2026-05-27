@@ -1,7 +1,7 @@
 'use client';
 
 import { Item, Category, ItemType, Announcement } from '@prisma/client';
-import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
+import { useItemImageState } from '../hooks/useItemImage';
 import ItemCardShell from './ItemCardShell';
 
 interface ItemWithCategories extends Item {
@@ -15,14 +15,14 @@ interface BrowseItemCardProps {
 }
 
 export default function BrowseItemCard({ item }: BrowseItemCardProps) {
-  const imageSrc = useItemImage(item.id);
-  const placeholder = usePlaceholder();
+  const image = useItemImageState(item.id);
 
   return (
     <ItemCardShell
       name={item.name}
-      imageSrc={imageSrc}
-      placeholder={placeholder}
+      imageSrc={image.src}
+      placeholder={image.placeholder}
+      loading={image.status === 'loading'}
       subtitle={`${item.amount} kpl`}
       categoryLine={item.categories.map((cat) => cat.name).join(', ')}
       announcements={item.announcements}

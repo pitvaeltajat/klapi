@@ -4,7 +4,7 @@ import { memo, MouseEvent, useCallback } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { X } from 'lucide-react';
 import type { CartItem } from '../types';
-import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
+import { useItemImageState } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ItemCardShell from './ItemCardShell';
@@ -28,8 +28,7 @@ const CartItemRow = memo(function CartItemRow({
   onDecrement,
   onRemove,
 }: CartItemRowProps) {
-  const imageSrc = useItemImage(item.id);
-  const placeholder = usePlaceholder();
+  const image = useItemImageState(item.id);
   const stopPropagation = useCallback((e: MouseEvent) => e.stopPropagation(), []);
 
   const action = (
@@ -81,8 +80,9 @@ const CartItemRow = memo(function CartItemRow({
     <ItemCardShell
       compact
       name={item.name}
-      imageSrc={imageSrc}
-      placeholder={placeholder}
+      imageSrc={image.src}
+      placeholder={image.placeholder}
+      loading={image.status === 'loading'}
       action={action}
       cornerAction={cornerAction}
       onActionPointerDown={stopPropagation}

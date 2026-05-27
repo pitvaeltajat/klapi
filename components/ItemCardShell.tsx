@@ -11,6 +11,12 @@ interface ItemCardShellProps {
   name: string;
   imageSrc: string;
   placeholder: string;
+  /**
+   * While true the image box renders as a pulsing skeleton instead of the
+   * image — used until the image probe resolves so we never flash the
+   * "Ei kuvaa" placeholder during loading.
+   */
+  loading?: boolean;
   subtitle?: React.ReactNode;
   categoryLine?: string;
   announcements?: Announcement[] | null;
@@ -43,6 +49,7 @@ export default function ItemCardShell({
   name,
   imageSrc,
   placeholder,
+  loading = false,
   subtitle,
   categoryLine,
   announcements,
@@ -68,18 +75,21 @@ export default function ItemCardShell({
       <div
         className={cn(
           'relative shrink-0 overflow-hidden bg-muted',
+          loading && 'animate-pulse',
           compact ? 'aspect-square w-20' : 'aspect-square w-28 sm:aspect-5/3 sm:w-full',
         )}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */}
-        <img
-          src={imageSrc}
-          alt={`Picture of ${name}`}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = placeholder;
-          }}
-          className="h-full w-full object-cover object-center"
-        />
+        {!loading && (
+          /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
+          <img
+            src={imageSrc}
+            alt={`Picture of ${name}`}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = placeholder;
+            }}
+            className="h-full w-full object-cover object-center"
+          />
+        )}
       </div>
 
       <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'p-2.5' : 'p-3 sm:p-4 xl:p-3')}>

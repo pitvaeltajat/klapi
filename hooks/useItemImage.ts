@@ -7,103 +7,114 @@ import {
   getRootImageUrl,
 } from '../utils/imageHelpers';
 
-/**
- * Hook that returns the best available image URL for an item (thumbnail version).
- * Tries to load images in order: compressed (thumbnail) -> root -> placeholder
- * This handles the case where a newly uploaded image hasn't been processed by Lambda yet.
- */
 function useIsDark(): boolean {
   const { resolvedTheme } = useTheme();
   return resolvedTheme === 'dark';
 }
 
-export function useItemImage(itemId: string): string {
-  const isDarkMode = useIsDark();
-  const placeholder = getPlaceholderUrl(isDarkMode);
-  const compressedUrl = getCompressedImageUrl(itemId);
-  const rootUrl = getRootImageUrl(itemId);
+/** Loading lifecycle of an item-image probe. */
+export type ItemImageStatus = 'loading' | 'loaded' | 'placeholder';
 
-  const [imageSrc, setImageSrc] = useState<string>(placeholder);
-
-  /* eslint-disable react-hooks/set-state-in-effect -- async image probe callbacks */
-  useEffect(() => {
-    if (!compressedUrl || !rootUrl) {
-      setImageSrc(placeholder);
-      return;
-    }
-
-    let isMounted = true;
-
-    const compressedImg = new Image();
-    compressedImg.onload = () => {
-      if (isMounted) setImageSrc(compressedUrl);
-    };
-    compressedImg.onerror = () => {
-      const rootImg = new Image();
-      rootImg.onload = () => {
-        if (isMounted) setImageSrc(rootUrl);
-      };
-      rootImg.onerror = () => {
-        if (isMounted) setImageSrc(placeholder);
-      };
-      rootImg.src = rootUrl;
-    };
-    compressedImg.src = compressedUrl;
-
-    return () => {
-      isMounted = false;
-    };
-  }, [itemId, compressedUrl, rootUrl, placeholder]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  return imageSrc;
+export interface ItemImage {
+  /** Best URL to render: the resolved image when `loaded`, otherwise the placeholder. */
+  src: string;
+  status: ItemImageStatus;
+  /** Theme-aware "Ei kuvaa" placeholder — handy as an `onError` fallback. */
+  placeholder: string;
 }
 
 /**
- * Hook that returns the best available original (full-size) image URL for an item.
- * Tries to load images in order: original -> root -> placeholder
- * Use this for item detail pages where you want the full resolution image.
+ * Probes a list of candidate URLs in order and reports which one actually
+ * loaded. `status` stays `'loading'` until the first candidate resolves, so
+ * callers can show a skeleton instead of flashing the placeholder while we
+ * wait. Falls back to `'placeholder'` only when every candidate fails (or there
+ * are none) — i.e. when the item genuinely has no image.
  */
-export function useItemOriginalImage(itemId: string): string {
-  const isDarkMode = useIsDark();
-  const placeholder = getPlaceholderUrl(isDarkMode);
-  const originalUrl = getOriginalImageUrl(itemId);
-  const rootUrl = getRootImageUrl(itemId);
+function useProbedImage(candidates: (string | null)[], placeholder: string): ItemImage {
+  const urls = candidates.filter((u): u is string => Boolean(u));
+  const key = urls.join('|');
 
-  const [imageSrc, setImageSrc] = useState<string>(placeholder);
+  const [state, setState] = useState<{ src: string | null; status: ItemImageStatus }>(() => ({
+    src: null,
+    status: urls.length === 0 ? 'placeholder' : 'loading',
+  }));
 
   /* eslint-disable react-hooks/set-state-in-effect -- async image probe callbacks */
   useEffect(() => {
-    if (!originalUrl || !rootUrl) {
-      setImageSrc(placeholder);
+    if (urls.length === 0) {
+      setState({ src: null, status: 'placeholder' });
       return;
     }
 
     let isMounted = true;
+    setState({ src: null, status: 'loading' });
 
-    const originalImg = new Image();
-    originalImg.onload = () => {
-      if (isMounted) setImageSrc(originalUrl);
-    };
-    originalImg.onerror = () => {
-      const rootImg = new Image();
-      rootImg.onload = () => {
-        if (isMounted) setImageSrc(rootUrl);
+    const probe = (i: number) => {
+      if (i >= urls.length) {
+        if (isMounted) setState({ src: null, status: 'placeholder' });
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        if (isMounted) setState({ src: urls[i], status: 'loaded' });
       };
-      rootImg.onerror = () => {
-        if (isMounted) setImageSrc(placeholder);
-      };
-      rootImg.src = rootUrl;
+      img.onerror = () => probe(i + 1);
+      img.src = urls[i];
     };
-    originalImg.src = originalUrl;
+    probe(0);
 
     return () => {
       isMounted = false;
     };
-  }, [itemId, originalUrl, rootUrl, placeholder]);
+    // `key` encodes the candidate list; `placeholder` is intentionally excluded
+    // so toggling the theme doesn't re-probe — the fresh placeholder is applied
+    // in the return value below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  return imageSrc;
+  return {
+    src: state.status === 'loaded' && state.src ? state.src : placeholder,
+    status: state.status,
+    placeholder,
+  };
+}
+
+/**
+ * Thumbnail image probe state for an item: compressed → root → placeholder.
+ * Use this on cards/grids that want a loading skeleton.
+ */
+export function useItemImageState(itemId: string): ItemImage {
+  const placeholder = getPlaceholderUrl(useIsDark());
+  return useProbedImage([getCompressedImageUrl(itemId), getRootImageUrl(itemId)], placeholder);
+}
+
+/**
+ * Thumbnail image URL for an item (compressed → root → placeholder). Returns
+ * just the URL; while probing it returns the placeholder. Prefer
+ * {@link useItemImageState} when you want a skeleton instead of the flash.
+ */
+export function useItemImage(itemId: string): string {
+  return useItemImageState(itemId).src;
+}
+
+/**
+ * Full-resolution image probe state for an item: original → root → placeholder.
+ * Detail views use this to render a skeleton while loading and only fall back
+ * to the placeholder when the item truly has no image.
+ */
+export function useItemOriginalImageState(itemId: string): ItemImage {
+  const placeholder = getPlaceholderUrl(useIsDark());
+  return useProbedImage([getOriginalImageUrl(itemId), getRootImageUrl(itemId)], placeholder);
+}
+
+/**
+ * Full-resolution image URL for an item (original → root → placeholder).
+ * Returns just the URL. Prefer {@link useItemOriginalImageState} when you want
+ * a skeleton instead of the placeholder flash.
+ */
+export function useItemOriginalImage(itemId: string): string {
+  return useItemOriginalImageState(itemId).src;
 }
 
 /**
@@ -111,6 +122,5 @@ export function useItemOriginalImage(itemId: string): string {
  * Use this when you just need the placeholder without the fallback logic.
  */
 export function usePlaceholder(): string {
-  const isDarkMode = useIsDark();
-  return getPlaceholderUrl(isDarkMode);
+  return getPlaceholderUrl(useIsDark());
 }

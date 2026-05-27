@@ -7,7 +7,7 @@ import { useCallback, useMemo, memo, MouseEvent } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
 import { Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useItemImage, usePlaceholder } from '../hooks/useItemImage';
+import { useItemImageState } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -28,8 +28,7 @@ const ItemCard = memo(function ItemCard({
     state: { items: cartItems },
   } = useCart();
   const router = useRouter();
-  const imageSrc = useItemImage(item.id);
-  const placeholder = usePlaceholder();
+  const image = useItemImageState(item.id);
 
   const amountInCart = useMemo(
     () => cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0,
@@ -118,8 +117,9 @@ const ItemCard = memo(function ItemCard({
   return (
     <ItemCardShell
       name={item.name}
-      imageSrc={imageSrc}
-      placeholder={placeholder}
+      imageSrc={image.src}
+      placeholder={image.placeholder}
+      loading={image.status === 'loading'}
       subtitle={subtitle}
       categoryLine={item.categories.map((cat) => cat.name).join(', ')}
       announcements={item.announcements}
