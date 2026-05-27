@@ -66,20 +66,5 @@
     "typescript-eslint": "^8.59.4",
     "vite": "^8.0.14",
     "vitest": "^4.1.7"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "@prisma/client",
-      "@prisma/engines",
-      "@swc/core",
-      "bcrypt",
-      "esbuild",
-      "prisma",
-      "puppeteer",
-      "sharp",
-      "unrs-resolver",
-      "vue-demi"
-    ]
   }
 }

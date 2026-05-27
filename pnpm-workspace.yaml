@@ -1,0 +1,12 @@
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@swc/core'
+  - bcrypt
+  - esbuild
+  - prisma
+  - puppeteer
+  - sharp
+  - unrs-resolver
+  - vue-demi
