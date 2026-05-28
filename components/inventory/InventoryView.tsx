@@ -5,11 +5,13 @@ import {
   getCoreRowModel,
   flexRender,
   createColumnHelper,
+  type CellContext,
   type SortingState,
   type RowSelectionState,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useMemo, useEffect, type RefObject } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
@@ -122,6 +124,119 @@ interface CellEditState {
   rowId: string;
   field: EditableField;
   value: string;
+}
+
+// The editable cells subscribe to this context so the cell component identity
+// can stay stable across renders. TanStack's `flexRender` invokes `cell` as
+// `<Comp {...ctx} />`, so a fresh inline `cell: ({...}) => …` per render is a
+// new component type and React unmounts the active <input> on every keystroke
+// (losing focus). Keep the cell components defined once at module scope and
+// pipe the edit state in through context instead.
+interface EditCellContextValue {
+  editState: CellEditState | null;
+  setEditState: (s: CellEditState | null) => void;
+  startEdit: (rowId: string, field: EditableField, currentValue: string) => void;
+  commitEdit: (state: CellEditState) => void;
+  editInputRef: RefObject<HTMLInputElement | null>;
+}
+const EditCellContext = createContext<EditCellContextValue | null>(null);
+function useEditCell() {
+  const ctx = useContext(EditCellContext);
+  if (!ctx) throw new Error('EditCellContext provider missing');
+  return ctx;
+}
+
+function NameCell({ row, getValue }: CellContext<InventoryItem, string>) {
+  const { editState, setEditState, startEdit, commitEdit, editInputRef } = useEditCell();
+  const id = row.original.id;
+  const isEditing = editState?.rowId === id && editState.field === 'name';
+  if (isEditing) {
+    const es = editState;
+    return (
+      <input
+        ref={editInputRef}
+        className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
+        value={es.value}
+        onChange={(e) => setEditState({ ...es, value: e.target.value })}
+        onBlur={() => commitEdit(es)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commitEdit(es);
+          if (e.key === 'Escape') setEditState(null);
+        }}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
+      onClick={() => startEdit(id, 'name', getValue())}
+    >
+      <Truncated text={getValue()} />
+    </span>
+  );
+}
+
+function DescriptionCell({ row, getValue }: CellContext<InventoryItem, string | null>) {
+  const { editState, setEditState, startEdit, commitEdit, editInputRef } = useEditCell();
+  const id = row.original.id;
+  const val = getValue();
+  const isEditing = editState?.rowId === id && editState.field === 'description';
+  if (isEditing) {
+    const es = editState;
+    return (
+      <input
+        ref={editInputRef}
+        className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
+        value={es.value}
+        onChange={(e) => setEditState({ ...es, value: e.target.value })}
+        onBlur={() => commitEdit(es)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commitEdit(es);
+          if (e.key === 'Escape') setEditState(null);
+        }}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
+      onClick={() => startEdit(id, 'description', val ?? '')}
+    >
+      <Truncated text={val} />
+    </span>
+  );
+}
+
+function AmountCell({ row, getValue }: CellContext<InventoryItem, number>) {
+  const { editState, setEditState, startEdit, commitEdit, editInputRef } = useEditCell();
+  const id = row.original.id;
+  const isEditing = editState?.rowId === id && editState.field === 'amount';
+  if (isEditing) {
+    const es = editState;
+    return (
+      <input
+        ref={editInputRef}
+        type="number"
+        min={1}
+        className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
+        value={es.value}
+        onChange={(e) => setEditState({ ...es, value: e.target.value })}
+        onBlur={() => commitEdit(es)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commitEdit(es);
+          if (e.key === 'Escape') setEditState(null);
+        }}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(EDITABLE_DISPLAY_CLASS, 'inline-block w-20')}
+      onClick={() => startEdit(id, 'amount', String(getValue()))}
+    >
+      {getValue()}
+    </span>
+  );
 }
 
 const colHelper = createColumnHelper<InventoryItem>();
@@ -497,107 +612,31 @@ export default function InventoryView() {
     colHelper.display({
       id: 'image',
       header: '',
-      cell: ({ row }) => <RowImage itemId={row.original.id} name={row.original.name} />,
+      cell: ({ row }) => (
+        <Link
+          href={`/item/${row.original.id}`}
+          aria-label={`Avaa ${row.original.name}`}
+          className="inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+        >
+          <RowImage itemId={row.original.id} name={row.original.name} />
+        </Link>
+      ),
       size: 52,
     }),
     colHelper.accessor((row) => row.name, {
       id: 'name',
       header: 'Nimi',
-      cell: ({ row, getValue }) => {
-        const id = row.original.id;
-        const isEditing = editState?.rowId === id && editState.field === 'name';
-        if (isEditing) {
-          const es = editState;
-          return (
-            <input
-              ref={editInputRef}
-              className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
-              value={es.value}
-              onChange={(e) => setEditState({ ...es, value: e.target.value })}
-              onBlur={() => commitEdit(es)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitEdit(es);
-                if (e.key === 'Escape') setEditState(null);
-              }}
-            />
-          );
-        }
-        return (
-          <span
-            className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
-            onClick={() => startEdit(id, 'name', getValue())}
-          >
-            <Truncated text={getValue()} />
-          </span>
-        );
-      },
+      cell: NameCell,
     }),
     colHelper.accessor((row) => row.description, {
       id: 'description',
       header: 'Kuvaus',
-      cell: ({ row, getValue }) => {
-        const id = row.original.id;
-        const val = getValue();
-        const isEditing = editState?.rowId === id && editState.field === 'description';
-        if (isEditing) {
-          const es = editState;
-          return (
-            <input
-              ref={editInputRef}
-              className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
-              value={es.value}
-              onChange={(e) => setEditState({ ...es, value: e.target.value })}
-              onBlur={() => commitEdit(es)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitEdit(es);
-                if (e.key === 'Escape') setEditState(null);
-              }}
-            />
-          );
-        }
-        return (
-          <span
-            className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
-            onClick={() => startEdit(id, 'description', val ?? '')}
-          >
-            <Truncated text={val} />
-          </span>
-        );
-      },
+      cell: DescriptionCell,
     }),
     colHelper.accessor((row) => row.amount, {
       id: 'amount',
       header: 'Määrä',
-      cell: ({ row, getValue }) => {
-        const id = row.original.id;
-        const isEditing = editState?.rowId === id && editState.field === 'amount';
-        if (isEditing) {
-          const es = editState;
-          return (
-            <input
-              ref={editInputRef}
-              type="number"
-              min={1}
-              className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
-              value={es.value}
-              onChange={(e) => setEditState({ ...es, value: e.target.value })}
-              onBlur={() => commitEdit(es)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitEdit(es);
-                if (e.key === 'Escape') setEditState(null);
-              }}
-            />
-          );
-        }
-        return (
-          <span
-            className={cn(EDITABLE_DISPLAY_CLASS, 'inline-block w-20')}
-            onClick={() => startEdit(id, 'amount', String(getValue()))}
-          >
-            {getValue()}
-          </span>
-        );
-      },
+      cell: AmountCell,
     }),
     colHelper.accessor((row) => row.type, {
       id: 'type',
@@ -695,7 +734,12 @@ export default function InventoryView() {
         );
       },
     }),
-  ], [editState, startEdit, commitEdit, handleRestoreRow]);
+  ], [handleRestoreRow]);
+
+  const editCellValue = useMemo<EditCellContextValue>(
+    () => ({ editState, setEditState, startEdit, commitEdit, editInputRef }),
+    [editState, startEdit, commitEdit],
+  );
 
   const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize));
 
@@ -736,7 +780,7 @@ export default function InventoryView() {
   const { pageIndex, pageSize } = pagination;
 
   return (
-    <>
+    <EditCellContext.Provider value={editCellValue}>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-end">
           <span className="text-sm text-muted-foreground">
@@ -1143,6 +1187,6 @@ export default function InventoryView() {
           }}
         />
       )}
-    </>
+    </EditCellContext.Provider>
   );
 }
