@@ -136,7 +136,11 @@ interface EditCellContextValue {
   editState: CellEditState | null;
   setEditState: (s: CellEditState | null) => void;
   startEdit: (rowId: string, field: EditableField, currentValue: string) => void;
+  // commitEdit closes the editor and persists. scheduleAutoSave debounces a
+  // background save while the editor stays open, so changes land ~1s after
+  // typing pauses without forcing the user to press Enter or click away.
   commitEdit: (state: CellEditState) => void;
+  scheduleAutoSave: (state: CellEditState) => void;
   editInputRef: RefObject<HTMLInputElement | null>;
 }
 const EditCellContext = createContext<EditCellContextValue | null>(null);
@@ -147,7 +151,7 @@ function useEditCell() {
 }
 
 function NameCell({ row, getValue }: CellContext<InventoryItem, string>) {
-  const { editState, setEditState, startEdit, commitEdit, editInputRef } = useEditCell();
+  const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } = useEditCell();
   const id = row.original.id;
   const isEditing = editState?.rowId === id && editState.field === 'name';
   if (isEditing) {
@@ -157,7 +161,11 @@ function NameCell({ row, getValue }: CellContext<InventoryItem, string>) {
         ref={editInputRef}
         className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
         value={es.value}
-        onChange={(e) => setEditState({ ...es, value: e.target.value })}
+        onChange={(e) => {
+          const next = { ...es, value: e.target.value };
+          setEditState(next);
+          scheduleAutoSave(next);
+        }}
         onBlur={() => commitEdit(es)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commitEdit(es);
@@ -177,7 +185,7 @@ function NameCell({ row, getValue }: CellContext<InventoryItem, string>) {
 }
 
 function DescriptionCell({ row, getValue }: CellContext<InventoryItem, string | null>) {
-  const { editState, setEditState, startEdit, commitEdit, editInputRef } = useEditCell();
+  const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } = useEditCell();
   const id = row.original.id;
   const val = getValue();
   const isEditing = editState?.rowId === id && editState.field === 'description';
@@ -188,7 +196,11 @@ function DescriptionCell({ row, getValue }: CellContext<InventoryItem, string | 
         ref={editInputRef}
         className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
         value={es.value}
-        onChange={(e) => setEditState({ ...es, value: e.target.value })}
+        onChange={(e) => {
+          const next = { ...es, value: e.target.value };
+          setEditState(next);
+          scheduleAutoSave(next);
+        }}
         onBlur={() => commitEdit(es)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commitEdit(es);
@@ -208,7 +220,7 @@ function DescriptionCell({ row, getValue }: CellContext<InventoryItem, string | 
 }
 
 function AmountCell({ row, getValue }: CellContext<InventoryItem, number>) {
-  const { editState, setEditState, startEdit, commitEdit, editInputRef } = useEditCell();
+  const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } = useEditCell();
   const id = row.original.id;
   const isEditing = editState?.rowId === id && editState.field === 'amount';
   if (isEditing) {
@@ -220,7 +232,11 @@ function AmountCell({ row, getValue }: CellContext<InventoryItem, number>) {
         min={1}
         className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
         value={es.value}
-        onChange={(e) => setEditState({ ...es, value: e.target.value })}
+        onChange={(e) => {
+          const next = { ...es, value: e.target.value };
+          setEditState(next);
+          scheduleAutoSave(next);
+        }}
         onBlur={() => commitEdit(es)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commitEdit(es);
@@ -432,13 +448,34 @@ export default function InventoryView() {
     [mutateItems],
   );
 
+  // A debounce timer for background saves while the user is still typing in
+  // a cell. Cleared whenever editing ends (Enter / blur / Escape) so a late
+  // tick can never write a value the user just abandoned.
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearAutoSaveTimer = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+  }, []);
+  useEffect(() => clearAutoSaveTimer, [clearAutoSaveTimer]);
+  // Any path that ends editing (Escape, blur, switching to another cell)
+  // sets editState to null. Mirror that into the autosave timer so a
+  // pending tick can't fire against an abandoned value.
+  useEffect(() => {
+    if (!editState) clearAutoSaveTimer();
+  }, [editState, clearAutoSaveTimer]);
+
   const startEdit = useCallback((rowId: string, field: EditableField, currentValue: string) => {
     setEditState({ rowId, field, value: currentValue });
     setTimeout(() => editInputRef.current?.focus(), 0);
   }, []);
 
-  const commitEdit = useCallback(async (state: CellEditState) => {
-    setEditState(null);
+  // Persist the field. When `keepEditing` is true, the editor stays open
+  // (used by autosave so the user can keep typing); otherwise it closes
+  // (used by Enter / blur).
+  const saveEdit = useCallback(async (state: CellEditState, { keepEditing = false } = {}) => {
+    if (!keepEditing) setEditState(null);
     const { rowId, field, value } = state;
 
     const item = items.find((it) => it.id === rowId);
@@ -465,7 +502,7 @@ export default function InventoryView() {
       }
       const updated = await res.json() as InventoryItem;
       updateItemLocal(updated);
-      toast.success('Tallennettu');
+      if (!keepEditing) toast.success('Tallennettu');
     } catch (err) {
       toast.error('Tallennus epäonnistui', {
         description: err instanceof Error ? err.message : undefined,
@@ -475,6 +512,19 @@ export default function InventoryView() {
       removePending(rowId);
     }
   }, [items, mutateItems, updateItemLocal]);
+
+  const commitEdit = useCallback((state: CellEditState) => {
+    clearAutoSaveTimer();
+    void saveEdit(state, { keepEditing: false });
+  }, [clearAutoSaveTimer, saveEdit]);
+
+  const scheduleAutoSave = useCallback((state: CellEditState) => {
+    clearAutoSaveTimer();
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      void saveEdit(state, { keepEditing: true });
+    }, 1000);
+  }, [clearAutoSaveTimer, saveEdit]);
 
   const handleDeleteRow = async (item: InventoryItem) => {
     addPending(item.id);
@@ -737,8 +787,8 @@ export default function InventoryView() {
   ], [handleRestoreRow]);
 
   const editCellValue = useMemo<EditCellContextValue>(
-    () => ({ editState, setEditState, startEdit, commitEdit, editInputRef }),
-    [editState, startEdit, commitEdit],
+    () => ({ editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef }),
+    [editState, startEdit, commitEdit, scheduleAutoSave],
   );
 
   const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize));
