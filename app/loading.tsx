@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { ItemCardSkeletonGrid } from '@/components/ItemCardSkeleton';
 import { LoanCardSkeletonGrid } from '@/components/LoanCardSkeleton';
 import PageSkeleton from '@/components/PageSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,13 +9,22 @@ export default function Loading() {
   const pathname = usePathname() ?? '/';
 
   if (pathname === '/') {
+    // First content on `/` is always the DateSelector calendar card —
+    // `datesSet` starts false and isn't persisted, so the catalogue never
+    // renders first. Mirror DateSelector's layout, not the item grid.
     return (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-48" />
+      <div className="mb-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-80 max-w-full" />
         </div>
-        <ItemCardSkeletonGrid />
+        <div className="rounded-lg border bg-card p-4 shadow-xs">
+          <Skeleton className="h-5 w-40" />
+          <div className="mt-2 flex justify-center">
+            <Skeleton className="h-[300px] w-[280px]" />
+          </div>
+          <Skeleton className="mt-4 h-10 w-full" />
+        </div>
       </div>
     );
   }

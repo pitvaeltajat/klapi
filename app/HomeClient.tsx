@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, use, useState } from 'react';
 import NextLink from 'next/link';
 import { FaPlus } from 'react-icons/fa';
 import { LayoutGrid, Table as TableIcon } from 'lucide-react';
@@ -16,6 +16,7 @@ import BrowseItemCard from '@/components/BrowseItemCard';
 import InventoryView from '@/components/inventory/InventoryView';
 import PendingPickupBanner from '@/components/PendingPickupBanner';
 import { Button } from '@/components/ui/button';
+import { ItemCardSkeletonGrid } from '@/components/ItemCardSkeleton';
 
 type BrowseViewMode = 'grid' | 'table';
 
@@ -82,12 +83,29 @@ interface ItemWithRelations extends Item {
   popularity: number;
 }
 
-interface HomeClientProps {
+interface Catalogue {
   items: ItemWithRelations[];
   categories: Category[];
 }
 
-export default function HomeClient({ items, categories }: HomeClientProps) {
+interface HomeClientProps {
+  cataloguePromise: Promise<Catalogue>;
+}
+
+// Unwraps the streamed catalogue promise. Rendered only inside a Suspense
+// boundary, so it suspends until the items query resolves while the
+// no-catalogue views (DateSelector / KioskModeSelector) paint immediately.
+function WithCatalogue({
+  promise,
+  children,
+}: {
+  promise: Promise<Catalogue>;
+  children: (catalogue: Catalogue) => React.ReactNode;
+}) {
+  return <>{children(use(promise))}</>;
+}
+
+export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   const { state: dates, setBrowseMode, setStartDate, setEndDate, setDatesSet } = useDates();
   const { data: session } = useSession();
 
@@ -109,13 +127,6 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
     }
   };
 
-  const filteredItems = items.map((item) => ({
-    ...item,
-    announcements: item.announcements.filter(
-      (a) => a.expiresAt === null || new Date(a.expiresAt) > new Date(),
-    ),
-  }));
-
   return (
     <>
       <PendingPickupBanner />
@@ -130,18 +141,24 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
           {isAdmin && browseViewMode === 'table' ? (
             <InventoryView />
           ) : (
-            <ItemBrowser
-              items={filteredItems}
-              categories={categories}
-              showCustomItemLink={false}
-              renderItems={(items) => (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
-                  {items.map((item) => (
-                    <BrowseItemCard key={item.id} item={item} />
-                  ))}
-                </div>
-              )}
-            />
+            <Suspense fallback={<ItemCardSkeletonGrid />}>
+              <WithCatalogue promise={cataloguePromise}>
+                {({ items, categories }) => (
+                  <ItemBrowser
+                    items={items}
+                    categories={categories}
+                    showCustomItemLink={false}
+                    renderItems={(items) => (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
+                        {items.map((item) => (
+                          <BrowseItemCard key={item.id} item={item} />
+                        ))}
+                      </div>
+                    )}
+                  />
+                )}
+              </WithCatalogue>
+            </Suspense>
           )}
         </>
       ) : isKioskMode ? (
@@ -151,19 +168,31 @@ export default function HomeClient({ items, categories }: HomeClientProps) {
           ) : (
             <>
               <KioskDateSelector />
-              <ItemBrowser items={filteredItems} categories={categories} showCustomItemLink />
+              <Suspense fallback={<ItemCardSkeletonGrid />}>
+                <WithCatalogue promise={cataloguePromise}>
+                  {({ items, categories }) => (
+                    <ItemBrowser items={items} categories={categories} showCustomItemLink />
+                  )}
+                </WithCatalogue>
+              </Suspense>
             </>
           )}
         </>
       ) : (
         <>
           {dates.datesSet ? (
-            <ItemBrowser
-              items={filteredItems}
-              categories={categories}
-              showCustomItemLink
-              headerSlot={<DateSummaryBar />}
-            />
+            <Suspense fallback={<ItemCardSkeletonGrid />}>
+              <WithCatalogue promise={cataloguePromise}>
+                {({ items, categories }) => (
+                  <ItemBrowser
+                    items={items}
+                    categories={categories}
+                    showCustomItemLink
+                    headerSlot={<DateSummaryBar />}
+                  />
+                )}
+              </WithCatalogue>
+            </Suspense>
           ) : (
             <DateSelector />
           )}
