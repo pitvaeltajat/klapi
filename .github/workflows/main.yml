@@ -1,15 +1,25 @@
 name: ci
 on: push
 
+# A newer push to the same branch makes the in-flight run obsolete — cancel it
+# rather than burn a runner finishing stale work.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres
+        # Pinned + alpine: smaller image, faster to pull and boot than the
+        # unpinned full Debian `postgres`. POSTGRES_DB creates the database at
+        # init, so no separate psql step is needed.
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: klapi
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -21,20 +31,24 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klapi
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Create .env file
         run: echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/klapi" > .env
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "pnpm"
       - name: Install dependencies
-        run: pnpm install
-      - name: Create test database
-        run: PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE klapi;"
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Cache ESLint
+        uses: actions/cache@v5
+        with:
+          path: .eslintcache
+          key: eslint-${{ github.sha }}
+          restore-keys: eslint-
       - name: Lint
         run: pnpm lint
       - name: Run tests

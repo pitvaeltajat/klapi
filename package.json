@@ -5,7 +5,7 @@
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
-    "lint": "eslint .",
+    "lint": "eslint . --cache --cache-location .eslintcache",
     "type-check": "tsc --noEmit",
     "test": "docker compose -f docker-compose.test.yml up -d && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/klapi_test pnpm prisma migrate deploy && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/klapi_test vitest run",
     "test:ci": "pnpm prisma migrate deploy && vitest run"
