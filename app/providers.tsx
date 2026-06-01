@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import type { Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
 import { SWRConfig } from 'swr';
 import { toast } from 'sonner';
@@ -13,9 +14,15 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 const fetcher = (...args: Parameters<typeof fetch>) => fetch(...args).then((res) => res.json());
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session: Session | null;
+}) {
   return (
-    <SessionProvider>
+    <SessionProvider session={session}>
       <RedirectUnauthorized>
         <SWRConfig
           value={{
