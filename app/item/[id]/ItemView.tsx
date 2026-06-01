@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
+import BookingTimeline from '@/components/BookingTimeline';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { AlertTriangle } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -67,7 +69,6 @@ interface ItemWithRelations extends Item {
     };
     item: { name: string };
   })[];
-  reportAffectedItems: ReportAffectedItemWithReport[];
 }
 
 const REPORT_STATUS: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
@@ -79,9 +80,11 @@ const REPORT_STATUS: Record<string, { label: string; variant: BadgeProps['varian
 export default function ItemView({
   item,
   history,
+  reportAffectedItems: reportAffectedItemsProp = [],
 }: {
   item: ItemWithRelations;
   history: ItemHistoryEntry[];
+  reportAffectedItems?: ReportAffectedItemWithReport[];
 }) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -91,10 +94,16 @@ export default function ItemView({
 
   const { src: imageSrc, status: imageStatus, placeholder } = useItemOriginalImageState(item.id);
 
-  const reportAffectedItems = [...item.reportAffectedItems].sort(
+  const reportAffectedItems = [...reportAffectedItemsProp].sort(
     (a, b) =>
       new Date(b.report.createdAt).getTime() - new Date(a.report.createdAt).getTime(),
   );
+
+  // Admin-only at-a-glance flag: does this item have an unresolved condition
+  // report? Reports aren't fetched for non-admins, so this is always 0 for them.
+  const openReportCount = reportAffectedItems.filter(
+    ({ report }) => report.status === 'OPEN' || report.status === 'IN_PROGRESS',
+  ).length;
 
   const deleteItem = async () => {
     try {
@@ -122,7 +131,23 @@ export default function ItemView({
     <>
       <Breadcrumbs items={[{ label: item.name }]} />
       <div className="flex flex-col gap-6">
-        <h1 className="text-3xl font-semibold md:text-4xl">{item.name}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold md:text-4xl">{item.name}</h1>
+          {isAdmin && openReportCount > 0 && (
+            <a
+              href="#raportit"
+              className="no-underline"
+              aria-label={`${openReportCount} avointa vikailmoitusta`}
+            >
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="size-3.5" aria-hidden />
+                {openReportCount === 1
+                  ? 'Avoin vikailmoitus'
+                  : `${openReportCount} avointa vikailmoitusta`}
+              </Badge>
+            </a>
+          )}
+        </div>
 
         {item.description && (
           <p className="text-base text-foreground/90 md:text-lg">{item.description}</p>
@@ -182,8 +207,14 @@ export default function ItemView({
           isAdmin={isAdmin}
         />
 
+        <BookingTimeline
+          reservations={item.reservations}
+          totalAmount={item.amount}
+          isAdmin={isAdmin}
+        />
+
         {isAdmin && reportAffectedItems.length > 0 && (
-          <section className="rounded-lg border bg-card p-4 md:p-6">
+          <section id="raportit" className="rounded-lg border bg-card p-4 md:p-6">
             <h2 className="mb-4 text-xl font-semibold">
               Raportit ({reportAffectedItems.length})
             </h2>

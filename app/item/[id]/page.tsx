@@ -31,31 +31,44 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           item: { select: { name: true } },
         },
       },
-      reportAffectedItems: {
-        include: {
-          report: {
-            include: {
-              loan: { include: { user: { select: { name: true } } } },
-            },
-          },
-        },
-      },
     },
   });
 
   if (!item || item.deletedAt) notFound();
 
-  // Edit history is admin-only info — only pay for the query when an admin is
-  // viewing (item pages are part of the public catalog).
+  // Edit history and condition reports are admin-only info — only pay for those
+  // queries when an admin is viewing (item pages are part of the public
+  // catalog). Reports also carry free-text that may name people, so keeping
+  // them out of the non-admin payload entirely is a privacy win, not just a
+  // perf one.
   const session = await getServerSession(authOptions);
-  const history =
-    session?.user?.group === 'ADMIN'
-      ? await prisma.itemHistory.findMany({
+  const isAdmin = session?.user?.group === 'ADMIN';
+
+  const [history, reportAffectedItems] = isAdmin
+    ? await Promise.all([
+        prisma.itemHistory.findMany({
           where: { itemId: id },
           orderBy: { createdAt: 'desc' },
           include: { actedBy: { select: { id: true, name: true, email: true } } },
-        })
-      : [];
+        }),
+        prisma.reportAffectedItem.findMany({
+          where: { itemId: id },
+          include: {
+            report: {
+              include: {
+                loan: { include: { user: { select: { name: true } } } },
+              },
+            },
+          },
+        }),
+      ])
+    : [[], []];
 
-  return <ItemView item={serialize(item)} history={serialize(history)} />;
+  return (
+    <ItemView
+      item={serialize(item)}
+      history={serialize(history)}
+      reportAffectedItems={serialize(reportAffectedItems)}
+    />
+  );
 }
