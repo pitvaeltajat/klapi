@@ -394,6 +394,11 @@ export default function LoanView({
                   entry.details !== null &&
                   'viaKiosk' in entry.details &&
                   (entry.details as { viaKiosk?: boolean }).viaKiosk === true;
+                const auto =
+                  typeof entry.details === 'object' &&
+                  entry.details !== null &&
+                  'auto' in entry.details &&
+                  (entry.details as { auto?: boolean }).auto === true;
                 return (
                   <div key={entry.id} className="rounded-md border p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -407,6 +412,7 @@ export default function LoanView({
                     <p className="text-sm text-muted-foreground">
                       {who}
                       {viaKiosk && ' · kaluston koneella'}
+                      {auto && ' · automaattisesti'}
                     </p>
                   </div>
                 );

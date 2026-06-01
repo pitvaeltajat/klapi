@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/checkOverdueLoans",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/startDueLoans",
+      "schedule": "0 * * * *"
     }
   ]
 }
