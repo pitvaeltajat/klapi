@@ -7,6 +7,13 @@ const eslintConfig = [
   prettierConfig,
   ...tseslint.configs.recommended,
   {
+    // Pin the React version so eslint-plugin-react skips auto-detection, which
+    // calls the legacy context.getFilename() API that was removed in ESLint 10.
+    settings: {
+      react: { version: '19' },
+    },
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'error',

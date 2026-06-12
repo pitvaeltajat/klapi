@@ -129,8 +129,10 @@ server components or route handlers.
 When running a dependency update sweep, leave these on their current major and
 revisit deliberately:
 
-- **eslint 9 → 10**: held back. Major bump and the Next 16 ecosystem
-  (`eslint-config-next`, `typescript-eslint`) hasn't fully caught up — wait for
-  Next/typescript-eslint to publish v10-ready releases before bumping.
-- **@types/node**: track the runtime (currently Node 24 LTS) — don't jump to
-  `^25` until we're actually running Node 25.
+- **@types/node**: track the runtime (currently Node 24 LTS — CI/deploy pin
+  `node-version: 24`) — don't jump to `^25` until we're actually running Node 25.
+
+ESLint is now on **10**. The flat config (`eslint.config.mjs`) pins
+`settings.react.version` so `eslint-plugin-react` skips React auto-detection,
+which still calls the legacy `context.getFilename()` API removed in ESLint 10.
+Don't drop that setting.
