@@ -493,6 +493,62 @@ describe('updateLoan API integration tests', () => {
       expect(result.status).toBe(200);
     });
 
+    it('should let an admin extend an ongoing loan into a free window', async () => {
+      // Another loan reserves the item later in the month.
+      await createTestLoan(
+        otherUser.id,
+        [{ itemId: testItem1.id, amount: 4 }],
+        { startTime: new Date('2025-06-10'), endTime: new Date('2025-06-15') },
+      );
+
+      const loan = await createTestLoan(
+        testUser.id,
+        [{ itemId: testItem1.id, amount: 2 }],
+        { startTime: new Date('2025-06-01'), endTime: new Date('2025-06-07'), status: LoanStatus.INUSE },
+      );
+
+      // Admin extends the end date to Jun 9 — still before the other booking.
+      const result = await updateLoanDirect(
+        loan.id,
+        [{ amount: 2, item: { connect: { id: testItem1.id } } }],
+        new Date('2025-06-01'),
+        new Date('2025-06-09'),
+        'Extended within free window',
+        { id: adminUser.id, group: Group.ADMIN },
+      );
+
+      expect(result.status).toBe(200);
+    });
+
+    it('should block an admin extending an ongoing loan into another reservation', async () => {
+      // Another loan reserves 4 of the 5 units from Jun 10–15.
+      await createTestLoan(
+        otherUser.id,
+        [{ itemId: testItem1.id, amount: 4 }],
+        { startTime: new Date('2025-06-10'), endTime: new Date('2025-06-15') },
+      );
+
+      const loan = await createTestLoan(
+        testUser.id,
+        [{ itemId: testItem1.id, amount: 2 }],
+        { startTime: new Date('2025-06-01'), endTime: new Date('2025-06-07'), status: LoanStatus.INUSE },
+      );
+
+      // Extending to Jun 12 overlaps the other booking: only 1 unit is free
+      // there, but this loan needs 2 — so the extend must be rejected.
+      const result = await updateLoanDirect(
+        loan.id,
+        [{ amount: 2, item: { connect: { id: testItem1.id } } }],
+        new Date('2025-06-01'),
+        new Date('2025-06-12'),
+        'Extend that clashes',
+        { id: adminUser.id, group: Group.ADMIN },
+      );
+
+      expect(result.status).toBe(400);
+      expect(result.error).toBe('Availability error');
+    });
+
     it('should ignore RETURNED loans when calculating availability', async () => {
       const startTime = new Date('2025-06-01');
       const endTime = new Date('2025-06-07');

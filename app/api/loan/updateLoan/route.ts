@@ -22,6 +22,7 @@ export async function POST(request: Request) {
         userId: true,
         status: true,
         startTime: true,
+        endTime: true,
         reservations: { select: { status: true, itemId: true, amount: true } },
       },
     });
@@ -209,6 +210,18 @@ export async function POST(request: Request) {
       },
     });
 
+    // Record a date change (e.g. an admin extending an ongoing loan) so the
+    // audit trail captures why the return date moved.
+    const datesChanged =
+      existingLoan.startTime.getTime() !== requestedStart.getTime() ||
+      existingLoan.endTime.getTime() !== requestedEnd.getTime();
+    const dates = datesChanged
+      ? {
+          startTime: { from: existingLoan.startTime, to: requestedStart },
+          endTime: { from: existingLoan.endTime, to: requestedEnd },
+        }
+      : undefined;
+
     await logLoanHistory({
       loanId: id,
       action: 'UPDATED',
@@ -217,6 +230,7 @@ export async function POST(request: Request) {
         added: addedItems,
         changed: changedItems,
         removed: removedItems,
+        ...(dates ? { dates } : {}),
       },
     });
 

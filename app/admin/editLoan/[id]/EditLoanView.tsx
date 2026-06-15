@@ -227,6 +227,17 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
 
         <h1 className="text-4xl font-semibold">Muokkaa lainaa</h1>
 
+        {derivedStatus === 'INUSE' && (
+          <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
+            <p className="font-semibold text-warning">Tämä laina on käynnissä</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Voit muuttaa päivämääriä, esimerkiksi jatkaa laina-aikaa. Saatavuus
+              tarkistetaan muiden varausten suhteen — jos jatko menisi päällekkäin toisen
+              varauksen kanssa, tallennus estetään.
+            </p>
+          </div>
+        )}
+
         <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

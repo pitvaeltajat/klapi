@@ -193,9 +193,13 @@ export default function LoanView({
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
+  // Admins may edit ongoing (INUSE) loans — e.g. to extend the return date.
+  // updateLoan validates availability against other reservations, so an extend
+  // that would clash with someone else's booking is rejected server-side.
+  // PARTIALLY_RETURNED is excluded: its reservations have mixed statuses that
+  // updateLoan's recreate-all logic would flatten and corrupt.
   const canEdit = isAdmin
     ? derivedStatus !== 'CANCELLED' &&
-      derivedStatus !== 'INUSE' &&
       derivedStatus !== 'PARTIALLY_RETURNED' &&
       derivedStatus !== 'RETURNED'
     : isOwner && !loanStarted && derivedStatus === 'ACCEPTED';
