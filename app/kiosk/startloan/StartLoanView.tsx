@@ -13,6 +13,7 @@ import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/util
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/ui/number-input';
 import { formatDateOnly } from '@/utils/dateFormat';
@@ -263,20 +264,19 @@ const EditItemsDialog = ({
               <div className="flex flex-col gap-2 md:flex-row md:items-end">
                 <div className="flex-2">
                   <Label>Kama</Label>
-                  <select
+                  <NativeSelect
                     value={selectedItem}
                     onChange={(e) => {
                       setSelectedItem(e.target.value);
                       setSelectedItemAmount(0);
                     }}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     {items.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="flex-1">
                   <Label>Määrä (vapaana: {getMaxForNewItem(selectedItem)})</Label>

@@ -132,7 +132,7 @@ export default function ItemView({
       <Breadcrumbs items={[{ label: item.name }]} />
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-semibold md:text-4xl">{item.name}</h1>
+          <h1 className="text-3xl font-semibold">{item.name}</h1>
           {isAdmin && openReportCount > 0 && (
             <a
               href="#raportit"
@@ -214,7 +214,7 @@ export default function ItemView({
         />
 
         {isAdmin && reportAffectedItems.length > 0 && (
-          <section id="raportit" className="rounded-lg border bg-card p-4 md:p-6">
+          <section id="raportit" className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
             <h2 className="mb-4 text-xl font-semibold">
               Raportit ({reportAffectedItems.length})
             </h2>
@@ -261,7 +261,7 @@ export default function ItemView({
         </div>
 
         {isAdmin && (
-          <section className="rounded-lg border bg-card p-4 md:p-6">
+          <section className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
             <h2 className="mb-4 text-xl font-semibold">Muokkaushistoria</h2>
             {history.length === 0 ? (
               <p className="text-sm text-muted-foreground">Ei muokkaushistoriaa.</p>

@@ -8,7 +8,7 @@ import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client'
 import CustomItemDialog from './CustomItemDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { NativeSelect } from '@/components/ui/native-select';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 
@@ -202,10 +202,8 @@ export default function ItemBrowser({
           </div>
         </div>
         <div className="md:hidden">
-          <select
-            className={cn(
-              'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-            )}
+          <NativeSelect
+            className="h-9 py-1.5"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
@@ -217,7 +215,7 @@ export default function ItemBrowser({
                   {cat.name}
                 </option>
               ))}
-          </select>
+          </NativeSelect>
         </div>
       </div>
       {showCustomItemLink && (

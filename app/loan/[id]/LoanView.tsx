@@ -233,8 +233,8 @@ export default function LoanView({
           Laina: {loan.description || 'Ei kuvausta'}
         </h1>
 
-        <div className="rounded-lg border bg-card p-6">
-          <h2 className="mb-4 text-2xl font-semibold">Perustiedot</h2>
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
+          <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
           <div className="flex flex-col gap-3">
             <p>
               Aloitusaika: <DateTime value={loan.startTime} format="long" />
@@ -261,8 +261,8 @@ export default function LoanView({
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
-          <h2 className="mb-4 text-2xl font-semibold">Kamat</h2>
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
+          <h2 className="mb-4 text-xl font-semibold">Kamat</h2>
           <ReservationTableLoanView
             loan={{
               id: loan.id,
@@ -288,7 +288,7 @@ export default function LoanView({
             </h2>
           </div>
         ) : canMarkReturned ? (
-          <div className="rounded-lg border bg-card p-6">
+          <div className="rounded-lg border bg-card p-6 shadow-xs">
             <div className="flex flex-col gap-3">
               <h3 className="mb-2 text-xl font-semibold">Merkitse laatikossa olevat palautetuksi</h3>
               <p className="text-sm text-muted-foreground">
@@ -333,7 +333,7 @@ export default function LoanView({
           </div>
         ) : (
           (canReject || canCancel || canEdit || canApprove || canStartUse) && (
-            <div className="rounded-lg border bg-card p-6">
+            <div className="rounded-lg border bg-card p-6 shadow-xs">
               <div className="flex flex-col gap-3">
                 <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
                 {canStartUse && (
@@ -348,7 +348,7 @@ export default function LoanView({
                 )}
                 <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
-                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1" disabled={busy}>
+                    <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1 md:max-w-[25%]" disabled={busy}>
                       Hylkää
                     </Button>
                   )}
@@ -356,26 +356,26 @@ export default function LoanView({
                     <Button
                       variant="destructive"
                       onClick={() => setCancelOpen(true)}
-                      className="flex-1"
+                      className="flex-1 md:max-w-[25%]"
                       disabled={busy}
                     >
                       Peru laina
                     </Button>
                   )}
                   {canEdit && (
-                    <Button asChild variant="warning" className="flex-1">
+                    <Button asChild variant="warning" className="flex-1 md:max-w-[25%]">
                       <NextLink href={isAdmin ? `/admin/editLoan/${loan.id}` : `/loan/${loan.id}/edit`}>
                         Muokkaa
                       </NextLink>
                     </Button>
                   )}
                   {canApprove && (
-                    <Button variant="success" onClick={approveLoan} className="flex-1" isLoading={busy}>
+                    <Button variant="success" onClick={approveLoan} className="flex-1 md:max-w-[25%]" isLoading={busy}>
                       Hyväksy
                     </Button>
                   )}
                   {canStartUse && (
-                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1" disabled={busy}>
+                    <Button onClick={() => setStartLoanOpen(true)} className="flex-1 md:max-w-[25%]" disabled={busy}>
                       Aloita lainaus
                     </Button>
                   )}
@@ -385,8 +385,8 @@ export default function LoanView({
           )
         )}
 
-        <div className="rounded-lg border bg-card p-6">
-          <h2 className="mb-4 text-2xl font-semibold">Historia</h2>
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
+          <h2 className="mb-4 text-xl font-semibold">Historia</h2>
           {history.length === 0 ? (
             <p className="text-muted-foreground">Ei historiamerkintöjä.</p>
           ) : (

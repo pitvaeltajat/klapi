@@ -8,6 +8,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Loan, Item, User, Reservation, ReservationStatus } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -194,9 +195,9 @@ export default function UserEditLoanView({
           </DialogContent>
         </Dialog>
 
-        <h1 className="text-4xl font-semibold">Muokkaa varausta</h1>
+        <h1 className="text-3xl font-semibold">Muokkaa varausta</h1>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -210,7 +211,7 @@ export default function UserEditLoanView({
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Kuvaus</h2>
           <Label htmlFor="description">Kuvaus</Label>
           <Textarea
@@ -223,7 +224,7 @@ export default function UserEditLoanView({
           />
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Kamat</h2>
             <Button size="sm" variant="ghost" onClick={() => setReservations(loan.reservations)}>
@@ -314,25 +315,24 @@ export default function UserEditLoanView({
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Lisää kama</h2>
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-2">
               <Label>Kama</Label>
-              <select
+              <NativeSelect
                 value={selectedItem}
                 onChange={(e) => {
                   setSelectedItem(e.target.value);
                   setSelectedItemAmount(0);
                 }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {items.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
             <div className="flex-1">

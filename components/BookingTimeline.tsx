@@ -123,7 +123,7 @@ export default function BookingTimeline({
   return (
     <section className="mt-4">
       <h2 className="mb-3 text-xl font-semibold">Tulevat varaukset</h2>
-      <div className="rounded-lg border bg-card p-4">
+      <div className="rounded-lg border bg-card p-4 shadow-xs">
         <div
           className="relative w-full"
           style={{ height: laneCount * LANE_HEIGHT }}

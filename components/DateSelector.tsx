@@ -33,7 +33,7 @@ export default function DateSelector() {
   return (
     <div className="mb-4 flex flex-col gap-4">
       <div>
-        <h2 className="mb-2 text-2xl font-semibold">Aloitus</h2>
+        <h2 className="mb-2 text-xl font-semibold">Aloitus</h2>
         <p className="text-muted-foreground">
           Aloita valitsemalla kamojen nouto- ja palautusajankohdat.
         </p>

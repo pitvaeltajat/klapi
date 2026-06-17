@@ -13,6 +13,7 @@ import { Loan, Item, User, Reservation, ReservationStatus, LoanStatus } from '@p
 import { deriveLoanStatus } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -225,7 +226,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
           </DialogContent>
         </Dialog>
 
-        <h1 className="text-4xl font-semibold">Muokkaa lainaa</h1>
+        <h1 className="text-3xl font-semibold">Muokkaa lainaa</h1>
 
         {derivedStatus === 'INUSE' && (
           <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
@@ -436,20 +437,19 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-2">
               <Label>Kama</Label>
-              <select
+              <NativeSelect
                 value={selectedItem}
                 onChange={(e) => {
                   setSelectedItem(e.target.value);
                   setSelectedItemAmount(0);
                 }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {items.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
             <div className="flex-1">

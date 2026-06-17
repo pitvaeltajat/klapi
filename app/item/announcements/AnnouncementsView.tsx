@@ -55,7 +55,7 @@ export default function AnnouncementsView({ announcements }: AnnouncementsViewPr
   return (
     <>
       <Breadcrumbs items={[{ label: 'Ilmoitukset' }]} />
-      <h1 className="mb-4 text-4xl font-semibold">Ilmoitukset</h1>
+      <h1 className="mb-4 text-3xl font-semibold">Ilmoitukset</h1>
 
       <div className="mb-6 rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
         <p className="mb-1 font-semibold">Mitä ilmoitukset ovat?</p>

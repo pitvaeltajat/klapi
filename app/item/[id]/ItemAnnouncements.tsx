@@ -78,7 +78,7 @@ export default function ItemAnnouncements({
   if (!isAdmin && active.length === 0) return null;
 
   return (
-    <section className="rounded-lg border bg-card p-4 md:p-6">
+    <section className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
       <div className="mb-4 flex items-center gap-2">
         <LuTriangleAlert className="text-destructive" />
         <h2 className="text-xl font-semibold">

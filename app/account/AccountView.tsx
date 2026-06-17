@@ -134,7 +134,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   return (
     <>
       <Breadcrumbs items={[{ label: 'Oma tili' }]} />
-      <h1 className="mb-6 text-4xl font-semibold">Oma tili</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Oma tili</h1>
 
       <PendingPickupBanner />
 

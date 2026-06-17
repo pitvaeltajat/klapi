@@ -59,8 +59,8 @@ const ReportCard: React.FC<ReportCardProps> = ({ reports, reservations }) => {
   };
 
   return (
-    <div className="rounded-lg border bg-card p-6">
-      <h2 className="mb-4 text-2xl font-semibold">
+    <div className="rounded-lg border bg-card p-6 shadow-xs">
+      <h2 className="mb-4 text-xl font-semibold">
         Raportit {unresolvedReports.length > 0 ? `(${unresolvedReports.length})` : ''}
       </h2>
       <div className="flex flex-col gap-3">

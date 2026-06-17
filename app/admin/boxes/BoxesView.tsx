@@ -37,7 +37,7 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Laatikot' }]} />
-      <h1 className="mb-6 text-4xl font-semibold">Laatikot</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Laatikot</h1>
 
       {boxes.length === 0 ? (
         <div className="rounded-lg border bg-muted p-8 text-center">

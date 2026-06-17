@@ -160,7 +160,7 @@ export default function CreateItemPage() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Luo uusi kama' }]} />
-      <h1 className="mb-6 text-4xl font-semibold">Luo uusi kama</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Luo uusi kama</h1>
 
       <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
         <div>
