@@ -114,9 +114,11 @@ server components or route handlers.
 
 ## Known gotchas
 
-- `react-datepicker` has no dark-mode styling — it retains its default light
-  calendar appearance even when the app is in dark mode. Fix with CSS overrides
-  in `globals.css` if needed.
+- `react-datepicker` ships only a light theme. We repaint it for dark mode with
+  CSS overrides at the bottom of `styles/globals.css` (a block of `.dark
+  .react-datepicker__*` rules using our design tokens). They're un-layered and
+  `.dark`-scoped so they outrank the bundled `react-datepicker.css`. If a picker
+  surface still looks light in dark mode, add the missing class there.
 - `useItemImage` reads `resolvedTheme` from `next-themes`, which is undefined
   until mount — the hook handles SSR by defaulting to the light placeholder.
 - The Chakra-era color helpers in `utils/loanHelpers.ts` return shadcn `Badge`

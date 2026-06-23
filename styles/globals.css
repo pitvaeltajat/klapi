@@ -294,3 +294,93 @@
     font-size: 16px;
   }
 }
+
+/* react-datepicker ships only a light theme. Repaint its calendar with our
+   dark-mode design tokens. Every selector is scoped under `.dark`, so it has
+   higher specificity than the library's single-class defaults (and therefore
+   wins regardless of stylesheet import order) while leaving light mode on the
+   stock appearance. Left un-layered on purpose so it beats the bundled
+   react-datepicker.css. */
+.dark .react-datepicker {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}
+
+.dark .react-datepicker__header {
+  background-color: hsl(var(--muted));
+  border-bottom-color: hsl(var(--border));
+}
+
+.dark .react-datepicker__current-month,
+.dark .react-datepicker-time__header,
+.dark .react-datepicker-year-header,
+.dark .react-datepicker__day-name,
+.dark .react-datepicker__day,
+.dark .react-datepicker__time-name {
+  color: hsl(var(--popover-foreground));
+}
+
+.dark .react-datepicker__day:hover,
+.dark .react-datepicker__month-text:hover,
+.dark .react-datepicker__quarter-text:hover,
+.dark .react-datepicker__year-text:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* The faint range fill between the two endpoints. */
+.dark .react-datepicker__day--in-range,
+.dark .react-datepicker__day--in-selecting-range {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Selected endpoints / keyboard focus sit on the primary colour. */
+.dark .react-datepicker__day--selected,
+.dark .react-datepicker__day--range-start,
+.dark .react-datepicker__day--range-end,
+.dark .react-datepicker__day--selecting-range-start,
+.dark .react-datepicker__day--selecting-range-end,
+.dark .react-datepicker__day--keyboard-selected,
+.dark .react-datepicker__day--selected:hover,
+.dark .react-datepicker__day--range-start:hover,
+.dark .react-datepicker__day--range-end:hover {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.dark .react-datepicker__day--today {
+  font-weight: 700;
+}
+
+.dark .react-datepicker__day--disabled,
+.dark .react-datepicker__day--disabled:hover {
+  color: hsl(var(--muted-foreground));
+  background-color: transparent;
+  opacity: 0.5;
+}
+
+/* Prev/next month chevrons are drawn with a border colour. */
+.dark .react-datepicker__navigation-icon::before,
+.dark .react-datepicker__year-read-view--down-arrow,
+.dark .react-datepicker__month-read-view--down-arrow {
+  border-color: hsl(var(--muted-foreground));
+}
+
+.dark .react-datepicker__navigation:hover *::before {
+  border-color: hsl(var(--foreground));
+}
+
+/* The little pointer triangle on popup (non-inline) calendars. */
+.dark .react-datepicker__triangle {
+  fill: hsl(var(--popover));
+  color: hsl(var(--popover));
+  stroke: hsl(var(--border));
+}
+
+.dark .react-datepicker__today-button {
+  background-color: hsl(var(--muted));
+  border-top-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}
