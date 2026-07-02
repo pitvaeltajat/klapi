@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
@@ -227,14 +228,33 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 <Input id="loaner" value={cart.loaner || ''} disabled className="bg-muted" />
               )}
             </div>
-            <div>
-              <Label htmlFor="startTime">Lainaus alkaa</Label>
-              <Input id="startTime" value={formatDateNumeric(startTime)} readOnly />
-            </div>
-            <div>
-              <Label htmlFor="endTime">Lainaus loppuu</Label>
-              <Input id="endTime" value={formatDateNumeric(endTime)} readOnly />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="space-y-1">
+                  <div>
+                    <Label htmlFor="startTime">Lainaus alkaa</Label>
+                    <Input
+                      id="startTime"
+                      value={formatDateNumeric(startTime)}
+                      readOnly
+                      tabIndex={-1}
+                      className="cursor-default select-none"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endTime">Lainaus loppuu</Label>
+                    <Input
+                      id="endTime"
+                      value={formatDateNumeric(endTime)}
+                      readOnly
+                      tabIndex={-1}
+                      className="cursor-default select-none"
+                    />
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Päivämäärien muuttaminen tyhjentää ostoskorin</TooltipContent>
+            </Tooltip>
           </div>
 
           {isKiosk && (
