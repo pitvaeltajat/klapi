@@ -46,6 +46,10 @@ model User {
   group                    Group          @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
+  // Recoverable (AES-256-GCM encrypted) copy of the KIOSK user's current
+  // password, so admins can view it in the admin panel. `password` stays the
+  // bcrypt hash used for auth; this is display-only. KIOSK rows only.
+  kioskPasswordEnc         String?
   kioskElevatePin          String?
   username                 String?        @unique
   emailNewLoanNotification Boolean        @default(true)

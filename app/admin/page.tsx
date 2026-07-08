@@ -158,9 +158,28 @@ export default function AdminPage() {
     return <Badge variant={variants[group] || 'gray'}>{labels[group] || group}</Badge>;
   };
 
-  const getOTP = async () => {
+  // Show the current kiosk password; if none exists yet, generate one.
+  const showKioskPassword = async () => {
     try {
-      const response = await fetch('/api/user/createKioskPassword', { method: 'POST' });
+      const response = await fetch('/api/user/kioskPassword');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Salasanan haku epäonnistui');
+      if (data.kioskPassword) {
+        setKioskPassword(data.kioskPassword);
+        setKioskDialogOpen(true);
+      } else {
+        await regenerateKioskPassword();
+      }
+    } catch (error) {
+      toast.error('Virhe', {
+        description: error instanceof Error ? error.message : 'Salasanan haku epäonnistui',
+      });
+    }
+  };
+
+  const regenerateKioskPassword = async () => {
+    try {
+      const response = await fetch('/api/user/kioskPassword', { method: 'POST' });
       const data = await response.json();
       if (response.ok) {
         setKioskPassword(data.kioskPassword);
@@ -269,7 +288,7 @@ export default function AdminPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-semibold">Admin</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={getOTP} variant="warning" className="gap-2">
+            <Button onClick={showKioskPassword} variant="warning" className="gap-2">
               <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
             </Button>
             {!session?.user?.adminExpiry && (
@@ -406,18 +425,24 @@ export default function AdminPage() {
         <Dialog open={kioskDialogOpen} onOpenChange={setKioskDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Kioskikäyttäjän salasana luotu</DialogTitle>
+              <DialogTitle>Kioskikäyttäjän salasana</DialogTitle>
             </DialogHeader>
             <div>
-              Uusi salasana:
+              Salasana:
               <div className="mb-4 mt-2">
                 <p className="text-2xl font-bold tracking-wider">{kioskPassword}</p>
               </div>
-              (voimassa 15 minuuttia)
+              <p className="text-sm text-muted-foreground">
+                Salasana on pysyvä — voit käyttää sitä uudelleen. Luo uusi vain jos haluat
+                mitätöidä vanhan.
+              </p>
             </div>
             <DialogFooter>
               <Button variant="secondary" onClick={() => setKioskDialogOpen(false)}>
                 Sulje
+              </Button>
+              <Button variant="warning" onClick={regenerateKioskPassword}>
+                Luo uusi salasana
               </Button>
               <Button
                 onClick={() => {
