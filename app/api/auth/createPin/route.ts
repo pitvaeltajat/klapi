@@ -31,6 +31,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Invalid PIN format' }, { status: 400 });
   }
 
+  // Note: duplicate PINs across admins are intentionally allowed. Rejecting them
+  // would turn this endpoint into an oracle (with only a handful of admins and
+  // 10 000 PINs, a rejection leaks another admin's PIN). Kiosk elevation is
+  // name-scoped (verified against the *selected* admin only), so a shared PIN
+  // never causes ambiguous attribution.
+
   await prisma.user.update({
     where: { id: session.user.id },
     data: { kioskElevatePin: await bcrypt.hash(pin, 10) },

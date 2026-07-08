@@ -10,6 +10,8 @@ import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { PinInput } from '@/components/ui/pin-input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -41,15 +43,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
           ? Date.parse(session.user.adminExpiry)
           : session.user.adminExpiry)
     ) {
-      update({
-        user: {
-          ...session.user,
-          group: 'KIOSK',
-          adminExpiry: null,
-          elevatedById: null,
-          elevatedByName: null,
-        },
-      });
+      update({ action: 'deElevate' });
     }
   }, [session?.user, update]);
   const role = session?.user?.group;
@@ -58,6 +52,29 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [admins, setAdmins] = useState<{ id: string; name: string | null }[]>([]);
+  const [selectedAdminId, setSelectedAdminId] = useState('');
+
+  // Load the selectable admins when the elevation dialog opens. Elevation is
+  // name-scoped: you pick who you are, then the PIN is verified against only
+  // that admin — a mistyped PIN can't silently elevate you as someone else.
+  useEffect(() => {
+    if (!pinDialogOpen) return;
+    let cancelled = false;
+    fetch('/api/auth/elevatableAdmins')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: { id: string; name: string | null }[]) => {
+        if (cancelled) return;
+        const sorted = [...data].sort((a, b) =>
+          new Intl.Collator('fi').compare(a.name ?? '', b.name ?? ''),
+        );
+        setAdmins(sorted);
+      })
+      .catch((err) => console.error('Failed to fetch admins:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [pinDialogOpen]);
   const effectiveGroup = session?.user?.group;
   const [expiry, setExpiry] = useState<number | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
@@ -93,47 +110,29 @@ export default function TopBar({ children }: { children: ReactNode }) {
       setPinDialogOpen(true);
       setPinInput('');
       setPinError('');
+      setSelectedAdminId('');
     } else {
       setAdminSwitchLoading(true);
-      await update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null, elevatedById: null, elevatedByName: null } });
+      await update({ action: 'deElevate' });
       setAdminSwitchLoading(false);
     }
   };
 
-  const comparePins = async (
-    inputPin: string,
-  ): Promise<{ isValidPin: boolean; adminId: string | null; adminName: string | null }> => {
-    return await fetch('/api/auth/validatePin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin: inputPin }),
-    })
-      .then((res) => res.json())
-      .then((data) => ({
-        isValidPin: data.isValidPin,
-        adminId: data.adminId ?? null,
-        adminName: data.adminName ?? null,
-      }));
-  };
-
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { isValidPin, adminId, adminName } = await comparePins(pinInput);
-    if (isValidPin) {
-      setAdminSwitchLoading(true);
-      const expiryDate = new Date(Date.now() + 30 * 60 * 1000);
-      await update({
-        user: {
-          ...session?.user,
-          group: 'ADMIN',
-          adminExpiry: expiryDate.toISOString(),
-          elevatedById: adminId,
-          elevatedByName: adminName,
-        },
-      });
+    if (!selectedAdminId) {
+      setPinError('Valitse käyttäjä');
+      return;
+    }
+    setAdminSwitchLoading(true);
+    // The server verifies the PIN against the selected admin only, and derives
+    // the elevated identity; we only learn whether it succeeded by inspecting
+    // the updated session.
+    const updated = await update({ action: 'elevate', adminId: selectedAdminId, pin: pinInput });
+    setAdminSwitchLoading(false);
+    if (updated?.user?.group === 'ADMIN') {
       setPinDialogOpen(false);
       setPinError('');
-      setAdminSwitchLoading(false);
     } else {
       setPinError('Väärä PIN-koodi');
     }
@@ -143,12 +142,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
     let timeout: NodeJS.Timeout | null = null;
     function checkAndRevert() {
       if (effectiveGroup === 'ADMIN' && expiry && Date.now() >= expiry) {
-        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null, elevatedById: null, elevatedByName: null } });
+        update({ action: 'deElevate' });
       }
     }
     if (effectiveGroup === 'ADMIN' && expiry && Date.now() < expiry) {
       timeout = setTimeout(() => {
-        update({ user: { ...session?.user, group: 'KIOSK', adminExpiry: null, elevatedById: null, elevatedByName: null } });
+        update({ action: 'deElevate' });
       }, expiry - Date.now());
       document.addEventListener('visibilitychange', checkAndRevert);
     }
@@ -264,6 +263,23 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   <DialogTitle>Anna admin-PIN</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handlePinSubmit}>
+                  <div className="mb-4">
+                    <Label htmlFor="elevate-admin">Käyttäjä</Label>
+                    <NativeSelect
+                      id="elevate-admin"
+                      value={selectedAdminId}
+                      onChange={(e) => setSelectedAdminId(e.target.value)}
+                    >
+                      <option value="" disabled>
+                        Valitse käyttäjä…
+                      </option>
+                      {admins.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name ?? a.id}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </div>
                   <div className="flex justify-center">
                     <PinInput type="number" value={pinInput} onChange={setPinInput} />
                   </div>
