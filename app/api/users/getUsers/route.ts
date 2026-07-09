@@ -16,6 +16,7 @@ export async function GET() {
 
     const users = await prisma.user.findMany({
       where: {
+        deletedAt: null,
         group: {
           not: 'KIOSK',
         },

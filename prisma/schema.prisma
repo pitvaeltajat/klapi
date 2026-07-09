@@ -43,6 +43,11 @@ model User {
   email                    String?        @unique
   emailVerified            DateTime?
   image                    String?
+  // Soft delete: admin "delete user" sets this instead of hard-deleting the row,
+  // so the user's loans and loan history survive. Deleted users are filtered out
+  // of auth (can't log in), admin/loaner listings, elevation, and email/cron
+  // recipients. Unset it (back to null) to restore the account.
+  deletedAt                DateTime?
   group                    Group          @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
@@ -62,6 +67,8 @@ model User {
   emailLogs                EmailLog[]
   loanHistoryEntries       LoanHistory[]
   itemHistoryEntries       ItemHistory[]
+
+  @@index([deletedAt])
 }
 
 model Item {

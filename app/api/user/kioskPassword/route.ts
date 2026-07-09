@@ -20,7 +20,7 @@ export async function GET() {
   }
 
   const kioskUser = await prisma.user.findFirst({
-    where: { group: 'KIOSK', kioskPasswordEnc: { not: null } },
+    where: { group: 'KIOSK', kioskPasswordEnc: { not: null }, deletedAt: null },
     select: { kioskPasswordEnc: true },
   });
 
@@ -43,14 +43,14 @@ export async function POST() {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const kioskUsers = await prisma.user.findMany({ where: { group: 'KIOSK' }, select: { id: true } });
+  const kioskUsers = await prisma.user.findMany({ where: { group: 'KIOSK', deletedAt: null }, select: { id: true } });
   if (kioskUsers.length === 0) {
     return NextResponse.json({ message: 'Kiosk user not found' }, { status: 404 });
   }
 
   const password = crypto.randomInt(100000, 999999).toString();
   await prisma.user.updateMany({
-    where: { group: 'KIOSK' },
+    where: { group: 'KIOSK', deletedAt: null },
     data: {
       password: await bcrypt.hash(password, 10),
       passwordExpiresAt: null, // static — no longer expires

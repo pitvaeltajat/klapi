@@ -90,7 +90,7 @@ export const authOptions: NextAuthOptions = {
           where: { username: credentials.username },
         });
 
-        if (!user || !user.password) {
+        if (!user || !user.password || user.deletedAt) {
           return null;
         }
 
@@ -117,6 +117,12 @@ export const authOptions: NextAuthOptions = {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
         });
+
+        // Block Google sign-in for a soft-deleted account (its email slot is
+        // still occupied, so we'd match the deleted row rather than re-create).
+        if (existingUser?.deletedAt) {
+          return false;
+        }
 
         if (!existingUser) {
           await prisma.user.create({

@@ -15,6 +15,7 @@ export async function sendNewLoanEmail(loanCreator: string, loanId: string) {
       where: {
         group: 'ADMIN',
         emailNewLoanNotification: true,
+        deletedAt: null,
       },
       select: { email: true },
     })

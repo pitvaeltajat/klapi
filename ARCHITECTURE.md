@@ -93,9 +93,9 @@ history-logged.
 ### `user/*`, `auth/*`, misc
 | Route | Method | Purpose |
 |---|---|---|
-| `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group` |
-| `user/getUsers` | GET | list **all** users, full records (admin only) |
-| `users/getUsers` | GET | list non-KIOSK users (id/email/name only, **no auth**) — for `LoanerAutocomplete` |
+| `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`) so loans + history survive; restore by clearing `deletedAt` |
+| `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
+| `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt` |
 | `user/createKioskPassword` | POST | generate kiosk OTP |
 | `user/updateEmailPreferences` | POST | notification prefs |
 | `auth/createPin` / `auth/validatePin` | POST | admin kiosk-elevation PIN |
@@ -122,7 +122,9 @@ history-logged.
 
 ## Prisma models (`prisma/schema.prisma`)
 
-`User` (group enum) · `Account`/`Session` (NextAuth) · `Item` (soft-delete via
+`User` (group enum, soft-delete via `deletedAt` — filtered out of auth, listings,
+elevation, and email recipients so `Loan.user` history survives) ·
+`Account`/`Session` (NextAuth) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, optional `Box`) · `Box` · `Location` · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` · `LoanHistory` /

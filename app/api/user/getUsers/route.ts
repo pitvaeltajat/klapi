@@ -11,6 +11,8 @@ export async function GET() {
     }, { status: 401 });
   }
 
-  const users = await prisma.user.findMany();
+  const users = await prisma.user.findMany({
+    where: { deletedAt: null },
+  });
   return NextResponse.json(users);
 }

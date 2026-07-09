@@ -14,7 +14,7 @@ export async function GET() {
   }
 
   const admins = await prisma.user.findMany({
-    where: { group: 'ADMIN', kioskElevatePin: { not: null } },
+    where: { group: 'ADMIN', kioskElevatePin: { not: null }, deletedAt: null },
     select: { id: true, name: true },
   });
 

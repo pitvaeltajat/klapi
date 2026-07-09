@@ -106,9 +106,18 @@ export async function DELETE(
   }
 
   try {
-    const user = await prisma.user.delete({
+    // Soft delete: mark the user deleted instead of removing the row, so their
+    // loans and loan history survive (Loan.user is onDelete: Cascade — a hard
+    // delete would take the whole ledger with it). Deleted users are filtered
+    // out of auth, listings, elevation, and email recipients. Restore by
+    // clearing deletedAt. Idempotent: re-deleting keeps the original timestamp.
+    const user = await prisma.user.update({
       where: {
         id: userId,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
       },
     });
     return NextResponse.json(user);

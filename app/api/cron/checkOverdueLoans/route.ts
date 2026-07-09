@@ -118,6 +118,7 @@ export async function GET(request: Request) {
           group: 'ADMIN',
           emailOverdueNotification: true,
           email: { not: null },
+          deletedAt: null,
         },
       });
 

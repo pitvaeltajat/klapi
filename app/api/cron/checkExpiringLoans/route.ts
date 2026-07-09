@@ -57,8 +57,8 @@ export async function GET(request: Request) {
       }
 
       // Check if user wants reminder emails
-      const user = await prisma.user.findUnique({
-        where: { id: loan.userId },
+      const user = await prisma.user.findFirst({
+        where: { id: loan.userId, deletedAt: null },
         select: { emailWeeklyReminder: true },
       });
 
@@ -205,8 +205,8 @@ export async function GET(request: Request) {
       }
 
       // Check if user wants reminder emails
-      const user = await prisma.user.findUnique({
-        where: { id: loan.userId },
+      const user = await prisma.user.findFirst({
+        where: { id: loan.userId, deletedAt: null },
         select: { emailWeeklyReminder: true },
       });
 
@@ -287,6 +287,7 @@ export async function GET(request: Request) {
           group: 'ADMIN',
           emailOldBoxNotification: true,
           email: { not: null },
+          deletedAt: null,
         },
       });
 
