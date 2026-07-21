@@ -4,8 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
-import { sendNewLoanEmail } from '@/app/api/email/sendNewLoanToAdmin/route';
-import { sendCreatedEmail } from '@/app/api/email/sendNewLoanToUser/route';
+import { sendCreatedEmail, sendNewLoanEmail } from '@/utils/emails';
 
 export const maxDuration = 60;
 

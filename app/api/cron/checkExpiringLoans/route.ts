@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import { ReservationStatus, EmailType } from '@prisma/client';
-import { getBaseUrl } from '@/utils/urlHelpers';
+import {
+  sendAdminReminderEmail,
+  sendPickupOverdueEmail,
+  sendPickupReminderEmail,
+  sendReminderEmail,
+  trySendEmail,
+  type EmailOutcome,
+} from '@/utils/emails';
 import { shouldSendEmail } from '@/utils/emailLogHelpers';
+import { formatDateNumeric } from '@/utils/dateFormat';
 import prisma from '@/utils/prisma';
 
 export async function GET(request: Request) {
@@ -12,8 +20,6 @@ export async function GET(request: Request) {
   }
 
   try {
-    const baseUrl = getBaseUrl();
-
     // Get current time and 24 hours from now
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -50,64 +56,42 @@ export async function GET(request: Request) {
     console.log(`Found ${upcomingPickupLoans.length} upcoming pickup loans`);
 
     // Send pickup reminder emails to users
-    const pickupReminderPromises = upcomingPickupLoans.map(async (loan) => {
-      if (!loan.user.email) {
-        console.log(`Loan ${loan.id} has no user email`);
-        return;
-      }
-
-      // Check if user wants reminder emails
-      const user = await prisma.user.findFirst({
-        where: { id: loan.userId, deletedAt: null },
-        select: { emailWeeklyReminder: true },
-      });
-
-      if (!user?.emailWeeklyReminder) {
-        console.log(`User ${loan.userId} has disabled reminder emails`);
-        return;
-      }
-
-      // Check if we already sent this email recently
-      const canSend = await shouldSendEmail(
-        loan.id,
-        loan.userId,
-        EmailType.PICKUP_REMINDER,
-      );
-
-      if (!canSend) {
-        console.log(`Skipping pickup reminder for loan ${loan.id} - already sent recently`);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `${baseUrl}/api/email/sendPickupReminder`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: loan.user.email,
-              id: loan.id,
-              startTime: loan.startTime.toLocaleString('fi-FI', {
-                dateStyle: 'short',
-                timeStyle: 'short',
-                timeZone: 'Europe/Helsinki',
-              }),
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to send pickup reminder email for loan ${loan.id}`);
+    const pickupReminderPromises = upcomingPickupLoans.map(
+      async (loan): Promise<EmailOutcome | null> => {
+        if (!loan.user.email) {
+          console.log(`Loan ${loan.id} has no user email`);
+          return null;
         }
 
-        console.log(`Sent pickup reminder email for loan ${loan.id}`);
-      } catch (error) {
-        console.error(`Error sending pickup reminder email for loan ${loan.id}:`, error);
-      }
-    });
+        // Check if user wants reminder emails
+        const user = await prisma.user.findFirst({
+          where: { id: loan.userId, deletedAt: null },
+          select: { emailWeeklyReminder: true },
+        });
+
+        if (!user?.emailWeeklyReminder) {
+          console.log(`User ${loan.userId} has disabled reminder emails`);
+          return null;
+        }
+
+        // Check if we already sent this email recently
+        const canSend = await shouldSendEmail(
+          loan.id,
+          loan.userId,
+          EmailType.PICKUP_REMINDER,
+        );
+
+        if (!canSend) {
+          console.log(`Skipping pickup reminder for loan ${loan.id} - already sent recently`);
+          return null;
+        }
+
+        const recipient = loan.user.email;
+        return trySendEmail(`pickup reminder email for loan ${loan.id}`, () =>
+          sendPickupReminderEmail(recipient, loan.id),
+        );
+      },
+    );
 
     // Find loans whose pickup time has already passed but are still not marked
     // in use (all reservations still ACCEPTED). These are loans the borrower
@@ -138,44 +122,35 @@ export async function GET(request: Request) {
 
     console.log(`Found ${loansNeedingPickupNudge.length} loans not marked in use after pickup`);
 
-    const pickupOverduePromises = loansNeedingPickupNudge.map(async (loan) => {
-      if (!loan.user.email) {
-        console.log(`Loan ${loan.id} has no user email`);
-        return;
-      }
-
-      if (!loan.user.emailWeeklyReminder) {
-        console.log(`User ${loan.userId} has disabled reminder emails`);
-        return;
-      }
-
-      const canSend = await shouldSendEmail(
-        loan.id,
-        loan.userId,
-        EmailType.PICKUP_OVERDUE_REMINDER,
-      );
-
-      if (!canSend) {
-        console.log(`Skipping pickup overdue reminder for loan ${loan.id} - already sent recently`);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${baseUrl}/api/email/sendPickupOverdue`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: loan.user.email, id: loan.id }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to send pickup overdue email for loan ${loan.id}`);
+    const pickupOverduePromises = loansNeedingPickupNudge.map(
+      async (loan): Promise<EmailOutcome | null> => {
+        if (!loan.user.email) {
+          console.log(`Loan ${loan.id} has no user email`);
+          return null;
         }
 
-        console.log(`Sent pickup overdue reminder email for loan ${loan.id}`);
-      } catch (error) {
-        console.error(`Error sending pickup overdue email for loan ${loan.id}:`, error);
-      }
-    });
+        if (!loan.user.emailWeeklyReminder) {
+          console.log(`User ${loan.userId} has disabled reminder emails`);
+          return null;
+        }
+
+        const canSend = await shouldSendEmail(
+          loan.id,
+          loan.userId,
+          EmailType.PICKUP_OVERDUE_REMINDER,
+        );
+
+        if (!canSend) {
+          console.log(`Skipping pickup overdue reminder for loan ${loan.id} - already sent recently`);
+          return null;
+        }
+
+        const recipient = loan.user.email;
+        return trySendEmail(`pickup overdue reminder email for loan ${loan.id}`, () =>
+          sendPickupOverdueEmail(recipient, loan.id),
+        );
+      },
+    );
 
     // Find loans that expire in the next 24-25 hours and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
@@ -198,10 +173,10 @@ export async function GET(request: Request) {
     console.log(`Found ${expiringLoans.length} expiring loans`);
 
     // Send reminder emails to users (only if they have emailWeeklyReminder enabled)
-    const userEmailPromises = expiringLoans.map(async (loan) => {
+    const userEmailPromises = expiringLoans.map(async (loan): Promise<EmailOutcome | null> => {
       if (!loan.user.email) {
         console.log(`Loan ${loan.id} has no user email`);
-        return;
+        return null;
       }
 
       // Check if user wants reminder emails
@@ -212,7 +187,7 @@ export async function GET(request: Request) {
 
       if (!user?.emailWeeklyReminder) {
         console.log(`User ${loan.userId} has disabled reminder emails`);
-        return;
+        return null;
       }
 
       // Check if we already sent this email recently
@@ -224,38 +199,13 @@ export async function GET(request: Request) {
 
       if (!canSend) {
         console.log(`Skipping expiring loan reminder for loan ${loan.id} - already sent recently`);
-        return;
+        return null;
       }
 
-      try {
-        const response = await fetch(
-          `${baseUrl}/api/email/sendReminder`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: loan.user.email,
-              id: loan.id,
-              description: loan.description,
-              endTime: loan.endTime.toLocaleString('fi-FI', {
-                dateStyle: 'short',
-                timeStyle: 'short',
-                timeZone: 'Europe/Helsinki',
-              }),
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to send email for loan ${loan.id}`);
-        }
-
-        console.log(`Sent reminder email for loan ${loan.id}`);
-      } catch (error) {
-        console.error(`Error sending email for loan ${loan.id}:`, error);
-      }
+      const recipient = loan.user.email;
+      return trySendEmail(`reminder email for loan ${loan.id}`, () =>
+        sendReminderEmail(recipient, loan.id),
+      );
     });
 
     // Find loans that have IN_BOX reservations for over a week
@@ -279,7 +229,7 @@ export async function GET(request: Request) {
     console.log(`Found ${oldBoxLoans.length} loans in boxes over a week`);
 
     // Send admin reminder emails if there are old box loans
-    let adminEmailPromises: Promise<void>[] = [];
+    let adminEmailPromises: Promise<EmailOutcome | null>[] = [];
     if (oldBoxLoans.length > 0) {
       // Get all admins who want old box notifications
       const admins = await prisma.user.findMany({
@@ -294,16 +244,12 @@ export async function GET(request: Request) {
       const loanInfo = oldBoxLoans.map((loan) => ({
         id: loan.id,
         userName: loan.user.name || loan.user.email || 'Unknown',
-        startTime: loan.startTime.toLocaleString('fi-FI', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-          timeZone: 'Europe/Helsinki',
-        }),
+        startTime: formatDateNumeric(loan.startTime),
         boxName: loan.box?.name,
       }));
 
-      adminEmailPromises = admins.map(async (admin) => {
-        if (!admin.email) return;
+      adminEmailPromises = admins.map(async (admin): Promise<EmailOutcome | null> => {
+        if (!admin.email) return null;
 
         // For admin notifications, use the first old box loan ID as a reference
         const referenceLoanId = oldBoxLoans[0].id;
@@ -317,36 +263,19 @@ export async function GET(request: Request) {
 
         if (!canSend) {
           console.log(`Skipping old box admin notification to ${admin.email} - already sent recently`);
-          return;
+          return null;
         }
 
-        try {
-          const response = await fetch(
-            `${baseUrl}/api/email/sendAdminReminder`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: admin.email,
-                loans: loanInfo,
-              }),
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error(`Failed to send admin email to ${admin.email}`);
-          }
-
-          console.log(`Sent admin reminder email to ${admin.email}`);
-        } catch (error) {
-          console.error(`Error sending admin email to ${admin.email}:`, error);
-        }
+        const recipient = admin.email;
+        return trySendEmail(`admin reminder email to ${recipient}`, () =>
+          sendAdminReminderEmail(recipient, loanInfo),
+        );
       });
     }
 
-    await Promise.all([
+    // Individual failures are swallowed by trySendEmail so one bad send can't
+    // abort the sweep; they surface in the tallies below.
+    const outcomes = await Promise.all([
       ...pickupReminderPromises,
       ...pickupOverduePromises,
       ...userEmailPromises,
@@ -359,6 +288,8 @@ export async function GET(request: Request) {
       overduePickupLoansChecked: loansNeedingPickupNudge.length,
       expiringLoansChecked: expiringLoans.length,
       oldBoxLoansChecked: oldBoxLoans.length,
+      emailsSent: outcomes.filter((outcome) => outcome === 'sent').length,
+      emailsFailed: outcomes.filter((outcome) => outcome === 'failed').length,
     });
   } catch (error) {
     console.error('Cron job error:', error);

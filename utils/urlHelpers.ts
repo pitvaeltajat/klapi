@@ -2,8 +2,11 @@
  * Get the base URL for the application.
  * In development: uses localhost
  * In production: uses Vercel's VERCEL_URL environment variable
+ *
+ * Only a fallback for getPublicUrl() — nothing calls the app over HTTP from
+ * inside itself any more, so this is deliberately not exported.
  */
-export function getBaseUrl(): string {
+function getBaseUrl(): string {
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:3000';
   }

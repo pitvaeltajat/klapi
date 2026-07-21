@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { ReservationStatus, EmailType } from '@prisma/client';
-import { getBaseUrl } from '@/utils/urlHelpers';
+import {
+  sendOverdueAdminEmail,
+  sendOverdueEmail,
+  trySendEmail,
+  type EmailOutcome,
+} from '@/utils/emails';
 import { shouldSendEmail } from '@/utils/emailLogHelpers';
+import { formatDateNumeric } from '@/utils/dateFormat';
 import prisma from '@/utils/prisma';
 
 export async function GET(request: Request) {
@@ -12,7 +18,6 @@ export async function GET(request: Request) {
   }
 
   try {
-    const baseUrl = getBaseUrl();
     const now = new Date();
 
     // Find loans where:
@@ -51,16 +56,16 @@ export async function GET(request: Request) {
     console.log(`Found ${overdueLoans.length} overdue loans`);
 
     // Send reminder emails to users who have overdue loans and want reminders
-    const userEmailPromises = overdueLoans.map(async (loan) => {
+    const userEmailPromises = overdueLoans.map(async (loan): Promise<EmailOutcome | null> => {
       if (!loan.user.email) {
         console.log(`Loan ${loan.id} has no user email`);
-        return;
+        return null;
       }
 
       // Check if user wants reminder emails
       if (!loan.user.emailWeeklyReminder) {
         console.log(`User ${loan.userId} has disabled reminder emails`);
-        return;
+        return null;
       }
 
       // Check if we already sent this email recently (prevents duplicates from double cron execution)
@@ -72,33 +77,17 @@ export async function GET(request: Request) {
 
       if (!canSend) {
         console.log(`Skipping overdue email for loan ${loan.id} - already sent recently`);
-        return;
+        return null;
       }
 
-      try {
-        const response = await fetch(`${baseUrl}/api/email/sendOverdueToUser`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: loan.user.email,
-            id: loan.id,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to send overdue email for loan ${loan.id}`);
-        }
-
-        console.log(`Sent overdue reminder email for loan ${loan.id}`);
-      } catch (error) {
-        console.error(`Error sending overdue email for loan ${loan.id}:`, error);
-      }
+      const recipient = loan.user.email;
+      return trySendEmail(`overdue reminder email for loan ${loan.id}`, () =>
+        sendOverdueEmail(recipient, loan.id),
+      );
     });
 
     // Prepare admin notification for loans at specific overdue intervals (1, 3, 7 days)
-    let adminEmailPromises: Promise<void>[] = [];
+    let adminEmailPromises: Promise<EmailOutcome | null>[] = [];
 
     // Filter loans to only those at notification intervals (1, 3, or 7 days overdue)
     const notificationIntervals = [1, 3, 7];
@@ -122,23 +111,7 @@ export async function GET(request: Request) {
         },
       });
 
-      // Group loans by days overdue
-      const loansByInterval: Record<number, typeof loansAtIntervals> = {
-        1: [],
-        3: [],
-        7: [],
-      };
-
-      loansAtIntervals.forEach((loan) => {
-        const daysOverdue = Math.floor(
-          (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
-        );
-        if (notificationIntervals.includes(daysOverdue)) {
-          loansByInterval[daysOverdue].push(loan);
-        }
-      });
-
-      adminEmailPromises = admins.map(async (admin) => {
+      adminEmailPromises = admins.map(async (admin): Promise<EmailOutcome | null> => {
         // Send one email per admin per interval
         // We need to check each loan individually to prevent duplicate sends
         const loansToNotify = [];
@@ -157,7 +130,7 @@ export async function GET(request: Request) {
 
         if (loansToNotify.length === 0) {
           console.log(`No new overdue loans to notify ${admin.email} about`);
-          return;
+          return null;
         }
 
         // Create loan info for only the loans we're notifying about
@@ -170,44 +143,30 @@ export async function GET(request: Request) {
             id: loan.id,
             userName: loan.user.name || loan.user.email || 'Unknown',
             userEmail: loan.user.email,
-            endTime: loan.endTime.toLocaleString('fi-FI', {
-              dateStyle: 'short',
-              timeStyle: 'short',
-              timeZone: 'Europe/Helsinki',
-            }),
+            endTime: formatDateNumeric(loan.endTime),
             daysOverdue,
           };
         });
 
-        try {
-          const response = await fetch(`${baseUrl}/api/email/sendOverdueToAdmin`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: admin.email,
-              loans: loansToNotifyInfo,
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to send overdue admin email to ${admin.email}`);
-          }
-
-          console.log(`Sent overdue admin email to ${admin.email} for ${loansToNotifyInfo.length} loans`);
-        } catch (error) {
-          console.error(`Error sending overdue admin email to ${admin.email}:`, error);
-        }
+        // The query filters on `email: { not: null }`, so this is always set.
+        const recipient = admin.email as string;
+        return trySendEmail(
+          `overdue admin email to ${recipient} for ${loansToNotifyInfo.length} loans`,
+          () => sendOverdueAdminEmail(recipient, loansToNotifyInfo),
+        );
       });
     }
 
-    // Wait for all emails to be sent
-    await Promise.all([...userEmailPromises, ...adminEmailPromises]);
+    // Wait for all emails to be sent. Individual failures are swallowed by
+    // trySendEmail so one bad send can't abort the sweep; they surface in the
+    // tallies below.
+    const outcomes = await Promise.all([...userEmailPromises, ...adminEmailPromises]);
 
     return NextResponse.json({
       message: 'Overdue loan check completed',
       overdueLoansCount: overdueLoans.length,
+      emailsSent: outcomes.filter((outcome) => outcome === 'sent').length,
+      emailsFailed: outcomes.filter((outcome) => outcome === 'failed').length,
     });
   } catch (error) {
     console.error('Error checking overdue loans:', error);

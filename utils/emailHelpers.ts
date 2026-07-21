@@ -3,7 +3,7 @@ import { formatDateLong as formatDate, formatDateLongShort as formatDateShort } 
 
 export { formatDate, formatDateShort };
 
-export function getEmailStyles(): string {
+function getEmailStyles(): string {
   return `
     <style>
       body {
@@ -196,7 +196,7 @@ export function renderButton(href: string, label: string): string {
   return `<a href="${href}" class="button">${label}</a>`;
 }
 
-export function renderFooter(): string {
+function renderFooter(): string {
   return `
     <div class="footer">
       <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
