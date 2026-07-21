@@ -2,30 +2,29 @@
 
 # dependencies
 /node_modules
-/.pnp
-.pnp.js
 
 # testing
 /coverage
 .eslintcache
 
-# next.js
+# next.js / build output
 /.next/
 /out/
 next-env.d.ts
-
-# production
-/build
+tsconfig.tsbuildinfo
+# SWC's wasm plugin cache — per-platform binaries, ~6 MB each
+.swc/
 
 # misc
 .DS_Store
 *.pem
-.vscode/
+# Editor settings are shared (.vscode/settings.json is tracked), so only ignore
+# the per-developer files that land next to it.
+.vscode/*
+!.vscode/settings.json
 
 # debug
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # local env files
 .env.local
@@ -40,13 +39,6 @@ yarn-error.log*
 # claude
 .claude
 
-# lock files
+# lock files — this repo is pnpm-only; a stray npm/yarn lockfile is a mistake
 yarn.lock
 package-lock.json
-
-# cypress media
-cypress/videos
-cypress/screenshots
-
-
-tsconfig.tsbuildinfo

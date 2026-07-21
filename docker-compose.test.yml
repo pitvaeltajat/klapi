@@ -1,10 +1,11 @@
+# Throwaway database for `pnpm test`. No `restart: always` on purpose — this
+# container is disposable, and a restarting one would hold port 5433 forever.
 services:
   postgres:
-    restart: always
     image: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: klapi_test
     ports:
-      - "5433:5432"
+      - '5433:5432'
