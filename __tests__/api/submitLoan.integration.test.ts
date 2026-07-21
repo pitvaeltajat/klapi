@@ -40,7 +40,7 @@ async function createTestItem(overrides: Partial<{ name: string; amount: number 
 
 /**
  * Simulates the core submitLoan logic without session/HTTP overhead.
- * This mirrors the business logic in pages/api/loan/submitLoan.ts
+ * This mirrors the business logic in app/api/loan/submitLoan/route.ts
  */
 async function submitLoanDirect(
   sessionUser: { id: string; group: Group },

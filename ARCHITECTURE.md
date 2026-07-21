@@ -38,8 +38,11 @@ const session = await getServerSession(authOptions); // authOptions from '@/lib/
 if (session?.user?.group !== 'ADMIN') return NextResponse.json({ message: '…' }, { status: 401 });
 ```
 
-`session.user` carries `id`, `group`, `email`, and (kiosk-elevation only)
-`elevatedById`. NextAuth config + the credentials provider live in `lib/auth.ts`.
+`session.user` carries `id`, `group`, `email`, and — for a PIN-elevated kiosk
+session — `elevatedById`, `elevatedByName` and `adminExpiry`. `adminExpiry` is
+load-bearing, not decoration: `isElevationInvalid` in `lib/auth.ts` demotes the
+session back to KIOSK once it passes. NextAuth config + the credentials
+provider live in `lib/auth.ts`.
 
 ## Audit / history pattern
 
@@ -87,8 +90,12 @@ history-logged.
 | `loanReturned` | POST | returned to box |
 | `loanProcessed` | POST | process returned-from-box |
 | `editReport` | POST | edit a condition report |
-| `getLoansClient` | GET | loans for the signed-in client |
 | `myPendingPickups` | GET | current user's pending pickups |
+
+`submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when a kiosk
+session makes it) — there is no approval queue. `approveLoan` therefore only
+exists to bring a rejected loan back, which is why the "Hyväksy" button is
+hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 
 ### `user/*`, `auth/*`, misc
 | Route | Method | Purpose |
@@ -96,15 +103,16 @@ history-logged.
 | `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`) so loans + history survive; restore by clearing `deletedAt` |
 | `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
 | `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt` |
-| `user/createKioskPassword` | POST | generate kiosk OTP |
+| `user/kioskPassword` | GET/POST | read / rotate the reusable static kiosk password |
 | `user/updateEmailPreferences` | POST | notification prefs |
-| `auth/createPin` / `auth/validatePin` | POST | admin kiosk-elevation PIN |
+| `auth/createPin` | POST | set the admin kiosk-elevation PIN |
+| `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
 | `auth/[...nextauth]` | — | NextAuth handler |
 | `availability/getAvailabilities` | POST | item availability over a date range |
 | `category/getCategories`, `location/getLocations` | GET | option lists |
 | `reservation/checkInBox` | POST | mark a reservation checked into a box |
 | `email/send*` | POST | transactional emails (see `utils/emailHelpers`, `emailLogHelpers`) |
-| `cron/checkExpiringLoans`, `cron/checkOverdueLoans` | GET | scheduled reminders/notifications |
+| `cron/checkExpiringLoans`, `cron/checkOverdueLoans`, `cron/startDueLoans` | GET | scheduled jobs; require `Authorization: Bearer $CRON_SECRET`. Schedules live in `vercel.json` |
 
 ## Pages (`app/**/page.tsx`)
 

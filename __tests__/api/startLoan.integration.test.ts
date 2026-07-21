@@ -62,7 +62,7 @@ async function createTestLoan(
 }
 
 /**
- * Mirrors the core logic from pages/api/loan/startLoan.ts
+ * Mirrors the core logic from app/api/loan/startLoan/route.ts
  */
 async function startLoanDirect(
   loanId: string,

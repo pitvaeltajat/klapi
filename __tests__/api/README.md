@@ -8,39 +8,37 @@ These tests verify that the API endpoints work correctly against a real database
 pnpm test
 ```
 
-This automatically starts the PostgreSQL database via docker-compose and runs all tests.
+That starts a disposable PostgreSQL via `docker-compose.test.yml` on port
+**5433** — separate from the dev database on 5432, so running tests never
+touches your local data — applies migrations, and runs every suite.
+
+`pnpm test:ci` skips the docker step and expects `DATABASE_URL` to point at an
+already-migrated database (that's what CI does with its own postgres service).
+
+Suites run one file at a time (`fileParallelism: false` in `vitest.config.mts`)
+because they share the one database and several read globally; the reasoning is
+documented in that file.
 
 ## Test Data
 
 Tests create their own test data and clean up after themselves. Each test suite:
+
 - Creates test users, items, and loans in `beforeAll`
 - Cleans up loans between tests in `beforeEach`
 - Removes all test data in `afterAll`
 
-## Test Coverage
+## Coverage
 
-### updateLoan.integration.test.ts
+The suites in this directory cover: loan submission and updates (including the
+before-start path), approve/reject, starting a loan, returns, availability
+calculation, inventory, the kiosk password, email-log dedup, and the
+`startDueLoans` cron. `__tests__/` one level up holds the unit tests (auth
+elevation, loan status derivation, email helpers, serialization).
 
-Tests for the loan update API:
+Deliberately not enumerated per file — that list rots faster than it helps. Run
+`pnpm test` and read the reporter output for the current picture.
 
-**Authorization:**
-- Rejects unauthenticated requests
-- Allows users to edit their own loans
-- Prevents users from editing other users' loans
-- Allows admins to edit any loan
-- Prevents non-admins from editing INUSE loans
-- Prevents non-admins from editing RETURNED loans
-
-**Availability validation:**
-- Allows editing within available quantity
-- Rejects editing beyond available quantity
-- Considers overlapping loans when calculating availability
-- Allows full availability when loans don't overlap
-- Ignores REJECTED loans in availability calculation
-- Ignores RETURNED loans in availability calculation
-
-**Data persistence:**
-- Correctly updates reservations in database
-- Removes items when not included in update
-- Updates loan dates correctly
-- Updates description correctly
+Known gaps worth filling: user soft-delete (`user/[userId]` DELETE),
+`item/bulkItems`, `loan/cancelLoan`, `loan/loanProcessed`,
+`reservation/checkInBox`, and the `checkExpiringLoans` / `checkOverdueLoans`
+crons.
