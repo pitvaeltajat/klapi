@@ -1,23 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import prisma from '@/utils/prisma';
 import { encryptKioskSecret, decryptKioskSecret } from '@/utils/kioskSecret';
-
-async function requireAdmin() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.group !== 'ADMIN') return null;
-  return session;
-}
+import { requireAdmin } from '@/utils/apiAuth';
 
 // GET — reveal the current kiosk password to an admin. Returns null if none has
 // been generated yet (the admin then POSTs to create one).
 export async function GET() {
-  if (!(await requireAdmin())) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
   const kioskUser = await prisma.user.findFirst({
     where: { group: 'KIOSK', kioskPasswordEnc: { not: null }, deletedAt: null },
@@ -39,9 +31,8 @@ export async function GET() {
 // POST — rotate the kiosk password. Sets a new static (non-expiring) password on
 // every KIOSK user: the bcrypt hash for auth plus an encrypted copy for display.
 export async function POST() {
-  if (!(await requireAdmin())) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
   const kioskUsers = await prisma.user.findMany({ where: { group: 'KIOSK', deletedAt: null }, select: { id: true } });
   if (kioskUsers.length === 0) {

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdminOrKiosk } from '@/utils/apiAuth';
 
 export async function GET() {
   try {
@@ -9,10 +8,8 @@ export async function GET() {
     // rendered only for ADMIN/KIOSK). Gate it: leaving it open lets anyone
     // enumerate every user's id/email/name — the reconnaissance step for
     // impersonating an admin at the kiosk.
-    const session = await getServerSession(authOptions);
-    if (session?.user?.group !== 'ADMIN' && session?.user?.group !== 'KIOSK') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+    const { denied } = await requireAdminOrKiosk();
+    if (denied) return denied;
 
     const users = await prisma.user.findMany({
       where: {

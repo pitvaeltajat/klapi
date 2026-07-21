@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import prisma from '@/utils/prisma';
+import { requireUser } from '@/utils/apiAuth';
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user?.id) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
+  const { session, denied } = await requireUser();
+  if (denied) return denied;
 
   const { emailWeeklyReminder, emailNewLoanNotification, emailOldBoxNotification, emailOverdueNotification } = await request.json();
 

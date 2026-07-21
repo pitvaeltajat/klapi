@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import prisma from '@/utils/prisma';
 import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/utils/apiAuth';
 
 export async function GET(
   request: Request,
@@ -33,14 +34,10 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  const { userId } = await params;
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
-  }
+  const { userId } = await params;
 
   const body = await request.json();
 
@@ -65,14 +62,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  const { userId } = await params;
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
-  }
+  const { userId } = await params;
 
   const body = await request.json();
   const newGroup = body.group as 'ADMIN' | 'USER';
@@ -96,14 +89,10 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  const { userId } = await params;
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
-  }
+  const { userId } = await params;
 
   try {
     // Soft delete: mark the user deleted instead of removing the row, so their

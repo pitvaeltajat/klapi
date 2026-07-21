@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
 import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/utils/apiAuth';
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
-  }
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
   const { filename, contentType } = await request.json();
 

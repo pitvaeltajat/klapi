@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
+import { requireUser } from '@/utils/apiAuth';
 
 // Converts an approved loan to in-use status
 // Can be called by:
@@ -11,11 +10,8 @@ import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 // - KIOSK user (to start any approved loan on behalf of the loaner)
 // - ADMIN user (to start any approved loan)
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    return NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 });
-  }
+  const { session, denied } = await requireUser();
+  if (denied) return denied;
 
   const { id, reportContent } = await request.json() as {
     id: string;

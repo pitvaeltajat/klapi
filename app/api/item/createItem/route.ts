@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { logItemHistory } from '@/utils/itemHistory';
+import { requireAdmin } from '@/utils/apiAuth';
 
 interface CategoryInput {
   value: string;
@@ -10,12 +9,8 @@ interface CategoryInput {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
-  }
+  const { session, denied } = await requireAdmin();
+  if (denied) return denied;
 
   const body = await request.json();
 

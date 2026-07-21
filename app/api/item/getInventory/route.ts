@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/utils/apiAuth';
 
 const PAGE_SIZE_MAX = 200;
 
@@ -23,13 +22,8 @@ const PAGE_SIZE_MAX = 200;
  *   dir       'asc' | 'desc' (default asc)
  */
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json(
-      { message: 'Sinulla ei ole oikeutta tähän toimintoon' },
-      { status: 401 },
-    );
-  }
+  const { denied } = await requireAdmin();
+  if (denied) return denied;
 
   const params = new URL(request.url).searchParams;
   const page = Math.max(1, Number(params.get('page')) || 1);

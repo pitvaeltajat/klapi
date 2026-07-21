@@ -31,12 +31,20 @@ The UI is Finnish; models/code are English. Map concepts before grepping:
 
 ## Auth pattern
 
-There is **no `requireAdmin` helper** — every protected route inlines:
+Protected routes use the guards in `utils/apiAuth.ts` — `requireUser`,
+`requireAdmin`, `requireAdminOrKiosk`:
 
 ```ts
-const session = await getServerSession(authOptions); // authOptions from '@/lib/auth'
-if (session?.user?.group !== 'ADMIN') return NextResponse.json({ message: '…' }, { status: 401 });
+const { session, denied } = await requireAdmin();
+if (denied) return denied;
+// session is non-null from here on
 ```
+
+They only answer "may this caller call this route at all". Per-resource checks
+(is this the caller's own loan?) stay in the route. A few routes still call
+`getServerSession` directly because their rule isn't a simple group check —
+`user/[userId]` GET (admin *or* the user themselves) and `loan/myPendingPickups`
+(answers with an empty list rather than a 401).
 
 `session.user` carries `id`, `group`, `email`, and — for a PIN-elevated kiosk
 session — `elevatedById`, `elevatedByName` and `adminExpiry`. `adminExpiry` is
@@ -111,7 +119,11 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `availability/getAvailabilities` | POST | item availability over a date range |
 | `category/getCategories`, `location/getLocations` | GET | option lists |
 | `reservation/checkInBox` | POST | mark a reservation checked into a box |
-| `email/send*` | POST | transactional emails (see `utils/emailHelpers`, `emailLogHelpers`) |
+Transactional email is **not** a route: the senders live in `utils/emails/`
+(one module per email, each split into a pure `render*Email` and a
+`send*Email`), with the shared pieces in `utils/emailHelpers` and the
+once-per-day dedup in `utils/emailLogHelpers`. Callers — `submitLoan` and the
+cron sweeps — import and call them directly.
 | `cron/checkExpiringLoans`, `cron/checkOverdueLoans`, `cron/startDueLoans` | GET | scheduled jobs; require `Authorization: Bearer $CRON_SECRET`. Schedules live in `vercel.json` |
 
 ## Pages (`app/**/page.tsx`)

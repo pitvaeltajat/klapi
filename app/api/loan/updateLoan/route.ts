@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { activeItemsWhere } from '@/utils/itemQueries';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
+import { requireUser } from '@/utils/apiAuth';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 });
-    }
+    const { session, denied } = await requireUser();
+    if (denied) return denied;
 
     const { id, reservations, startTime, endTime, description } = await request.json();
 

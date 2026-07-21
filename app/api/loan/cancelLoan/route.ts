@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
+import { requireUser } from '@/utils/apiAuth';
 
 // Lets the loan owner (or an admin) cancel an approved loan that has not yet
 // been picked up. Distinct from admin rejection: cancelling is the borrower
 // withdrawing their own reservation. Only ACCEPTED loans can be cancelled —
 // once items are in use they must be returned, not cancelled.
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    return NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 });
-  }
+  const { session, denied } = await requireUser();
+  if (denied) return denied;
 
   const { id } = (await request.json()) as { id: string };
 

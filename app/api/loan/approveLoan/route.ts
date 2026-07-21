@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
+import { requireAdmin } from '@/utils/apiAuth';
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.group !== 'ADMIN') {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
-  }
+  const { session, denied } = await requireAdmin();
+  if (denied) return denied;
 
   const { id } = await request.json();
 
