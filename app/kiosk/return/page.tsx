@@ -6,6 +6,7 @@ import { LoanStatus, ReservationStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import ReturnView from './ReturnView';
+import { loanWithReservationsInclude } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Palauta lainoja | Klapi' };
 
@@ -33,7 +34,7 @@ export default async function ReturnPage() {
           ],
           ...(isAdminOrKiosk ? {} : { userId: session.user.id }),
         },
-        include: { user: true, reservations: { include: { item: true } } },
+        include: loanWithReservationsInclude,
         orderBy: { startTime: 'desc' },
       })
     : [];

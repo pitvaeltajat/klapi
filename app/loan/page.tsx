@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { serialize } from '@/utils/serialize';
 import { LoanType } from '@/components/LoanCard';
 import LoanListClient from './LoanListClient';
+import { reportSummarySelect } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Lainat | Klapi' };
 
@@ -39,15 +40,7 @@ export default async function LoanListPage() {
           item: { select: { id: true, name: true } },
         },
       },
-      reports: {
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          created: true,
-          status: true,
-        },
-      },
+      reports: { select: reportSummarySelect },
     },
   });
 

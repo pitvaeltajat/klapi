@@ -5,6 +5,7 @@ import { serialize } from '@/utils/serialize';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import AccountView from './AccountView';
+import { emailPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 
 export const metadata = { title: 'Oma tili | Klapi' };
@@ -36,25 +37,12 @@ export default async function AccountPage() {
             item: { select: { id: true, name: true } },
           },
         },
-        reports: {
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-            created: true,
-            status: true,
-          },
-        },
+        reports: { select: reportSummarySelect },
       },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: {
-        emailWeeklyReminder: true,
-        emailNewLoanNotification: true,
-        emailOldBoxNotification: true,
-        emailOverdueNotification: true,
-      },
+      select: emailPreferenceSelect,
     }),
   ]);
 
