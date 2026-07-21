@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
-import BookingTimeline from '@/components/BookingTimeline';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { AlertTriangle } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
@@ -207,12 +206,6 @@ export default function ItemView({
           isAdmin={isAdmin}
         />
 
-        <BookingTimeline
-          reservations={item.reservations}
-          totalAmount={item.amount}
-          isAdmin={isAdmin}
-        />
-
         {isAdmin && reportAffectedItems.length > 0 && (
           <section id="raportit" className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
             <h2 className="mb-4 text-xl font-semibold">
@@ -252,9 +245,9 @@ export default function ItemView({
         )}
 
         <div className="mt-4">
-          <h2 className="mb-4 text-xl font-semibold">Lainahistoria</h2>
+          <h2 className="mb-4 text-xl font-semibold">Lainat ja varaukset</h2>
           {item.reservations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Ei lainahistoriaa.</p>
+            <p className="text-sm text-muted-foreground">Ei lainoja eikä varauksia.</p>
           ) : (
             <ReservationTable reservations={item.reservations} isAdmin={isAdmin} />
           )}
