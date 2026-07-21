@@ -5,7 +5,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Providers from './providers';
 
-export const metadata: Metadata = { title: 'Klapi' };
+export const metadata: Metadata = {
+  title: 'Klapi',
+  // The UI is Finnish; on a kiosk whose browser language isn't Finnish, Chrome
+  // otherwise offers to translate the page on every load.
+  other: { google: 'notranslate' },
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Resolve the session on the server so SessionProvider hydrates with it
@@ -15,7 +20,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // JWT strategy means this is a cookie decode, not a DB hit.
   const session = await getServerSession(authOptions);
   return (
-    <html lang="fi" suppressHydrationWarning>
+    <html lang="fi" translate="no" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Providers session={session}>{children}</Providers>
