@@ -1,4 +1,4 @@
-import { Announcement, User } from '@prisma/client';
+import { Announcement } from '@prisma/client';
 import { DefaultSession } from 'next-auth';
 
 // Extend next-auth session types
@@ -21,7 +21,7 @@ declare module 'next-auth' {
   }
 }
 
-// Redux State Types
+// Context state types (cart + dates providers in `contexts/`)
 export interface DatesState {
   startDate: Date;
   endDate: Date;
@@ -61,38 +61,3 @@ export interface ItemCardProps {
   availabilityKnown?: boolean;
 }
 
-export interface LoanCardProps {
-  loan: {
-    id: string;
-    startTime: Date;
-    endTime: Date;
-    status: 'ACCEPTED' | 'REJECTED' | 'INUSE' | 'IN_BOX' | 'PARTIALLY_RETURNED' | 'RETURNED';
-    description?: string;
-    user: User;
-    reservations: {
-      id: string;
-      amount: number;
-      item: {
-        id: string;
-        name: string;
-      };
-    }[];
-  };
-}
-
-// API Types
-export interface SubmitLoanRequest {
-  reservations: {
-    item: {
-      connect: {
-        id: string;
-      };
-    };
-    amount: number;
-  }[];
-  startTime: Date;
-  endTime: Date;
-  userId: string;
-  description?: string;
-  loaner?: string;
-}

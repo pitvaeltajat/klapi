@@ -35,7 +35,7 @@ export const itemsWithRelationsInclude = {
  * seasonal year of loans counts toward an item's popularity, while older loans
  * eventually age out and stop skewing the order.
  */
-export const POPULARITY_WINDOW_DAYS = 365;
+const POPULARITY_WINDOW_DAYS = 365;
 
 /**
  * itemId -> number of bookings within the rolling window. Drives the
