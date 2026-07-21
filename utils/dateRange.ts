@@ -1,7 +1,7 @@
 /**
- * Helpers for turning a react-datepicker range selection into a loan's
- * pickup/return datetimes. Shared by the initial date picker (DateSelector)
- * and the compact edit dialog (DateSummaryBar).
+ * Helpers for turning a react-datepicker selection into a loan's
+ * pickup/return datetimes. Shared by the initial date picker (DateSelector),
+ * the compact edit dialog (DateSummaryBar) and the kiosk's return-date picker.
  */
 
 /** Default pickup/return time: 18:00 local. */
@@ -18,7 +18,7 @@ export const setEndOfDay = (date: Date): Date => {
   return d;
 };
 
-const isSameCalendarDay = (a: Date, b: Date): boolean =>
+export const isSameCalendarDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() &&
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();

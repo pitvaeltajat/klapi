@@ -8,38 +8,22 @@ import { useCart } from '@/contexts/CartContext';
 import LoanerAutocomplete from './LoanerAutocomplete';
 import { Label } from '@/components/ui/label';
 import { formatDateTimeKiosk } from '@/utils/dateFormat';
+import { isSameCalendarDay, setDefaultTime, setEndOfDay } from '@/utils/dateRange';
 
 export default function KioskDateSelector() {
   const { state: dates, setEndDate } = useDates();
   const { state: cart, setLoaner, setUserId } = useCart();
-
-  const setDefaultTime = (date: Date): Date => {
-    const newDate = new Date(date);
-    newDate.setHours(18, 0, 0, 0);
-    return newDate;
-  };
 
   const handleLoanerChange = (value: string, userId?: string) => {
     setLoaner(value);
     setUserId(userId);
   };
 
+  // Same rule as the regular date picker: 18:00 on the return day, except for a
+  // same-day loan, which runs to end of day.
   const handleDateChange = (date: Date | null) => {
-    if (date) {
-      const today = new Date();
-      const isToday =
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear();
-
-      if (isToday) {
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 0, 0);
-        setEndDate(endOfDay);
-      } else {
-        setEndDate(setDefaultTime(date));
-      }
-    }
+    if (!date) return;
+    setEndDate(isSameCalendarDay(date, new Date()) ? setEndOfDay(date) : setDefaultTime(date));
   };
 
   return (
