@@ -1,15 +1,14 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoanerAutocomplete from './LoanerAutocomplete';
 import CartItemRow from './CartItemRow';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
-import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useAvailabilities } from '@/hooks/useAvailabilities';
 import {
   Drawer,
   DrawerContent,
@@ -25,15 +24,12 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
-interface AvailabilityData {
-  availabilities: Record<string, { available: number }>;
-}
-
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const firstField = useRef<HTMLInputElement>(null);
   const { data: session } = useSession();
   const {
     state: cart,
+    addToCart,
     incrementAmount,
     decrementAmount,
     removeFromCart,
@@ -49,12 +45,9 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const startTime = dates.startDate;
   const endTime = dates.endDate;
 
-  const StartDate = dates.startDate;
-  const EndDate = dates.endDate;
-
-  const [data, setData] = useState<AvailabilityData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const showLoading = useDelayedLoading(loading);
+  // Shared with the item grid, so opening the cart reuses the already-fetched
+  // availabilities for this range instead of firing its own request.
+  const { availabilities } = useAvailabilities();
 
   const isAdmin = session?.user?.group === 'ADMIN';
   const isKiosk = session?.user?.group === 'KIOSK';
@@ -112,58 +105,29 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     }
   }, [isKiosk, session, setLoaner, setUserId]);
 
-  useEffect(() => {
-    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional loading state before async fetch
-
-    fetch('/api/availability/getAvailabilities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ StartDate, EndDate }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setData(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.log(error);
-        setLoading(false);
-      });
-  }, [StartDate, EndDate]);
-
-  function getCartAmount(id: string): number {
-    return cartItems.find((cartItem: { id: string; amount: number }) => cartItem.id === id) !==
-      undefined
-      ? cartItems.find((cartItem: { id: string; amount: number }) => cartItem.id === id)!.amount
-      : 0;
-  }
-
-  if (loading || !data) {
-    if (!showLoading) {
-      return null;
+  // Changing the loan dates keeps the cart, so a basket built for one range can
+  // outrun what's free in another. Anything now over its limit is listed here
+  // with the amount that would still fit, and blocks submitting until fixed.
+  // Custom items have no stock to run out of, so they're exempt.
+  const overBooked = useMemo(() => {
+    const over = new Map<string, number>();
+    if (!availabilities) return over;
+    for (const item of cartItems) {
+      if (item.id.startsWith('custom-')) continue;
+      const available = availabilities[item.id]?.available ?? 0;
+      if (item.amount > available) over.set(item.id, available);
     }
-    return (
-      <Drawer open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)} modal={false}>
-        <DrawerContent side="right" className="flex max-h-dvh flex-col">
-          <DrawerHeader>
-            <DrawerTitle>Ostoskori</DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 space-y-4 overflow-auto p-6">
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-24 w-full" />
-            {Array.from({ length: Math.max(cartItems.length, 3) }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-10 flex-1" />
-                <Skeleton className="h-10 w-32" />
-              </div>
-            ))}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
+    return over;
+  }, [availabilities, cartItems]);
 
-  const { availabilities } = data;
+  const handleFixAmounts = () => {
+    for (const [id, available] of overBooked) {
+      const item = cartItems.find((cartItem) => cartItem.id === id);
+      if (!item) continue;
+      if (available <= 0) removeFromCart(id);
+      else addToCart({ ...item, amount: available });
+    }
+  };
 
   const isDescriptionValid = localDescription.trim().length > 0;
 
@@ -253,7 +217,9 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   </div>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Päivämäärien muuttaminen tyhjentää ostoskorin</TooltipContent>
+              <TooltipContent>
+                Voit vaihtaa päiviä katalogin yläpalkista — ostoskori säilyy
+              </TooltipContent>
             </Tooltip>
           </div>
 
@@ -280,19 +246,38 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           {cart.items.length > 0 ? (
             <div className="mt-5 space-y-2">
               <h3 className="text-base font-semibold">Valitut tavarat</h3>
+              {overBooked.size > 0 && (
+                <div className="rounded-md border border-warning/50 bg-warning/10 p-3">
+                  <p className="font-semibold text-warning">
+                    Osa kamoista ei mahdu valitulle ajalle
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Valitsemasi päivät muuttuivat, eikä alla merkittyjä kamoja ole enää yhtä
+                    montaa vapaana. Pienennä määriä tai korjaa ne kerralla.
+                  </p>
+                  <Button variant="warning" size="sm" className="mt-2" onClick={handleFixAmounts}>
+                    Korjaa määrät
+                  </Button>
+                </div>
+              )}
               {cart.items.map((item) => {
                 if (item.amount <= 0) return null;
                 const isCustomItem = item.id.startsWith('custom-');
+                const available = availabilities?.[item.id]?.available ?? 0;
                 const isIncrementDisabled = isCustomItem
                   ? false
-                  : !availabilities[item.id] ||
-                    getCartAmount(item.id) >= availabilities[item.id].available;
+                  : availabilities === null || item.amount >= available;
 
                 return (
                   <CartItemRow
                     key={item.id}
                     item={item}
                     incrementDisabled={isIncrementDisabled}
+                    warning={
+                      overBooked.has(item.id)
+                        ? `Vain ${overBooked.get(item.id)} vapaana valitulla ajalla`
+                        : undefined
+                    }
                     onIncrement={() => incrementAmount(item.id)}
                     onDecrement={() => decrementAmount(item.id)}
                     onRemove={() => removeFromCart(item.id)}
@@ -317,6 +302,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               onClick={() => setConfirmOpen(true)}
               disabled={
                 cart.items.length === 0 ||
+                overBooked.size > 0 ||
                 !isDescriptionValid ||
                 !cart.loaner?.trim() ||
                 (!isKiosk && !cart.userId)

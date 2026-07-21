@@ -12,6 +12,8 @@ import ItemCardShell from './ItemCardShell';
 interface CartItemRowProps {
   item: CartItem;
   incrementDisabled: boolean;
+  /** Shown under the name when the chosen amount no longer fits the dates. */
+  warning?: string;
   onIncrement: () => void;
   onDecrement: () => void;
   onRemove: () => void;
@@ -24,6 +26,7 @@ interface CartItemRowProps {
 const CartItemRow = memo(function CartItemRow({
   item,
   incrementDisabled,
+  warning,
   onIncrement,
   onDecrement,
   onRemove,
@@ -83,6 +86,7 @@ const CartItemRow = memo(function CartItemRow({
       imageSrc={image.src}
       placeholder={image.placeholder}
       loading={image.status === 'loading'}
+      subtitle={warning ? <span className="text-warning">{warning}</span> : undefined}
       action={action}
       cornerAction={cornerAction}
       onActionPointerDown={stopPropagation}

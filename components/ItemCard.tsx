@@ -2,7 +2,6 @@
 
 import { ItemCardProps } from '../types';
 import { useCart } from '@/contexts/CartContext';
-import { toast } from 'sonner';
 import { useCallback, useMemo, memo, MouseEvent } from 'react';
 import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
 import { Package } from 'lucide-react';
@@ -38,12 +37,10 @@ const ItemCard = memo(function ItemCard({
   const amountLeft = useMemo(() => availableAmount - amountInCart, [availableAmount, amountInCart]);
   const canTakeMoreItems = useMemo(() => amountLeft > 0, [amountLeft]);
 
+  // No toast here: the button swaps to a stepper and the header badge counts up,
+  // so a per-item toast only stacks up over the corner while filling a basket.
   const handleAddToCart = useCallback(() => {
     addToCart({ id: item.id, name: item.name, amount: amountInCart + 1 });
-    toast.success('Lisättiin kama', {
-      description: `${item.name} lisätty ostoskoriin`,
-      duration: 1500,
-    });
   }, [addToCart, item.id, item.name, amountInCart]);
 
   const handleIncrement = useCallback(() => incrementAmount(item.id), [incrementAmount, item.id]);
@@ -59,10 +56,12 @@ const ItemCard = memo(function ItemCard({
             'inline-flex w-fit items-center gap-1.5',
             amountLeft > 0 ? 'text-success' : 'text-destructive',
           )}
-          aria-label={`Vapaana ${amountLeft} / ${item.amount} kpl`}
+          aria-label={`Vapaana ${Math.max(0, amountLeft)} / ${item.amount} kpl`}
         >
           <Package className="size-4 shrink-0" aria-hidden />
-          {amountLeft} / {item.amount} kpl
+          {/* Clamped: a cart built for other dates can exceed what's now free,
+              and "-2 vapaana" reads as a bug. The cart drawer flags the excess. */}
+          {Math.max(0, amountLeft)} / {item.amount} kpl
         </span>
       </TooltipTrigger>
       <TooltipContent>Vapaana</TooltipContent>

@@ -49,9 +49,8 @@ interface AccountViewProps {
   };
 }
 
-function compareDates(dateA: Date, dateB: Date) {
-  return dateB.getTime() - dateA.getTime();
-}
+/** How many loan cards to render at once — the rest are a click away. */
+const PAGE_SIZE = 10;
 
 export default function AccountView({ loans, userEmailPreferences }: AccountViewProps) {
   const { data: session } = useSession();
@@ -77,9 +76,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     () => false,
   );
 
-  const loansSorted = loans.sort((a, b) =>
-    compareDates(new Date(a.startTime), new Date(b.startTime)),
-  );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleEmailPreferenceChange = async (
     preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue',
@@ -268,12 +265,27 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
         {session?.user?.group !== 'KIOSK' && (
           <div>
             <h2 className="mb-4 text-xl font-semibold">Oma lainahistoria</h2>
-            {loansSorted.length > 0 ? (
-              <div className="flex flex-col gap-4">
-                {loansSorted.map((loan) => (
-                  <LoanCard key={loan.id} loan={loan} />
-                ))}
-              </div>
+            {loans.length > 0 ? (
+              <>
+                <div className="flex flex-col gap-4">
+                  {loans.slice(0, visibleCount).map((loan) => (
+                    <LoanCard key={loan.id} loan={loan} />
+                  ))}
+                </div>
+                {loans.length > visibleCount && (
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      Näytetään {visibleCount} / {loans.length} lainaa
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                    >
+                      Näytä lisää
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="py-8 text-center text-muted-foreground">Ei lainoja</p>
             )}

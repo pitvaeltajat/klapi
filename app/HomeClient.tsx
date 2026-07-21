@@ -17,6 +17,7 @@ import InventoryView from '@/components/inventory/InventoryView';
 import PendingPickupBanner from '@/components/PendingPickupBanner';
 import { Button } from '@/components/ui/button';
 import { ItemCardSkeletonGrid } from '@/components/ItemCardSkeleton';
+import { defaultKioskRange } from '@/utils/dateRange';
 
 type BrowseViewMode = 'grid' | 'table';
 
@@ -117,12 +118,9 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   const handleExitBrowseMode = () => {
     setBrowseMode(false);
     if (isKioskMode) {
-      const now = new Date();
-      const oneWeekLater = new Date();
-      oneWeekLater.setDate(oneWeekLater.getDate() + 7);
-      oneWeekLater.setHours(18, 0, 0, 0);
-      setStartDate(now);
-      setEndDate(oneWeekLater);
+      const [start, end] = defaultKioskRange();
+      setStartDate(start);
+      setEndDate(end);
       setDatesSet(true);
     }
   };

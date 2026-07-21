@@ -511,21 +511,32 @@ export default function StartLoanView({ loans, items }: { loans: LoanType[]; ite
         <div>
           <h1 className="mb-4 text-3xl font-semibold">Aloita lainaus</h1>
           {loans.length === 0 ? (
-            <div className="py-8 text-center">
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
               <h2 className="text-xl font-semibold text-muted-foreground">
                 Ei aloitettavia lainoja
               </h2>
+              <Button size="lg" onClick={() => router.push('/')}>
+                Takaisin alkuun
+              </Button>
             </div>
           ) : (
-            loans.map((loan) => (
-              <LoanStartCard
-                key={loan.id}
-                loan={loan}
-                items={items}
-                onStart={handleStart}
-                onStartComplete={handleStartComplete}
-              />
-            ))
+            <>
+              {loans.map((loan) => (
+                <LoanStartCard
+                  key={loan.id}
+                  loan={loan}
+                  items={items}
+                  onStart={handleStart}
+                  onStartComplete={handleStartComplete}
+                />
+              ))}
+              {/* The kiosk browser has no back button — always leave a way out. */}
+              <div className="mt-6 flex justify-center">
+                <Button variant="outline" size="lg" onClick={() => router.push('/')}>
+                  Takaisin alkuun
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </div>

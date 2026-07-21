@@ -385,8 +385,18 @@ export default function LoanView({
           )
         )}
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Historia</h2>
+        {/* Collapsed by default: the audit trail matters when something is being
+            investigated, but it's the longest block on the page and pushes the
+            actions off screen for the borrower who just wants to start a loan. */}
+        <details className="group rounded-lg border bg-card p-6 shadow-xs">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+            <h2 className="text-xl font-semibold">Historia</h2>
+            <span className="text-sm text-muted-foreground">
+              {history.length} merkintää · <span className="group-open:hidden">näytä</span>
+              <span className="hidden group-open:inline">piilota</span>
+            </span>
+          </summary>
+          <div className="mt-4">
           {history.length === 0 ? (
             <p className="text-muted-foreground">Ei historiamerkintöjä.</p>
           ) : (
@@ -423,7 +433,8 @@ export default function LoanView({
               })}
             </div>
           )}
-        </div>
+          </div>
+        </details>
 
         <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
           <DialogContent>

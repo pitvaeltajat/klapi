@@ -39,6 +39,9 @@ export default async function AccountPage() {
         },
         reports: { select: reportSummarySelect },
       },
+      // Newest first, ordered in the database — AccountView renders these in
+      // that order and no longer re-sorts the whole history client-side.
+      orderBy: { startTime: 'desc' },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },

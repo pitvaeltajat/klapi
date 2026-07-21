@@ -4,7 +4,6 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import React, { useState } from 'react';
 import { useDates } from '@/contexts/DatesContext';
-import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { applyRangeTimes } from '@/utils/dateRange';
@@ -14,16 +13,17 @@ import { applyRangeTimes } from '@/utils/dateRange';
 // component is only mounted while no range has been chosen yet.
 export default function DateSelector() {
   const { setStartDate, setEndDate, setDatesSet, setBrowseMode } = useDates();
-  const { clearCart } = useCart();
 
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
 
+  // Picking a range no longer empties the cart — a basket restored after a
+  // reload has to survive re-choosing the dates. Amounts that don't fit the new
+  // range are caught in the cart drawer instead.
   const handleRangeChange = (update: [Date | null, Date | null]) => {
     const next = applyRangeTimes(update[0], update[1]);
     setDateRange(next);
     if (next[0] && next[1]) {
-      clearCart();
       setStartDate(next[0]);
       setEndDate(next[1]);
       setDatesSet(true);

@@ -11,10 +11,6 @@ import { reportSummarySelect } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Lainat | Klapi' };
 
-function compareDates(a: Date | string, b: Date | string) {
-  return new Date(b).getTime() - new Date(a).getTime();
-}
-
 export default async function LoanListPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -42,9 +38,10 @@ export default async function LoanListPage() {
       },
       reports: { select: reportSummarySelect },
     },
+    // Newest first, ordered in the database rather than re-sorted in JS after
+    // the fact — this list is unbounded and the kiosk is not a fast machine.
+    orderBy: { startTime: 'desc' },
   });
 
-  const sorted = [...loans].sort((a, b) => compareDates(a.startTime, b.startTime));
-
-  return <LoanListClient loans={serialize(sorted) as LoanType[]} />;
+  return <LoanListClient loans={serialize(loans) as LoanType[]} />;
 }

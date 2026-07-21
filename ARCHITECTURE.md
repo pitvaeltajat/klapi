@@ -137,7 +137,8 @@ cron sweeps — import and call them directly.
 | `/admin` | user management |
 | `/admin/createItem`, `/admin/edititem/[id]` | item create / edit forms |
 | `/admin/editLoan/[id]`, `/admin/reports`, `/admin/boxes` | admin loan edit / reports / boxes |
-| `/kiosk/startloan`, `/kiosk/return` | kiosk flows |
+| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
+| `/kiosk/startloan` | kiosk pickup queue |
 | `/account`, `/login` | account settings / sign-in |
 
 ## Prisma models (`prisma/schema.prisma`)
@@ -163,4 +164,8 @@ line) · `Loan` (status enum, optional `Box`) · `Box` · `Location` · `Categor
 - `utils/itemQueries.ts` — shared item query builders.
 - `hooks/useItemImage.ts` — item image with theme-aware placeholder + SSR guard.
 - `contexts/CartContext`, `contexts/DatesContext` — loan-cart + date-range state
-  (mounted in `app/providers.tsx`).
+  (mounted in `app/providers.tsx`). Both mirror themselves into `sessionStorage`
+  via `utils/sessionState.ts` so a reload doesn't lose a half-built loan; entries
+  older than its TTL are dropped rather than restored, which is what stops one
+  kiosk visitor inheriting the previous one's basket.
+- `utils/sessionState.ts` — the timestamped `sessionStorage` envelope behind that.

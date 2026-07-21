@@ -23,6 +23,17 @@ export const isSameCalendarDay = (a: Date, b: Date): boolean =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+/**
+ * The loan window the kiosk starts people off with: pick up now, return at
+ * 18:00 a week out. Used both by the kiosk's welcome screen and when leaving
+ * browse mode on the kiosk, which must agree on the default.
+ */
+export const defaultKioskRange = (): [Date, Date] => {
+  const end = new Date();
+  end.setDate(end.getDate() + 7);
+  return [new Date(), setDefaultTime(end)];
+};
+
 /** Apply the loan's default pickup/return times to a picked [start, end] range. */
 export const applyRangeTimes = (
   start: Date | null,

@@ -362,6 +362,12 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
   const { data: session } = useSession();
   const router = useRouter();
 
+  // Admins and the kiosk see everyone's loans here; a regular user only ever
+  // sees their own (the page query scopes them). Say which, so nobody wonders
+  // why the list is 40 long — or why theirs is the only one.
+  const seesAllLoans =
+    session?.user?.group === 'ADMIN' || session?.user?.group === 'KIOSK';
+
   const handleReturn = async (
     loanId: string,
     reservationIds: string[],
@@ -400,24 +406,40 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
       <Breadcrumbs items={[{ label: 'Palauta lainoja' }]} />
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="mb-4 text-3xl font-semibold">Palauta lainoja</h1>
+          <h1 className="mb-1 text-3xl font-semibold">Palauta lainoja</h1>
+          <p className="mb-4 text-muted-foreground">
+            {seesAllLoans
+              ? 'Kaikki käytössä olevat lainat. Etsi oma lainasi listalta ja paina Palauta.'
+              : 'Omat käytössä olevat lainasi.'}
+          </p>
           {loans.length === 0 ? (
-            <div className="py-8 text-center">
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
               <h2 className="text-xl font-semibold text-muted-foreground">
                 Ei käytössä olevia lainoja
               </h2>
+              <Button size="lg" onClick={() => router.push('/')}>
+                Takaisin alkuun
+              </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {loans.map((loan) => (
-                <LoanReturnCard
-                  key={loan.id}
-                  loan={loan}
-                  onReturn={handleReturn}
-                  onReturnComplete={handleReturnComplete}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {loans.map((loan) => (
+                  <LoanReturnCard
+                    key={loan.id}
+                    loan={loan}
+                    onReturn={handleReturn}
+                    onReturnComplete={handleReturnComplete}
+                  />
+                ))}
+              </div>
+              {/* The kiosk browser has no back button — always leave a way out. */}
+              <div className="mt-6 flex justify-center">
+                <Button variant="outline" size="lg" onClick={() => router.push('/')}>
+                  Takaisin alkuun
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </div>

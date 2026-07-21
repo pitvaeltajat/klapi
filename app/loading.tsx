@@ -9,9 +9,9 @@ export default function Loading() {
   const pathname = usePathname() ?? '/';
 
   if (pathname === '/') {
-    // First content on `/` is always the DateSelector calendar card —
-    // `datesSet` starts false and isn't persisted, so the catalogue never
-    // renders first. Mirror DateSelector's layout, not the item grid.
+    // First content on `/` is always the DateSelector calendar card: any
+    // persisted range is only restored after mount, so `datesSet` is still
+    // false at this point. Mirror DateSelector's layout, not the item grid.
     return (
       <div className="mb-4 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
@@ -100,7 +100,7 @@ export default function Loading() {
     );
   }
 
-  if (pathname.startsWith('/kiosk/return')) {
+  if (pathname.startsWith('/return')) {
     return (
       <div className="flex flex-col gap-6">
         <Skeleton className="h-10 w-56" />

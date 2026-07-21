@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import { CartState, CartItem } from '../types';
+import { CART_STORAGE_KEY, loadPersisted, savePersisted } from '@/utils/sessionState';
 
 export const initialCartState: CartState = {
   items: [],
@@ -17,7 +18,8 @@ export type CartAction =
   | { type: 'SET_DESCRIPTION'; payload: string }
   | { type: 'SET_LOANER'; payload: string }
   | { type: 'SET_USER_ID'; payload: string | undefined }
-  | { type: 'RESET_CART' };
+  | { type: 'RESET_CART' }
+  | { type: 'RESTORE_CART'; payload: CartState };
 
 export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -75,6 +77,8 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       };
     case 'RESET_CART':
       return { ...initialCartState };
+    case 'RESTORE_CART':
+      return { ...initialCartState, ...action.payload };
     default:
       return state;
   }
@@ -97,6 +101,21 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialCartState);
+
+  // Restore after mount rather than via lazy init: sessionStorage doesn't exist
+  // during SSR, so seeding the reducer from it would desync the first client
+  // render from the server's HTML.
+  const restored = useRef(false);
+  useEffect(() => {
+    const saved = loadPersisted<CartState>(CART_STORAGE_KEY);
+    if (saved) dispatch({ type: 'RESTORE_CART', payload: saved });
+    restored.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!restored.current) return;
+    savePersisted(CART_STORAGE_KEY, state);
+  }, [state]);
 
   const value = {
     state,

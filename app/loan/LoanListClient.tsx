@@ -17,6 +17,9 @@ const getStatusFilterLabel = (status: LoanStatus): string => {
   return label;
 };
 
+/** How many loan cards to render at once — the rest are a click away. */
+const PAGE_SIZE = 20;
+
 export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   const allStatuses = Object.values(LoanStatus);
   const [selectedStatuses, setSelectedStatuses] = useState<Set<LoanStatus>>(
@@ -27,6 +30,7 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
       LoanStatus.PARTIALLY_RETURNED,
     ]),
   );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const allChecked = selectedStatuses.size === allStatuses.length;
   const isIndeterminate = selectedStatuses.size > 0 && !allChecked;
@@ -43,6 +47,7 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   }
 
   const toggleAllStatuses = () => {
+    setVisibleCount(PAGE_SIZE);
     if (allChecked || isIndeterminate) {
       setSelectedStatuses(new Set());
     } else {
@@ -51,6 +56,7 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   };
 
   const toggleStatus = (status: LoanStatus) => {
+    setVisibleCount(PAGE_SIZE);
     const newStatuses = new Set(selectedStatuses);
     if (newStatuses.has(status)) newStatuses.delete(status);
     else newStatuses.add(status);
@@ -103,10 +109,20 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {filteredLoans.map((loan) => (
+          {filteredLoans.slice(0, visibleCount).map((loan) => (
             <LoanCard key={loan.id} loan={loan} />
           ))}
         </div>
+        {filteredLoans.length > visibleCount && (
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              Näytetään {visibleCount} / {filteredLoans.length} lainaa
+            </p>
+            <Button variant="outline" onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
+              Näytä lisää
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );

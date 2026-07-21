@@ -4,19 +4,16 @@ import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { defaultKioskRange } from '@/utils/dateRange';
 
 export default function KioskModeSelector() {
   const { setStartDate, setEndDate, setDatesSet } = useDates();
   const router = useRouter();
 
   const handleLoanClick = () => {
-    const now = new Date();
-    const oneWeekLater = new Date();
-    oneWeekLater.setDate(oneWeekLater.getDate() + 7);
-    oneWeekLater.setHours(18, 0, 0, 0);
-
-    setStartDate(now);
-    setEndDate(oneWeekLater);
+    const [start, end] = defaultKioskRange();
+    setStartDate(start);
+    setEndDate(end);
     setDatesSet(true);
   };
 
@@ -42,7 +39,7 @@ export default function KioskModeSelector() {
           <Button
             size="lg"
             variant="success"
-            onClick={() => router.push('/kiosk/return')}
+            onClick={() => router.push('/return')}
             className="flex-1"
           >
             Palauta

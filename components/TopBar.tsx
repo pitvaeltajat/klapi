@@ -198,7 +198,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   const navLinks = [
     { href: '/', label: 'Lainaa', onClick: handleReserveClick },
-    ...(role ? [{ href: '/kiosk/return', label: 'Palauta' }] : []),
+    ...(role ? [{ href: '/return', label: 'Palauta' }] : []),
   ];
 
   const browseLink = (
@@ -302,8 +302,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 Lainaa
               </NextLink>
               {role && (
-                <NextLink href="/kiosk/return" className={linkClass(isPathActive('/kiosk/return'))}>
-
+                <NextLink href="/return" className={linkClass(isPathActive('/return'))}>
                   Palauta
                 </NextLink>
               )}
