@@ -31,7 +31,9 @@ export default function DateSelector() {
   };
 
   return (
-    <div className="mb-4 flex max-w-3xl flex-col gap-4">
+    // Centred rather than left-aligned: the catalogue route runs full width, so
+    // a left-hugging card would sit alone in a very wide page.
+    <div className="mx-auto mb-4 flex max-w-3xl flex-col gap-4">
       <div>
         <h2 className="mb-2 text-xl font-semibold">Aloitus</h2>
         <p className="text-muted-foreground">
