@@ -24,6 +24,7 @@ The UI is Finnish; models/code are English. Map concepts before grepping:
 | kategoria      | `Category`              | item category (many-to-many) |
 | raportti       | `Report`                | condition report tied to a loan |
 | ilmoitus       | `Announcement`          | per-item notice |
+| pohja, valmis setti | `Template`         | pre-picked item set the loaner drops into the cart |
 | käyttäjä       | `User`                  | group = ADMIN \| USER \| KIOSK |
 | kiosk          | KIOSK group / `app/kiosk`| shared terminal; admins elevate via PIN |
 | muokkaushistoria | `ItemHistory`         | per-item audit log |
@@ -118,6 +119,10 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `auth/[...nextauth]` | — | NextAuth handler |
 | `availability/getAvailabilities` | POST | item availability over a date range |
 | `category/getCategories`, `location/getLocations` | GET | option lists |
+| `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
+| `template/createTemplate` | POST | create one, either from an item list or from a loan's reservations (`fromLoanId`) |
+| `template/updateTemplate` | POST | rename + replace its item list |
+| `template/deleteTemplate` | POST | hard delete (nothing references a template) |
 | `reservation/checkInBox` | POST | mark a reservation checked into a box |
 Transactional email is **not** a route: the senders live in `utils/emails/`
 (one module per email, each split into a pure `render*Email` and a
@@ -137,6 +142,7 @@ cron sweeps — import and call them directly.
 | `/admin` | user management |
 | `/admin/createItem`, `/admin/edititem/[id]` | item create / edit forms |
 | `/admin/editLoan/[id]`, `/admin/reports`, `/admin/boxes` | admin loan edit / reports / boxes |
+| `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
 | `/kiosk/startloan` | kiosk pickup queue |
 | `/account`, `/login` | account settings / sign-in |
@@ -149,7 +155,9 @@ elevation, and email recipients so `Loan.user` history survives) ·
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, optional `Box`) · `Box` · `Location` · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` · `LoanHistory` /
-`ItemHistory` (audit) · `EmailLog`. Migrations in `prisma/migrations/`; seed in
+`ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
+templates; **no** back-reference from `Loan` — a loan doesn't record whether it
+came from one). Migrations in `prisma/migrations/`; seed in
 `prisma/seed.ts`.
 
 ## Cross-cutting helpers
@@ -162,6 +170,12 @@ line) · `Loan` (status enum, optional `Box`) · `Box` · `Location` · `Categor
 - `utils/loanHelpers.ts` / `itemHelpers.ts` — **client-safe** badge variants +
   history labels (no Prisma import).
 - `utils/itemQueries.ts` — shared item query builders.
+- `utils/templateQueries.ts` — server-side template helpers (read include,
+  payload validation, loan→template aggregation). Template reads filter out
+  archived items rather than deleting the join row, so restoring an item brings
+  it back to every template that had it; `updateTemplate` therefore replaces
+  only the rows the admin could see. Client components take `TemplateView` from
+  `@/types` instead — that module imports Prisma.
 - `hooks/useItemImage.ts` — item image with theme-aware placeholder + SSR guard.
 - `contexts/CartContext`, `contexts/DatesContext` — loan-cart + date-range state
   (mounted in `app/providers.tsx`). Both mirror themselves into `sessionStorage`

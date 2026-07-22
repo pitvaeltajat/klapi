@@ -36,6 +36,23 @@ export interface CartItem {
   amount: number;
 }
 
+/** A named pre-picked item set, as served by `/api/template/getTemplates`. */
+export interface TemplateItemView {
+  itemId: string;
+  name: string;
+  /** Amount the template suggests. */
+  amount: number;
+  /** Total units the storage owns — the denominator in "2 / 5 kpl". */
+  stock: number;
+}
+
+export interface TemplateView {
+  id: string;
+  name: string;
+  description: string | null;
+  items: TemplateItemView[];
+}
+
 export interface CartState {
   items: CartItem[];
   description: string;

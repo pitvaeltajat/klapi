@@ -7,6 +7,7 @@ import NextLink from 'next/link';
 import ReservationTableLoanView from '@/components/ReservationTableLoanView';
 import ReportCard from '@/components/ReportCard';
 import StartLoanConfirmation from '@/components/StartLoanConfirmation';
+import SaveAsTemplateButton from '@/components/SaveAsTemplateButton';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -166,6 +167,23 @@ export default function LoanView({
     });
   };
 
+  // What "tallenna pohjaksi" would capture — mirrors createTemplate's own
+  // filtering (no rejected lines, no archived or one-off temporary items) so
+  // the preview can't promise rows the server would silently drop. Kept above
+  // the authorization early-return, as hooks must be.
+  const templatePreview = React.useMemo(() => {
+    const byName = new Map<string, number>();
+    for (const reservation of loan.reservations) {
+      if (reservation.status === ReservationStatus.REJECTED) continue;
+      if (reservation.item.deletedAt || reservation.item.type !== 'normal') continue;
+      byName.set(
+        reservation.item.name,
+        (byName.get(reservation.item.name) ?? 0) + reservation.amount,
+      );
+    }
+    return [...byName].map(([name, amount]) => ({ name, amount }));
+  }, [loan.reservations]);
+
   const isKiosk = session?.user?.group === 'KIOSK';
 
   const derivedStatus = deriveLoanStatus(
@@ -262,7 +280,16 @@ export default function LoanView({
         </div>
 
         <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Kamat</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold">Kamat</h2>
+            {isAdmin && templatePreview.length > 0 && (
+              <SaveAsTemplateButton
+                loanId={loan.id}
+                defaultName={loan.description || ''}
+                preview={templatePreview}
+              />
+            )}
+          </div>
           <ReservationTableLoanView
             loan={{
               id: loan.id,

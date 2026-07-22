@@ -169,7 +169,12 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
               <Suspense fallback={<ItemCardSkeletonGrid />}>
                 <WithCatalogue promise={cataloguePromise}>
                   {({ items, categories }) => (
-                    <ItemBrowser items={items} categories={categories} showCustomItemLink />
+                    <ItemBrowser
+                      items={items}
+                      categories={categories}
+                      showCustomItemLink
+                      showTemplates
+                    />
                   )}
                 </WithCatalogue>
               </Suspense>
@@ -186,6 +191,7 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
                     items={items}
                     categories={categories}
                     showCustomItemLink
+                    showTemplates
                     headerSlot={<DateSummaryBar />}
                   />
                 )}

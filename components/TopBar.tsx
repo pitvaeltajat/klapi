@@ -327,6 +327,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   <NextLink href="/admin/reports" className={linkClass(isPathActive('/admin/reports'))}>
                     Raportit
                   </NextLink>
+                  <NextLink
+                    href="/admin/templates"
+                    className={linkClass(isPathActive('/admin/templates'))}
+                  >
+                    Pohjat
+                  </NextLink>
                   <div className="h-6 w-px bg-white/30" />
                   <NextLink
                     href="/admin"
@@ -427,6 +433,13 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   className={`px-6 py-4 ${isPathActive('/admin/reports') ? 'font-bold' : ''}`}
                 >
                   Raportit
+                </NextLink>
+                <NextLink
+                  href="/admin/templates"
+                  onClick={onClose}
+                  className={`px-6 py-4 ${isPathActive('/admin/templates') ? 'font-bold' : ''}`}
+                >
+                  Pohjat
                 </NextLink>
                 <NextLink
                   href="/admin"

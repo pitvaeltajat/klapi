@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
+import TemplatePicker from './TemplatePicker';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -34,6 +35,9 @@ interface ItemBrowserProps {
   /** Optional content pinned above the search row inside the sticky header
    *  (e.g. the chosen loan dates), so it stays visible while items scroll. */
   headerSlot?: React.ReactNode;
+  /** Show the "Valmiit setit" chips. Off in browse mode, which has no cart to
+   *  add them to and no chosen dates to check availability against. */
+  showTemplates?: boolean;
 }
 
 export default function ItemBrowser({
@@ -42,6 +46,7 @@ export default function ItemBrowser({
   showCustomItemLink = false,
   renderItems,
   headerSlot,
+  showTemplates = false,
 }: ItemBrowserProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -177,6 +182,7 @@ export default function ItemBrowser({
             </Button>
           </div>
         </div>
+        {showTemplates && <TemplatePicker />}
         <div className="hidden md:block">
           <div className="flex flex-wrap gap-1.5">
             <Button

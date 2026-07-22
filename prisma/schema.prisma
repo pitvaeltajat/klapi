@@ -85,8 +85,32 @@ model Item {
   announcements       Announcement[]
   reportAffectedItems ReportAffectedItem[]
   history             ItemHistory[]
+  templateItems       TemplateItem[]
 
   @@index([deletedAt])
+}
+
+/// A named, pre-picked set of items ("Vartion maastoretki") that a loaner can
+/// drop into the cart in one go. Purely a shortcut for filling the cart: loans
+/// keep no link back to the template they came from.
+model Template {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  items       TemplateItem[]
+}
+
+model TemplateItem {
+  id         String   @id @default(cuid())
+  templateId String
+  itemId     String
+  amount     Int
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, itemId])
 }
 
 model ItemHistory {
