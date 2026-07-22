@@ -9,8 +9,14 @@ import { cn } from '@/lib/utils';
 
 interface ItemCardShellProps {
   name: string;
-  imageSrc: string;
-  placeholder: string;
+  imageSrc?: string;
+  placeholder?: string;
+  /**
+   * Renders in place of the photo, keeping the same box. Used by the "valmiit
+   * setit" cards, which stand for a list of items rather than one thing with a
+   * picture.
+   */
+  media?: React.ReactNode;
   /**
    * While true the image box renders as a pulsing skeleton instead of the
    * image — used until the image probe resolves so we never flash the
@@ -49,6 +55,7 @@ export default function ItemCardShell({
   name,
   imageSrc,
   placeholder,
+  media,
   loading = false,
   subtitle,
   categoryLine,
@@ -79,17 +86,18 @@ export default function ItemCardShell({
           compact ? 'aspect-square w-20' : 'aspect-square w-28 sm:aspect-5/3 sm:w-full',
         )}
       >
-        {!loading && (
-          /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
-          <img
-            src={imageSrc}
-            alt={`Picture of ${name}`}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = placeholder;
-            }}
-            className="h-full w-full object-cover object-center"
-          />
-        )}
+        {media ??
+          (!loading && imageSrc && (
+            /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
+            <img
+              src={imageSrc}
+              alt={`Picture of ${name}`}
+              onError={(e) => {
+                if (placeholder) (e.currentTarget as HTMLImageElement).src = placeholder;
+              }}
+              className="h-full w-full object-cover object-center"
+            />
+          ))}
       </div>
 
       <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'p-2.5' : 'p-3 sm:p-4 xl:p-3')}>

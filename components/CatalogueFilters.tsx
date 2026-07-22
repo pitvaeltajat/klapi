@@ -23,7 +23,10 @@ interface CatalogueFiltersProps {
   /** Category names; empty means "Kaikki". */
   selected: string[];
   onToggleCategory: (name: string) => void;
-  onClearCategories: () => void;
+  /** Drops the selection, or puts back the one "Kaikki" replaced. */
+  onToggleAll: () => void;
+  /** Whether there is a previous selection for "Kaikki" to restore. */
+  canRestore: boolean;
 }
 
 /**
@@ -42,7 +45,8 @@ export default function CatalogueFilters({
   categories,
   selected,
   onToggleCategory,
-  onClearCategories,
+  onToggleAll,
+  canRestore,
 }: CatalogueFiltersProps) {
   const showAll = selected.length === 0;
 
@@ -98,13 +102,27 @@ export default function CatalogueFilters({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Kategoriat
-        </span>
+        {/* "Kaikki" isn't one of the categories — it's the switch that turns the
+            whole filter off, so it sits on the heading row as a toggle rather
+            than pretending to be another checkbox. */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Kategoriat
+          </span>
+          <Button
+            size="xs"
+            variant={showAll ? 'default' : 'outline-solid'}
+            aria-pressed={showAll}
+            disabled={showAll && !canRestore}
+            onClick={onToggleAll}
+            title={showAll && canRestore ? 'Palauta edellinen valinta' : undefined}
+          >
+            Kaikki
+          </Button>
+        </div>
         <div className="flex flex-col">
-          {/* "Kaikki" means every category is included, so show them all ticked.
-              Clicking one from that state narrows to just it. */}
-          <CategoryRow label="Kaikki" checked={showAll} onClick={onClearCategories} />
+          {/* With the filter off every category is in play, so show them ticked;
+              clicking one from that state narrows to just it. */}
           {categories.map((cat) => (
             <CategoryRow
               key={cat.id}

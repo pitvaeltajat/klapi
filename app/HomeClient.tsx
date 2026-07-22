@@ -147,9 +147,7 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
                     categories={categories}
                     showCustomItemLink={false}
                     renderItems={(items) => (
-                      // One column fewer from `lg` up: the filter rail takes
-                      // its 14rem out of the row there.
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-2 lg:gap-8 xl:grid-cols-3 xl:gap-10 2xl:grid-cols-4">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4 xl:gap-10">
                         {items.map((item) => (
                           <BrowseItemCard key={item.id} item={item} />
                         ))}

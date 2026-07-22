@@ -15,6 +15,10 @@ interface ItemGridProps {
   categories: Category[];
 }
 
+/** Shared so the "valmiit setit" cards line up with the item cards below them. */
+export const ITEM_GRID_CLASSES =
+  'grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5 2xl:grid-cols-6';
+
 export default function ItemGrid({ items }: ItemGridProps) {
   const { availabilities, loading } = useAvailabilities();
 
@@ -22,9 +26,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
 
   return (
     <div
-      // One column fewer from `lg` up than the viewport would suggest: that's
-      // where the filter rail takes its 14rem out of the row.
-      className={`grid grid-cols-1 gap-3 transition-opacity duration-150 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4 2xl:grid-cols-5 ${
+      className={`${ITEM_GRID_CLASSES} transition-opacity duration-150 ${
         isRefetching ? 'opacity-80' : 'opacity-100'
       }`}
       aria-busy={loading}

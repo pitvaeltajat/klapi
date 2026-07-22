@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import { SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,14 +8,13 @@ import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
 import CatalogueFilters, { type SortMode } from './CatalogueFilters';
+import FilterFlyout from './FilterFlyout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
-import { useCondensedHeader } from '@/hooks/useCondensedHeader';
-import { cn } from '@/lib/utils';
-import TemplatePicker from './TemplatePicker';
+import TemplateSection from './TemplateSection';
 
 interface ItemWithRelations extends Item {
   categories: Category[];
@@ -23,37 +22,6 @@ interface ItemWithRelations extends Item {
   announcements: Announcement[];
   /** Bookings within the rolling window; drives the "Suosituimmat" sort. */
   popularity?: number;
-}
-
-/** Height of the fixed top bar, in px — the sticky offsets are measured off it. */
-const TOP_BAR_HEIGHT = 64;
-
-/**
- * A row of the sticky header that folds away while scrolling down. The 0fr/1fr
- * grid is the trick that lets an auto-height row animate; `inert` keeps the
- * hidden buttons out of the tab order and the a11y tree while it's folded.
- */
-function Collapsible({
-  collapsed,
-  className,
-  children,
-}: {
-  collapsed: boolean;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        'grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none',
-        collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
-      )}
-    >
-      <div className="overflow-hidden" inert={collapsed}>
-        <div className={className}>{children}</div>
-      </div>
-    </div>
-  );
 }
 
 // Finnish collation: ä/å/ö sort at the END of the alphabet, not next to a/o.
@@ -83,50 +51,29 @@ export default function ItemBrowser({
   showTemplates = false,
 }: ItemBrowserProps) {
   const [search, setSearch] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // `selected` drives the filter (empty = "Kaikki"); `remembered` holds what
+  // "Kaikki" replaced, so pressing it again restores that selection. They move
+  // together, hence one state rather than two.
+  const [{ selected: selectedCategories, remembered: rememberedCategories }, setCategoryFilter] =
+    useState<{ selected: string[]; remembered: string[] }>({ selected: [], remembered: [] });
   const [sortBy, setSortBy] = useState<SortMode>('popular');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // Two search boxes exist — one in the rail, one in the sticky strip — but only
-  // one of them is ever visible, so focus goes to whichever is laid out.
   const searchRef = useRef<HTMLInputElement>(null);
-  const stripSearchRef = useRef<HTMLInputElement>(null);
-  const stripRef = useRef<HTMLDivElement>(null);
-  const condensed = useCondensedHeader();
   const {
     addToCart,
     state: { items: cartItems },
   } = useCart();
   const { availabilities } = useAvailabilities();
 
-  const focusSearch = useCallback(() => {
-    const visible = [searchRef.current, stripSearchRef.current].find(
-      (input) => input && input.offsetParent !== null,
-    );
-    visible?.focus({ preventScroll: true });
-  }, []);
-
-  // The rail sticks below the strip, whose height changes as the sets row folds
-  // away and as the chips wrap, so measure it rather than hard-coding a value.
-  const [stripHeight, setStripHeight] = useState(0);
-  useEffect(() => {
-    const strip = stripRef.current;
-    if (!strip) return;
-    const observer = new ResizeObserver(() => setStripHeight(strip.offsetHeight));
-    observer.observe(strip);
-    setStripHeight(strip.offsetHeight);
-    return () => observer.disconnect();
-  }, []);
-  const railTop = (condensed ? 0 : TOP_BAR_HEIGHT) + stripHeight + 16;
-
   // Only autofocus on devices with a precise pointer (desktop/kiosk with a real
   // keyboard). On touch devices autofocusing pops up the on-screen keyboard,
   // which is especially disruptive while the date picker is on screen.
   useEffect(() => {
     if (window.matchMedia('(pointer: fine)').matches) {
-      focusSearch();
+      searchRef.current?.focus({ preventScroll: true });
     }
-  }, [focusSearch]);
+  }, []);
 
   // Escape clears the search and refocuses it from anywhere on the page — but
   // not while a dialog/drawer is open, so Escape can still close those instead.
@@ -135,21 +82,34 @@ export default function ItemBrowser({
       if (e.key !== 'Escape') return;
       if (document.querySelector('[role="dialog"][data-state="open"]')) return;
       setSearch('');
-      focusSearch();
+      searchRef.current?.focus({ preventScroll: true });
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [focusSearch]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
 
-  const toggleCategory = useCallback((name: string) => {
-    setSelectedCategories((current) =>
-      current.includes(name) ? current.filter((c) => c !== name) : [...current, name],
+  const toggleCategory = (name: string) => {
+    setCategoryFilter(({ selected, remembered }) => {
+      const next = selected.includes(name)
+        ? selected.filter((c) => c !== name)
+        : [...selected, name];
+      // Emptying the selection is the same as pressing "Kaikki" — remember what
+      // it held so the toggle can put it back.
+      return { selected: next, remembered: next.length === 0 ? selected : remembered };
+    });
+  };
+
+  const toggleAllCategories = () => {
+    setCategoryFilter(({ selected, remembered }) =>
+      selected.length === 0
+        ? { selected: remembered, remembered }
+        : { selected: [], remembered: selected },
     );
-  }, []);
+  };
 
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => fiCollator.compare(a.name, b.name)),
@@ -195,6 +155,8 @@ export default function ItemBrowser({
     });
   };
 
+  const showSets = showTemplates && !search.trim() && selectedCategories.length === 0;
+
   const filters = (
     <CatalogueFilters
       search={search}
@@ -205,31 +167,21 @@ export default function ItemBrowser({
       categories={sortedCategories}
       selected={selectedCategories}
       onToggleCategory={toggleCategory}
-      onClearCategories={() => setSelectedCategories([])}
+      onToggleAll={toggleAllCategories}
+      canRestore={rememberedCategories.length > 0}
     />
   );
 
   return (
     <>
-      <div
-        ref={stripRef}
-        className={cn(
-          'sticky z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs transition-[top] duration-200 motion-reduce:transition-none',
-          // Rides up into the space the top bar vacates while scrolling down.
-          condensed ? 'top-0' : 'top-16',
-          // Below `lg` the strip always carries the search box; above it, it can
-          // end up with nothing left to show (browse mode) — don't draw an
-          // empty bar then.
-          !showCustomItemLink && !headerSlot && !showTemplates && 'lg:hidden',
-        )}
-      >
+      <div className="sticky top-16 z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          {/* Search and filters live in the rail on wide screens; below `lg`
-              the search stays out here and the rest moves into a drawer. */}
-          <div className="flex items-center gap-2 lg:hidden">
+          {/* Search stays out here at every width; sort and categories live in
+              the hover flyout on `lg`+ and in the "Suodata" sheet below it. */}
+          <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:w-56 sm:flex-none">
               <Input
-                ref={stripSearchRef}
+                ref={searchRef}
                 placeholder="Hae kamoja"
                 value={search}
                 onChange={handleChange}
@@ -252,7 +204,7 @@ export default function ItemBrowser({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 shrink-0 gap-1.5"
+              className="h-9 shrink-0 gap-1.5 lg:hidden"
               onClick={() => setFiltersOpen(true)}
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -281,11 +233,6 @@ export default function ItemBrowser({
           )}
           <div className="flex flex-wrap items-center gap-2 text-sm sm:ml-auto">{headerSlot}</div>
         </div>
-        {showTemplates && (
-          <Collapsible collapsed={condensed}>
-            <TemplatePicker />
-          </Collapsible>
-        )}
       </div>
       {showCustomItemLink && (
         <CustomItemDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
@@ -303,40 +250,23 @@ export default function ItemBrowser({
         </DrawerContent>
       </Drawer>
 
-      {/* No `items-start`: the rail column has to stretch to the grid's height,
-          otherwise its sticky child has no room to travel. */}
-      <div className="flex gap-6 pt-4">
-        <aside className="hidden w-64 shrink-0 lg:block">
-          <div
-            className="sticky overflow-y-auto pr-1 transition-[top] duration-200 motion-reduce:transition-none"
-            style={{ top: railTop, maxHeight: `calc(100vh - ${railTop}px - 1rem)` }}
-          >
-            <CatalogueFilters
-              search={search}
-              onSearchChange={setSearch}
-              onSearchKeyDown={handleSearchKeyDown}
-              searchRef={searchRef}
-              showSearch
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              categories={sortedCategories}
-              selected={selectedCategories}
-              onToggleCategory={toggleCategory}
-              onClearCategories={() => setSelectedCategories([])}
-            />
-          </div>
-        </aside>
-        <div className="min-w-0 flex-1">
-          {filteredItems.length > 0 ? (
-            renderItems ? (
-              renderItems(filteredItems)
-            ) : (
-              <AllItems items={filteredItems} categories={categories} />
-            )
+      <FilterFlyout badge={selectedCategories.length}>{filters}</FilterFlyout>
+
+      <div className="pt-4">
+        {/* Sets are a starting point for an empty cart, so they only lead the
+            page while the catalogue is unfiltered — once you're searching or
+            filtering, they'd sit between you and the results. */}
+        {showSets && <TemplateSection />}
+        {showSets && <h2 className="mb-3 text-lg font-semibold">Kaikki kamat</h2>}
+        {filteredItems.length > 0 ? (
+          renderItems ? (
+            renderItems(filteredItems)
           ) : (
-            <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
-          )}
-        </div>
+            <AllItems items={filteredItems} categories={categories} />
+          )
+        ) : (
+          <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
+        )}
       </div>
     </>
   );
