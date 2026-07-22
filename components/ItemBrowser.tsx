@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
+import { useCondensedHeader } from '@/hooks/useCondensedHeader';
+import { cn } from '@/lib/utils';
 import TemplatePicker from './TemplatePicker';
 
 interface ItemWithRelations extends Item {
@@ -22,6 +24,34 @@ interface ItemWithRelations extends Item {
 }
 
 type SortMode = 'popular' | 'name';
+
+/**
+ * A row of the sticky header that folds away while scrolling down. The 0fr/1fr
+ * grid is the trick that lets an auto-height row animate; `inert` keeps the
+ * hidden buttons out of the tab order and the a11y tree while it's folded.
+ */
+function Collapsible({
+  collapsed,
+  className,
+  children,
+}: {
+  collapsed: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        'grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none',
+        collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
+      )}
+    >
+      <div className="overflow-hidden" inert={collapsed}>
+        <div className={className}>{children}</div>
+      </div>
+    </div>
+  );
+}
 
 // Finnish collation: ä/å/ö sort at the END of the alphabet, not next to a/o.
 // The DB collation can't be relied on for this, so order client-side instead.
@@ -53,6 +83,7 @@ export default function ItemBrowser({
   const [sortBy, setSortBy] = useState<SortMode>('popular');
   const [dialogOpen, setDialogOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const condensed = useCondensedHeader();
   const {
     addToCart,
     state: { items: cartItems },
@@ -124,8 +155,18 @@ export default function ItemBrowser({
 
   return (
     <>
-      <div className="sticky top-16 z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs">
-        {headerSlot && <div className="border-b pb-2">{headerSlot}</div>}
+      <div
+        className={cn(
+          'sticky z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs transition-[top] duration-200 motion-reduce:transition-none',
+          // Rides up into the space the top bar vacates while scrolling down.
+          condensed ? 'top-0' : 'top-16',
+        )}
+      >
+        {headerSlot && (
+          <Collapsible collapsed={condensed} className="border-b pb-2">
+            {headerSlot}
+          </Collapsible>
+        )}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative w-full sm:w-fit">
             <Input
@@ -182,7 +223,11 @@ export default function ItemBrowser({
             </Button>
           </div>
         </div>
-        {showTemplates && <TemplatePicker />}
+        {showTemplates && (
+          <Collapsible collapsed={condensed}>
+            <TemplatePicker />
+          </Collapsible>
+        )}
         <div className="hidden md:block">
           <div className="flex flex-wrap gap-1.5">
             <Button
