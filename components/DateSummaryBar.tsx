@@ -17,10 +17,10 @@ import {
 import { formatDateShortWeekday, formatDateTimeKiosk } from '@/utils/dateFormat';
 import { applyRangeTimes, setEndOfDay } from '@/utils/dateRange';
 
-// Compact, always-visible summary of the chosen loan dates. Rendered inside the
-// catalogue's sticky header so the picked days stay on screen while the item
-// list fills the rest of the viewport. Editing happens in a dialog so the bar
-// itself stays slim.
+// Compact, always-visible summary of the chosen loan dates. Rendered inline in
+// the catalogue's search row — as one chip rather than a row of its own, so the
+// dates stay on screen without costing the item grid a line. Clicking it opens
+// the range editor in a dialog.
 export default function DateSummaryBar() {
   const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
   const { clearCart } = useCart();
@@ -47,20 +47,20 @@ export default function DateSummaryBar() {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-1.5 text-sm sm:text-base">
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-9 gap-1.5 px-2.5"
+        onClick={() => setEditOpen(true)}
+        aria-label="Muokkaa lainausaikaa"
+        title="Muokkaa lainausaikaa"
+      >
         <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
         <span className="font-semibold">{formatDateShortWeekday(dates.startDate)}</span>
         <span className="text-muted-foreground">&rarr;</span>
         <span className="font-semibold">{formatDateShortWeekday(dates.endDate)}</span>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="shrink-0 gap-1.5"
-        onClick={() => setEditOpen(true)}
-      >
-        <Pencil className="h-3.5 w-3.5" /> Muokkaa
+        <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </Button>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -100,6 +100,6 @@ export default function DateSummaryBar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

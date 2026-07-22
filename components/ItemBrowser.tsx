@@ -62,8 +62,9 @@ interface ItemBrowserProps {
   categories: Category[];
   showCustomItemLink?: boolean;
   renderItems?: (items: ItemWithRelations[]) => React.ReactNode;
-  /** Optional content pinned above the search row inside the sticky header
-   *  (e.g. the chosen loan dates), so it stays visible while items scroll. */
+  /** Optional content pinned inline at the right end of the search row (the
+   *  chosen loan dates), so it stays visible while items scroll without
+   *  costing the sticky header a line of its own. */
   headerSlot?: React.ReactNode;
   /** Show the "Valmiit setit" chips. Off in browse mode, which has no cart to
    *  add them to and no chosen dates to check availability against. */
@@ -162,11 +163,6 @@ export default function ItemBrowser({
           condensed ? 'top-0' : 'top-16',
         )}
       >
-        {headerSlot && (
-          <Collapsible collapsed={condensed} className="border-b pb-2">
-            {headerSlot}
-          </Collapsible>
-        )}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative w-full sm:w-fit">
             <Input
@@ -205,8 +201,9 @@ export default function ItemBrowser({
               </p>
             </div>
           )}
-          <div className="flex items-center gap-1 text-sm sm:ml-auto">
-            <span className="hidden text-muted-foreground sm:inline">Järjestys:</span>
+          <div className="flex flex-wrap items-center gap-2 text-sm sm:ml-auto">
+            {headerSlot}
+            <span className="hidden text-muted-foreground lg:inline">Järjestys:</span>
             <Button
               size="xs"
               onClick={() => setSortBy('popular')}
