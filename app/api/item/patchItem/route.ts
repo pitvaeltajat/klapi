@@ -25,6 +25,12 @@ export async function PATCH(request: Request) {
 
   const data: Record<string, string | number | null> = { [field]: value };
 
+  // Trimmed: a trailing space is invisible in the inline editor but makes the
+  // name sort oddly and breaks any lookup that matches on it exactly.
+  if (field === 'name' && typeof value === 'string') {
+    data[field] = value.trim();
+  }
+
   if (field === 'amount') {
     const num = Number(value);
     if (!Number.isInteger(num) || num < 1) {

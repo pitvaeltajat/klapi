@@ -28,6 +28,9 @@ export async function POST(request: Request) {
   const item = await prisma.item.create({
     data: {
       ...rest,
+      // Trimmed: a trailing space is invisible in the UI but makes the name
+      // sort oddly and breaks any lookup that matches on it exactly.
+      name: typeof rest.name === 'string' ? rest.name.trim() : rest.name,
       // ensure type defaults to 'normal' when not provided by the client
       type: rest.type ?? 'normal',
       location: locationObject && {

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       id: body.id,
     },
     data: {
-      name: body.name,
+      name: typeof body.name === 'string' ? body.name.trim() : body.name,
       description: body.description,
       amount: body.amount,
       categories: {
