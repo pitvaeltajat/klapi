@@ -306,7 +306,7 @@ export default function ItemBrowser({
       {/* No `items-start`: the rail column has to stretch to the grid's height,
           otherwise its sticky child has no room to travel. */}
       <div className="flex gap-6 pt-4">
-        <aside className="hidden w-56 shrink-0 lg:block">
+        <aside className="hidden w-64 shrink-0 lg:block">
           <div
             className="sticky overflow-y-auto pr-1 transition-[top] duration-200 motion-reduce:transition-none"
             style={{ top: railTop, maxHeight: `calc(100vh - ${railTop}px - 1rem)` }}

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { useCondensedHeader } from '@/hooks/useCondensedHeader';
+import { usePageMaxWidth } from '@/lib/pageWidth';
 import { cn } from '@/lib/utils';
 
 // "Eero Sahlberg" -> "ES", "Eero" -> "EE". Used to label the elevated admin
@@ -36,6 +37,7 @@ const getInitials = (name?: string | null): string => {
 export default function TopBar({ children }: { children: ReactNode }) {
   const { data: session, update } = useSession();
   const condensed = useCondensedHeader();
+  const pageMaxWidth = usePageMaxWidth();
   useEffect(() => {
     if (
       session?.user &&
@@ -226,7 +228,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
           condensed && '-translate-y-full',
         )}
       >
-        <div className="container mx-auto px-4">
+        <div className={cn('mx-auto w-full px-4 xl:px-6', pageMaxWidth)}>
           <div className="flex h-16 items-center justify-between text-white">
             <div className="flex items-center gap-4">
               {session && (

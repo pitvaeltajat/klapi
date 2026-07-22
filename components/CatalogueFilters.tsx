@@ -44,6 +44,8 @@ export default function CatalogueFilters({
   onToggleCategory,
   onClearCategories,
 }: CatalogueFiltersProps) {
+  const showAll = selected.length === 0;
+
   return (
     <div className="flex flex-col gap-4">
       {showSearch && (
@@ -100,16 +102,14 @@ export default function CatalogueFilters({
           Kategoriat
         </span>
         <div className="flex flex-col">
-          <CategoryRow
-            label="Kaikki"
-            checked={selected.length === 0}
-            onClick={onClearCategories}
-          />
+          {/* "Kaikki" means every category is included, so show them all ticked.
+              Clicking one from that state narrows to just it. */}
+          <CategoryRow label="Kaikki" checked={showAll} onClick={onClearCategories} />
           {categories.map((cat) => (
             <CategoryRow
               key={cat.id}
               label={cat.name}
-              checked={selected.includes(cat.name)}
+              checked={showAll || selected.includes(cat.name)}
               onClick={() => onToggleCategory(cat.name)}
             />
           ))}
