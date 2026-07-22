@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
+import { SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
 import CustomItemDialog from './CustomItemDialog';
+import CatalogueFilters, { type SortMode } from './CatalogueFilters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/native-select';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 import { useCondensedHeader } from '@/hooks/useCondensedHeader';
@@ -23,7 +25,8 @@ interface ItemWithRelations extends Item {
   popularity?: number;
 }
 
-type SortMode = 'popular' | 'name';
+/** Height of the fixed top bar, in px — the sticky offsets are measured off it. */
+const TOP_BAR_HEIGHT = 64;
 
 /**
  * A row of the sticky header that folds away while scrolling down. The 0fr/1fr
@@ -80,10 +83,15 @@ export default function ItemBrowser({
   showTemplates = false,
 }: ItemBrowserProps) {
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortMode>('popular');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Two search boxes exist — one in the rail, one in the sticky strip — but only
+  // one of them is ever visible, so focus goes to whichever is laid out.
   const searchRef = useRef<HTMLInputElement>(null);
+  const stripSearchRef = useRef<HTMLInputElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const condensed = useCondensedHeader();
   const {
     addToCart,
@@ -91,14 +99,34 @@ export default function ItemBrowser({
   } = useCart();
   const { availabilities } = useAvailabilities();
 
+  const focusSearch = useCallback(() => {
+    const visible = [searchRef.current, stripSearchRef.current].find(
+      (input) => input && input.offsetParent !== null,
+    );
+    visible?.focus({ preventScroll: true });
+  }, []);
+
+  // The rail sticks below the strip, whose height changes as the sets row folds
+  // away and as the chips wrap, so measure it rather than hard-coding a value.
+  const [stripHeight, setStripHeight] = useState(0);
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const observer = new ResizeObserver(() => setStripHeight(strip.offsetHeight));
+    observer.observe(strip);
+    setStripHeight(strip.offsetHeight);
+    return () => observer.disconnect();
+  }, []);
+  const railTop = (condensed ? 0 : TOP_BAR_HEIGHT) + stripHeight + 16;
+
   // Only autofocus on devices with a precise pointer (desktop/kiosk with a real
   // keyboard). On touch devices autofocusing pops up the on-screen keyboard,
   // which is especially disruptive while the date picker is on screen.
   useEffect(() => {
     if (window.matchMedia('(pointer: fine)').matches) {
-      searchRef.current?.focus({ preventScroll: true });
+      focusSearch();
     }
-  }, []);
+  }, [focusSearch]);
 
   // Escape clears the search and refocuses it from anywhere on the page — but
   // not while a dialog/drawer is open, so Escape can still close those instead.
@@ -107,22 +135,35 @@ export default function ItemBrowser({
       if (e.key !== 'Escape') return;
       if (document.querySelector('[role="dialog"][data-state="open"]')) return;
       setSearch('');
-      searchRef.current?.focus({ preventScroll: true });
+      focusSearch();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [focusSearch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
 
+  const toggleCategory = useCallback((name: string) => {
+    setSelectedCategories((current) =>
+      current.includes(name) ? current.filter((c) => c !== name) : [...current, name],
+    );
+  }, []);
+
+  const sortedCategories = useMemo(
+    () => [...categories].sort((a, b) => fiCollator.compare(a.name, b.name)),
+    [categories],
+  );
+
   const filteredItems = items
     .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
-    .filter((item) => {
-      if (category === '') return true;
-      return item.categories.some((cat) => cat.name === category);
-    })
+    // No category picked means everything; several mean the union of them.
+    .filter(
+      (item) =>
+        selectedCategories.length === 0 ||
+        item.categories.some((cat) => selectedCategories.includes(cat.name)),
+    )
     .sort((a, b) => {
       if (sortBy === 'popular') {
         const diff = (b.popularity ?? 0) - (a.popularity ?? 0);
@@ -154,37 +195,74 @@ export default function ItemBrowser({
     });
   };
 
+  const filters = (
+    <CatalogueFilters
+      search={search}
+      onSearchChange={setSearch}
+      onSearchKeyDown={handleSearchKeyDown}
+      sortBy={sortBy}
+      onSortChange={setSortBy}
+      categories={sortedCategories}
+      selected={selectedCategories}
+      onToggleCategory={toggleCategory}
+      onClearCategories={() => setSelectedCategories([])}
+    />
+  );
+
   return (
     <>
       <div
+        ref={stripRef}
         className={cn(
           'sticky z-30 -mx-4 flex flex-col gap-2 border-b bg-background/95 px-4 pb-3 pt-2 backdrop-blur-xs transition-[top] duration-200 motion-reduce:transition-none',
           // Rides up into the space the top bar vacates while scrolling down.
           condensed ? 'top-0' : 'top-16',
+          // Below `lg` the strip always carries the search box; above it, it can
+          // end up with nothing left to show (browse mode) — don't draw an
+          // empty bar then.
+          !showCustomItemLink && !headerSlot && !showTemplates && 'lg:hidden',
         )}
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <div className="relative w-full sm:w-fit">
-            <Input
-              ref={searchRef}
-              placeholder="Hae kamoja"
-              value={search}
-              onChange={handleChange}
-              onKeyDown={handleSearchKeyDown}
-              className="h-9 pr-9"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              {search ? (
-                <FaTimes
-                  role="button"
-                  className="cursor-pointer"
-                  onClick={() => setSearch('')}
-                  aria-label="Tyhjennä haku"
-                />
-              ) : (
-                <FaSearch />
-              )}
+          {/* Search and filters live in the rail on wide screens; below `lg`
+              the search stays out here and the rest moves into a drawer. */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <div className="relative flex-1 sm:w-56 sm:flex-none">
+              <Input
+                ref={stripSearchRef}
+                placeholder="Hae kamoja"
+                value={search}
+                onChange={handleChange}
+                onKeyDown={handleSearchKeyDown}
+                className="h-9 pr-9"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                {search ? (
+                  <FaTimes
+                    role="button"
+                    className="cursor-pointer"
+                    onClick={() => setSearch('')}
+                    aria-label="Tyhjennä haku"
+                  />
+                ) : (
+                  <FaSearch />
+                )}
+              </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 shrink-0 gap-1.5"
+              onClick={() => setFiltersOpen(true)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Suodata
+              {selectedCategories.length > 0 && (
+                <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {selectedCategories.length}
+                </span>
+              )}
+            </Button>
           </div>
           {showCustomItemLink && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -201,84 +279,64 @@ export default function ItemBrowser({
               </p>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2 text-sm sm:ml-auto">
-            {headerSlot}
-            <span className="hidden text-muted-foreground lg:inline">Järjestys:</span>
-            <Button
-              size="xs"
-              onClick={() => setSortBy('popular')}
-              variant={sortBy === 'popular' ? 'default' : 'outline-solid'}
-            >
-              Suosituimmat
-            </Button>
-            <Button
-              size="xs"
-              onClick={() => setSortBy('name')}
-              variant={sortBy === 'name' ? 'default' : 'outline-solid'}
-            >
-              Nimi
-            </Button>
-          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm sm:ml-auto">{headerSlot}</div>
         </div>
         {showTemplates && (
           <Collapsible collapsed={condensed}>
             <TemplatePicker />
           </Collapsible>
         )}
-        <div className="hidden md:block">
-          <div className="flex flex-wrap gap-1.5">
-            <Button
-              key="all"
-              size="xs"
-              onClick={() => setCategory('')}
-              variant={category === '' ? 'default' : 'outline-solid'}
-            >
-              Kaikki
-            </Button>
-            {[...categories]
-              .sort((a, b) => fiCollator.compare(a.name, b.name))
-              .map((cat) => (
-                <Button
-                  key={cat.id}
-                  size="xs"
-                  onClick={() => setCategory(category === cat.name ? '' : cat.name)}
-                  variant={category === cat.name ? 'default' : 'outline-solid'}
-                >
-                  {cat.name}
-                </Button>
-              ))}
-          </div>
-        </div>
-        <div className="md:hidden">
-          <NativeSelect
-            className="h-9 py-1.5"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="">Kaikki</option>
-            {[...categories]
-              .sort((a, b) => fiCollator.compare(a.name, b.name))
-              .map((cat) => (
-                <option key={cat.id} value={cat.name}>
-                  {cat.name}
-                </option>
-              ))}
-          </NativeSelect>
-        </div>
       </div>
       {showCustomItemLink && (
         <CustomItemDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
       )}
-      <div className="pt-4">
-        {filteredItems.length > 0 ? (
-          renderItems ? (
-            renderItems(filteredItems)
+
+      <Drawer open={filtersOpen} onOpenChange={setFiltersOpen}>
+        {/* A bottom sheet rather than a side panel: the top bar is painted above
+            the drawer layer, so a full-height panel would lose its first 4rem. */}
+        <DrawerContent side="bottom" className="max-h-[75vh] rounded-t-xl p-0">
+          {/* Header stays put; only the category list scrolls. */}
+          <div className="border-b px-4 py-3">
+            <DrawerTitle>Suodata</DrawerTitle>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">{filters}</div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* No `items-start`: the rail column has to stretch to the grid's height,
+          otherwise its sticky child has no room to travel. */}
+      <div className="flex gap-6 pt-4">
+        <aside className="hidden w-56 shrink-0 lg:block">
+          <div
+            className="sticky overflow-y-auto pr-1 transition-[top] duration-200 motion-reduce:transition-none"
+            style={{ top: railTop, maxHeight: `calc(100vh - ${railTop}px - 1rem)` }}
+          >
+            <CatalogueFilters
+              search={search}
+              onSearchChange={setSearch}
+              onSearchKeyDown={handleSearchKeyDown}
+              searchRef={searchRef}
+              showSearch
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              categories={sortedCategories}
+              selected={selectedCategories}
+              onToggleCategory={toggleCategory}
+              onClearCategories={() => setSelectedCategories([])}
+            />
+          </div>
+        </aside>
+        <div className="min-w-0 flex-1">
+          {filteredItems.length > 0 ? (
+            renderItems ? (
+              renderItems(filteredItems)
+            ) : (
+              <AllItems items={filteredItems} categories={categories} />
+            )
           ) : (
-            <AllItems items={filteredItems} categories={categories} />
-          )
-        ) : (
-          <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
-        )}
+            <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
+          )}
+        </div>
       </div>
     </>
   );

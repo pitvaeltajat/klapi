@@ -22,7 +22,9 @@ export default function ItemGrid({ items }: ItemGridProps) {
 
   return (
     <div
-      className={`grid grid-cols-1 gap-3 transition-opacity duration-150 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5 2xl:grid-cols-6 ${
+      // One column fewer from `lg` up than the viewport would suggest: that's
+      // where the filter rail takes its 14rem out of the row.
+      className={`grid grid-cols-1 gap-3 transition-opacity duration-150 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4 2xl:grid-cols-5 ${
         isRefetching ? 'opacity-80' : 'opacity-100'
       }`}
       aria-busy={loading}
