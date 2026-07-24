@@ -26,6 +26,7 @@ import {
   getLoanHistoryActionLabel,
 } from '@/utils/loanHelpers';
 import { LoanHistoryAction } from '@prisma/client';
+import { templateDraftItemsFromLoan } from '@/utils/templateDraft';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DateTime } from '@/components/DateTime';
@@ -167,22 +168,13 @@ export default function LoanView({
     });
   };
 
-  // What "tallenna pohjaksi" would capture — mirrors createTemplate's own
-  // filtering (no rejected lines, no archived or one-off temporary items) so
-  // the preview can't promise rows the server would silently drop. Kept above
-  // the authorization early-return, as hooks must be.
-  const templatePreview = React.useMemo(() => {
-    const byName = new Map<string, number>();
-    for (const reservation of loan.reservations) {
-      if (reservation.status === ReservationStatus.REJECTED) continue;
-      if (reservation.item.deletedAt || reservation.item.type !== 'normal') continue;
-      byName.set(
-        reservation.item.name,
-        (byName.get(reservation.item.name) ?? 0) + reservation.amount,
-      );
-    }
-    return [...byName].map(([name, amount]) => ({ name, amount }));
-  }, [loan.reservations]);
+  // The rows "tallenna pohjaksi" opens with — the admin edits them in the
+  // dialog before anything is saved. Kept above the authorization
+  // early-return, as hooks must be.
+  const templateDraftItems = React.useMemo(
+    () => templateDraftItemsFromLoan(loan.reservations),
+    [loan.reservations],
+  );
 
   const isKiosk = session?.user?.group === 'KIOSK';
 
@@ -282,11 +274,10 @@ export default function LoanView({
         <div className="rounded-lg border bg-card p-6 shadow-xs">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Kamat</h2>
-            {isAdmin && templatePreview.length > 0 && (
+            {isAdmin && templateDraftItems.length > 0 && (
               <SaveAsTemplateButton
-                loanId={loan.id}
                 defaultName={loan.description || ''}
-                preview={templatePreview}
+                items={templateDraftItems}
               />
             )}
           </div>

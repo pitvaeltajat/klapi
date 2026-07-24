@@ -120,7 +120,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `availability/getAvailabilities` | POST | item availability over a date range |
 | `category/getCategories`, `location/getLocations` | GET | option lists |
 | `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
-| `template/createTemplate` | POST | create one, either from an item list or from a loan's reservations (`fromLoanId`) |
+| `template/createTemplate` | POST | create one from an item list (`items: [{ itemId, amount }]`) |
 | `template/updateTemplate` | POST | rename + replace its item list |
 | `template/deleteTemplate` | POST | hard delete (nothing references a template) |
 | `reservation/checkInBox` | POST | mark a reservation checked into a box |

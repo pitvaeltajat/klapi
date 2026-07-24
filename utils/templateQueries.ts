@@ -75,25 +75,3 @@ export async function allItemsLoanable(itemIds: string[]): Promise<boolean> {
   return count === itemIds.length;
 }
 
-/**
- * Collapses a loan's reservations into template rows — the "tallenna pohjaksi"
- * path. A loan can hold several reservations for the same item (an edit that
- * split a line, a partial return), so amounts are summed per item. Rejected
- * lines and non-loanable items are dropped for the same reasons as above.
- */
-export async function templateItemsFromLoan(loanId: string): Promise<TemplateItemInput[]> {
-  const reservations = await prisma.reservation.findMany({
-    where: {
-      loanId,
-      status: { not: 'REJECTED' },
-      item: { deletedAt: null, type: 'normal' },
-    },
-    select: { itemId: true, amount: true },
-  });
-
-  const byItemId = new Map<string, number>();
-  for (const { itemId, amount } of reservations) {
-    byItemId.set(itemId, (byItemId.get(itemId) ?? 0) + amount);
-  }
-  return [...byItemId].map(([itemId, amount]) => ({ itemId, amount }));
-}

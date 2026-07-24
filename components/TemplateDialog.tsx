@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { FaMinus, FaPlus } from 'react-icons/fa';
 import { Package } from 'lucide-react';
 import {
   Dialog,
@@ -13,8 +12,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import ItemAmountCard from './ItemAmountCard';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 import type { TemplateView } from '@/types';
@@ -100,7 +99,7 @@ export default function TemplateDialog({ template, onClose }: TemplateDialogProp
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{template.name}</DialogTitle>
           {/* Block spans rather than paragraphs: DialogDescription renders a
@@ -117,56 +116,28 @@ export default function TemplateDialog({ template, onClose }: TemplateDialogProp
         </DialogHeader>
 
         {rows === null ? (
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             {template.items.map((entry) => (
-              <Skeleton key={entry.itemId} className="h-12 w-full" />
+              <Skeleton key={entry.itemId} className="h-20 w-full" />
             ))}
           </div>
         ) : (
-          <ul className="flex flex-col divide-y">
+          /* Two columns from `sm` up: a set can run to a dozen rows, and the
+             cards are compact enough that one column would scroll needlessly. */
+          <div className="grid gap-2 sm:grid-cols-2">
             {rows.map((row) => {
               const amount = amountFor(row);
               return (
-                <li
+                <ItemAmountCard
                   key={row.itemId}
-                  className={cn(
-                    'flex items-center gap-3 py-3',
-                    row.headroom === 0 && 'opacity-60',
-                  )}
-                >
-                  <div className="flex h-9 shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label={`Vähennä ${row.name}`}
-                      onClick={() => setAmount(row.itemId, Math.max(0, amount - 1))}
-                      disabled={amount <= 0}
-                      className="h-full w-9 rounded-r-none"
-                    >
-                      <FaMinus />
-                    </Button>
-                    <Input
-                      value={amount}
-                      readOnly
-                      aria-label={`${row.name} määrä`}
-                      className="pointer-events-none h-full w-11 select-none rounded-none border-x-0 px-1 text-center font-bold"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label={`Lisää ${row.name}`}
-                      onClick={() => setAmount(row.itemId, Math.min(row.headroom, amount + 1))}
-                      disabled={amount >= row.headroom}
-                      className="h-full w-9 rounded-l-none"
-                    >
-                      <FaPlus />
-                    </Button>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{row.name}</p>
-                    <p
+                  itemId={row.itemId}
+                  name={row.name}
+                  amount={amount}
+                  dimmed={row.headroom === 0}
+                  subtitle={
+                    <span
                       className={cn(
-                        'flex items-center gap-1.5 text-sm',
+                        'flex flex-wrap items-center gap-x-1.5 font-normal',
                         row.headroom === 0
                           ? 'text-destructive'
                           : row.headroom < row.suggested
@@ -183,12 +154,18 @@ export default function TemplateDialog({ template, onClose }: TemplateDialogProp
                       {row.inCart > 0 && (
                         <span className="text-muted-foreground">· korissa jo {row.inCart}</span>
                       )}
-                    </p>
-                  </div>
-                </li>
+                    </span>
+                  }
+                  decrementDisabled={amount <= 0}
+                  incrementDisabled={amount >= row.headroom}
+                  onDecrement={() => setAmount(row.itemId, Math.max(0, amount - 1))}
+                  onIncrement={() => setAmount(row.itemId, Math.min(row.headroom, amount + 1))}
+                  onRemove={amount > 0 ? () => setAmount(row.itemId, 0) : undefined}
+                  removeLabel={`Jätä ${row.name} pois setistä`}
+                />
               );
             })}
-          </ul>
+          </div>
         )}
 
         {clamped.length > 0 && (

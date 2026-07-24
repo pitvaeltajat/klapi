@@ -10,14 +10,13 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { PrismaClient, LoanStatus, ReservationStatus, ItemType } from '@prisma/client';
+import { PrismaClient, ItemType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   templateItemsInclude,
   toTemplateView,
   normalizeTemplateItems,
   allItemsLoanable,
-  templateItemsFromLoan,
 } from '@/utils/templateQueries';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -29,7 +28,6 @@ let tentId: string;
 let stoveId: string;
 let axeId: string;
 let temporaryId: string;
-let userId: string;
 
 const readTemplate = async (id: string) => {
   const template = await prisma.template.findUniqueOrThrow({
@@ -58,16 +56,10 @@ beforeAll(async () => {
   stoveId = await item('stove', 5);
   axeId = await item('axe', 2);
   temporaryId = await item('temp', 1, ItemType.temporary);
-  userId = (
-    await prisma.user.create({
-      data: { id: `${testPrefix}-user`, name: 'Template Tester', email: `${testPrefix}@test.com` },
-    })
-  ).id;
 });
 
 beforeEach(async () => {
   await prisma.template.deleteMany({ where: { name: { startsWith: testPrefix } } });
-  await prisma.loan.deleteMany({ where: { userId } });
   // Undo any archiving a previous test did.
   await prisma.item.updateMany({
     where: { id: { startsWith: testPrefix } },
@@ -77,9 +69,7 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await prisma.template.deleteMany({ where: { name: { startsWith: testPrefix } } });
-  await prisma.loan.deleteMany({ where: { userId } });
   await prisma.item.deleteMany({ where: { id: { startsWith: testPrefix } } });
-  await prisma.user.deleteMany({ where: { id: userId } });
   await prisma.$disconnect();
 });
 
@@ -182,57 +172,6 @@ describe('updating a template', () => {
     // The unseen axe row is still there and comes back on restore.
     await prisma.item.update({ where: { id: axeId }, data: { deletedAt: null } });
     expect((await readTemplate(template.id)).items).toHaveLength(3);
-  });
-});
-
-describe('templateItemsFromLoan', () => {
-  const createLoan = async (
-    reservations: { itemId: string; amount: number; status?: ReservationStatus }[],
-  ) =>
-    prisma.loan.create({
-      data: {
-        userId,
-        status: LoanStatus.ACCEPTED,
-        startTime: new Date('2026-08-01'),
-        endTime: new Date('2026-08-03'),
-        description: `${testPrefix} loan`,
-        reservations: {
-          create: reservations.map((reservation) => ({
-            itemId: reservation.itemId,
-            amount: reservation.amount,
-            status: reservation.status ?? ReservationStatus.ACCEPTED,
-          })),
-        },
-      },
-    });
-
-  it('sums repeated reservations for the same item', async () => {
-    const loan = await createLoan([
-      { itemId: tentId, amount: 2 },
-      { itemId: tentId, amount: 1 },
-      { itemId: stoveId, amount: 1 },
-    ]);
-
-    const items = await templateItemsFromLoan(loan.id);
-    expect(items).toEqual(
-      expect.arrayContaining([
-        { itemId: tentId, amount: 3 },
-        { itemId: stoveId, amount: 1 },
-      ]),
-    );
-    expect(items).toHaveLength(2);
-  });
-
-  it('skips rejected lines and temporary and archived items', async () => {
-    await prisma.item.update({ where: { id: axeId }, data: { deletedAt: new Date() } });
-    const loan = await createLoan([
-      { itemId: tentId, amount: 1 },
-      { itemId: stoveId, amount: 1, status: ReservationStatus.REJECTED },
-      { itemId: temporaryId, amount: 1 },
-      { itemId: axeId, amount: 1 },
-    ]);
-
-    expect(await templateItemsFromLoan(loan.id)).toEqual([{ itemId: tentId, amount: 1 }]);
   });
 });
 

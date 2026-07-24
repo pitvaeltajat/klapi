@@ -5,7 +5,7 @@ import { IoMdAlert } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoanerAutocomplete from './LoanerAutocomplete';
-import CartItemRow from './CartItemRow';
+import ItemAmountCard from './ItemAmountCard';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
@@ -269,18 +269,23 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   : availabilities === null || item.amount >= available;
 
                 return (
-                  <CartItemRow
+                  <ItemAmountCard
                     key={item.id}
-                    item={item}
+                    itemId={item.id}
+                    name={item.name}
+                    amount={item.amount}
                     incrementDisabled={isIncrementDisabled}
-                    warning={
-                      overBooked.has(item.id)
-                        ? `Vain ${overBooked.get(item.id)} vapaana valitulla ajalla`
-                        : undefined
+                    subtitle={
+                      overBooked.has(item.id) ? (
+                        <span className="text-warning">
+                          Vain {overBooked.get(item.id)} vapaana valitulla ajalla
+                        </span>
+                      ) : undefined
                     }
                     onIncrement={() => incrementAmount(item.id)}
                     onDecrement={() => decrementAmount(item.id)}
                     onRemove={() => removeFromCart(item.id)}
+                    removeLabel={`Poista ${item.name} ostoskorista`}
                   />
                 );
               })}

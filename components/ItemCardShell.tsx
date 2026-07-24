@@ -49,6 +49,8 @@ interface ItemCardShellProps {
    * Optional control pinned to the top-right corner (e.g. a remove button).
    */
   cornerAction?: React.ReactNode;
+  /** Extra classes on the card itself (e.g. dimming an unavailable item). */
+  className?: string;
 }
 
 export default function ItemCardShell({
@@ -66,11 +68,13 @@ export default function ItemCardShell({
   onActionPointerDown,
   compact = false,
   cornerAction,
+  className,
 }: ItemCardShellProps) {
   const shellClasses = cn(
     'relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-xs',
     !compact &&
       'transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl',
+    className,
   );
   // Expired announcements shouldn't surface on the card — only live ones.
   const activeAnnouncements = Array.isArray(announcements)
