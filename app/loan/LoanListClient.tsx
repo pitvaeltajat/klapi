@@ -7,6 +7,9 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import LoanCard, { LoanType } from '@/components/LoanCard';
 import { getLoanStatusLabel, deriveLoanStatus } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
+import { FilterChip } from '@/components/ui/filter-chip';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const getStatusFilterLabel = (status: LoanStatus): string => {
   const label = getLoanStatusLabel(status);
@@ -37,12 +40,14 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
 
   if (!loans || loans.length === 0) {
     return (
-      <div>
-        <h1 className="text-3xl font-semibold">Ei lainoja</h1>
-        <Button asChild className="mt-4">
-          <NextLink href="/">Luo laina etusivulla</NextLink>
-        </Button>
-      </div>
+      <EmptyState
+        title="Ei lainoja"
+        action={
+          <Button asChild>
+            <NextLink href="/">Luo laina etusivulla</NextLink>
+          </Button>
+        }
+      />
     );
   }
 
@@ -73,41 +78,27 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
     <>
       <Breadcrumbs items={[{ label: 'Lainat' }]} />
       <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="text-3xl font-semibold">Lainat</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleAllStatuses}
-              aria-pressed={allChecked}
-              className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
-                allChecked
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-input bg-background text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              Kaikki
-            </button>
-            {allStatuses.map((status) => {
-              const active = selectedStatuses.has(status);
-              return (
-                <button
+        <PageHeader
+          className="mb-0"
+          title="Lainat"
+          actionsAlign="inline"
+          actions={
+            <>
+              <FilterChip active={allChecked} onClick={toggleAllStatuses}>
+                Kaikki
+              </FilterChip>
+              {allStatuses.map((status) => (
+                <FilterChip
                   key={status}
-                  type="button"
+                  active={selectedStatuses.has(status)}
                   onClick={() => toggleStatus(status)}
-                  aria-pressed={active}
-                  className={`rounded-full border px-3 py-1 text-sm transition ${
-                    active
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-input bg-background text-muted-foreground hover:bg-accent'
-                  }`}
                 >
                   {getStatusFilterLabel(status)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                </FilterChip>
+              ))}
+            </>
+          }
+        />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {filteredLoans.slice(0, visibleCount).map((loan) => (
             <LoanCard key={loan.id} loan={loan} />

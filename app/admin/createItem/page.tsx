@@ -11,7 +11,8 @@ import type { Category, Location } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Field } from '@/components/ui/field';
+import { PageHeader } from '@/components/ui/page-header';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -160,13 +161,10 @@ export default function CreateItemPage() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Luo uusi kama' }]} />
-      <h1 className="mb-6 text-3xl font-semibold">Luo uusi kama</h1>
+      <PageHeader title="Luo uusi kama" />
 
       <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
-        <div>
-          <Label htmlFor="name">
-            Nimi <span className="text-destructive">*</span>
-          </Label>
+        <Field label="Nimi" required htmlFor="name">
           <Input
             id="name"
             placeholder="PJ-teltta"
@@ -174,27 +172,22 @@ export default function CreateItemPage() {
             required
             onChange={(e) => setName(e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div>
-          <Label htmlFor="amount">
-            Määrä <span className="text-destructive">*</span>
-          </Label>
+        <Field label="Määrä" required htmlFor="amount">
           <NumberInput id="amount" min={1} value={amount} onChange={setAmount} />
-        </div>
+        </Field>
 
-        <div>
-          <Label htmlFor="description">Kuvaus</Label>
+        <Field label="Kuvaus" htmlFor="description">
           <Textarea
             id="description"
             placeholder="Kamaa käytetään..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div>
-          <Label htmlFor="categories">Kategoriat</Label>
+        <Field label="Kategoriat" htmlFor="categories">
           <CreatableSelect
             inputId="categories"
             isMulti
@@ -206,12 +199,9 @@ export default function CreateItemPage() {
             isClearable
             backspaceRemovesValue
           />
-        </div>
+        </Field>
 
-        <div>
-          <Label htmlFor="locationId">
-            Sijainti <span className="text-destructive">*</span>
-          </Label>
+        <Field label="Sijainti" required htmlFor="locationId">
           <CreatableSelect
             options={locationOptions}
             inputId="locationId"
@@ -221,14 +211,13 @@ export default function CreateItemPage() {
             onChange={(option) => setSelectedLocation(option as SelectOption | null)}
             isClearable
           />
-        </div>
+        </Field>
 
-        <div className="mt-4">
-          <Label htmlFor="image">Kuva</Label>
+        <Field label="Kuva" htmlFor="image" className="mt-4">
           <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
           {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
           {previewUrl && <img src={previewUrl} alt="Preview" className="mt-2 max-w-[300px]" />}
-        </div>
+        </Field>
 
         <div className="mt-4 flex gap-2">
           <Button

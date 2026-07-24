@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Check } from 'lucide-react';
 import { FaSearch, FaTimes } from 'react-icons/fa';
 import { Category } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CheckboxIndicator } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 export type SortMode = 'popular' | 'name';
@@ -159,14 +159,7 @@ function CategoryRow({
         checked && 'font-semibold text-primary',
       )}
     >
-      <span
-        className={cn(
-          'flex size-4 shrink-0 items-center justify-center rounded-[4px] border',
-          checked ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
-        )}
-      >
-        {checked && <Check className="size-3" strokeWidth={3} />}
-      </span>
+      <CheckboxIndicator checked={checked} />
       <span className="truncate">{label}</span>
     </button>
   );

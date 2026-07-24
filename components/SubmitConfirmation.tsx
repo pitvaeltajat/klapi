@@ -5,7 +5,6 @@ import { CartItem } from '../types';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { IoMdAlert } from 'react-icons/io';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import {
@@ -16,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { DateTime } from '@/components/DateTime';
 import {
   Table,
@@ -25,11 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-interface InBoxItem {
-  itemId: string;
-  itemName: string;
-}
+import { useInBoxItems } from '@/hooks/useInBoxItems';
 
 export default function SubmitConfirmation({
   isOpen,
@@ -51,46 +47,9 @@ export default function SubmitConfirmation({
   const { data: session } = useSession();
 
   const [isLoading, setIsLoading] = React.useState(false);
-  const [inBoxItems, setInBoxItems] = React.useState<InBoxItem[]>([]);
-  const [isCheckingBox, setIsCheckingBox] = React.useState(false);
 
-  React.useEffect(() => {
-    const checkInBoxItems = async () => {
-      if (!isOpen || cart.items.length === 0) {
-        setInBoxItems([]);
-        return;
-      }
-
-      setIsCheckingBox(true);
-      try {
-        const itemIds = cart.items
-          .filter((item) => !item.id.startsWith('custom-'))
-          .map((item) => item.id);
-
-        if (itemIds.length === 0) {
-          setInBoxItems([]);
-          return;
-        }
-
-        const response = await fetch('/api/reservation/checkInBox', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemIds }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setInBoxItems(data.inBoxItems || []);
-        }
-      } catch (error) {
-        console.error('Failed to check in-box items:', error);
-      } finally {
-        setIsCheckingBox(false);
-      }
-    };
-
-    checkInBoxItems();
-  }, [isOpen, cart.items]);
+  const itemIds = React.useMemo(() => cart.items.map((item) => item.id), [cart.items]);
+  const { inBoxItems, isChecking } = useInBoxItems(itemIds, isOpen);
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -152,16 +111,10 @@ export default function SubmitConfirmation({
         </DialogHeader>
         <div>
           {inBoxItems.length > 0 && (
-            <div className="mb-4 flex items-start gap-3 rounded-md border border-warning/50 bg-warning/10 p-4">
-              <IoMdAlert className="mt-0.5 h-5 w-5 text-warning" />
-              <div>
-                <div className="font-semibold">Huomio: Kamoja laatikossa</div>
-                <p className="text-sm text-muted-foreground">
-                  Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat täyden
-                  vastuun tarkistaa kamojen kunnon noudettaessa.
-                </p>
-              </div>
-            </div>
+            <Alert variant="warning" title="Huomio: Kamoja laatikossa" className="mb-4">
+              Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat täyden
+              vastuun tarkistaa kamojen kunnon noudettaessa.
+            </Alert>
           )}
 
           <p>
@@ -199,7 +152,7 @@ export default function SubmitConfirmation({
           <Button variant="outline" onClick={onClose}>
             Peruuta
           </Button>
-          <Button variant="success" onClick={handleSubmit} isLoading={isLoading || isCheckingBox}>
+          <Button variant="success" onClick={handleSubmit} isLoading={isLoading || isChecking}>
             Lähetä laina
           </Button>
         </DialogFooter>

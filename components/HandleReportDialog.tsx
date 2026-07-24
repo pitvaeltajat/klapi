@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DateTime } from '@/components/DateTime';
 import {
   Dialog,
@@ -126,7 +129,7 @@ export default function HandleReportDialog({
         </div>
 
         {!isResolved && (
-          <div className="rounded-md border bg-card p-4">
+          <Card variant="inset" padding="md">
             <p className="mb-1 font-semibold">Lisää ilmoitus kamalle:</p>
             <p className="mb-3 text-sm text-muted-foreground">
               Ilmoituksella voit kertoa kaman tuleville lainaajille sen puutteista,
@@ -175,18 +178,16 @@ export default function HandleReportDialog({
             >
               Lähetä ilmoitus
             </Button>
-          </div>
+          </Card>
         )}
 
         {!isResolved && (
           <div className="flex flex-col gap-3">
             {inProgress && (
-              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
-                <p>
-                  Tämä raportti on käsittelyssä — pidätetyt kamat ovat poissa pelistä.
-                  Kun kamat ovat taas käytettävissä, merkitse raportti käsitellyksi.
-                </p>
-              </div>
+              <Alert variant="warning">
+                Tämä raportti on käsittelyssä — pidätetyt kamat ovat poissa pelistä.
+                Kun kamat ovat taas käytettävissä, merkitse raportti käsitellyksi.
+              </Alert>
             )}
 
             <Button
@@ -205,8 +206,9 @@ export default function HandleReportDialog({
             )}
 
             {!inProgress && (
-              <details
-                className="rounded-md border bg-card"
+              <Card
+                as="details"
+                padding="none"
                 open={holdExpanded}
                 onToggle={(e) => setHoldExpanded((e.target as HTMLDetailsElement).open)}
               >
@@ -230,8 +232,7 @@ export default function HandleReportDialog({
                         <hr />
                         <div className="flex items-center justify-between gap-2">
                           <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               value={reservation.item.id}
                               checked={
                                 reservation.item.id in affectedItems &&
@@ -289,7 +290,7 @@ export default function HandleReportDialog({
                     Pidätä kamat ja jatka myöhemmin
                   </Button>
                 </div>
-              </details>
+              </Card>
             )}
           </div>
         )}

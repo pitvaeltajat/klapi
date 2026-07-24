@@ -29,15 +29,13 @@ import { LoanHistoryAction } from '@prisma/client';
 import { templateDraftItemsFromLoan } from '@/utils/templateDraft';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SelectableRow } from '@/components/ui/selectable-row';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DateTime } from '@/components/DateTime';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 
 interface Report {
   id: string;
@@ -239,12 +237,10 @@ export default function LoanView({
         ]}
       />
       <div className="flex flex-col gap-6">
-        <h1 className="mb-4 text-3xl font-semibold">
-          Laina: {loan.description || 'Ei kuvausta'}
-        </h1>
+        <PageHeader className="mb-0" title={`Laina: ${loan.description || 'Ei kuvausta'}`} />
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
+        <Card>
+          <CardTitle>Perustiedot</CardTitle>
           <div className="flex flex-col gap-3">
             <p>
               Aloitusaika: <DateTime value={loan.startTime} format="long" />
@@ -269,18 +265,18 @@ export default function LoanView({
               )}
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">Kamat</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Kamat</CardTitle>
             {isAdmin && templateDraftItems.length > 0 && (
               <SaveAsTemplateButton
                 defaultName={loan.description || ''}
                 items={templateDraftItems}
               />
             )}
-          </div>
+          </CardHeader>
           <ReservationTableLoanView
             loan={{
               id: loan.id,
@@ -293,20 +289,16 @@ export default function LoanView({
               })),
             }}
           />
-        </div>
+        </Card>
 
         {canSeeReports && (
           <ReportCard reports={reports} reservations={loan.reservations} />
         )}
 
         {derivedStatus === 'RETURNED' ? (
-          <div className="rounded-lg border border-success/50 bg-success/10 p-6">
-            <h2 className="text-xl font-semibold text-success">
-              Lainaustapahtuma suoritettu loppuun
-            </h2>
-          </div>
+          <Alert variant="success" title="Lainaustapahtuma suoritettu loppuun" />
         ) : canMarkReturned ? (
-          <div className="rounded-lg border bg-card p-6 shadow-xs">
+          <Card>
             <div className="flex flex-col gap-3">
               <h3 className="mb-2 text-xl font-semibold">Merkitse laatikossa olevat palautetuksi</h3>
               <p className="text-sm text-muted-foreground">
@@ -314,25 +306,13 @@ export default function LoanView({
               </p>
               <div className="flex flex-col gap-2">
                 {inBoxReservations.map((r) => (
-                  <div
+                  <SelectableRow
                     key={r.id}
-                    onClick={() => toggleProcessing(r.id)}
-                    className={cn(
-                      'flex cursor-pointer items-center gap-2 rounded-md border p-3',
-                      processingIds.has(r.id) ? 'border-success' : 'border-border',
-                    )}
+                    selected={processingIds.has(r.id)}
+                    onSelectedChange={() => toggleProcessing(r.id)}
                   >
-                    <input
-                      type="checkbox"
-                      checked={processingIds.has(r.id)}
-                      onChange={() => toggleProcessing(r.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <p className="flex-1">
-                      {r.item.name}{' '}
-                      <span className="text-muted-foreground">({r.amount} kpl)</span>
-                    </p>
-                  </div>
+                    {r.item.name} <span className="text-muted-foreground">({r.amount} kpl)</span>
+                  </SelectableRow>
                 ))}
               </div>
               <Button
@@ -348,21 +328,18 @@ export default function LoanView({
                   : `Merkitse valitut palautetuksi (${processingIds.size})`}
               </Button>
             </div>
-          </div>
+          </Card>
         ) : (
           (canReject || canCancel || canEdit || canApprove || canStartUse) && (
-            <div className="rounded-lg border bg-card p-6 shadow-xs">
+            <Card>
               <div className="flex flex-col gap-3">
                 <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
                 {canStartUse && (
-                  <div className="rounded-md border border-warning/50 bg-warning/10 p-4">
-                    <p className="font-semibold text-warning">Oletko hakenut tavarat varastosta?</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Laina on hyväksytty, mutta sitä ei ole vielä merkitty käyttöön. Kun olet
-                      noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
-                      silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
-                    </p>
-                  </div>
+                  <Alert variant="warning" title="Oletko hakenut tavarat varastosta?">
+                    Laina on hyväksytty, mutta sitä ei ole vielä merkitty käyttöön. Kun olet
+                    noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
+                    silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
+                  </Alert>
                 )}
                 <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
@@ -399,16 +376,16 @@ export default function LoanView({
                   )}
                 </div>
               </div>
-            </div>
+            </Card>
           )
         )}
 
         {/* Collapsed by default: the audit trail matters when something is being
             investigated, but it's the longest block on the page and pushes the
             actions off screen for the borrower who just wants to start a loan. */}
-        <details className="group rounded-lg border bg-card p-6 shadow-xs">
+        <Card as="details" className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
-            <h2 className="text-xl font-semibold">Historia</h2>
+            <CardTitle className="mb-0">Historia</CardTitle>
             <span className="text-sm text-muted-foreground">
               {history.length} merkintää · <span className="group-open:hidden">näytä</span>
               <span className="hidden group-open:inline">piilota</span>
@@ -416,7 +393,7 @@ export default function LoanView({
           </summary>
           <div className="mt-4">
           {history.length === 0 ? (
-            <p className="text-muted-foreground">Ei historiamerkintöjä.</p>
+            <EmptyState variant="inline" title="Ei historiamerkintöjä." />
           ) : (
             <div className="flex flex-col gap-3">
               {history.map((entry) => {
@@ -432,7 +409,7 @@ export default function LoanView({
                   'auto' in entry.details &&
                   (entry.details as { auto?: boolean }).auto === true;
                 return (
-                  <div key={entry.id} className="rounded-md border p-3">
+                  <Card key={entry.id} variant="inset" padding="sm">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="font-semibold">{getLoanHistoryActionLabel(entry.action)}</p>
                       <DateTime
@@ -446,50 +423,34 @@ export default function LoanView({
                       {viaKiosk && ' · kaluston koneella'}
                       {auto && ' · automaattisesti'}
                     </p>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
           )}
           </div>
-        </details>
+        </Card>
 
-        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Hylätäänkö laina?</DialogTitle>
-            </DialogHeader>
-            <p>Lainahakemus hylätään. Oletko varma?</p>
-            <DialogFooter>
-              <Button variant="destructive" onClick={rejectLoan} isLoading={busy}>
-                Hylkää
-              </Button>
-              <Button variant="secondary" onClick={() => setRejectOpen(false)} disabled={busy}>
-                Peruuta
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ConfirmDialog
+          open={rejectOpen}
+          onOpenChange={setRejectOpen}
+          title="Hylätäänkö laina?"
+          description="Lainahakemus hylätään. Oletko varma?"
+          confirmLabel="Hylkää"
+          onConfirm={rejectLoan}
+          isLoading={busy}
+        />
 
-        <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Perutaanko laina?</DialogTitle>
-            </DialogHeader>
-            <p>
-              Laina perutaan ja varatut tavarat vapautuvat muille. Et voi enää noutaa tavaroita
-              tällä varauksella. Oletko varma?
-            </p>
-            <DialogFooter>
-              <Button variant="destructive" onClick={cancelLoan} isLoading={busy}>
-                Peru laina
-              </Button>
-              <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={busy}>
-                Älä peru
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ConfirmDialog
+          open={cancelOpen}
+          onOpenChange={setCancelOpen}
+          title="Perutaanko laina?"
+          description="Laina perutaan ja varatut tavarat vapautuvat muille. Et voi enää noutaa tavaroita tällä varauksella. Oletko varma?"
+          confirmLabel="Peru laina"
+          cancelLabel="Älä peru"
+          onConfirm={cancelLoan}
+          isLoading={busy}
+        />
 
         <StartLoanConfirmation
           isOpen={startLoanOpen}

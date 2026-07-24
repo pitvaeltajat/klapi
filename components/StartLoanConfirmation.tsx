@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loan, User, Reservation, Item } from '@prisma/client';
 import { toast } from 'sonner';
-import { IoMdAlert } from 'react-icons/io';
 import {
   Dialog,
   DialogContent,
@@ -21,12 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Alert } from '@/components/ui/alert';
 import { DateTime } from '@/components/DateTime';
-
-interface InBoxItem {
-  itemId: string;
-  itemName: string;
-}
+import { useInBoxItems } from '@/hooks/useInBoxItems';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -47,46 +43,12 @@ export default function StartLoanConfirmation({
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [inBoxItems, setInBoxItems] = useState<InBoxItem[]>([]);
-  const [isCheckingBox, setIsCheckingBox] = useState(false);
 
-  useEffect(() => {
-    const checkInBoxItems = async () => {
-      if (!isOpen || loan.reservations.length === 0) {
-        setInBoxItems([]);
-        return;
-      }
-
-      setIsCheckingBox(true);
-      try {
-        const itemIds = loan.reservations
-          .filter((res) => !res.itemId.startsWith('custom-'))
-          .map((res) => res.itemId);
-
-        if (itemIds.length === 0) {
-          setInBoxItems([]);
-          return;
-        }
-
-        const response = await fetch('/api/reservation/checkInBox', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemIds }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setInBoxItems(data.inBoxItems || []);
-        }
-      } catch (error) {
-        console.error('Failed to check in-box items:', error);
-      } finally {
-        setIsCheckingBox(false);
-      }
-    };
-
-    checkInBoxItems();
-  }, [isOpen, loan.reservations]);
+  const itemIds = useMemo(
+    () => loan.reservations.map((res) => res.itemId),
+    [loan.reservations],
+  );
+  const { inBoxItems, isChecking } = useInBoxItems(itemIds, isOpen);
 
   const handleStartLoan = async () => {
     setIsLoading(true);
@@ -124,16 +86,10 @@ export default function StartLoanConfirmation({
         </DialogHeader>
         <div>
           {inBoxItems.length > 0 && (
-            <div className="mb-4 flex items-start gap-3 rounded-md border border-warning/50 bg-warning/10 p-4">
-              <IoMdAlert className="mt-0.5 h-5 w-5 text-warning" />
-              <div>
-                <div className="font-semibold">Huomio: Kamoja laatikossa</div>
-                <p className="text-sm text-muted-foreground">
-                  Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat täyden
-                  vastuun tarkistaa kamojen kunnon noudettaessa.
-                </p>
-              </div>
-            </div>
+            <Alert variant="warning" title="Huomio: Kamoja laatikossa" className="mb-4">
+              Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat täyden
+              vastuun tarkistaa kamojen kunnon noudettaessa.
+            </Alert>
           )}
 
           <p className="mb-2">
@@ -169,7 +125,7 @@ export default function StartLoanConfirmation({
           <Button variant="outline" onClick={onClose}>
             Peruuta
           </Button>
-          <Button variant="success" onClick={handleStartLoan} isLoading={isLoading || isCheckingBox}>
+          <Button variant="success" onClick={handleStartLoan} isLoading={isLoading || isChecking}>
             Aloita lainaus
           </Button>
         </DialogFooter>

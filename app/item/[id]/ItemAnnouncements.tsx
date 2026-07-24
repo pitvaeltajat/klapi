@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { LuTriangleAlert } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { DateTime } from '@/components/DateTime';
 
 export interface ItemAnnouncement {
@@ -78,22 +80,23 @@ export default function ItemAnnouncements({
   if (!isAdmin && active.length === 0) return null;
 
   return (
-    <section className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
-      <div className="mb-4 flex items-center gap-2">
+    <Card as="section">
+      <CardHeader className="justify-start gap-2">
         <LuTriangleAlert className="text-destructive" />
-        <h2 className="text-xl font-semibold">
-          Ilmoitukset{active.length > 0 ? ` (${active.length})` : ''}
-        </h2>
-      </div>
+        <CardTitle>Ilmoitukset{active.length > 0 ? ` (${active.length})` : ''}</CardTitle>
+      </CardHeader>
 
       {active.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Ei aktiivisia ilmoituksia tälle kamalle.</p>
+        <EmptyState variant="inline" title="Ei aktiivisia ilmoituksia tälle kamalle." />
       ) : (
         <ul className="flex flex-col gap-3">
           {active.map((a) => (
-            <li
+            <Card
+              as="li"
               key={a.id}
-              className="flex items-start justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3"
+              variant="inset"
+              padding="sm"
+              className="flex items-start justify-between gap-3 border-destructive/40 bg-destructive/10"
             >
               <div className="min-w-0">
                 <p className="whitespace-pre-wrap text-sm">{a.message}</p>
@@ -112,7 +115,7 @@ export default function ItemAnnouncements({
                   Poista
                 </Button>
               )}
-            </li>
+            </Card>
           ))}
         </ul>
       )}
@@ -136,6 +139,6 @@ export default function ItemAnnouncements({
           </Button>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

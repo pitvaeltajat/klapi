@@ -47,6 +47,9 @@
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
 
+  --color-header: hsl(var(--header) / var(--header-alpha));
+  --color-header-foreground: hsl(var(--header-foreground));
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -137,6 +140,12 @@
     --warning: 28 100% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* The translucent app bar. Its own pair rather than `primary`, because it
+       is a fixed brand surface that stays dark-on-light in both themes. */
+    --header: 213 61% 54%;
+    --header-alpha: 0.9;
+    --header-foreground: 0 0% 100%;
+
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 206 100% 50%;
@@ -175,6 +184,10 @@
 
     --warning: 28 100% 55%;
     --warning-foreground: 0 0% 100%;
+
+    --header: 220 26% 14%;
+    --header-alpha: 0.95;
+    --header-foreground: 0 0% 100%;
 
     --border: 217 33% 22%;
     --input: 217 33% 22%;

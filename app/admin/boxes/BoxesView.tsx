@@ -8,6 +8,9 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReservationStatus } from '@prisma/client';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/utils/loanHelpers';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { formatDateOnly } from '@/utils/dateFormat';
 
 interface LoanWithReservations extends Loan {
@@ -37,18 +40,16 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Laatikot' }]} />
-      <h1 className="mb-6 text-3xl font-semibold">Laatikot</h1>
+      <PageHeader title="Laatikot" />
 
       {boxes.length === 0 ? (
-        <div className="rounded-lg border bg-muted p-8 text-center">
-          <p className="text-lg text-muted-foreground">Ei laatikkoja</p>
-        </div>
+        <EmptyState title="Ei laatikkoja" />
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {boxes.map((box) => (
-            <div
+            <Card
               key={box.id}
-              className="rounded-xl border-2 bg-card p-6 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              className="transition-all hover:-translate-y-0.5 hover:shadow-lg"
             >
               <div className="flex flex-col gap-4">
                 <div>
@@ -67,12 +68,16 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
                   </div>
 
                   {box.loans.length === 0 ? (
-                    <p className="text-sm italic text-muted-foreground">Ei lainoja</p>
+                    <EmptyState variant="inline" title="Ei lainoja" />
                   ) : (
                     <div className="flex flex-col gap-3">
                       {box.loans.map((loan) => (
                         <NextLink key={loan.id} href={`/loan/${loan.id}`}>
-                          <div className="rounded-md border bg-muted p-3 transition-all hover:border-primary/50 hover:bg-muted/80">
+                          <Card
+                            variant="muted"
+                            padding="sm"
+                            className="transition-colors hover:border-primary/50 hover:bg-muted/80"
+                          >
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium">
@@ -103,14 +108,14 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
                                 {formatDateOnly(loan.endTime)}
                               </p>
                             </div>
-                          </div>
+                          </Card>
                         </NextLink>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

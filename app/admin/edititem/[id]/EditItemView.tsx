@@ -11,7 +11,8 @@ import { Item, Category } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Field } from '@/components/ui/field';
+import { PageHeader } from '@/components/ui/page-header';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
 import { cn } from '@/lib/utils';
@@ -109,31 +110,31 @@ export default function EditItemView({
         items={[{ label: item.name, href: `/item/${item.id}` }, { label: 'Muokkaa' }]}
       />
       <div className="flex max-w-2xl flex-col gap-6">
-        <h1 className="text-xl font-semibold">Muokkaa kamaa</h1>
+        <PageHeader className="mb-0" title="Muokkaa kamaa" />
 
-        <div>
-          <Label>Nimi:</Label>
+        <Field label="Nimi" htmlFor="item-name">
           <Input
+            id="item-name"
             placeholder="Mäkihyppylehti"
             value={itemName}
             onChange={(e) => setItemName(e.target.value)}
             className={cn(dirtyBorder(itemName !== item.name))}
           />
-        </div>
+        </Field>
 
-        <div>
-          <Label>Kuvaus:</Label>
+        <Field label="Kuvaus" htmlFor="item-description">
           <Textarea
+            id="item-description"
             placeholder="Viihteeksi reissuille kaluston vessaan."
             value={itemDescription || ''}
             onChange={(e) => setItemDescription(e.target.value)}
             className={cn(dirtyBorder(itemDescription !== item.description))}
           />
-        </div>
+        </Field>
 
-        <div>
-          <Label>Kategoriat:</Label>
+        <Field label="Kategoriat" htmlFor="item-categories">
           <CreatableSelect
+            inputId="item-categories"
             isMulti
             value={itemCategories.map((cat: Category) => ({ value: cat.id, label: cat.name }))}
             options={categories.map((cat: Category) => ({ value: cat.id, label: cat.name }))}
@@ -147,15 +148,13 @@ export default function EditItemView({
               )
             }
           />
-        </div>
+        </Field>
 
-        <div>
-          <Label>Määrä:</Label>
-          <NumberInput min={1} value={itemAmount} onChange={setItemAmount} />
-        </div>
+        <Field label="Määrä" htmlFor="item-amount">
+          <NumberInput id="item-amount" min={1} value={itemAmount} onChange={setItemAmount} />
+        </Field>
 
-        <div>
-          <Label>Kuva:</Label>
+        <Field label="Kuva" htmlFor="item-image">
           {image !== null ? (
             /* eslint-disable-next-line @next/next/no-img-element -- local blob preview */
             <img
@@ -172,8 +171,8 @@ export default function EditItemView({
               className="mb-4 max-h-[400px] max-w-full object-contain"
             />
           )}
-          <Input type="file" accept="image/*" onChange={handleImageChange} />
-        </div>
+          <Input id="item-image" type="file" accept="image/*" onChange={handleImageChange} />
+        </Field>
 
         <Button onClick={updateItem} isLoading={isSubmitting} size="lg">
           Tallenna

@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { CountBadge } from '@/components/ui/count-badge';
 
 // "Eero Sahlberg" -> "ES", "Eero" -> "EE". Used to label the elevated admin
 // in the top bar without showing their full name on a shared kiosk screen.
@@ -194,7 +195,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const isPathActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
   const linkClass = (active: boolean) =>
-    `font-medium text-white transition ${active ? 'font-bold underline underline-offset-4 decoration-2' : 'hover:underline'}`;
+    `font-medium transition ${active ? 'font-bold underline underline-offset-4 decoration-2' : 'hover:underline'}`;
 
   const navLinks = [
     { href: '/', label: 'Lainaa', onClick: handleReserveClick },
@@ -215,9 +216,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-1000 bg-[rgba(66,131,209,0.9)] shadow-xs backdrop-blur-xs dark:bg-[rgba(26,32,44,0.95)]">
+      <header className="fixed inset-x-0 top-0 z-1000 bg-header text-header-foreground shadow-xs backdrop-blur-xs">
         <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between text-white">
+          <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-4">
               {session && (
                 <Button
@@ -225,7 +226,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   variant="ghost"
                   size="icon"
                   onClick={isOpen ? onClose : onOpen}
-                  className="text-white hover:bg-white/30 active:bg-white/40 md:hidden"
+                  className="hover:bg-header-foreground/20 active:bg-header-foreground/30 md:hidden"
                 >
                   <FaBars />
                 </Button>
@@ -238,7 +239,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
               </div>
               {session && (role === 'KIOSK' || (role === 'ADMIN' && session.user.adminExpiry)) && (
                 <div className="ml-4 flex items-center gap-2">
-                  <span className="text-sm text-white">
+                  <span className="text-sm">
                     {effectiveGroup === 'ADMIN' && adminInitials
                       ? `Admin (${adminInitials})`
                       : 'ADMIN'}
@@ -285,7 +286,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   </div>
                   {pinError && <p className="mt-2 text-destructive">{pinError}</p>}
                   <DialogFooter className="mt-4">
-                    <Button type="button" variant="secondary" onClick={() => setPinDialogOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => setPinDialogOpen(false)}>
                       Peruuta
                     </Button>
                     <Button type="submit" disabled={adminSwitchLoading}>
@@ -306,7 +307,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   Palauta
                 </NextLink>
               )}
-              <div className="h-6 w-px bg-white/30" />
+              <div className="h-6 w-px bg-header-foreground/30" />
               {browseLink}
               <NextLink
                 href="/item/announcements"
@@ -333,7 +334,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   >
                     Pohjat
                   </NextLink>
-                  <div className="h-6 w-px bg-white/30" />
+                  <div className="h-6 w-px bg-header-foreground/30" />
                   <NextLink
                     href="/admin"
                     className={linkClass(pathname === '/admin')}
@@ -351,9 +352,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 </NextLink>
                 {children}
                 {totalItems > 0 && (
-                  <span className="absolute -right-3 -top-3 mt-[5px] flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-sm font-bold text-white shadow-md">
-                    {totalItems}
-                  </span>
+                  <CountBadge count={totalItems} variant="destructive" size="md" floating />
                 )}
               </div>
             </div>
@@ -363,9 +362,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <div className="relative md:hidden">
                 {children}
                 {totalItems > 0 && (
-                  <span className="absolute -right-3 -top-3 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-sm font-bold text-white shadow-md">
-                    {totalItems}
-                  </span>
+                  <CountBadge count={totalItems} variant="destructive" size="md" floating />
                 )}
               </div>
             )}

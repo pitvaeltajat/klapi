@@ -141,7 +141,7 @@ export default function PromoteDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Peruuta
           </Button>
           <Button variant="success" onClick={handleConfirm} isLoading={isSubmitting}>

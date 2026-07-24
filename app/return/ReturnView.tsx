@@ -22,7 +22,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SelectableRow } from '@/components/ui/selectable-row';
 
 interface Reservation {
   id: string;
@@ -136,7 +141,7 @@ const LoanReturnCard = ({
 
   return (
     <>
-      <div className="flex h-full flex-col gap-3 overflow-hidden rounded-lg border bg-card p-4 shadow-xs">
+      <Card padding="md" className="flex h-full flex-col gap-3 overflow-hidden">
         <div className="flex items-start justify-between gap-3">
           <h3 className="min-w-0 flex-1 text-lg font-semibold">
             {loan.description || loan.loaner}
@@ -181,7 +186,7 @@ const LoanReturnCard = ({
         >
           Palauta
         </Button>
-      </div>
+      </Card>
 
       <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
         <DialogContent className="inset-0 left-0 top-0 h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 rounded-none p-0 sm:rounded-none">
@@ -204,72 +209,57 @@ const LoanReturnCard = ({
                   {returnableReservations.map((reservation) => {
                     const checked = selectedIds.has(reservation.id);
                     return (
-                      <div
+                      <SelectableRow
                         key={reservation.id}
-                        onClick={() => toggleSelected(reservation.id)}
-                        className={cn(
-                          'flex cursor-pointer items-center gap-3 rounded-lg border-2 bg-muted p-3',
-                          checked ? 'border-success' : 'border-border',
-                        )}
+                        selected={checked}
+                        onSelectedChange={() => toggleSelected(reservation.id)}
+                        size="lg"
+                        className="bg-muted"
                       >
-                        <input
-                          type="checkbox"
-                          className="h-5 w-5 shrink-0"
-                          checked={checked}
-                          onChange={() => toggleSelected(reservation.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <ReservationItemImage
-                          itemId={reservation.item.id}
-                          itemName={reservation.item.name}
-                        />
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <p className="truncate text-base font-bold">{reservation.item.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Määrä: {reservation.amount} kpl
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <ReservationItemImage
+                            itemId={reservation.item.id}
+                            itemName={reservation.item.name}
+                          />
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <p className="truncate text-base font-bold">{reservation.item.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Määrä: {reservation.amount} kpl
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      </SelectableRow>
                     );
                   })}
                 </div>
 
                 {isPartialReturn && (
-                  <div className="rounded-lg border-2 border-warning bg-warning/10 p-4">
-                    <p className="font-bold text-warning">
-                      Osittainen palautus: {selectedIds.size} / {returnableReservations.length}{' '}
-                      tavaraa
-                    </p>
-                    <p className="mt-1 text-sm">
-                      Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
-                    </p>
-                  </div>
+                  <Alert
+                    variant="warning"
+                    title={`Osittainen palautus: ${selectedIds.size} / ${returnableReservations.length} tavaraa`}
+                  >
+                    Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
+                  </Alert>
                 )}
               </div>
 
               {/* Right: tip, damage report, terms */}
               <div className="flex flex-col gap-4">
-                <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
-                  <p className="font-bold text-primary">
-                    💡 Vinkki: Ota kuva palautettavista kamoista
-                  </p>
-                  <p className="mt-1 text-sm">
-                    Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
-                    laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva
-                    puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään —
-                    säilytä se omassa puhelimessasi.
-                  </p>
-                </div>
+                <Alert variant="info" title="💡 Vinkki: Ota kuva palautettavista kamoista">
+                  Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
+                  laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva
+                  puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään —
+                  säilytä se omassa puhelimessasi.
+                </Alert>
 
-                <div className="rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
-                  <p className="text-sm leading-relaxed">
+                <Alert variant="info" icon={false}>
+                  <p className="leading-relaxed">
                     Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
                     mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
                     Palauta tavarat oikeaan laatikkoon.
                   </p>
-                  <label className="mt-3 flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
+                  <label className="mt-3 flex cursor-pointer items-center gap-2">
+                    <Checkbox
                       required
                       checked={termsAccepted}
                       onChange={(e) => setTermsAccepted(e.target.checked)}
@@ -278,9 +268,9 @@ const LoanReturnCard = ({
                       ? 'Ymmärrän ja hyväksyn vastuuni palautettavista tavaroista.'
                       : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
                   </label>
-                </div>
+                </Alert>
 
-                <div className="rounded-lg border-2 bg-muted p-4 lg:flex lg:flex-1 lg:flex-col">
+                <Card variant="muted" padding="md" className="lg:flex lg:flex-1 lg:flex-col">
                   <p className="text-sm leading-relaxed">
                     Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
                     siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden
@@ -299,7 +289,7 @@ const LoanReturnCard = ({
                     onChange={(e) => setReportContent(e.target.value)}
                     className="mt-2 min-h-[100px] resize-y text-base lg:flex-1"
                   />
-                </div>
+                </Card>
               </div>
             </div>
           </div>
@@ -327,21 +317,20 @@ const LoanReturnCard = ({
             <DialogTitle className="pt-2 text-center text-2xl">Palautusohje</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-6">
-            <div className="rounded-lg border-4 border-primary/40 bg-primary/10 p-8 text-center">
+            <Alert variant="info" icon={false} className="flex-col p-8 text-center">
               <p className="mb-3 font-medium">Palauta tavarat lokeroon:</p>
-              <h3 className="text-5xl font-bold text-primary">{boxInfo?.name}</h3>
-            </div>
+              <p className="text-5xl font-bold text-primary">{boxInfo?.name}</p>
+            </Alert>
             {boxInfo?.description && (
-              <div className="rounded-md border bg-primary/10 p-5">
-                <p className="mb-2 text-lg font-bold">Lisätiedot:</p>
-                <p>{boxInfo.description}</p>
-              </div>
+              <Alert variant="info" icon={false} title="Lisätiedot:">
+                {boxInfo.description}
+              </Alert>
             )}
-            <div className="rounded-md bg-success/10 p-5 text-center">
+            <Alert variant="success" icon={false} className="justify-center text-center">
               <p className="font-medium text-success">
                 Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan lokeroon.
               </p>
-            </div>
+            </Alert>
           </div>
           <DialogFooter className="justify-center pb-2">
             <Button
@@ -406,21 +395,23 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
       <Breadcrumbs items={[{ label: 'Palauta lainoja' }]} />
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="mb-1 text-3xl font-semibold">Palauta lainoja</h1>
-          <p className="mb-4 text-muted-foreground">
-            {seesAllLoans
-              ? 'Kaikki käytössä olevat lainat. Etsi oma lainasi listalta ja paina Palauta.'
-              : 'Omat käytössä olevat lainasi.'}
-          </p>
+          <PageHeader
+            title="Palauta lainoja"
+            description={
+              seesAllLoans
+                ? 'Kaikki käytössä olevat lainat. Etsi oma lainasi listalta ja paina Palauta.'
+                : 'Omat käytössä olevat lainasi.'
+            }
+          />
           {loans.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-8 text-center">
-              <h2 className="text-xl font-semibold text-muted-foreground">
-                Ei käytössä olevia lainoja
-              </h2>
-              <Button size="lg" onClick={() => router.push('/')}>
-                Takaisin alkuun
-              </Button>
-            </div>
+            <EmptyState
+              title="Ei käytössä olevia lainoja"
+              action={
+                <Button size="lg" onClick={() => router.push('/')}>
+                  Takaisin alkuun
+                </Button>
+              }
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -18,13 +18,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { NumberInput } from '@/components/ui/number-input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 interface AvailabilityData {
@@ -180,13 +178,13 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
         <div className="flex flex-col gap-6">
           <Skeleton className="h-10 w-64" />
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-lg border bg-card p-6 shadow-xs">
+            <Card key={i}>
               <Skeleton className="mb-4 h-6 w-40" />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
-            </div>
+            </Card>
           ))}
           <Skeleton className="h-11 w-full md:w-48" />
         </div>
@@ -206,41 +204,28 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
         ]}
       />
       <div className="flex flex-col gap-6">
-        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Päivitä Laina</DialogTitle>
-            </DialogHeader>
-            <p>
-              Oletko täysin varma? Systeemi voi mennä ihan vitun solmuun, jos tiedot ei ole kunnolla
-              tarkistettuja.
-            </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-                Peruuta
-              </Button>
-              <Button variant="success" onClick={() => updateLoan()}>
-                Vahvista
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ConfirmDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Päivitä laina"
+          description="Oletko täysin varma? Systeemi voi mennä ihan vitun solmuun, jos tiedot ei ole kunnolla tarkistettuja."
+          confirmLabel="Vahvista"
+          confirmVariant="success"
+          onConfirm={() => updateLoan()}
+        />
 
-        <h1 className="text-3xl font-semibold">Muokkaa lainaa</h1>
+        <PageHeader className="mb-0" title="Muokkaa lainaa" />
 
         {derivedStatus === 'INUSE' && (
-          <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
-            <p className="font-semibold text-warning">Tämä laina on käynnissä</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Voit muuttaa päivämääriä, esimerkiksi jatkaa laina-aikaa. Saatavuus
-              tarkistetaan muiden varausten suhteen — jos jatko menisi päällekkäin toisen
-              varauksen kanssa, tallennus estetään.
-            </p>
-          </div>
+          <Alert variant="warning" title="Tämä laina on käynnissä">
+            Voit muuttaa päivämääriä, esimerkiksi jatkaa laina-aikaa. Saatavuus tarkistetaan
+            muiden varausten suhteen — jos jatko menisi päällekkäin toisen varauksen kanssa,
+            tallennus estetään.
+          </Alert>
         )}
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
+        <Card>
+          <CardTitle>Perustiedot</CardTitle>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Lainan ID</p>
@@ -256,12 +241,12 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
               )}
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <div className="mb-4 flex items-center justify-between">
+        <Card>
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold">Kuvaus</h2>
+              <CardTitle>Kuvaus</CardTitle>
               {isDescriptionModified && <Badge variant="warning">Muokattu</Badge>}
             </div>
             <Button
@@ -273,7 +258,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
             >
               <FaHistory />
             </Button>
-          </div>
+          </CardHeader>
           <Textarea
             className={cn(dirty(isDescriptionModified))}
             value={description ?? ''}
@@ -281,10 +266,10 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
           />
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Päivämäärät</h2>
+        <Card>
+          <CardTitle>Päivämäärät</CardTitle>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <div className="mb-2 flex items-center justify-between">
@@ -334,11 +319,11 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
               />
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Lainaukset</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Lainaukset</CardTitle>
             <Button
               aria-label="Palauta kaikki lainaukset"
               size="icon-sm"
@@ -347,17 +332,18 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
             >
               <FaHistory />
             </Button>
-          </div>
+          </CardHeader>
 
           <div className="flex flex-col gap-3">
             {reservations.length === 0 ? (
-              <p className="italic text-muted-foreground">Ei lainauksia</p>
+              <EmptyState variant="inline" title="Ei lainauksia" />
             ) : (
               reservations.map((reservation) => (
-                <div
+                <Card
                   key={reservation.id}
+                  variant="inset"
+                  padding="md"
                   className={cn(
-                    'rounded-md border p-4',
                     isNewReservation(reservation)
                       ? 'border-success bg-success/10'
                       : isReservationModified(reservation)
@@ -426,14 +412,14 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Lisää kama</h2>
+        <Card>
+          <CardTitle>Lisää kama</CardTitle>
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-2">
               <Label>Kama</Label>
@@ -487,7 +473,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
               </Button>
             </div>
           </div>
-        </div>
+        </Card>
 
         <Button
           variant="success"

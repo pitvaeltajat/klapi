@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { LoanCardSkeletonGrid } from '@/components/LoanCardSkeleton';
 import PageSkeleton from '@/components/PageSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function Loading() {
   const pathname = usePathname() ?? '/';
@@ -18,13 +19,13 @@ export default function Loading() {
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-4 w-80 max-w-full" />
         </div>
-        <div className="rounded-lg border bg-card p-4 shadow-xs">
+        <Card padding="md">
           <Skeleton className="h-5 w-40" />
           <div className="mt-2 flex justify-center">
             <Skeleton className="h-[300px] w-[280px]" />
           </div>
           <Skeleton className="mt-4 h-10 w-full" />
-        </div>
+        </Card>
       </div>
     );
   }
@@ -42,7 +43,7 @@ export default function Loading() {
     return (
       <div className="flex flex-col gap-6">
         <Skeleton className="h-9 w-64" />
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
+        <Card>
           <Skeleton className="mb-4 h-6 w-40" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Skeleton className="h-10 w-full" />
@@ -50,15 +51,15 @@ export default function Loading() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-        </div>
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
+        </Card>
+        <Card>
           <Skeleton className="mb-4 h-6 w-32" />
           <div className="flex flex-col gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -70,14 +71,14 @@ export default function Loading() {
           <Skeleton className="h-10 w-40" />
           <Skeleton className="h-10 w-56" />
         </div>
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
+        <Card>
           <Skeleton className="mb-4 h-6 w-40" />
           <div className="flex flex-col gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     );
   }

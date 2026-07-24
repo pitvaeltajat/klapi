@@ -4,6 +4,7 @@ import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { defaultKioskRange } from '@/utils/dateRange';
 
 export default function KioskModeSelector() {
@@ -21,7 +22,7 @@ export default function KioskModeSelector() {
     <div className="mx-auto mt-8 max-w-[500px] p-6">
       <div className="flex flex-col gap-6">
         <h1 className="mb-3 text-3xl font-semibold">Tervetuloa kalustoon!</h1>
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-5 text-base leading-relaxed shadow-xs text-foreground/90">
+        <Alert variant="info" className="text-base leading-relaxed">
           <p className="mb-3">
             Merkkaa Klapiin jokainen tavara jonka lainaat. Jos tavara ei löydy Klapista, voit lisätä
             sen itse lainauksen yhteydessä.
@@ -30,7 +31,7 @@ export default function KioskModeSelector() {
           <p>
             Mikäli sinulle tulee jotain kysyttävää, ota yhteyttä kalustonhoitajaan: 044 987 7397
           </p>
-        </div>
+        </Alert>
 
         <div className="flex gap-4">
           <Button size="lg" onClick={handleLoanClick} className="flex-1">

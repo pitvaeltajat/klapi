@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Field } from '@/components/ui/field';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Dialog,
   DialogContent,
@@ -139,9 +140,7 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
               <span className="font-normal text-muted-foreground">({rows.length})</span>
             </p>
             {rows.length === 0 ? (
-              <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                Ei kamoja — pohjassa pitää olla vähintään yksi.
-              </p>
+              <EmptyState variant="inline" title="Ei kamoja — pohjassa pitää olla vähintään yksi." />
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 {rows.map((row) => (
@@ -169,7 +168,7 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
               Peruuta
             </Button>
             <Button onClick={save} isLoading={busy} disabled={!name.trim() || rows.length === 0}>

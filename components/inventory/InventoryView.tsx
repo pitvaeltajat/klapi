@@ -17,6 +17,8 @@ import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CreatableSelect } from '@/components/ui/creatable-select';
 import {
   Table,
@@ -640,20 +642,16 @@ export default function InventoryView() {
     colHelper.display({
       id: 'select',
       header: ({ table }) => (
-        <input
-          type="checkbox"
+        <Checkbox
           checked={table.getIsAllPageRowsSelected()}
           onChange={table.getToggleAllPageRowsSelectedHandler()}
-          className="cursor-pointer"
           aria-label="Valitse kaikki"
         />
       ),
       cell: ({ row }) => (
-        <input
-          type="checkbox"
+        <Checkbox
           checked={row.getIsSelected()}
           onChange={row.getToggleSelectedHandler()}
-          className="cursor-pointer"
           aria-label="Valitse rivi"
         />
       ),
@@ -911,7 +909,7 @@ export default function InventoryView() {
         )}
 
         {/* Table */}
-        <div className="rounded-lg border bg-card shadow-xs">
+        <Card padding="none">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
@@ -1082,7 +1080,7 @@ export default function InventoryView() {
               )}
             </TableBody>
           </Table>
-        </div>
+        </Card>
 
         {/* Pagination */}
         <div className="flex items-center justify-between">

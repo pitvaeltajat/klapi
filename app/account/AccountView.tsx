@@ -11,13 +11,10 @@ import { LuTriangleAlert } from 'react-icons/lu';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Card, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Report {
   id: string;
@@ -145,41 +142,29 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   return (
     <>
       <Breadcrumbs items={[{ label: 'Oma tili' }]} />
-      <h1 className="mb-6 text-3xl font-semibold">Oma tili</h1>
+      <PageHeader title="Oma tili" />
 
       <PendingPickupBanner />
 
-      <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Kaluston koneen uloskirjautuminen</DialogTitle>
-          </DialogHeader>
-          <p>
-            Olet kirjautumassa ulos kaluston koneen käyttäjältä. Tätä ei yleensä pitäisi tehdä
-            jotta myös seuraava käyttäjä voi käyttää laitetta normaalisti. Haluatko varmasti
-            kirjautua ulos?
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSignOutOpen(false)}>
-              Peruuta
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                signOut();
-                setSignOutOpen(false);
-              }}
-              className="gap-2"
-            >
-              <LuTriangleAlert />
-              Kirjaudu ulos
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title="Kaluston koneen uloskirjautuminen"
+        description="Olet kirjautumassa ulos kaluston koneen käyttäjältä. Tätä ei yleensä pitäisi tehdä jotta myös seuraava käyttäjä voi käyttää laitetta normaalisti. Haluatko varmasti kirjautua ulos?"
+        confirmLabel={
+          <>
+            <LuTriangleAlert className="mr-2" />
+            Kirjaudu ulos
+          </>
+        }
+        onConfirm={() => {
+          signOut();
+          setSignOutOpen(false);
+        }}
+      />
 
       <div className="flex flex-col gap-6">
-        <div className="rounded-md border bg-card p-6 shadow-xs">
+        <Card>
           <div className="flex flex-col items-start gap-3">
             <h2 className="text-2xl font-semibold">{session?.user?.name}</h2>
             <p className="text-muted-foreground">{session?.user?.email}</p>
@@ -202,10 +187,10 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
           <Button variant="destructive" onClick={handleSignOut}>
             Kirjaudu ulos
           </Button>
-        </div>
+        </Card>
 
-        <div className="rounded-md border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Sähköposti-ilmoitukset</h2>
+        <Card>
+          <CardTitle>Sähköposti-ilmoitukset</CardTitle>
           {/* Admins are borrowers too: they get the same pickup/overdue reminders for
               their own loans as everyone else, so they need the "Omat lainat" toggles
               as well as the fleet-wide ones — not instead of them. The one exception is
@@ -260,10 +245,10 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
               onCheckedChange={(v) => handleEmailPreferenceChange('expiring', v)}
             />
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-md border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Ulkoasu</h2>
+        <Card>
+          <CardTitle>Ulkoasu</CardTitle>
           <div className="flex flex-col items-start gap-4">
             <div>
               <p className="text-sm font-medium">Teema</p>
@@ -290,11 +275,11 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         {session?.user?.group !== 'KIOSK' && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold">Oma lainahistoria</h2>
+            <CardTitle>Oma lainahistoria</CardTitle>
             {loans.length > 0 ? (
               <>
                 <div className="flex flex-col gap-4">
@@ -317,7 +302,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
                 )}
               </>
             ) : (
-              <p className="py-8 text-center text-muted-foreground">Ei lainoja</p>
+              <EmptyState title="Ei lainoja" />
             )}
           </div>
         )}

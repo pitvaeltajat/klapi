@@ -7,6 +7,10 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { Box as BoxType, Item, Reservation, Loan, ReportAffectedItem } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -83,23 +87,18 @@ export default function ReportsView({ reports }: ReportsViewProps) {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Raportit' }]} />
-      <h1 className="mb-4 text-3xl font-semibold">Raportit</h1>
+      <PageHeader title="Raportit" />
 
-      <div className="mb-6 rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
-        <p className="mb-1 font-semibold">Mitä raportit ovat?</p>
-        <p className="text-muted-foreground">
-          Raportit ovat lainaajien tekemiä ilmoituksia kamojen kunnosta tai puutteista lainan
-          alussa tai sen päättyessä. Käsittelemättömät raportit näkyvät ylimpänä. Paina{' '}
-          <strong>Käsittele</strong> ottaaksesi raportin käsittelyyn, lähettääksesi ilmoituksen
-          kamasta tai merkitäksesi raportin ratkaistuksi — tai avaa raporttiin liittyvä laina
-          linkistä.
-        </p>
-      </div>
+      <Alert variant="info" title="Mitä raportit ovat?" className="mb-6">
+        Raportit ovat lainaajien tekemiä ilmoituksia kamojen kunnosta tai puutteista lainan
+        alussa tai sen päättyessä. Käsittelemättömät raportit näkyvät ylimpänä. Paina{' '}
+        <strong>Käsittele</strong> ottaaksesi raportin käsittelyyn, lähettääksesi ilmoituksen
+        kamasta tai merkitäksesi raportin ratkaistuksi — tai avaa raporttiin liittyvä laina
+        linkistä.
+      </Alert>
 
       {sortedReports.length === 0 ? (
-        <div className="rounded-md bg-muted p-6 text-center">
-          <p className="text-muted-foreground">Ei raportteja</p>
-        </div>
+        <EmptyState title="Ei raportteja" />
       ) : (
         <>
           {/* Mobile: stacked cards — a 5-column table does not fit a phone. */}
@@ -112,10 +111,7 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                   ? report.content
                   : report.content.substring(0, CONTENT_PREVIEW_LENGTH) + '…';
               return (
-                <div
-                  key={report.id}
-                  className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-xs"
-                >
+                <Card key={report.id} padding="md" className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant={statusVariant(report.status)}>
                       {statusLabel(report.status)}
@@ -168,13 +164,13 @@ export default function ReportsView({ reports }: ReportsViewProps) {
                       Käsittele
                     </Button>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>
 
           {/* Desktop: full table. */}
-          <div className="hidden rounded-lg border bg-card shadow-xs md:block">
+          <Card padding="none" className="hidden md:block">
             <Table>
             <TableHeader>
               <TableRow>
@@ -256,7 +252,7 @@ export default function ReportsView({ reports }: ReportsViewProps) {
               })}
             </TableBody>
           </Table>
-          </div>
+          </Card>
         </>
       )}
 

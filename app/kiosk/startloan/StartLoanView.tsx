@@ -27,6 +27,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Reservation {
   id: string;
@@ -180,13 +185,14 @@ const EditItemsDialog = ({
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               {reservations.length === 0 ? (
-                <p className="italic text-muted-foreground">Ei kamoja</p>
+                <EmptyState variant="inline" title="Ei kamoja" />
               ) : (
                 reservations.map((reservation) => (
-                  <div
+                  <Card
                     key={reservation.id}
+                    variant="inset"
+                    padding="sm"
                     className={cn(
-                      'rounded-md border p-3',
                       isNewReservation(reservation)
                         ? 'border-success bg-success/10'
                         : isReservationModified(reservation)
@@ -254,12 +260,12 @@ const EditItemsDialog = ({
                         </Button>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))
               )}
             </div>
 
-            <div className="rounded-md border bg-muted/40 p-3">
+            <Card variant="muted" padding="sm" className="bg-muted/40">
               <p className="mb-2 font-semibold">Lisää kama</p>
               <div className="flex flex-col gap-2 md:flex-row md:items-end">
                 <div className="flex-2">
@@ -309,7 +315,7 @@ const EditItemsDialog = ({
                   Lisää
                 </Button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
@@ -363,7 +369,7 @@ const LoanStartCard = ({
 
   return (
     <>
-      <div className="mb-4 overflow-hidden rounded-lg border p-4">
+      <Card padding="md" className="mb-4 overflow-hidden">
         <div className="flex flex-col gap-3">
           <h3 className="text-lg font-semibold">{loan.description || loan.loaner}</h3>
           <Badge variant={getLoanStatusColor(derivedStatus)} className="w-fit">
@@ -378,17 +384,14 @@ const LoanStartCard = ({
             <p className="mb-2 font-bold">Tavarat:</p>
             <div className="flex flex-wrap gap-2">
               {acceptedReservations.map((reservation) => (
-                <Badge key={reservation.id} className="rounded-full">
+                <Badge key={reservation.id}>
                   {reservation.item.name} ({reservation.amount})
                 </Badge>
               ))}
             </div>
           </div>
-          <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm">
-            <p className="font-semibold text-primary">Tarvitseeko kamoihin muutoksia?</p>
-            <p className="mt-1 text-foreground/90">
-              Voit lisätä, poistaa tai muuttaa määriä ennen lainauksen aloitusta.
-            </p>
+          <Alert variant="info" title="Tarvitseeko kamoihin muutoksia?">
+            <p>Voit lisätä, poistaa tai muuttaa määriä ennen lainauksen aloitusta.</p>
             <Button
               variant="outline"
               size="sm"
@@ -397,12 +400,12 @@ const LoanStartCard = ({
             >
               Muokkaa kamoja
             </Button>
-          </div>
+          </Alert>
           <Button variant="success" size="lg" onClick={() => setOpen(true)}>
             Aloita lainaus
           </Button>
         </div>
-      </div>
+      </Card>
 
       {editOpen && (
         <EditItemsDialog
@@ -424,17 +427,12 @@ const LoanStartCard = ({
             <p className="mb-4">
               Vahvistamalla lainauksen aloituksen otat vastuullesi lainattavat tavarat.
             </p>
-            <div className="mb-4 rounded-md border border-primary/30 bg-primary/10 p-3">
-              <p className="font-bold leading-relaxed text-primary">
-                💡 Vinkki: Ota kuva kamoista puhelimellasi
-              </p>
-              <p className="mt-1 leading-relaxed">
-                Suosittelemme ottamaan kuvan kamoista ennen lainauksen aloitusta. Jos palautuksessa
-                tulee hämminkiä, kuva puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse
-                lähettää mihinkään — säilytä se omassa puhelimessasi.
-              </p>
-            </div>
-            <div className="mb-4 rounded-md border bg-muted p-3">
+            <Alert variant="info" title="💡 Vinkki: Ota kuva kamoista puhelimellasi" className="mb-4">
+              Suosittelemme ottamaan kuvan kamoista ennen lainauksen aloitusta. Jos palautuksessa
+              tulee hämminkiä, kuva puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse
+              lähettää mihinkään — säilytä se omassa puhelimessasi.
+            </Alert>
+            <Card variant="muted" padding="sm" className="mb-4">
               <p className="leading-relaxed">
                 Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja
                 mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
@@ -451,22 +449,21 @@ const LoanStartCard = ({
                 onChange={(e) => setReportContent(e.target.value)}
                 className="mt-2 min-h-[100px] text-sm"
               />
-            </div>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
+            </Card>
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
               />
               Ymmärrän ja hyväksyn vastuuni lainattavista tavaroista.
             </label>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+              Peruuta
+            </Button>
             <Button variant="success" onClick={handleStartLoan} disabled={!termsAccepted} isLoading={isLoading}>
               Aloita lainaus
-            </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={isLoading}>
-              Peruuta
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -509,16 +506,16 @@ export default function StartLoanView({ loans, items }: { loans: LoanType[]; ite
       <Breadcrumbs items={[{ label: 'Aloita lainaus' }]} />
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="mb-4 text-3xl font-semibold">Aloita lainaus</h1>
+          <PageHeader title="Aloita lainaus" />
           {loans.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-8 text-center">
-              <h2 className="text-xl font-semibold text-muted-foreground">
-                Ei aloitettavia lainoja
-              </h2>
-              <Button size="lg" onClick={() => router.push('/')}>
-                Takaisin alkuun
-              </Button>
-            </div>
+            <EmptyState
+              title="Ei aloitettavia lainoja"
+              action={
+                <Button size="lg" onClick={() => router.push('/')}>
+                  Takaisin alkuun
+                </Button>
+              }
+            />
           ) : (
             <>
               {loans.map((loan) => (

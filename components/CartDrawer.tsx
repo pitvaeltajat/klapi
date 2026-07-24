@@ -21,6 +21,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
@@ -224,7 +227,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           </div>
 
           {isKiosk && (
-            <div className="mt-6 rounded-lg border-2 bg-muted p-4">
+            <Card variant="muted" padding="md" className="mt-6">
               <p className="text-base leading-relaxed">
                 Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja mahdolliset
                 vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat, reikä
@@ -241,24 +244,21 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 onChange={(e) => setReportContent(e.target.value)}
                 className="mt-3 min-h-[100px] text-sm"
               />
-            </div>
+            </Card>
           )}
           {cart.items.length > 0 ? (
             <div className="mt-5 space-y-2">
               <h3 className="text-base font-semibold">Valitut tavarat</h3>
               {overBooked.size > 0 && (
-                <div className="rounded-md border border-warning/50 bg-warning/10 p-3">
-                  <p className="font-semibold text-warning">
-                    Osa kamoista ei mahdu valitulle ajalle
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                <Alert variant="warning" title="Osa kamoista ei mahdu valitulle ajalle">
+                  <p>
                     Valitsemasi päivät muuttuivat, eikä alla merkittyjä kamoja ole enää yhtä
                     montaa vapaana. Pienennä määriä tai korjaa ne kerralla.
                   </p>
                   <Button variant="warning" size="sm" className="mt-2" onClick={handleFixAmounts}>
                     Korjaa määrät
                   </Button>
-                </div>
+                </Alert>
               )}
               {cart.items.map((item) => {
                 if (item.amount <= 0) return null;
@@ -291,10 +291,11 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               })}
             </div>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center py-12 text-muted-foreground">
-              <p className="text-lg">Ostoskori on tyhjä</p>
-              <p className="mt-2 text-sm">Lisää tavaroita ostoskoriin aloittaaksesi lainauksen</p>
-            </div>
+            <EmptyState
+              className="flex-1 justify-center border-0 bg-transparent"
+              title="Ostoskori on tyhjä"
+              description="Lisää tavaroita ostoskoriin aloittaaksesi lainauksen"
+            />
           )}
         </div>
 

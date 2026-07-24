@@ -29,6 +29,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface UserWithGroup extends User {
   group: 'ADMIN' | 'USER' | 'KIOSK';
@@ -238,11 +241,11 @@ export default function AdminPage() {
               <Skeleton className="h-10 w-48" />
             </div>
           </div>
-          <div className="rounded-lg border bg-card p-6 shadow-xs">
-            <div className="mb-4 flex items-center justify-between">
+          <Card>
+            <CardHeader>
               <Skeleton className="h-6 w-40" />
               <Skeleton className="h-4 w-32" />
-            </div>
+            </CardHeader>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -275,7 +278,7 @@ export default function AdminPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </Card>
         </div>
       </>
     );
@@ -285,19 +288,22 @@ export default function AdminPage() {
     <>
       <Breadcrumbs items={[{ label: 'Admin' }]} />
       <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold">Admin</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={showKioskPassword} variant="warning" className="gap-2">
-              <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
-            </Button>
-            {!session?.user?.adminExpiry && (
-              <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
-                <MdOutlinePassword /> Aseta oma admin-PIN
+        <PageHeader
+          className="mb-0"
+          title="Admin"
+          actions={
+            <>
+              <Button onClick={showKioskPassword} variant="warning" className="gap-2">
+                <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
               </Button>
-            )}
-          </div>
-        </div>
+              {!session?.user?.adminExpiry && (
+                <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
+                  <MdOutlinePassword /> Aseta oma admin-PIN
+                </Button>
+              )}
+            </>
+          }
+        />
 
         <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
           <DialogContent>
@@ -313,7 +319,7 @@ export default function AdminPage() {
               <PinInput value={pinValue} onChange={setPinValue} />
             </div>
             <DialogFooter>
-              <Button variant="secondary" onClick={() => setPinDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setPinDialogOpen(false)}>
                 Peruuta
               </Button>
               <Button
@@ -335,16 +341,16 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Käyttäjien hallinta</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Käyttäjien hallinta</CardTitle>
             <p className="text-sm text-muted-foreground">Yhteensä {users.length} käyttäjää</p>
-          </div>
+          </CardHeader>
 
           {/* Mobile: stacked cards — the 5-column table does not fit a phone. */}
           <div className="flex flex-col gap-3 md:hidden">
             {sortedUsers.map((user) => (
-              <div key={user.id} className="flex flex-col gap-3 rounded-lg border p-4">
+              <Card key={user.id} variant="inset" padding="md" className="flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{user.name || '-'}</p>
@@ -373,7 +379,7 @@ export default function AdminPage() {
                     <FaTrash />
                   </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
@@ -420,7 +426,7 @@ export default function AdminPage() {
               </TableBody>
             </Table>
           </div>
-        </div>
+        </Card>
 
         <Dialog open={kioskDialogOpen} onOpenChange={setKioskDialogOpen}>
           <DialogContent>
@@ -456,26 +462,17 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Poista käyttäjä</DialogTitle>
-            </DialogHeader>
-            <p>
-              Haluatko varmasti poistaa käyttäjän{' '}
-              <span className="font-bold">{userToDelete?.name || userToDelete?.email}</span>? Tätä
-              toimintoa ei voi perua.
-            </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-                Peruuta
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteConfirm}>
-                Poista
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ConfirmDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          title="Poista käyttäjä"
+          confirmLabel="Poista"
+          onConfirm={handleDeleteConfirm}
+        >
+          Haluatko varmasti poistaa käyttäjän{' '}
+          <span className="font-bold">{userToDelete?.name || userToDelete?.email}</span>? Tätä
+          toimintoa ei voi perua.
+        </ConfirmDialog>
       </div>
     </>
   );

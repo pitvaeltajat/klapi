@@ -1,0 +1,83 @@
+'use client';
+
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+
+// Two tiers, deliberately. `default` is the page-level panel every view is built
+// from; `inset`/`muted` are the nested blocks that live *inside* one (a
+// reservation row, a history entry). Before this existed each page invented its
+// own radius/padding/shadow combination, so the same panel looked different on
+// /account than on /admin.
+const cardVariants = cva('', {
+  variants: {
+    variant: {
+      default: 'rounded-lg border bg-card text-card-foreground shadow-xs',
+      inset: 'rounded-md border',
+      muted: 'rounded-md border bg-muted',
+    },
+    padding: {
+      none: '',
+      sm: 'p-3',
+      md: 'p-4',
+      lg: 'p-6',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+    padding: 'lg',
+  },
+});
+
+type CardElement = 'div' | 'section' | 'article' | 'li' | 'details' | 'label';
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof cardVariants> {
+  /** Element to render. Defaults to `div`; use `section` for landmarks. */
+  as?: CardElement;
+  /** Only meaningful with `as="details"`. */
+  open?: boolean;
+}
+
+export const Card = React.forwardRef<HTMLElement, CardProps>(
+  ({ className, variant, padding, as = 'div', ...props }, ref) =>
+    React.createElement(as, {
+      ref,
+      className: cn(cardVariants({ variant, padding }), className),
+      ...props,
+    }),
+);
+Card.displayName = 'Card';
+
+/**
+ * Title row inside a Card. Carries its own bottom margin so panels are spaced
+ * identically everywhere — pass `className="mb-0"` on the rare card that
+ * doesn't want it.
+ */
+export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h2 ref={ref} className={cn('mb-4 text-xl font-semibold', className)} {...props} />
+  ),
+);
+CardTitle.displayName = 'CardTitle';
+
+/**
+ * Wraps a CardTitle plus trailing actions on one row. Neutralises the title's
+ * own margin so the spacing stays on the header.
+ */
+export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        'mb-4 flex flex-wrap items-center justify-between gap-2 [&>h2]:mb-0',
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+CardHeader.displayName = 'CardHeader';
+
+export { cardVariants };

@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import { applyRangeTimes } from '@/utils/dateRange';
 
 // Initial loan-time selection. Once both dates are picked the home page swaps
@@ -41,8 +42,8 @@ export default function DateSelector() {
         </p>
       </div>
 
-      <div className="rounded-lg border bg-card p-4 shadow-xs">
-        <Label className="font-bold">Valitse lainausaika</Label>
+      <Card padding="md">
+        <Label size="section">Valitse lainausaika</Label>
         <div className="mt-2 flex justify-center">
           <DatePicker
             selected={startDate}
@@ -60,7 +61,7 @@ export default function DateSelector() {
         <Button variant="outline" className="mt-4 w-full" onClick={() => setBrowseMode(true)}>
           Selaa katalogia ilman lainaa
         </Button>
-      </div>
+      </Card>
     </div>
   );
 }

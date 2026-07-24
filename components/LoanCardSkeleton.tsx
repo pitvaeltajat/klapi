@@ -1,8 +1,9 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function LoanCardSkeleton() {
   return (
-    <div className="flex h-full flex-col gap-3 overflow-hidden rounded-lg border bg-card p-4 shadow-xs">
+    <Card padding="md" className="flex h-full flex-col gap-3 overflow-hidden">
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-1 flex-col gap-2">
           <Skeleton className="h-5 w-3/4" />
@@ -20,7 +21,7 @@ export default function LoanCardSkeleton() {
         <Skeleton className="h-5 w-20 rounded-full" />
         <Skeleton className="h-5 w-14 rounded-full" />
       </div>
-    </div>
+    </Card>
   );
 }
 

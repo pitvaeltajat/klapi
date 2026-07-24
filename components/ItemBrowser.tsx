@@ -12,6 +12,7 @@ import FilterFlyout from './FilterFlyout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { CountBadge } from '@/components/ui/count-badge';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 import TemplateSection from './TemplateSection';
@@ -209,11 +210,7 @@ export default function ItemBrowser({
             >
               <SlidersHorizontal className="h-4 w-4" />
               Suodata
-              {selectedCategories.length > 0 && (
-                <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {selectedCategories.length}
-                </span>
-              )}
+              {selectedCategories.length > 0 && <CountBadge count={selectedCategories.length} />}
             </Button>
           </div>
           {showCustomItemLink && (

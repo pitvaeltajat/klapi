@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert } from '@/components/ui/alert';
 import ItemAmountCard from './ItemAmountCard';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
@@ -169,14 +170,14 @@ export default function TemplateDialog({ template, onClose }: TemplateDialogProp
         )}
 
         {clamped.length > 0 && (
-          <p className="rounded-md border border-warning/50 bg-warning/10 p-3 text-sm">
+          <Alert variant="warning" className="text-sm">
             Osaa kamoista ei ole tarpeeksi vapaana valitulla ajanjaksolla, joten määrät on
             pudotettu siihen mitä on vielä vapaana.
-          </p>
+          </Alert>
         )}
 
         <DialogFooter className="gap-2">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Peruuta
           </Button>
           <Button onClick={handleConfirm} disabled={rows === null || chosen.length === 0}>

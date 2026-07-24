@@ -4,6 +4,7 @@ import React from 'react';
 import { Reservation } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardTitle } from '@/components/ui/card';
 import { DateTime } from '@/components/DateTime';
 import HandleReportDialog from '@/components/HandleReportDialog';
 
@@ -59,13 +60,13 @@ const ReportCard: React.FC<ReportCardProps> = ({ reports, reservations }) => {
   };
 
   return (
-    <div className="rounded-lg border bg-card p-6 shadow-xs">
-      <h2 className="mb-4 text-xl font-semibold">
+    <Card>
+      <CardTitle>
         Raportit {unresolvedReports.length > 0 ? `(${unresolvedReports.length})` : ''}
-      </h2>
+      </CardTitle>
       <div className="flex flex-col gap-3">
         {sortedReports.map((report) => (
-          <div key={report.id} className="rounded-md border bg-muted p-4">
+          <Card key={report.id} variant="muted" padding="md">
             <div className="mb-2 flex items-start justify-between gap-2">
               <Badge variant={statusVariant(report.status)}>
                 {statusLabel(report.status)}
@@ -86,7 +87,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ reports, reservations }) => {
                 Käsittele
               </Button>
             )}
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -107,7 +108,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ reports, reservations }) => {
           }}
         />
       )}
-    </div>
+    </Card>
   );
 };
 

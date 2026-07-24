@@ -5,6 +5,7 @@ import NextLink from 'next/link';
 import { LuTriangleAlert } from 'react-icons/lu';
 import type { Announcement } from '@prisma/client';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface ItemCardShellProps {
@@ -71,7 +72,8 @@ export default function ItemCardShell({
   className,
 }: ItemCardShellProps) {
   const shellClasses = cn(
-    'relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-xs',
+    cardVariants({ padding: 'none' }),
+    'relative flex overflow-hidden',
     !compact &&
       'transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl',
     className,

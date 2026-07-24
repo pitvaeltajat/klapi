@@ -5,6 +5,8 @@ import NextLink from 'next/link';
 import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '@/utils/loanHelpers';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export interface LoanType {
   id: string;
@@ -42,10 +44,12 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
     new Date(loan.endTime) < new Date();
 
   return (
-    <div
-      className={`flex h-full flex-col gap-3 overflow-hidden rounded-lg border p-4 shadow-xs ${
-        isOverdue ? 'border-destructive/40 bg-destructive/10' : 'bg-card'
-      }`}
+    <Card
+      padding="md"
+      className={cn(
+        'flex h-full flex-col gap-3 overflow-hidden',
+        isOverdue && 'border-destructive/40 bg-destructive/10',
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -92,6 +96,6 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

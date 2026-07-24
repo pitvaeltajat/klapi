@@ -11,6 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Field } from '@/components/ui/field';
+import { Card } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { NumberInput } from '@/components/ui/number-input';
 import { Select } from '@/components/ui/creatable-select';
 import {
@@ -154,30 +158,25 @@ export default function TemplatesView({
   return (
     <>
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Lainapohjat' }]} />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold">Lainapohjat</h1>
-          <p className="mt-1 text-muted-foreground">
-            Valmiit kamasetit, jotka lainaaja saa yhdellä klikkauksella koriin. Lainaaja voi aina
-            säätää määriä — pohja on ehdotus, ei pakkopaketti.
-          </p>
-        </div>
-        <Button onClick={startCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Uusi pohja
-        </Button>
-      </div>
+      <PageHeader
+        title="Lainapohjat"
+        description="Valmiit kamasetit, jotka lainaaja saa yhdellä klikkauksella koriin. Lainaaja voi aina säätää määriä — pohja on ehdotus, ei pakkopaketti."
+        actions={
+          <Button onClick={startCreate} className="gap-2">
+            <Plus className="h-4 w-4" /> Uusi pohja
+          </Button>
+        }
+      />
 
       {templates.length === 0 ? (
-        <div className="rounded-lg border bg-muted p-8 text-center">
-          <p className="text-lg text-muted-foreground">Ei pohjia</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Luo pohja tästä tai tallenna sellainen valmiista lainasta sen omalta sivulta.
-          </p>
-        </div>
+        <EmptyState
+          title="Ei pohjia"
+          description="Luo pohja tästä tai tallenna sellainen valmiista lainasta sen omalta sivulta."
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => (
-            <div key={template.id} className="flex flex-col gap-3 rounded-xl border bg-card p-5 shadow-xs">
+            <Card key={template.id} className="flex flex-col gap-3">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="text-lg font-semibold">{template.name}</h2>
                 <Badge variant="secondary">{template.items.length} kamaa</Badge>
@@ -197,7 +196,9 @@ export default function TemplatesView({
                     </li>
                   ))}
                 {template.items.length === 0 && (
-                  <li className="italic text-muted-foreground">Ei näytettäviä kamoja</li>
+                  <li>
+                    <EmptyState variant="inline" title="Ei näytettäviä kamoja" />
+                  </li>
                 )}
               </ul>
               {(archivedCounts[template.id] ?? 0) > 0 && (
@@ -219,7 +220,7 @@ export default function TemplatesView({
                   Poista
                 </Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -259,12 +260,12 @@ export default function TemplatesView({
               <Field label="Kamat" required>
                 <div className="flex flex-col gap-2">
                   {draft.rows.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Ei vielä kamoja.</p>
+                    <EmptyState variant="inline" title="Ei vielä kamoja." />
                   )}
                   {draft.rows.map((row) => {
                     const item = itemsById.get(row.itemId);
                     return (
-                      <div key={row.itemId} className="flex items-center gap-2 rounded-md border p-2">
+                      <Card key={row.itemId} variant="inset" padding="none" className="flex items-center gap-2 p-2">
                         <span className="min-w-0 flex-1 truncate text-sm font-medium">
                           {item?.name ?? 'Tuntematon kama'}
                         </span>
@@ -287,7 +288,7 @@ export default function TemplatesView({
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      </div>
+                      </Card>
                     );
                   })}
                   {/* Pick-only: items are created in the item admin, never here. */}
@@ -304,7 +305,7 @@ export default function TemplatesView({
           )}
 
           <DialogFooter className="gap-2">
-            <Button variant="secondary" onClick={() => setDraft(null)} disabled={busy}>
+            <Button variant="outline" onClick={() => setDraft(null)} disabled={busy}>
               Peruuta
             </Button>
             <Button onClick={save} isLoading={busy} disabled={!canSave}>
@@ -314,25 +315,15 @@ export default function TemplatesView({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={pendingDelete !== null} onOpenChange={(open) => !open && !busy && setPendingDelete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Poista pohja</DialogTitle>
-            <DialogDescription>
-              Poistetaanko pohja &quot;{pendingDelete?.name}&quot;? Tämä ei vaikuta jo tehtyihin
-              lainoihin.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={busy}>
-              Peruuta
-            </Button>
-            <Button variant="destructive" onClick={remove} isLoading={busy}>
-              Poista
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Poista pohja"
+        description={`Poistetaanko pohja "${pendingDelete?.name}"? Tämä ei vaikuta jo tehtyihin lainoihin.`}
+        confirmLabel="Poista"
+        onConfirm={remove}
+        isLoading={busy}
+      />
     </>
   );
 }

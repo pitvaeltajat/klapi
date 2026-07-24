@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
+import { CountBadge } from '@/components/ui/count-badge';
 import { cn } from '@/lib/utils';
 
 /**
@@ -46,11 +47,7 @@ export default function FilterFlyout({
         )}
       >
         <SlidersHorizontal className="size-4 text-muted-foreground" />
-        {badge > 0 && (
-          <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-            {badge}
-          </span>
-        )}
+        {badge > 0 && <CountBadge count={badge} />}
       </button>
 
       <div

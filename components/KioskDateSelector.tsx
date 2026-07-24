@@ -7,6 +7,8 @@ import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
 import LoanerAutocomplete from './LoanerAutocomplete';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
 import { formatDateTimeKiosk } from '@/utils/dateFormat';
 import { isSameCalendarDay, setDefaultTime, setEndOfDay } from '@/utils/dateRange';
 
@@ -29,8 +31,8 @@ export default function KioskDateSelector() {
   return (
     <>
       <div className="mb-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <div className="h-full rounded-lg border bg-card p-6 shadow-xs">
-          <Label className="mb-4 block text-lg font-bold">Lainaaja</Label>
+        <Card className="h-full">
+          <Label size="section">Lainaaja</Label>
           <LoanerAutocomplete
             value={cart.loaner || ''}
             onChange={handleLoanerChange}
@@ -38,10 +40,10 @@ export default function KioskDateSelector() {
             size="lg"
             showValidationFeedback
           />
-        </div>
+        </Card>
 
-        <div className="h-full rounded-lg border bg-card p-6 shadow-xs">
-          <Label className="mb-2 block text-lg font-bold">Palautuspäivä</Label>
+        <Card className="h-full">
+          <Label size="section">Palautuspäivä</Label>
           <div className="flex justify-center overflow-x-auto">
             <DatePicker
               selected={dates.endDate}
@@ -53,10 +55,10 @@ export default function KioskDateSelector() {
               calendarStartDay={1}
             />
           </div>
-        </div>
+        </Card>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center justify-center gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
+      <Alert variant="info" icon={false} className="mb-4 flex-wrap items-center justify-center gap-3">
         <div className="flex flex-col items-center">
           <span className="text-xs font-medium text-muted-foreground">Laina alkaa</span>
           <span className="text-lg font-bold">{formatDateTimeKiosk(dates.startDate)}</span>
@@ -66,7 +68,7 @@ export default function KioskDateSelector() {
           <span className="text-xs font-medium text-muted-foreground">Palautus viimeistään</span>
           <span className="text-lg font-bold">{formatDateTimeKiosk(dates.endDate)}</span>
         </div>
-      </div>
+      </Alert>
     </>
   );
 }

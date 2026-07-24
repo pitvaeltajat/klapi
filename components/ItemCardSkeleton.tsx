@@ -1,8 +1,9 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function ItemCardSkeleton() {
   return (
-    <div className="relative flex overflow-hidden rounded-lg border bg-card text-card-foreground shadow-xs sm:flex-col sm:shadow-lg">
+    <Card padding="none" className="relative flex overflow-hidden sm:flex-col sm:shadow-lg">
       <Skeleton className="aspect-square w-28 shrink-0 rounded-none sm:aspect-5/3 sm:w-full" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 sm:p-4 xl:p-3">
         <Skeleton className="h-5 w-3/4" />
@@ -10,7 +11,7 @@ export default function ItemCardSkeleton() {
         <Skeleton className="h-3 w-2/3" />
         <Skeleton className="mt-auto h-11 w-full sm:mt-3" />
       </div>
-    </div>
+    </Card>
   );
 }
 

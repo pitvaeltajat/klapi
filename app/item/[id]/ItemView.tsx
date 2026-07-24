@@ -13,13 +13,10 @@ import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Card, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   getItemHistoryActionLabel,
   formatItemHistoryChanges,
@@ -130,23 +127,28 @@ export default function ItemView({
     <>
       <Breadcrumbs items={[{ label: item.name }]} />
       <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-semibold">{item.name}</h1>
-          {isAdmin && openReportCount > 0 && (
-            <a
-              href="#raportit"
-              className="no-underline"
-              aria-label={`${openReportCount} avointa vikailmoitusta`}
-            >
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle className="size-3.5" aria-hidden />
-                {openReportCount === 1
-                  ? 'Avoin vikailmoitus'
-                  : `${openReportCount} avointa vikailmoitusta`}
-              </Badge>
-            </a>
-          )}
-        </div>
+        <PageHeader
+          className="mb-0"
+          title={item.name}
+          actionsAlign="inline"
+          actions={
+            isAdmin &&
+            openReportCount > 0 && (
+              <a
+                href="#raportit"
+                className="no-underline"
+                aria-label={`${openReportCount} avointa vikailmoitusta`}
+              >
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="size-3.5" aria-hidden />
+                  {openReportCount === 1
+                    ? 'Avoin vikailmoitus'
+                    : `${openReportCount} avointa vikailmoitusta`}
+                </Badge>
+              </a>
+            )
+          }
+        />
 
         {item.description && (
           <p className="text-base text-foreground/90 md:text-lg">{item.description}</p>
@@ -207,10 +209,8 @@ export default function ItemView({
         />
 
         {isAdmin && reportAffectedItems.length > 0 && (
-          <section id="raportit" className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
-            <h2 className="mb-4 text-xl font-semibold">
-              Raportit ({reportAffectedItems.length})
-            </h2>
+          <Card as="section" id="raportit">
+            <CardTitle>Raportit ({reportAffectedItems.length})</CardTitle>
             <ul className="flex flex-col gap-3">
               {reportAffectedItems.map(({ id, amount, report }) => {
                 const status = REPORT_STATUS[report.status] ?? {
@@ -218,7 +218,7 @@ export default function ItemView({
                   variant: 'secondary' as const,
                 };
                 return (
-                  <li key={id} className="rounded-md border bg-muted p-3">
+                  <Card as="li" key={id} variant="muted" padding="sm">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <Badge variant={status.variant}>{status.label}</Badge>
                       <span className="text-xs text-muted-foreground">
@@ -237,27 +237,27 @@ export default function ItemView({
                       Avaa laina
                       {report.loan.user.name ? ` — ${report.loan.user.name}` : ''}
                     </Link>
-                  </li>
+                  </Card>
                 );
               })}
             </ul>
-          </section>
+          </Card>
         )}
 
         <div className="mt-4">
-          <h2 className="mb-4 text-xl font-semibold">Lainat ja varaukset</h2>
+          <CardTitle>Lainat ja varaukset</CardTitle>
           {item.reservations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Ei lainoja eikä varauksia.</p>
+            <EmptyState variant="inline" title="Ei lainoja eikä varauksia." />
           ) : (
             <ReservationTable reservations={item.reservations} isAdmin={isAdmin} />
           )}
         </div>
 
         {isAdmin && (
-          <section className="rounded-lg border bg-card p-4 md:p-6 shadow-xs">
-            <h2 className="mb-4 text-xl font-semibold">Muokkaushistoria</h2>
+          <Card as="section">
+            <CardTitle>Muokkaushistoria</CardTitle>
             {history.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ei muokkaushistoriaa.</p>
+              <EmptyState variant="inline" title="Ei muokkaushistoriaa." />
             ) : (
               <ul className="flex flex-col gap-3">
                 {history.map((entry) => {
@@ -265,7 +265,7 @@ export default function ItemView({
                   const changes = formatItemHistoryChanges(entry.details);
                   const bulk = isBulkItemHistory(entry.details);
                   return (
-                    <li key={entry.id} className="rounded-md border p-3">
+                    <Card as="li" key={entry.id} variant="inset" padding="sm">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="font-semibold">
                           {getItemHistoryActionLabel(entry.action)}
@@ -287,31 +287,25 @@ export default function ItemView({
                           ))}
                         </ul>
                       )}
-                    </li>
+                    </Card>
                   );
                 })}
               </ul>
             )}
-          </section>
+          </Card>
         )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="mx-4">
-          <DialogHeader>
-            <DialogTitle>Poistetaanko kama?</DialogTitle>
-          </DialogHeader>
-          <p>
-            <strong>{item.name}</strong> poistetaan. Oletko varma?
-          </p>
-          <DialogFooter>
-            <Button onClick={deleteItem}>Poista</Button>
-            <Button variant="secondary" onClick={() => setOpen(false)}>
-              Peruuta
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Poistetaanko kama?"
+        confirmLabel="Poista"
+        onConfirm={deleteItem}
+        className="mx-4"
+      >
+        <strong>{item.name}</strong> poistetaan. Oletko varma?
+      </ConfirmDialog>
     </>
   );
 }

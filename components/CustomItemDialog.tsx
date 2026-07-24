@@ -66,7 +66,7 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Peruuta
           </Button>
           <Button onClick={handleSubmit} className="gap-2">

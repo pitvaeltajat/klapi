@@ -14,13 +14,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { NumberInput } from '@/components/ui/number-input';
 import { DateTime } from '@/components/DateTime';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -155,13 +152,13 @@ export default function UserEditLoanView({
         <div className="flex flex-col gap-6">
           <Skeleton className="h-10 w-64" />
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-lg border bg-card p-6 shadow-xs">
+            <Card key={i}>
               <Skeleton className="mb-4 h-6 w-40" />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </>
@@ -178,27 +175,20 @@ export default function UserEditLoanView({
         ]}
       />
       <div className="flex flex-col gap-6">
-        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Tallenna muutokset</DialogTitle>
-            </DialogHeader>
-            <p>Tallennetaanko muutokset varaukseen?</p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-                Peruuta
-              </Button>
-              <Button variant="success" onClick={updateLoan}>
-                Tallenna
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ConfirmDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Tallenna muutokset"
+          description="Tallennetaanko muutokset varaukseen?"
+          confirmLabel="Tallenna"
+          confirmVariant="success"
+          onConfirm={updateLoan}
+        />
 
-        <h1 className="text-3xl font-semibold">Muokkaa varausta</h1>
+        <PageHeader className="mb-0" title="Muokkaa varausta" />
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Perustiedot</h2>
+        <Card>
+          <CardTitle>Perustiedot</CardTitle>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Aloitusaika</p>
@@ -209,10 +199,10 @@ export default function UserEditLoanView({
               <DateTime value={loan.endTime} format="long" className="font-medium" />
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Kuvaus</h2>
+        <Card>
+          <CardTitle>Kuvaus</CardTitle>
           <Label htmlFor="description">Kuvaus</Label>
           <Textarea
             id="description"
@@ -222,25 +212,26 @@ export default function UserEditLoanView({
             rows={3}
             className="mt-1"
           />
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Kamat</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Kamat</CardTitle>
             <Button size="sm" variant="ghost" onClick={() => setReservations(loan.reservations)}>
               Palauta alkuperäiset
             </Button>
-          </div>
+          </CardHeader>
 
           <div className="flex flex-col gap-3">
             {reservations.length === 0 ? (
-              <p className="italic text-muted-foreground">Ei kalusteita</p>
+              <EmptyState variant="inline" title="Ei kalusteita" />
             ) : (
               reservations.map((reservation) => (
-                <div
+                <Card
                   key={reservation.id}
+                  variant="inset"
+                  padding="md"
                   className={cn(
-                    'rounded-md border p-4',
                     isNewReservation(reservation)
                       ? 'border-success bg-success/10'
                       : isReservationModified(reservation)
@@ -309,14 +300,14 @@ export default function UserEditLoanView({
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Lisää kama</h2>
+        <Card>
+          <CardTitle>Lisää kama</CardTitle>
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-2">
               <Label>Kama</Label>
@@ -372,7 +363,7 @@ export default function UserEditLoanView({
               </Button>
             </div>
           </div>
-        </div>
+        </Card>
 
         <Button
           variant="success"

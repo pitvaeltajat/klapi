@@ -85,8 +85,29 @@ server components or route handlers.
 
 - All UI primitives are in `components/ui/` — owned source files (shadcn pattern).
   Edit freely; do not install shadcn as a dependency.
+- **Compose pages from the primitives, never from raw Tailwind recipes.** Every
+  panel, callout, page title and empty state has one component; hand-rolling
+  another `rounded-lg border bg-card p-6 shadow-xs` is how the UI drifted apart
+  before. Reach for:
+  - `Card` / `CardTitle` / `CardHeader` (`card.tsx`) — the page panel.
+    `variant="inset" | "muted"` are the nested blocks inside one; `as="section"`
+    / `as="details"` / `as="li"` when the element matters.
+  - `Alert` (`alert.tsx`) — tinted callout, `variant="info" | "warning" |
+    "success" | "destructive"`. Don't invent new `border-x/NN bg-x/NN` pairs.
+  - `PageHeader` (`page-header.tsx`) — the page `h1` row. Owns its own `mb-6`.
+  - `EmptyState` (`empty-state.tsx`) — `variant="card"` for a whole empty list,
+    `variant="inline"` for one muted line inside a panel.
+  - `Checkbox` / `CheckboxIndicator` (`checkbox.tsx`) — never a raw
+    `<input type="checkbox">`.
+  - `ConfirmDialog` (`confirm-dialog.tsx`) — every "are you sure?". Cancel is
+    always left and `outline`; the destructive action is always right. Plain
+    `Dialog` is for forms, and their cancel button is `variant="outline"` too.
+  - `SelectableRow`, `FilterChip`, `CountBadge` for tickable rows, pill toggles
+    and the little number bubbles.
 - Design tokens are CSS variables in `styles/globals.css` with `.dark` overrides.
-  Tailwind maps them via `bg-primary`, `text-muted-foreground`, etc.
+  Tailwind maps them via `bg-primary`, `text-muted-foreground`, etc. Nothing
+  outside that file should hard-code a colour — the app bar has its own
+  `--header` / `--header-foreground` pair rather than `text-white`.
 - Dark mode is class-based via `next-themes` (`attribute="class"`).
 - Toasts: `import { toast } from 'sonner'` — use `toast.success/error/warning`.
   The `Toaster` is already mounted in `app/providers.tsx`.
