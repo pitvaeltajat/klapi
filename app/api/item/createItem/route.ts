@@ -33,16 +33,23 @@ export async function POST(request: Request) {
       name: typeof rest.name === 'string' ? rest.name.trim() : rest.name,
       // ensure type defaults to 'normal' when not provided by the client
       type: rest.type ?? 'normal',
-      location: locationObject && {
-        connectOrCreate: {
-          where: {
-            id: locationObject.value,
-          },
-          create: {
-            name: locationObject.value,
-          },
-        },
-      },
+      // Sijainti is optional. Spread the relation in only when one was picked —
+      // `location: null` is not a valid nested write and Prisma rejects the
+      // whole create, so a kama with no location used to 500.
+      ...(locationObject
+        ? {
+            location: {
+              connectOrCreate: {
+                where: {
+                  id: locationObject.value,
+                },
+                create: {
+                  name: locationObject.value,
+                },
+              },
+            },
+          }
+        : {}),
       // for each category, check if it exists and connect, if not, create it
       categories: { connectOrCreate: categoryJSON },
     },
