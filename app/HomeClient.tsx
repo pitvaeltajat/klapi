@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, use, useState } from 'react';
-import NextLink from 'next/link';
 import { FaPlus } from 'react-icons/fa';
 import { LayoutGrid, Table as TableIcon } from 'lucide-react';
 import DateSelector from '@/components/DateSelector';
@@ -14,6 +13,7 @@ import { useSession } from 'next-auth/react';
 import ItemBrowser from '@/components/ItemBrowser';
 import BrowseItemCard from '@/components/BrowseItemCard';
 import InventoryView from '@/components/inventory/InventoryView';
+import AddItemDialog from '@/components/AddItemDialog';
 import PendingPickupBanner from '@/components/PendingPickupBanner';
 import { Button } from '@/components/ui/button';
 import { ItemCardSkeletonGrid } from '@/components/ItemCardSkeleton';
@@ -26,11 +26,13 @@ function BrowseModeHeader({
   isAdmin,
   viewMode,
   onViewModeChange,
+  onCreateItem,
 }: {
   onExitBrowseMode: () => void;
   isAdmin: boolean;
   viewMode: BrowseViewMode;
   onViewModeChange: (mode: BrowseViewMode) => void;
+  onCreateItem: () => void;
 }) {
   return (
     <div className="mb-4 flex flex-col gap-4">
@@ -43,10 +45,8 @@ function BrowseModeHeader({
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
         {isAdmin && (
-          <Button asChild variant="success" className="gap-2">
-            <NextLink href="/admin/createItem">
-              <FaPlus /> Luo uusi kama
-            </NextLink>
+          <Button variant="success" className="gap-2" onClick={onCreateItem}>
+            <FaPlus /> Luo uusi kama
           </Button>
         )}
         {isAdmin && (
@@ -114,6 +114,7 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   const isAdmin = session?.user?.group === 'ADMIN';
 
   const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('table');
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleExitBrowseMode = () => {
     setBrowseMode(false);
@@ -135,7 +136,10 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
             isAdmin={isAdmin}
             viewMode={browseViewMode}
             onViewModeChange={setBrowseViewMode}
+            onCreateItem={() => setCreateOpen(true)}
           />
+          {/* Mounted only while open so the draft always starts empty. */}
+          {createOpen && <AddItemDialog open onOpenChange={setCreateOpen} />}
           {isAdmin && browseViewMode === 'table' ? (
             <InventoryView />
           ) : (

@@ -44,11 +44,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Plus, Check, X, RotateCcw } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useItemImage } from '@/hooks/useItemImage';
 import { cn } from '@/lib/utils';
 import PromoteDialog from './PromoteDialog';
+import EditItemDialog from '@/components/EditItemDialog';
 
 // Inline types so we don't depend on @prisma/client direct exports
 export interface InventoryCategory {
@@ -414,107 +415,7 @@ export default function InventoryView() {
 
   const [promoteItem, setPromoteItem] = useState<InventoryItem | null>(null);
 
-  const [addingRow, setAddingRow] = useState(false);
-  const [addingSubmitting, setAddingSubmitting] = useState(false);
-  const emptyDraft = { name: '', description: '', amount: 1 };
-  const [newRow, setNewRow] = useState(emptyDraft);
-  const [newRowImage, setNewRowImage] = useState<File | null>(null);
-  const [newRowPreview, setNewRowPreview] = useState<string | null>(null);
-  const newRowFileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleNewRowImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setNewRowImage(file);
-    setNewRowPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return file ? URL.createObjectURL(file) : null;
-    });
-  };
-
-  const newRowKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') handleAddRow();
-    if (e.key === 'Escape') cancelAddRow();
-  };
-
-  const cancelAddRow = () => {
-    setAddingRow(false);
-    setNewRow(emptyDraft);
-    setNewRowImage(null);
-    setNewRowPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-    if (newRowFileInputRef.current) newRowFileInputRef.current.value = '';
-  };
-
-  const uploadNewRowImage = async (itemId: string, file: File) => {
-    const presignRes = await fetch('/api/item/uploadImage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: itemId, contentType: file.type }),
-    });
-    if (!presignRes.ok) throw new Error('Kuvan lataus epäonnistui');
-    const { url, fields } = (await presignRes.json()) as {
-      url: string;
-      fields: Record<string, string>;
-    };
-    const formData = new FormData();
-    Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
-    formData.append('file', file);
-    const uploadRes = await fetch(url, { method: 'POST', body: formData });
-    if (!uploadRes.ok) throw new Error('Kuvan tallennus epäonnistui');
-  };
-
-  const handleAddRow = async () => {
-    if (!newRow.name.trim()) {
-      toast.error('Nimi on pakollinen');
-      return;
-    }
-    setAddingSubmitting(true);
-    try {
-      const res = await fetch('/api/item/createItem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newRow.name.trim(),
-          description: newRow.description.trim() || null,
-          amount: newRow.amount,
-          type: 'normal',
-          categories: [],
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json() as { message?: string };
-        throw new Error(data.message ?? 'Virhe');
-      }
-      const created = (await res.json()) as { id: string };
-      if (newRowImage) {
-        try {
-          await uploadNewRowImage(created.id, newRowImage);
-        } catch (uploadErr) {
-          toast.error('Kama lisätty, mutta kuvan lataus epäonnistui', {
-            description: uploadErr instanceof Error ? uploadErr.message : undefined,
-          });
-        }
-      }
-      await mutateItems();
-      toast.success('Kama lisätty');
-      setNewRow(emptyDraft);
-      setNewRowImage(null);
-      setNewRowPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return null;
-      });
-      if (newRowFileInputRef.current) newRowFileInputRef.current.value = '';
-      setAddingRow(false);
-    } catch (err) {
-      toast.error('Lisäys epäonnistui', {
-        description: err instanceof Error ? err.message : undefined,
-      });
-    } finally {
-      setAddingSubmitting(false);
-    }
-  };
+  const [editItem, setEditItem] = useState<InventoryItem | null>(null);
 
   const addPending = (id: string) => setPendingRows((prev) => new Set(prev).add(id));
   const removePending = (id: string) =>
@@ -806,6 +707,15 @@ export default function InventoryView() {
         const isArchived = !!item.deletedAt;
         return (
           <div className="flex items-center gap-1">
+            {!isArchived && (
+              <IconAction
+                tooltip="Muokkaa"
+                ariaLabel="Muokkaa kamaa"
+                onClick={() => setEditItem(item)}
+              >
+                <Pencil className="h-4 w-4" />
+              </IconAction>
+            )}
             {item.type === 'temporary' && !isArchived && (
               <IconAction
                 tooltip="Siirrä kirjastoon"
@@ -935,15 +845,6 @@ export default function InventoryView() {
           >
             Näytä arkistoidut
           </FilterChip>
-          <Button
-            size="sm"
-            variant="success"
-            className="ml-auto gap-2"
-            onClick={() => setAddingRow(true)}
-            disabled={addingRow}
-          >
-            <Plus className="h-4 w-4" /> Uusi rivi
-          </Button>
         </div>
 
         {/* Bulk actions */}
@@ -989,97 +890,6 @@ export default function InventoryView() {
               ))}
             </TableHeader>
             <TableBody>
-              {addingRow && (
-                <TableRow className="bg-muted/30">
-                  <TableCell />
-                  <TableCell>
-                    <input
-                      ref={newRowFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleNewRowImageChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => newRowFileInputRef.current?.click()}
-                      className="flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded border border-dashed border-border text-muted-foreground hover:border-ring hover:text-foreground"
-                      aria-label={newRowImage ? 'Vaihda kuva' : 'Lisää kuva'}
-                      title={newRowImage ? 'Vaihda kuva' : 'Lisää kuva'}
-                      disabled={addingSubmitting}
-                    >
-                      {newRowPreview ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- local preview from FileReader URL
-                        <img
-                          src={newRowPreview}
-                          alt="Esikatselu"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <input
-                      autoFocus
-                      placeholder="Nimi *"
-                      value={newRow.name}
-                      onChange={(e) => setNewRow((r) => ({ ...r, name: e.target.value }))}
-                      onKeyDown={newRowKeyDown}
-                      className={cn(EDITABLE_INPUT_CLASS, 'w-full')}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <input
-                      placeholder="Kuvaus"
-                      value={newRow.description}
-                      onChange={(e) => setNewRow((r) => ({ ...r, description: e.target.value }))}
-                      onKeyDown={newRowKeyDown}
-                      className={cn(EDITABLE_INPUT_CLASS, 'w-full')}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <input
-                      type="number"
-                      min={1}
-                      value={newRow.amount}
-                      onChange={(e) =>
-                        setNewRow((r) => ({ ...r, amount: Math.max(1, Number(e.target.value) || 1) }))
-                      }
-                      onKeyDown={newRowKeyDown}
-                      className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Badge>Normaali</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">—</TableCell>
-                  <TableCell className="text-muted-foreground">—</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="success"
-                        size="icon-sm"
-                        onClick={handleAddRow}
-                        isLoading={addingSubmitting}
-                        aria-label="Tallenna"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={cancelAddRow}
-                        disabled={addingSubmitting}
-                        aria-label="Peruuta"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
               {itemsLoading && items.length === 0 ? (
                 Array.from({ length: 8 }).map((_, rowIdx) => (
                   <TableRow key={`skeleton-${rowIdx}`}>
@@ -1217,6 +1027,20 @@ export default function InventoryView() {
             updateItemLocal(updated as InventoryItem);
             setPromoteItem(null);
           }}
+        />
+      )}
+
+      {/* Edit dialog — the inline cells cover name/kuvaus/määrä/sijainti; this
+          is the full form (kategoriat, kuva). Mounted only while open so the
+          form seeds fresh from the row. */}
+      {editItem && (
+        <EditItemDialog
+          item={editItem}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditItem(null);
+          }}
+          onSaved={() => void mutateItems()}
         />
       )}
     </EditCellContext.Provider>

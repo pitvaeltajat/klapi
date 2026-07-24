@@ -135,12 +135,11 @@ cron sweeps — import and call them directly.
 
 | Path | Purpose |
 |---|---|
-| `/` | home / catalog browse |
+| `/` | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own) |
 | `/item/[id]` | item detail (+ admin announcements, reports, **muokkaushistoria**) |
 | `/item/announcements` | announcements overview |
 | `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
 | `/admin` | user management |
-| `/admin/createItem`, `/admin/edititem/[id]` | item create / edit forms |
 | `/admin/editLoan/[id]`, `/admin/reports`, `/admin/boxes` | admin loan edit / reports / boxes |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
