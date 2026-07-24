@@ -134,6 +134,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   if (!session) return null;
 
   const effectiveGroup = session?.user?.group;
+  const isAdmin = session?.user?.group === 'ADMIN';
 
   return (
     <>
@@ -198,50 +199,59 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
 
         <div className="rounded-md border bg-card p-6 shadow-xs">
           <h2 className="mb-4 text-xl font-semibold">Sähköposti-ilmoitukset</h2>
+          {/* Admins are borrowers too: they get the same pickup/overdue reminders for
+              their own loans as everyone else, so they need the "Omat lainat" toggles
+              as well as the fleet-wide ones — not instead of them. The one exception is
+              the new-loan mail, which is a single stored setting doing double duty
+              (fleet-wide for admins, own-loan confirmation for users), so admins see
+              only the ylläpito row for it. */}
+          {isAdmin && (
+            <div className="mb-6 flex flex-col items-start gap-4">
+              <h3 className="text-sm font-semibold text-muted-foreground">Ylläpito</h3>
+              <PrefRow
+                title="Uudet lainat"
+                description="Ilmoitukset kaikista uusista lainoista, myös omistasi ja kiosk-käytöstä"
+                checked={emailNewLoanNotification}
+                onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
+              />
+              <PrefRow
+                title="Viikottaiset muistutukset vanhoista bokseista"
+                description="Muistutukset lainoista, jotka ovat olleet boksissa yli viikon"
+                checked={emailOldBoxNotification}
+                onCheckedChange={(v) => handleEmailPreferenceChange('oldBox', v)}
+              />
+              <PrefRow
+                title="Myöhässä olevat lainat"
+                description="Ilmoitukset lainoista, joiden palautusaika on ylittynyt"
+                checked={emailOverdueNotification}
+                onCheckedChange={(v) => handleEmailPreferenceChange('overdue', v)}
+              />
+            </div>
+          )}
           <div className="flex flex-col items-start gap-4">
-            {session?.user?.group === 'ADMIN' ? (
-              <>
-                <PrefRow
-                  title="Uudet lainat"
-                  description="Ilmoitukset uusista lainoista (myös kiosk-käytöstä)"
-                  checked={emailNewLoanNotification}
-                  onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
-                />
-                <PrefRow
-                  title="Viikottaiset muistutukset vanhoista bokseista"
-                  description="Muistutukset lainoista, jotka ovat olleet boksissa yli viikon"
-                  checked={emailOldBoxNotification}
-                  onCheckedChange={(v) => handleEmailPreferenceChange('oldBox', v)}
-                />
-                <PrefRow
-                  title="Myöhässä olevat lainat"
-                  description="Ilmoitukset lainoista, joiden palautusaika on ylittynyt"
-                  checked={emailOverdueNotification}
-                  onCheckedChange={(v) => handleEmailPreferenceChange('overdue', v)}
-                />
-              </>
-            ) : (
-              <>
-                <PrefRow
-                  title="Ilmoitukset uusista lainoista"
-                  description="Sähköpostit kun sinulle luodaan uusi laina"
-                  checked={emailNewLoanNotification}
-                  onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
-                />
-                <PrefRow
-                  title="Muistutukset lainoista"
-                  description="Muistutus noutopäivästä ja myöhässä olevista lainoista"
-                  checked={emailWeeklyReminder}
-                  onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
-                />
-                <PrefRow
-                  title="Muistutus lainan päättymisestä"
-                  description="Muistutus päivää ennen palautuspäivää (oletuksena pois päältä)"
-                  checked={emailExpiringReminder}
-                  onCheckedChange={(v) => handleEmailPreferenceChange('expiring', v)}
-                />
-              </>
+            {isAdmin && (
+              <h3 className="text-sm font-semibold text-muted-foreground">Omat lainat</h3>
             )}
+            {!isAdmin && (
+              <PrefRow
+                title="Ilmoitukset uusista lainoista"
+                description="Sähköpostit kun sinulle luodaan uusi laina"
+                checked={emailNewLoanNotification}
+                onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
+              />
+            )}
+            <PrefRow
+              title="Muistutukset lainoista"
+              description="Muistutus noutopäivästä ja myöhässä olevista lainoista"
+              checked={emailWeeklyReminder}
+              onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
+            />
+            <PrefRow
+              title="Muistutus lainan päättymisestä"
+              description="Muistutus päivää ennen palautuspäivää (oletuksena pois päältä)"
+              checked={emailExpiringReminder}
+              onCheckedChange={(v) => handleEmailPreferenceChange('expiring', v)}
+            />
           </div>
         </div>
 
