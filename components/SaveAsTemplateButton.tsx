@@ -107,43 +107,44 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
             </DialogDescription>
           </DialogHeader>
 
-          {/* Two columns on desktop: the set's items need the room, and the two
-              text fields would otherwise push them below the fold. */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-4">
-              <Field label="Nimi" required htmlFor="save-template-name">
-                <Input
-                  id="save-template-name"
-                  value={name}
-                  placeholder="esim. Vartion maastoretki"
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </Field>
-              <Field
-                label="Kuvaus"
-                htmlFor="save-template-description"
-                helper="Näkyy lainaajalle setin nimen alla."
-              >
-                <Textarea
-                  id="save-template-description"
-                  value={description}
-                  placeholder="Vapaaehtoinen selite lainaajalle"
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </Field>
-            </div>
+          {/* The name and description sit side by side across the full width,
+              and the item list below gets two columns of its own — a long set
+              would otherwise run far past the two short text fields. */}
+          <div className="grid gap-4 md:grid-cols-2 md:items-start">
+            <Field label="Nimi" required htmlFor="save-template-name">
+              <Input
+                id="save-template-name"
+                value={name}
+                placeholder="esim. Vartion maastoretki"
+                onChange={(e) => setName(e.target.value)}
+              />
+            </Field>
+            <Field
+              label="Kuvaus"
+              htmlFor="save-template-description"
+              helper="Näkyy lainaajalle setin nimen alla."
+            >
+              <Textarea
+                id="save-template-description"
+                value={description}
+                placeholder="Vapaaehtoinen selite lainaajalle"
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </Field>
+          </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">
-                Pohjaan tulevat kamat{' '}
-                <span className="font-normal text-muted-foreground">({rows.length})</span>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">
+              Pohjaan tulevat kamat{' '}
+              <span className="font-normal text-muted-foreground">({rows.length})</span>
+            </p>
+            {rows.length === 0 ? (
+              <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                Ei kamoja — pohjassa pitää olla vähintään yksi.
               </p>
-              {rows.length === 0 ? (
-                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                  Ei kamoja — pohjassa pitää olla vähintään yksi.
-                </p>
-              ) : (
-                rows.map((row) => (
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {rows.map((row) => (
                   <ItemAmountCard
                     key={row.itemId}
                     itemId={row.itemId}
@@ -162,9 +163,9 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
                     onRemove={() => removeRow(row.itemId)}
                     removeLabel={`Jätä ${row.name} pois pohjasta`}
                   />
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2">
