@@ -32,6 +32,22 @@ interface AddItemDialogProps {
   onCreated?: () => void;
 }
 
+/**
+ * A failed create carries two strings: the Finnish headline the route chose,
+ * and the underlying reason (a Prisma complaint, usually). The toast shows the
+ * headline and tucks the reason underneath, so a 500 is diagnosable without
+ * opening the server log.
+ */
+class CreateItemError extends Error {
+  detail?: string;
+
+  constructor(message: string, detail?: string) {
+    super(message);
+    this.name = 'CreateItemError';
+    this.detail = detail;
+  }
+}
+
 const emptyDraft = {
   name: '',
   description: '',
@@ -132,8 +148,13 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
           locationId: selectedLocation,
         }),
       });
-      if (!response.ok) throw new Error('Virhe kaman luonnissa');
-      const created = (await response.json()) as { id: string };
+      const payload = (await response.json().catch(() => null)) as
+        | { id: string; message?: string; detail?: string }
+        | null;
+      if (!response.ok) {
+        throw new CreateItemError(payload?.message ?? 'Virhe kaman luonnissa', payload?.detail);
+      }
+      const created = payload as { id: string };
 
       // The kama itself exists at this point, so a failed upload is a warning,
       // not a failed create — the image can be added from the edit dialog.
@@ -156,7 +177,9 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
       resetForm();
       if (after === 'close') onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Virhe kaman luonnissa');
+      toast.error(err instanceof Error ? err.message : 'Virhe kaman luonnissa', {
+        description: err instanceof CreateItemError ? err.detail : undefined,
+      });
     } finally {
       setSubmitting(null);
     }
