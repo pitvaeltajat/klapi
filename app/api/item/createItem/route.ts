@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { logItemHistory } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
+import { badRequest, failed } from '@/utils/apiResponse';
 
 interface CategoryInput {
   value: string;
@@ -21,9 +22,7 @@ export async function POST(request: Request) {
     // Trimmed: a trailing space is invisible in the UI but makes the name sort
     // oddly and breaks any lookup that matches on it exactly.
     const name = typeof rest.name === 'string' ? rest.name.trim() : rest.name;
-    if (!name) {
-      return NextResponse.json({ message: 'Nimi on pakollinen' }, { status: 400 });
-    }
+    if (!name) return badRequest('Nimi on pakollinen');
 
     // create new array with connectorcreate query for each category
     const categoryJSON = categoriesList?.map((categoryObject: CategoryInput) => ({
@@ -76,14 +75,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(item);
   } catch (err) {
-    // This route is admin-only, so the underlying reason is worth showing:
-    // "Virhe kaman luonnissa" alone told whoever hit it nothing, and the real
-    // cause was only ever visible in the server log. Prisma's messages are a
-    // multi-line diagram of the offending query with the actual complaint on
-    // the last line — that line is the only part worth putting in a toast.
-    console.error('createItem failed', err);
-    const raw = err instanceof Error ? err.message : String(err);
-    const detail = raw.split('\n').filter((line) => line.trim()).pop();
-    return NextResponse.json({ message: 'Kaman luonti epäonnistui', detail }, { status: 500 });
+    return failed('Kaman luonti epäonnistui', err, 'createItem');
   }
 }

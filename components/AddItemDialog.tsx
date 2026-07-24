@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Field } from '@/components/ui/field';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
+import { ApiError, readJson } from '@/utils/apiError';
 
 interface SelectOption {
   value: string;
@@ -30,22 +31,6 @@ interface AddItemDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Called after a successful create, before the dialog closes. */
   onCreated?: () => void;
-}
-
-/**
- * A failed create carries two strings: the Finnish headline the route chose,
- * and the underlying reason (a Prisma complaint, usually). The toast shows the
- * headline and tucks the reason underneath, so a 500 is diagnosable without
- * opening the server log.
- */
-class CreateItemError extends Error {
-  detail?: string;
-
-  constructor(message: string, detail?: string) {
-    super(message);
-    this.name = 'CreateItemError';
-    this.detail = detail;
-  }
 }
 
 const emptyDraft = {
@@ -148,13 +133,7 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
           locationId: selectedLocation,
         }),
       });
-      const payload = (await response.json().catch(() => null)) as
-        | { id: string; message?: string; detail?: string }
-        | null;
-      if (!response.ok) {
-        throw new CreateItemError(payload?.message ?? 'Virhe kaman luonnissa', payload?.detail);
-      }
-      const created = payload as { id: string };
+      const created = await readJson<{ id: string }>(response, 'Virhe kaman luonnissa');
 
       // The kama itself exists at this point, so a failed upload is a warning,
       // not a failed create — the image can be added from the edit dialog.
@@ -178,7 +157,7 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
       if (after === 'close') onOpenChange(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Virhe kaman luonnissa', {
-        description: err instanceof CreateItemError ? err.detail : undefined,
+        description: err instanceof ApiError ? err.detail : undefined,
       });
     } finally {
       setSubmitting(null);

@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Field } from '@/components/ui/field';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
+import { ApiError, readJson } from '@/utils/apiError';
 import { useItemOriginalImage, usePlaceholder } from '@/hooks/useItemImage';
 import { cn } from '@/lib/utils';
 
@@ -117,14 +118,16 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
           categories: itemCategories,
         }),
       });
-      if (!response.ok) throw new Error('Virhe kaman päivityksessä');
+      await readJson(response, 'Virhe kaman päivityksessä');
 
       toast.success('Kama päivitetty');
       onSaved?.();
       onOpenChange(false);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Virhe kaman päivityksessä');
+      toast.error(err instanceof Error ? err.message : 'Virhe kaman päivityksessä', {
+        description: err instanceof ApiError ? err.detail : undefined,
+      });
     } finally {
       setIsSubmitting(false);
     }
