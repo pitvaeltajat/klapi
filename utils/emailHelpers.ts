@@ -47,22 +47,28 @@ function getEmailStyles(): string {
         background-color: #fef2f2;
         border-left-color: #dc2626;
       }
+      /* Inline-block, not CSS grid: Gmail/Outlook strip display:grid, which
+         blows each card up to full width. Inline-block cards wrap and centre in
+         every client, and stack cleanly on a phone. */
       .item-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
+        text-align: center;
+        font-size: 0;
         margin: 16px 0;
       }
       .item-card {
+        display: inline-block;
+        width: 150px;
+        vertical-align: top;
+        margin: 6px;
         border: 1px solid #e5e7eb;
         border-radius: 6px;
         padding: 10px;
         text-align: center;
         background-color: #ffffff;
+        font-size: 14px;
       }
       .item-image {
         width: 100%;
-        max-width: 500px;
         height: auto;
         aspect-ratio: 5 / 3;
         object-fit: cover;
@@ -107,9 +113,9 @@ function getEmailStyles(): string {
         border-radius: 6px;
         margin: 16px 0;
       }
+      /* Block rows, not flex: on a narrow phone the label and value stack under
+         each other instead of being squeezed onto one cramped line. */
       .loan-details-row {
-        display: flex;
-        justify-content: space-between;
         padding: 6px 0;
         border-bottom: 1px solid #e5e7eb;
       }
@@ -119,6 +125,7 @@ function getEmailStyles(): string {
       .loan-details-label {
         font-weight: 600;
         color: #4b5563;
+        margin-right: 6px;
       }
       .loan-details-value {
         color: #111827;
@@ -155,37 +162,55 @@ function getEmailStyles(): string {
         text-decoration: none;
         font-weight: 600;
       }
+      @media only screen and (max-width: 600px) {
+        body { padding: 8px !important; }
+        .email-container { padding: 20px !important; }
+      }
     </style>
   `;
 }
 
+// Cards carry inline styles (not just the class) so they still read as cards in
+// clients that drop the <style> block, e.g. Gmail on some accounts.
 export function renderItemCard(item: { id: string; name: string; amount: number }): string {
   const imageUrl = getCompressedImageUrl(item.id);
-  const imageStyle = 'width: 100%; max-width: 500px; height: auto; aspect-ratio: 5 / 3; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background-color: #f3f4f6;';
+  const cardStyle =
+    'display: inline-block; width: 150px; vertical-align: top; margin: 6px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; text-align: center; background-color: #ffffff; font-size: 14px;';
+  const imageStyle =
+    'width: 100%; height: 90px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background-color: #f3f4f6;';
   return `
-    <div class="item-card">
-      ${imageUrl ? `<img src="${imageUrl}" alt="${item.name}" class="item-image" style="${imageStyle}" width="500" height="300" />` : `<div class="item-image" style="display: flex; align-items: center; justify-content: center; color: #9ca3af; ${imageStyle}">Ei kuvaa</div>`}
-      <div class="item-name">${item.name}</div>
-      <div class="item-amount">${item.amount} kpl</div>
+    <div class="item-card" style="${cardStyle}">
+      ${imageUrl ? `<img src="${imageUrl}" alt="${item.name}" class="item-image" style="${imageStyle}" width="130" height="90" />` : `<div class="item-image" style="display: flex; align-items: center; justify-content: center; color: #9ca3af; ${imageStyle}">Ei kuvaa</div>`}
+      <div class="item-name" style="font-weight: 600; font-size: 14px; margin-bottom: 2px; color: #111827;">${item.name}</div>
+      <div class="item-amount" style="font-size: 12px; color: #6b7280;">${item.amount} kpl</div>
     </div>
   `;
 }
 
+/** The full block of item cards, wrapped in an inline-styled centred grid. */
+export function renderItemGrid(items: { id: string; name: string; amount: number }[]): string {
+  const cards = items.map(renderItemCard).join('');
+  return `<div class="item-grid" style="text-align: center; font-size: 0; margin: 16px 0;">${cards}</div>`;
+}
+
 export function renderLoanDetails(startTime: Date | string, endTime: Date | string, description?: string | null): string {
+  const rowStyle = 'padding: 6px 0; border-bottom: 1px solid #e5e7eb;';
+  const labelStyle = 'font-weight: 600; color: #4b5563; margin-right: 6px;';
+  const valueStyle = 'color: #111827;';
   return `
-    <div class="loan-details">
-      <div class="loan-details-row">
-        <span class="loan-details-label">Nouto:</span>
-        <span class="loan-details-value">${formatDate(startTime)}</span>
+    <div class="loan-details" style="background-color: #f9fafb; padding: 12px 15px; border-radius: 6px; margin: 16px 0;">
+      <div class="loan-details-row" style="${rowStyle}">
+        <span class="loan-details-label" style="${labelStyle}">Nouto:</span>
+        <span class="loan-details-value" style="${valueStyle}">${formatDate(startTime)}</span>
       </div>
-      <div class="loan-details-row">
-        <span class="loan-details-label">Palautus:</span>
-        <span class="loan-details-value">${formatDate(endTime)}</span>
+      <div class="loan-details-row" style="${rowStyle}">
+        <span class="loan-details-label" style="${labelStyle}">Palautus:</span>
+        <span class="loan-details-value" style="${valueStyle}">${formatDate(endTime)}</span>
       </div>
       ${description ? `
-      <div class="loan-details-row">
-        <span class="loan-details-label">Kuvaus:</span>
-        <span class="loan-details-value">${description}</span>
+      <div class="loan-details-row" style="padding: 6px 0;">
+        <span class="loan-details-label" style="${labelStyle}">Kuvaus:</span>
+        <span class="loan-details-value" style="${valueStyle}">${description}</span>
       </div>
       ` : ''}
     </div>
@@ -193,7 +218,9 @@ export function renderLoanDetails(startTime: Date | string, endTime: Date | stri
 }
 
 export function renderButton(href: string, label: string): string {
-  return `<a href="${href}" class="button">${label}</a>`;
+  const style =
+    'display: inline-block; padding: 12px 22px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: 600;';
+  return `<a href="${href}" class="button" style="${style}">${label}</a>`;
 }
 
 function renderFooter(): string {
@@ -208,9 +235,12 @@ function renderFooter(): string {
 export function renderEmail(innerHtml: string): string {
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="fi">
     <head>
       <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="color-scheme" content="light">
+      <meta name="supported-color-schemes" content="light">
       ${getEmailStyles()}
     </head>
     <body>
@@ -223,7 +253,7 @@ export function renderEmail(innerHtml: string): string {
   `;
 }
 
-// Finnish genitive for names, used in subjects like "Matti Virtasen varaus on myöhässä".
+// Finnish genitive for names, used in subjects like "Matti Virtasen laina on myöhässä".
 // Handles the common cases: -nen → -sen, vowel-ending → +n, consonant-ending → +in.
 export function finnishGenitive(name: string | null | undefined): string {
   if (!name) return '';

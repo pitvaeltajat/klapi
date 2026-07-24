@@ -164,6 +164,27 @@ export async function POST(request: Request) {
     }
 
     if (loanStatus === 'INUSE' && session.user.group === 'KIOSK') {
+      // Kiosk loans are attributed to whoever the operator picked in the
+      // "Lainaaja" field. When that's a real user account (not a free-text name,
+      // which falls back to the kiosk's own account), the loan lands in their
+      // account and they should hear about it — the loan is already INUSE, so the
+      // email uses the "already in use" wording.
+      if (
+        user.email &&
+        user.group !== 'ADMIN' &&
+        user.group !== 'KIOSK' &&
+        user.emailNewLoanNotification !== false
+      ) {
+        const recipient = user.email;
+        after(async () => {
+          try {
+            await sendCreatedEmail(recipient, result.id, true);
+          } catch (error) {
+            console.error('Failed to send loaner email for kiosk loan:', error);
+          }
+        });
+      }
+
       const creatorName = user.name || 'Kiosk-käyttäjä';
       after(async () => {
         try {

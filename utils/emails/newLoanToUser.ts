@@ -1,6 +1,6 @@
 import {
   renderEmail,
-  renderItemCard,
+  renderItemGrid,
   renderLoanDetails,
   renderButton,
 } from '@/utils/emailHelpers';
@@ -8,36 +8,59 @@ import { getPublicUrl } from '@/utils/urlHelpers';
 import { sendEmail } from './ses-client';
 import { getLoanEmailData, type EmailContent, type LoanEmailData } from './shared';
 
-export function renderCreatedEmail(loan: LoanEmailData, loanUrl: string): EmailContent {
-  const itemsHtml = loan.items.map(renderItemCard).join('');
-
-  const html = renderEmail(`
-    <h1>Varauksesi on luotu</h1>
-    <p>Hei!</p>
-    <p>Varauksesi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
+/**
+ * @param alreadyInUse — kiosk loans are created straight to INUSE (the loaner is
+ *   standing at the terminal with the gear), so they skip the "remember to press
+ *   Aloita lainaus" instruction and are told the loan is already running.
+ */
+export function renderCreatedEmail(
+  loan: LoanEmailData,
+  loanUrl: string,
+  alreadyInUse = false,
+): EmailContent {
+  const intro = alreadyInUse
+    ? `
+    <p>Lainasi on luotu ja merkitty käyttöön kaluston koneella. Tavarat ovat nyt lainassa nimissäsi.</p>
+    <p>Muistathan palauttaa tavarat viimeistään palautuspäivänä. Näet lainasi ja voit palauttaa sen omalta tililtäsi.</p>
+    `
+    : `
+    <p>Lainasi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
     <p>
-      <strong>Muista:</strong> kun olet hakenut tavarat varastosta, avaa varaus ja paina
-      <strong>"Aloita lainaus"</strong>. Vasta silloin laina on merkitty käyttöön — muuten
+      <strong>Muista:</strong> kun olet hakenut tavarat varastosta, avaa laina ja paina
+      <strong>”Aloita lainaus”</strong>. Vasta silloin laina on merkitty käyttöön — muuten
       tavarat näkyvät järjestelmässä yhä vapaina etkä voi myöhemmin palauttaa niitä normaalisti.
     </p>
+    `;
 
+  const html = renderEmail(`
+    <h1>Lainasi on luotu</h1>
+    <p>Hei!</p>
+    ${intro}
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
-    <h2>Varatut tavarat</h2>
-    <div class="item-grid">${itemsHtml}</div>
+    <h2>Lainatut tavarat</h2>
+    ${renderItemGrid(loan.items)}
 
-    ${renderButton(loanUrl, 'Avaa varaus')}
+    ${renderButton(loanUrl, 'Avaa laina')}
   `);
 
   const subject = loan.description
-    ? `Varauksesi "${loan.description}" on luotu`
-    : 'Varauksesi on luotu';
+    ? `Lainasi ”${loan.description}” on luotu`
+    : 'Lainasi on luotu';
 
   return { subject, html };
 }
 
-export async function sendCreatedEmail(recipientEmail: string, loanId: string) {
+export async function sendCreatedEmail(
+  recipientEmail: string,
+  loanId: string,
+  alreadyInUse = false,
+) {
   const loan = await getLoanEmailData(loanId);
-  const { subject, html } = renderCreatedEmail(loan, `${getPublicUrl()}/loan/${loanId}`);
+  const { subject, html } = renderCreatedEmail(
+    loan,
+    `${getPublicUrl()}/loan/${loanId}`,
+    alreadyInUse,
+  );
   await sendEmail([recipientEmail], subject, html);
 }

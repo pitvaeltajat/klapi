@@ -47,6 +47,9 @@ function writeFile(name: string, { subject, html }: EmailContent) {
 // 2. sendNewLoanToUser (user)
 writeFile('2-sendNewLoanToUser', renderCreatedEmail(sampleLoan, loanUrl));
 
+// 2b. sendNewLoanToUser (user, kiosk — loan already in use)
+writeFile('2b-sendNewLoanToUser-kiosk', renderCreatedEmail(sampleLoan, loanUrl, true));
+
 // 3. sendNewLoanToAdmin (admin)
 writeFile(
   '3-sendNewLoanToAdmin',

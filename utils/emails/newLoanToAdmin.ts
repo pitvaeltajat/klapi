@@ -1,7 +1,7 @@
 import prisma from '@/utils/prisma';
 import {
   renderEmail,
-  renderItemCard,
+  renderItemGrid,
   renderLoanDetails,
   renderButton,
 } from '@/utils/emailHelpers';
@@ -19,27 +19,28 @@ export interface NewLoanAdminEmailData extends LoanEmailData {
 export function renderNewLoanEmail(loan: NewLoanAdminEmailData, loanUrl: string): EmailContent {
   const { isKioskLoan, creator } = loan;
 
-  const itemsHtml = loan.items.map(renderItemCard).join('');
+  const infoBoxStyle =
+    'background-color: #f9fafb; border-left: 4px solid #2563eb; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
 
   const html = renderEmail(`
-    <h1>${creator}: uusi varaus${isKioskLoan ? ' (kiosk)' : ''}</h1>
+    <h1>${creator}: uusi laina${isKioskLoan ? ' (kiosk)' : ''}</h1>
     <p>Hei!</p>
-    <p>Järjestelmään on luotu uusi varaus${isKioskLoan ? ' kiosk-käytön kautta' : ''}. Se on automaattisesti hyväksytty.</p>
+    <p>Järjestelmään on luotu uusi laina${isKioskLoan ? ' kaluston koneella' : ''}. Se on automaattisesti hyväksytty.</p>
 
-    <div class="info-box">
-      <strong>Varaaja:</strong> ${creator}<br />
+    <div class="info-box" style="${infoBoxStyle}">
+      <strong>Lainaaja:</strong> ${creator}<br />
       <strong>Sähköposti:</strong> ${loan.creatorEmail || 'Ei sähköpostia'}
     </div>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
-    <h2>Varatut tavarat</h2>
-    <div class="item-grid">${itemsHtml}</div>
+    <h2>Lainatut tavarat</h2>
+    ${renderItemGrid(loan.items)}
 
-    ${renderButton(loanUrl, 'Avaa varaus')}
+    ${renderButton(loanUrl, 'Avaa laina')}
   `);
 
-  const subjectBase = loan.description ? `${creator}: uusi varaus "${loan.description}"` : `${creator}: uusi varaus`;
+  const subjectBase = loan.description ? `${creator}: uusi laina ”${loan.description}”` : `${creator}: uusi laina`;
   const subject = isKioskLoan ? `${subjectBase} (kiosk)` : subjectBase;
 
   return { subject, html };
@@ -96,7 +97,7 @@ export async function sendNewLoanEmail(loanCreator: string, loanId: string) {
   const { subject, html } = renderNewLoanEmail(
     {
       isKioskLoan: loan.status === 'INUSE',
-      creator: loan.user.name || loanCreator || loan.user.email || 'Tuntematon varaaja',
+      creator: loan.user.name || loanCreator || loan.user.email || 'Tuntematon lainaaja',
       creatorEmail: loan.user.email,
       description: loan.description,
       startTime: loan.startTime,
