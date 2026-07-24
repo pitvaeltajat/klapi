@@ -123,18 +123,24 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
     }
   };
 
+  if (!session) return null;
+
+  // `session.user.group` is the *effective* group: a kiosk that has PIN-elevated
+  // reads as ADMIN (see lib/auth.ts). This page is about the account you are
+  // signed in as — its loans, its email settings — and elevation never changes
+  // `session.user.id`, so everything here keys off the underlying account
+  // instead. Only a kiosk can ever be elevated, so elevated ⇒ base is KIOSK.
+  const elevated = Boolean(session.user.elevatedById);
+  const baseGroup = elevated ? 'KIOSK' : session.user.group;
+  const isAdmin = baseGroup === 'ADMIN';
+
   const handleSignOut = () => {
-    if (session && session.user.group === 'KIOSK') {
+    if (baseGroup === 'KIOSK') {
       setSignOutOpen(true);
       return;
     }
     signOut();
   };
-
-  if (!session) return null;
-
-  const effectiveGroup = session?.user?.group;
-  const isAdmin = session?.user?.group === 'ADMIN';
 
   return (
     <>
@@ -179,15 +185,16 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
             <p className="text-muted-foreground">{session?.user?.email}</p>
             <p className="text-sm text-muted-foreground">
               Rooli:{' '}
-              {effectiveGroup === 'USER'
+              {baseGroup === 'USER'
                 ? 'Käyttäjä'
-                : effectiveGroup === 'KIOSK'
+                : baseGroup === 'KIOSK'
                   ? 'Kaluston kone'
                   : 'Admin'}
             </p>
-            {session?.user?.group === 'KIOSK' && effectiveGroup === 'ADMIN' && (
+            {elevated && (
               <p className="mt-1 text-xs text-success">
                 ADMIN-oikeudet käytössä (tähän sessioon)
+                {session.user.elevatedByName ? ` — ${session.user.elevatedByName}` : ''}
               </p>
             )}
           </div>
