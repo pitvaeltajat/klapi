@@ -31,10 +31,14 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { FilterChip } from '@/components/ui/filter-chip';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Tooltip,
   TooltipContent,
@@ -152,110 +156,191 @@ function useEditCell() {
   return ctx;
 }
 
-function NameCell({ row, getValue }: CellContext<InventoryItem, string>) {
-  const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } = useEditCell();
-  const id = row.original.id;
-  const isEditing = editState?.rowId === id && editState.field === 'name';
-  if (isEditing) {
-    const es = editState;
+interface EditableCellConfig<T> {
+  field: EditableField;
+  /** Extra classes on the active input and on the resting display. */
+  inputClassName: string;
+  displayClassName: string;
+  /** Static attributes for the input (`type`, `min`, …). */
+  inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+  /** Cell value -> the string the editor starts from. */
+  toEditValue: (value: T) => string;
+  renderDisplay: (value: T) => React.ReactNode;
+}
+
+/**
+ * Builds one click-to-edit cell. Call this at module scope only — see the
+ * EditCellContext note above: a component identity created during render makes
+ * TanStack remount the active <input> on every keystroke.
+ */
+function makeEditableCell<T>({
+  field,
+  inputClassName,
+  displayClassName,
+  inputProps,
+  toEditValue,
+  renderDisplay,
+}: EditableCellConfig<T>) {
+  return function EditableCell({ row, getValue }: CellContext<InventoryItem, T>) {
+    const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } =
+      useEditCell();
+    const id = row.original.id;
+    const value = getValue();
+
+    if (editState?.rowId === id && editState.field === field) {
+      const es = editState;
+      return (
+        <input
+          {...inputProps}
+          ref={editInputRef}
+          className={cn(EDITABLE_INPUT_CLASS, inputClassName)}
+          value={es.value}
+          onChange={(e) => {
+            const next = { ...es, value: e.target.value };
+            setEditState(next);
+            scheduleAutoSave(next);
+          }}
+          onBlur={() => commitEdit(es)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitEdit(es);
+            if (e.key === 'Escape') setEditState(null);
+          }}
+        />
+      );
+    }
+
     return (
-      <input
-        ref={editInputRef}
-        className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
-        value={es.value}
-        onChange={(e) => {
-          const next = { ...es, value: e.target.value };
-          setEditState(next);
-          scheduleAutoSave(next);
-        }}
-        onBlur={() => commitEdit(es)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commitEdit(es);
-          if (e.key === 'Escape') setEditState(null);
-        }}
-      />
+      <span
+        className={cn(EDITABLE_DISPLAY_CLASS, displayClassName)}
+        onClick={() => startEdit(id, field, toEditValue(value))}
+      >
+        {renderDisplay(value)}
+      </span>
     );
-  }
+  };
+}
+
+const NameCell = makeEditableCell<string>({
+  field: 'name',
+  inputClassName: 'block w-full',
+  displayClassName: 'block w-full',
+  toEditValue: (value) => value,
+  renderDisplay: (value) => <Truncated text={value} />,
+});
+
+const DescriptionCell = makeEditableCell<string | null>({
+  field: 'description',
+  inputClassName: 'block w-full',
+  displayClassName: 'block w-full',
+  toEditValue: (value) => value ?? '',
+  renderDisplay: (value) => <Truncated text={value} />,
+});
+
+const AmountCell = makeEditableCell<number>({
+  field: 'amount',
+  inputProps: { type: 'number', min: 1 },
+  inputClassName: 'w-20',
+  displayClassName: 'inline-block w-20',
+  toEditValue: (value) => String(value),
+  renderDisplay: (value) => value,
+});
+
+/** Ghost icon button with a tooltip — the shape of every row action. */
+function IconAction({
+  tooltip,
+  ariaLabel,
+  onClick,
+  className,
+  children,
+}: {
+  tooltip: string;
+  ariaLabel?: string;
+  onClick: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <span
-      className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
-      onClick={() => startEdit(id, 'name', getValue())}
-    >
-      <Truncated text={getValue()} />
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className={className}
+          onClick={onClick}
+          aria-label={ariaLabel ?? tooltip}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 
-function DescriptionCell({ row, getValue }: CellContext<InventoryItem, string | null>) {
-  const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } = useEditCell();
-  const id = row.original.id;
-  const val = getValue();
-  const isEditing = editState?.rowId === id && editState.field === 'description';
-  if (isEditing) {
-    const es = editState;
-    return (
-      <input
-        ref={editInputRef}
-        className={cn(EDITABLE_INPUT_CLASS, 'block w-full')}
-        value={es.value}
-        onChange={(e) => {
-          const next = { ...es, value: e.target.value };
-          setEditState(next);
-          scheduleAutoSave(next);
-        }}
-        onBlur={() => commitEdit(es)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commitEdit(es);
-          if (e.key === 'Escape') setEditState(null);
-        }}
-      />
-    );
-  }
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * "Apply one category/location to everything selected." The category and
+ * location flows are the same dialog with different nouns.
+ */
+function BulkAssignDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  options,
+  placeholder,
+  value,
+  onValueChange,
+  confirmLabel,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  options: SelectOption[];
+  placeholder: string;
+  value: SelectOption | null;
+  onValueChange: (value: SelectOption | null) => void;
+  confirmLabel: string;
+  onConfirm: () => void;
+}) {
   return (
-    <span
-      className={cn(EDITABLE_DISPLAY_CLASS, 'block w-full')}
-      onClick={() => startEdit(id, 'description', val ?? '')}
-    >
-      <Truncated text={val} />
-    </span>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <CreatableSelect
+          options={options}
+          value={value}
+          onChange={(opt) => onValueChange(opt as SelectOption | null)}
+          placeholder={placeholder}
+          isClearable
+        />
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Peruuta
+          </Button>
+          <Button onClick={onConfirm} disabled={!value}>
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function AmountCell({ row, getValue }: CellContext<InventoryItem, number>) {
-  const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } = useEditCell();
-  const id = row.original.id;
-  const isEditing = editState?.rowId === id && editState.field === 'amount';
-  if (isEditing) {
-    const es = editState;
-    return (
-      <input
-        ref={editInputRef}
-        type="number"
-        min={1}
-        className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
-        value={es.value}
-        onChange={(e) => {
-          const next = { ...es, value: e.target.value };
-          setEditState(next);
-          scheduleAutoSave(next);
-        }}
-        onBlur={() => commitEdit(es)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commitEdit(es);
-          if (e.key === 'Escape') setEditState(null);
-        }}
-      />
-    );
-  }
-  return (
-    <span
-      className={cn(EDITABLE_DISPLAY_CLASS, 'inline-block w-20')}
-      onClick={() => startEdit(id, 'amount', String(getValue()))}
-    >
-      {getValue()}
-    </span>
-  );
-}
+const TYPE_FILTERS = [
+  { value: 'all', label: 'Kaikki' },
+  { value: 'normal', label: 'Normaali' },
+  { value: 'temporary', label: 'Väliaikainen' },
+] as const;
 
 const colHelper = createColumnHelper<InventoryItem>();
 
@@ -344,6 +429,11 @@ export default function InventoryView() {
       if (prev) URL.revokeObjectURL(prev);
       return file ? URL.createObjectURL(file) : null;
     });
+  };
+
+  const newRowKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleAddRow();
+    if (e.key === 'Escape') cancelAddRow();
   };
 
   const cancelAddRow = () => {
@@ -528,114 +618,101 @@ export default function InventoryView() {
     }, 1000);
   }, [clearAutoSaveTimer, saveEdit]);
 
-  const handleDeleteRow = async (item: InventoryItem) => {
-    addPending(item.id);
+  // Archive and restore are the same call with a different endpoint: mark the
+  // row pending, POST its id, then revalidate the page either way so the row
+  // leaves (or stays muted when the archive toggle is on) and the page
+  // backfills from the server.
+  const runRowAction = useCallback(
+    async (item: InventoryItem, url: string, successMessage: string, errorMessage: string) => {
+      addPending(item.id);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item.id),
+        });
+        if (!res.ok) throw new Error(errorMessage);
+        toast.success(successMessage);
+      } catch {
+        toast.error(errorMessage);
+      } finally {
+        removePending(item.id);
+        mutateItems();
+      }
+    },
+    [mutateItems],
+  );
+
+  const handleDeleteRow = (item: InventoryItem) => {
     setDeleteTarget(null);
-    try {
-      const res = await fetch('/api/item/deleteItem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item.id),
-      });
-      if (!res.ok) throw new Error('Arkistointi epäonnistui');
-      toast.success('Kama arkistoitu');
-    } catch {
-      toast.error('Arkistointi epäonnistui');
-    } finally {
-      removePending(item.id);
-      // Revalidate the current page so the archived row leaves (or stays muted
-      // when the archive toggle is on) and the page backfills from the server.
-      mutateItems();
-    }
+    void runRowAction(item, '/api/item/deleteItem', 'Kama arkistoitu', 'Arkistointi epäonnistui');
   };
 
-  const handleRestoreRow = useCallback(async (item: InventoryItem) => {
-    addPending(item.id);
-    try {
-      const res = await fetch('/api/item/restoreItem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item.id),
-      });
-      if (!res.ok) throw new Error('Palautus epäonnistui');
-      toast.success('Kama palautettu');
-    } catch {
-      toast.error('Palautus epäonnistui');
-    } finally {
-      removePending(item.id);
-      mutateItems();
-    }
-  }, [mutateItems]);
+  const handleRestoreRow = useCallback(
+    (item: InventoryItem) => {
+      void runRowAction(item, '/api/item/restoreItem', 'Kama palautettu', 'Palautus epäonnistui');
+    },
+    [runRowAction],
+  );
 
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
 
-  const handleBulkDelete = async () => {
-    setBulkDeleteOpen(false);
+  /** Every bulk action posts to the same endpoint and clears the selection. */
+  const runBulkAction = async (
+    body: Record<string, unknown>,
+    successMessage: (count: number) => string,
+    errorMessage: string,
+    onSuccess?: () => void,
+  ) => {
     const ids = selectedIds;
     ids.forEach(addPending);
     try {
       const res = await fetch('/api/item/bulkItems', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', ids }),
+        body: JSON.stringify({ ...body, ids }),
       });
       if (!res.ok) throw new Error('Virhe');
       setRowSelection({});
-      toast.success(`${ids.length} kamaa arkistoitu`);
+      onSuccess?.();
+      toast.success(successMessage(ids.length));
     } catch {
-      toast.error('Massapoisto epäonnistui');
+      toast.error(errorMessage);
     } finally {
       ids.forEach(removePending);
       mutateItems();
     }
   };
 
-  const handleBulkSetCategory = async () => {
+  const handleBulkDelete = () => {
+    setBulkDeleteOpen(false);
+    void runBulkAction(
+      { action: 'delete' },
+      (n) => `${n} kamaa arkistoitu`,
+      'Massapoisto epäonnistui',
+    );
+  };
+
+  const handleBulkSetCategory = () => {
     if (!bulkCategoryValue) return;
     setBulkCategoryOpen(false);
-    const ids = selectedIds;
-    ids.forEach(addPending);
-    try {
-      const res = await fetch('/api/item/bulkItems', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'setCategory', ids, categoryName: bulkCategoryValue.label }),
-      });
-      if (!res.ok) throw new Error('Virhe');
-      mutateItems();
-      setRowSelection({});
-      setBulkCategoryValue(null);
-      toast.success(`Kategoria asetettu ${ids.length} kamalle`);
-    } catch {
-      toast.error('Kategoria-asetus epäonnistui');
-      mutateItems();
-    } finally {
-      ids.forEach(removePending);
-    }
+    void runBulkAction(
+      { action: 'setCategory', categoryName: bulkCategoryValue.label },
+      (n) => `Kategoria asetettu ${n} kamalle`,
+      'Kategoria-asetus epäonnistui',
+      () => setBulkCategoryValue(null),
+    );
   };
 
-  const handleBulkSetLocation = async () => {
+  const handleBulkSetLocation = () => {
     if (!bulkLocationValue) return;
     setBulkLocationOpen(false);
-    const ids = selectedIds;
-    ids.forEach(addPending);
-    try {
-      const res = await fetch('/api/item/bulkItems', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'setLocation', ids, locationName: bulkLocationValue.label }),
-      });
-      if (!res.ok) throw new Error('Virhe');
-      mutateItems();
-      setRowSelection({});
-      setBulkLocationValue(null);
-      toast.success(`Sijainti asetettu ${ids.length} kamalle`);
-    } catch {
-      toast.error('Sijainnin asetus epäonnistui');
-      mutateItems();
-    } finally {
-      ids.forEach(removePending);
-    }
+    void runBulkAction(
+      { action: 'setLocation', locationName: bulkLocationValue.label },
+      (n) => `Sijainti asetettu ${n} kamalle`,
+      'Sijainnin asetus epäonnistui',
+      () => setBulkLocationValue(null),
+    );
   };
 
   const columns = useMemo(() => [
@@ -730,53 +807,32 @@ export default function InventoryView() {
         return (
           <div className="flex items-center gap-1">
             {item.type === 'temporary' && !isArchived && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-success hover:bg-success/10"
-                    onClick={() => {
-                      setPromoteItem(item);
-                    }}
-                    aria-label="Siirrä kirjastoon"
-                  >
-                    <ArrowUpCircle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Siirrä kirjastoon</TooltipContent>
-              </Tooltip>
+              <IconAction
+                tooltip="Siirrä kirjastoon"
+                className="text-success hover:bg-success/10"
+                onClick={() => setPromoteItem(item)}
+              >
+                <ArrowUpCircle className="h-4 w-4" />
+              </IconAction>
             )}
             {isArchived ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-success hover:bg-success/10"
-                    onClick={() => handleRestoreRow(item)}
-                    aria-label="Palauta kama"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Palauta</TooltipContent>
-              </Tooltip>
+              <IconAction
+                tooltip="Palauta"
+                ariaLabel="Palauta kama"
+                className="text-success hover:bg-success/10"
+                onClick={() => handleRestoreRow(item)}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </IconAction>
             ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-destructive hover:bg-destructive/10"
-                    onClick={() => setDeleteTarget(item)}
-                    aria-label="Arkistoi kama"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Arkistoi</TooltipContent>
-              </Tooltip>
+              <IconAction
+                tooltip="Arkistoi"
+                ariaLabel="Arkistoi kama"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => setDeleteTarget(item)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconAction>
             )}
           </div>
         );
@@ -857,30 +913,28 @@ export default function InventoryView() {
             />
           </div>
           <div className="flex gap-1">
-            {(['all', 'normal', 'temporary'] as const).map((t) => (
-              <Button
-                key={t}
-                size="sm"
-                variant={typeFilter === t ? 'default' : 'outline'}
+            {TYPE_FILTERS.map(({ value, label }) => (
+              <FilterChip
+                key={value}
+                active={typeFilter === value}
                 onClick={() => {
-                  setTypeFilter(t);
+                  setTypeFilter(value);
                   toFirstPage();
                 }}
               >
-                {t === 'all' ? 'Kaikki' : t === 'normal' ? 'Normaali' : 'Väliaikainen'}
-              </Button>
+                {label}
+              </FilterChip>
             ))}
           </div>
-          <Button
-            size="sm"
-            variant={showArchived ? 'default' : 'outline'}
+          <FilterChip
+            active={showArchived}
             onClick={() => {
               setShowArchived((v) => !v);
               toFirstPage();
             }}
           >
             Näytä arkistoidut
-          </Button>
+          </FilterChip>
           <Button
             size="sm"
             variant="success"
@@ -894,7 +948,7 @@ export default function InventoryView() {
 
         {/* Bulk actions */}
         {selectedIds.length > 0 && (
-          <div className="flex items-center gap-3 rounded-md border border-ring/30 bg-muted/40 px-4 py-2">
+          <Card variant="muted" padding="none" className="flex items-center gap-3 border-ring/30 bg-muted/40 px-4 py-2">
             <span className="text-sm font-medium">{selectedIds.length} valittu</span>
             <Button size="sm" variant="destructive" onClick={() => setBulkDeleteOpen(true)}>
               <Trash2 className="mr-1 h-3 w-3" /> Arkistoi valitut
@@ -905,7 +959,7 @@ export default function InventoryView() {
             <Button size="sm" variant="outline" onClick={() => setBulkLocationOpen(true)}>
               Aseta sijainti
             </Button>
-          </div>
+          </Card>
         )}
 
         {/* Table */}
@@ -972,11 +1026,8 @@ export default function InventoryView() {
                       placeholder="Nimi *"
                       value={newRow.name}
                       onChange={(e) => setNewRow((r) => ({ ...r, name: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddRow();
-                        if (e.key === 'Escape') cancelAddRow();
-                      }}
-                      className="w-full rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+                      onKeyDown={newRowKeyDown}
+                      className={cn(EDITABLE_INPUT_CLASS, 'w-full')}
                     />
                   </TableCell>
                   <TableCell>
@@ -984,11 +1035,8 @@ export default function InventoryView() {
                       placeholder="Kuvaus"
                       value={newRow.description}
                       onChange={(e) => setNewRow((r) => ({ ...r, description: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddRow();
-                        if (e.key === 'Escape') cancelAddRow();
-                      }}
-                      className="w-full rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+                      onKeyDown={newRowKeyDown}
+                      className={cn(EDITABLE_INPUT_CLASS, 'w-full')}
                     />
                   </TableCell>
                   <TableCell>
@@ -999,11 +1047,8 @@ export default function InventoryView() {
                       onChange={(e) =>
                         setNewRow((r) => ({ ...r, amount: Math.max(1, Number(e.target.value) || 1) }))
                       }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddRow();
-                        if (e.key === 'Escape') cancelAddRow();
-                      }}
-                      className="w-20 rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none"
+                      onKeyDown={newRowKeyDown}
+                      className={cn(EDITABLE_INPUT_CLASS, 'w-20')}
                     />
                   </TableCell>
                   <TableCell>
@@ -1047,11 +1092,8 @@ export default function InventoryView() {
                 ))
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    Ei tuloksia
+                  <TableCell colSpan={columns.length} className="py-8 text-center">
+                    <EmptyState variant="inline" title="Ei tuloksia" />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1112,112 +1154,54 @@ export default function InventoryView() {
         </div>
       </div>
 
-      {/* Single archive confirm */}
-      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Arkistoi kama</DialogTitle>
-          </DialogHeader>
-          <p>
-            Haluatko varmasti arkistoida kaman{' '}
-            <span className="font-bold">{deleteTarget?.name}</span>? Lainahistoria säilyy ja
-            voit palauttaa kaman myöhemmin.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Peruuta
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteTarget && handleDeleteRow(deleteTarget)}
-            >
-              Arkistoi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Arkistoi kama"
+        confirmLabel="Arkistoi"
+        onConfirm={() => deleteTarget && handleDeleteRow(deleteTarget)}
+      >
+        Haluatko varmasti arkistoida kaman{' '}
+        <span className="font-bold">{deleteTarget?.name}</span>? Lainahistoria säilyy ja voit
+        palauttaa kaman myöhemmin.
+      </ConfirmDialog>
 
-      {/* Bulk archive confirm */}
-      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Arkistoi valitut kamat</DialogTitle>
-          </DialogHeader>
-          <p>
-            Haluatko varmasti arkistoida{' '}
-            <span className="font-bold">{selectedIds.length}</span> kamaa? Lainahistoria säilyy
-            ja voit palauttaa kamat myöhemmin.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
-              Peruuta
-            </Button>
-            <Button variant="destructive" onClick={handleBulkDelete}>
-              Arkistoi valitut
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Arkistoi valitut kamat"
+        confirmLabel="Arkistoi valitut"
+        onConfirm={handleBulkDelete}
+      >
+        Haluatko varmasti arkistoida <span className="font-bold">{selectedIds.length}</span>{' '}
+        kamaa? Lainahistoria säilyy ja voit palauttaa kamat myöhemmin.
+      </ConfirmDialog>
 
-      {/* Bulk set category */}
-      <Dialog open={bulkCategoryOpen} onOpenChange={setBulkCategoryOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Aseta kategoria valituille kamoille</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Kategoria lisätään {selectedIds.length} valitulle kamalle. Voit myös luoda uuden
-            kategorian kirjoittamalla sen nimen.
-          </p>
-          <CreatableSelect
-            options={categoryOptions}
-            value={bulkCategoryValue}
-            onChange={(opt) =>
-              setBulkCategoryValue(opt as { value: string; label: string } | null)
-            }
-            placeholder="Valitse tai luo kategoria"
-            isClearable
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkCategoryOpen(false)}>
-              Peruuta
-            </Button>
-            <Button onClick={handleBulkSetCategory} disabled={!bulkCategoryValue}>
-              Aseta kategoria
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BulkAssignDialog
+        open={bulkCategoryOpen}
+        onOpenChange={setBulkCategoryOpen}
+        title="Aseta kategoria valituille kamoille"
+        description={`Kategoria lisätään ${selectedIds.length} valitulle kamalle. Voit myös luoda uuden kategorian kirjoittamalla sen nimen.`}
+        options={categoryOptions}
+        placeholder="Valitse tai luo kategoria"
+        value={bulkCategoryValue}
+        onValueChange={setBulkCategoryValue}
+        confirmLabel="Aseta kategoria"
+        onConfirm={handleBulkSetCategory}
+      />
 
-      {/* Bulk set location */}
-      <Dialog open={bulkLocationOpen} onOpenChange={setBulkLocationOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Aseta sijainti valituille kamoille</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Sijainti vaihdetaan {selectedIds.length} valitulle kamalle. Voit myös luoda uuden
-            sijainnin kirjoittamalla sen nimen.
-          </p>
-          <CreatableSelect
-            options={locationOptions}
-            value={bulkLocationValue}
-            onChange={(opt) =>
-              setBulkLocationValue(opt as { value: string; label: string } | null)
-            }
-            placeholder="Valitse tai luo sijainti"
-            isClearable
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkLocationOpen(false)}>
-              Peruuta
-            </Button>
-            <Button onClick={handleBulkSetLocation} disabled={!bulkLocationValue}>
-              Aseta sijainti
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BulkAssignDialog
+        open={bulkLocationOpen}
+        onOpenChange={setBulkLocationOpen}
+        title="Aseta sijainti valituille kamoille"
+        description={`Sijainti vaihdetaan ${selectedIds.length} valitulle kamalle. Voit myös luoda uuden sijainnin kirjoittamalla sen nimen.`}
+        options={locationOptions}
+        placeholder="Valitse tai luo sijainti"
+        value={bulkLocationValue}
+        onValueChange={setBulkLocationValue}
+        confirmLabel="Aseta sijainti"
+        onConfirm={handleBulkSetLocation}
+      />
 
       {/* Promote dialog */}
       {promoteItem && (

@@ -63,6 +63,14 @@ export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttribut
 CardTitle.displayName = 'CardTitle';
 
 /**
+ * The same heading style for a page section that is *not* a panel — one whose
+ * content is itself a list of cards, so wrapping it in another Card would just
+ * nest borders (the account page's loan history). Shares CardTitle's styling so
+ * section and panel headings can't drift apart; use CardTitle inside a Card.
+ */
+export const SectionTitle = CardTitle;
+
+/**
  * Wraps a CardTitle plus trailing actions on one row. Neutralises the title's
  * own margin so the spacing stays on the header.
  */

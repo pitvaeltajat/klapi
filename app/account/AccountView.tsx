@@ -11,7 +11,7 @@ import { LuTriangleAlert } from 'react-icons/lu';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardTitle } from '@/components/ui/card';
+import { Card, CardTitle, SectionTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -279,7 +279,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
 
         {session?.user?.group !== 'KIOSK' && (
           <div>
-            <CardTitle>Oma lainahistoria</CardTitle>
+            <SectionTitle>Oma lainahistoria</SectionTitle>
             {loans.length > 0 ? (
               <>
                 <div className="flex flex-col gap-4">

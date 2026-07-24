@@ -23,6 +23,7 @@ import {
   isBulkItemHistory,
 } from '@/utils/itemHelpers';
 import { Skeleton } from '@/components/ui/skeleton';
+import EditItemDialog from '@/components/EditItemDialog';
 import ItemAnnouncements, { type ItemAnnouncement } from './ItemAnnouncements';
 
 interface ItemHistoryEntry {
@@ -86,6 +87,7 @@ export default function ItemView({
   const { data: session } = useSession();
   const isAdmin = session?.user?.group === 'ADMIN';
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
   const { src: imageSrc, status: imageStatus, placeholder } = useItemOriginalImageState(item.id);
@@ -195,7 +197,7 @@ export default function ItemView({
 
         {isAdmin && (
           <div className="flex gap-3">
-            <Button onClick={() => router.push(`/admin/edititem/${item.id}`)}>Muokkaa</Button>
+            <Button onClick={() => setEditOpen(true)}>Muokkaa</Button>
             <Button variant="destructive" onClick={() => setOpen(true)}>
               Poista
             </Button>
@@ -244,14 +246,14 @@ export default function ItemView({
           </Card>
         )}
 
-        <div className="mt-4">
+        <Card as="section">
           <CardTitle>Lainat ja varaukset</CardTitle>
           {item.reservations.length === 0 ? (
             <EmptyState variant="inline" title="Ei lainoja eikä varauksia." />
           ) : (
             <ReservationTable reservations={item.reservations} isAdmin={isAdmin} />
           )}
-        </div>
+        </Card>
 
         {isAdmin && (
           <Card as="section">
@@ -295,6 +297,11 @@ export default function ItemView({
           </Card>
         )}
       </div>
+
+      {/* Mounted only while open so the form always seeds fresh from `item`. */}
+      {isAdmin && editOpen && (
+        <EditItemDialog item={item} open onOpenChange={setEditOpen} />
+      )}
 
       <ConfirmDialog
         open={open}
