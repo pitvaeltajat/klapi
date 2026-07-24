@@ -55,6 +55,15 @@ export function formatDateShortWeekday(date: Date | string): string {
   });
 }
 
+/** "09:30" — time only */
+export function formatTimeOnly(date: Date | string): string {
+  return new Date(date).toLocaleTimeString('fi-FI', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Helsinki',
+  });
+}
+
 /** "ma 1.1.2025 klo 09:30" — short weekday + date + "klo" + time (kiosk) */
 export function formatDateTimeKiosk(date: Date | string): string {
   const d = new Date(date);

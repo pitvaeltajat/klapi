@@ -334,10 +334,14 @@
   color: hsl(var(--popover-foreground));
 }
 
-.dark .react-datepicker__day:hover,
-.dark .react-datepicker__month-text:hover,
-.dark .react-datepicker__quarter-text:hover,
-.dark .react-datepicker__year-text:hover {
+/* The library's own hover rules are `…:not([aria-disabled='true']):hover`, which
+   ties these on specificity and then wins on source order (its stylesheet is
+   imported from the component, after this file) — leaving a near-white hover
+   fill under our light text. Match its shape so ours outranks it. */
+.dark .react-datepicker__day:not([aria-disabled='true']):hover,
+.dark .react-datepicker__month-text:not([aria-disabled='true']):hover,
+.dark .react-datepicker__quarter-text:not([aria-disabled='true']):hover,
+.dark .react-datepicker__year-text:not([aria-disabled='true']):hover {
   background-color: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
 }
@@ -356,9 +360,9 @@
 .dark .react-datepicker__day--selecting-range-start,
 .dark .react-datepicker__day--selecting-range-end,
 .dark .react-datepicker__day--keyboard-selected,
-.dark .react-datepicker__day--selected:hover,
-.dark .react-datepicker__day--range-start:hover,
-.dark .react-datepicker__day--range-end:hover {
+.dark .react-datepicker__day--selected:not([aria-disabled='true']):hover,
+.dark .react-datepicker__day--range-start:not([aria-disabled='true']):hover,
+.dark .react-datepicker__day--range-end:not([aria-disabled='true']):hover {
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
 }

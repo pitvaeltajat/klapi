@@ -1,7 +1,5 @@
 'use client';
 
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import React, { useState } from 'react';
 import { CalendarDays, Pencil } from 'lucide-react';
 import { useDates } from '@/contexts/DatesContext';
@@ -14,8 +12,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { formatDateShortWeekday, formatDateTimeKiosk } from '@/utils/dateFormat';
-import { applyRangeTimes, setEndOfDay } from '@/utils/dateRange';
+import LoanRangeCalendar from '@/components/LoanRangeCalendar';
+import { formatDateShortWeekday } from '@/utils/dateFormat';
+import type { DateRange } from '@/utils/dateRange';
 
 // Compact, always-visible summary of the chosen loan dates. Rendered inline in
 // the catalogue's search row — as one chip rather than a row of its own, so the
@@ -25,18 +24,23 @@ export default function DateSummaryBar() {
   const { state: dates, setStartDate, setEndDate, setDatesSet } = useDates();
   const { clearCart } = useCart();
   const [editOpen, setEditOpen] = useState(false);
+  // The dialog edits a draft range rather than the context: a range is picked in
+  // two clicks, and writing the first one straight through would leave the
+  // catalogue filtered by a half-finished window. The draft is seeded from the
+  // context every time the dialog opens, so abandoning a half-made pick simply
+  // keeps the old range.
+  const [draft, setDraft] = useState<DateRange>([dates.startDate, dates.endDate]);
 
-  const handleEditChange = (update: [Date | null, Date | null]) => {
-    const [nextStart, nextEnd] = applyRangeTimes(update[0], update[1]);
-    if (nextStart) {
-      setStartDate(nextStart);
-      // New start with no end yet and it's past the current end → snap end to it.
-      if (!nextEnd && nextStart > dates.endDate) {
-        setEndDate(setEndOfDay(nextStart));
-      }
-    }
-    if (nextEnd) {
-      setEndDate(nextEnd);
+  const handleOpenChange = (open: boolean) => {
+    if (open) setDraft([dates.startDate, dates.endDate]);
+    setEditOpen(open);
+  };
+
+  const handleEditChange = (next: DateRange) => {
+    setDraft(next);
+    if (next[0] && next[1]) {
+      setStartDate(next[0]);
+      setEndDate(next[1]);
     }
   };
 
@@ -52,7 +56,7 @@ export default function DateSummaryBar() {
         variant="outline"
         size="sm"
         className="h-9 gap-1.5 px-2.5"
-        onClick={() => setEditOpen(true)}
+        onClick={() => handleOpenChange(true)}
         aria-label="Muokkaa lainausaikaa"
         title="Muokkaa lainausaikaa"
       >
@@ -63,35 +67,12 @@ export default function DateSummaryBar() {
         <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </Button>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog open={editOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-md p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Muokkaa lainausaikaa</DialogTitle>
           </DialogHeader>
-          <div className="flex justify-center overflow-x-auto">
-            <DatePicker
-              selected={dates.startDate}
-              onChange={handleEditChange}
-              startDate={dates.startDate}
-              endDate={dates.endDate}
-              selectsRange
-              swapRange
-              inline
-              minDate={new Date()}
-              dateFormat="dd.MM.yyyy"
-              calendarStartDay={1}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <span className="font-bold">Nouto:</span>
-              <span>{formatDateTimeKiosk(dates.startDate)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="font-bold">Palautus:</span>
-              <span>{formatDateTimeKiosk(dates.endDate)}</span>
-            </div>
-          </div>
+          <LoanRangeCalendar value={draft} onChange={handleEditChange} minDate={new Date()} />
           <DialogFooter className="gap-2 sm:justify-between">
             <Button variant="outline" onClick={handleReset}>
               Nollaa päivät
