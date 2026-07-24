@@ -59,6 +59,10 @@ model User {
   username                 String?        @unique
   emailNewLoanNotification Boolean        @default(true)
   emailWeeklyReminder      Boolean        @default(true)
+  // Opt-in, unlike the others: the "lainasi päättyy pian" mail is off unless the
+  // borrower asks for it. Most people know when their loan ends, and the overdue
+  // escalation already covers the ones who don't.
+  emailExpiringReminder    Boolean        @default(false)
   emailOldBoxNotification  Boolean        @default(true)
   emailOverdueNotification Boolean        @default(true)
   accounts                 Account[]
@@ -295,6 +299,8 @@ model EmailLog {
 enum EmailType {
   EXPIRING_LOAN_REMINDER
   PICKUP_REMINDER
+  /// Retired: `cron/startDueLoans` auto-starts loans that were never marked in
+  /// use, so the nudge email is gone. Kept so old EmailLog rows still resolve.
   PICKUP_OVERDUE_REMINDER
   OVERDUE_USER_REMINDER
   OVERDUE_ADMIN_NOTIFICATION

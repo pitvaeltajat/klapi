@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   const { session, denied } = await requireUser();
   if (denied) return denied;
 
-  const { emailWeeklyReminder, emailNewLoanNotification, emailOldBoxNotification, emailOverdueNotification } = await request.json();
+  const { emailWeeklyReminder, emailNewLoanNotification, emailExpiringReminder, emailOldBoxNotification, emailOverdueNotification } = await request.json();
 
   try {
     const updatedUser = await prisma.user.update({
@@ -15,6 +15,8 @@ export async function POST(request: Request) {
         emailWeeklyReminder: emailWeeklyReminder !== undefined ? emailWeeklyReminder : undefined,
         emailNewLoanNotification:
           emailNewLoanNotification !== undefined ? emailNewLoanNotification : undefined,
+        emailExpiringReminder:
+          emailExpiringReminder !== undefined ? emailExpiringReminder : undefined,
         emailOldBoxNotification:
           emailOldBoxNotification !== undefined ? emailOldBoxNotification : undefined,
         emailOverdueNotification:
@@ -26,6 +28,7 @@ export async function POST(request: Request) {
       message: 'Email preferences updated',
       emailWeeklyReminder: updatedUser.emailWeeklyReminder,
       emailNewLoanNotification: updatedUser.emailNewLoanNotification,
+      emailExpiringReminder: updatedUser.emailExpiringReminder,
       emailOldBoxNotification: updatedUser.emailOldBoxNotification,
       emailOverdueNotification: updatedUser.emailOverdueNotification,
     });

@@ -20,6 +20,7 @@ export default async function AccountPage() {
         userEmailPreferences={{
           emailWeeklyReminder: true,
           emailNewLoanNotification: true,
+          emailExpiringReminder: false,
           emailOldBoxNotification: true,
           emailOverdueNotification: true,
         }}
@@ -64,6 +65,7 @@ export default async function AccountPage() {
       userEmailPreferences={{
         emailWeeklyReminder: user?.emailWeeklyReminder ?? true,
         emailNewLoanNotification: user?.emailNewLoanNotification ?? true,
+        emailExpiringReminder: user?.emailExpiringReminder ?? false,
         emailOldBoxNotification: user?.emailOldBoxNotification ?? true,
         emailOverdueNotification: user?.emailOverdueNotification ?? true,
       }}

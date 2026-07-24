@@ -19,8 +19,6 @@ export type { OverdueLoanCard, OverdueLoanInfo } from './overdueToAdmin';
 
 export { renderOverdueEmail, sendOverdueEmail } from './overdueToUser';
 
-export { renderPickupOverdueEmail, sendPickupOverdueEmail } from './pickupOverdue';
-
 export { renderPickupReminderEmail, sendPickupReminderEmail } from './pickupReminder';
 
 export { renderReminderEmail, sendReminderEmail } from './reminder';

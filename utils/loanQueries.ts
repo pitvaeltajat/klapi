@@ -29,10 +29,11 @@ export const loanWithReservationsInclude = {
   reservations: { include: { item: true } },
 } as const satisfies Prisma.LoanInclude;
 
-/** The four per-user email toggles, as shown on the account page. */
+/** The per-user email toggles, as shown on the account page. */
 export const emailPreferenceSelect = {
   emailWeeklyReminder: true,
   emailNewLoanNotification: true,
+  emailExpiringReminder: true,
   emailOldBoxNotification: true,
   emailOverdueNotification: true,
 } as const satisfies Prisma.UserSelect;

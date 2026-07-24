@@ -44,6 +44,7 @@ interface AccountViewProps {
   userEmailPreferences: {
     emailWeeklyReminder: boolean;
     emailNewLoanNotification: boolean;
+    emailExpiringReminder: boolean;
     emailOldBoxNotification: boolean;
     emailOverdueNotification: boolean;
   };
@@ -62,6 +63,9 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   const [emailNewLoanNotification, setEmailNewLoanNotification] = useState(
     userEmailPreferences.emailNewLoanNotification,
   );
+  const [emailExpiringReminder, setEmailExpiringReminder] = useState(
+    userEmailPreferences.emailExpiringReminder,
+  );
   const [emailOldBoxNotification, setEmailOldBoxNotification] = useState(
     userEmailPreferences.emailOldBoxNotification,
   );
@@ -79,18 +83,20 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleEmailPreferenceChange = async (
-    preference: 'weekly' | 'newLoan' | 'oldBox' | 'overdue',
+    preference: 'weekly' | 'newLoan' | 'expiring' | 'oldBox' | 'overdue',
     value: boolean,
   ) => {
     const setters = {
       weekly: setEmailWeeklyReminder,
       newLoan: setEmailNewLoanNotification,
+      expiring: setEmailExpiringReminder,
       oldBox: setEmailOldBoxNotification,
       overdue: setEmailOverdueNotification,
     } as const;
     const previous = {
       weekly: emailWeeklyReminder,
       newLoan: emailNewLoanNotification,
+      expiring: emailExpiringReminder,
       oldBox: emailOldBoxNotification,
       overdue: emailOverdueNotification,
     }[preference];
@@ -104,6 +110,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
         body: JSON.stringify({
           emailWeeklyReminder: preference === 'weekly' ? value : emailWeeklyReminder,
           emailNewLoanNotification: preference === 'newLoan' ? value : emailNewLoanNotification,
+          emailExpiringReminder: preference === 'expiring' ? value : emailExpiringReminder,
           emailOldBoxNotification: preference === 'oldBox' ? value : emailOldBoxNotification,
           emailOverdueNotification: preference === 'overdue' ? value : emailOverdueNotification,
         }),
@@ -217,15 +224,21 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
               <>
                 <PrefRow
                   title="Ilmoitukset uusista lainoista"
-                  description="Sähköpostit kun luot uuden lainan"
+                  description="Sähköpostit kun sinulle luodaan uusi laina"
                   checked={emailNewLoanNotification}
                   onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
                 />
                 <PrefRow
                   title="Muistutukset lainoista"
-                  description="Muistutukset lainojesi päättymisestä"
+                  description="Muistutus noutopäivästä ja myöhässä olevista lainoista"
                   checked={emailWeeklyReminder}
                   onCheckedChange={(v) => handleEmailPreferenceChange('weekly', v)}
+                />
+                <PrefRow
+                  title="Muistutus lainan päättymisestä"
+                  description="Muistutus päivää ennen palautuspäivää (oletuksena pois päältä)"
+                  checked={emailExpiringReminder}
+                  onCheckedChange={(v) => handleEmailPreferenceChange('expiring', v)}
                 />
               </>
             )}

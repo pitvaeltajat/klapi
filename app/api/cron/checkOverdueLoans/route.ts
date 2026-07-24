@@ -55,8 +55,19 @@ export async function GET(request: Request) {
 
     console.log(`Found ${overdueLoans.length} overdue loans`);
 
+    // Borrowers are nudged on the same 1/3/7-day escalation the admins get,
+    // rather than every single day — a daily mail for the same loan reads as
+    // spam and stops being noticed by day three.
+    const notificationIntervals = [1, 3, 7];
+    const daysOverdueFor = (endTime: Date) =>
+      Math.floor((now.getTime() - endTime.getTime()) / (1000 * 60 * 60 * 24));
+
+    const loansAtIntervals = overdueLoans.filter((loan) =>
+      notificationIntervals.includes(daysOverdueFor(loan.endTime)),
+    );
+
     // Send reminder emails to users who have overdue loans and want reminders
-    const userEmailPromises = overdueLoans.map(async (loan): Promise<EmailOutcome | null> => {
+    const userEmailPromises = loansAtIntervals.map(async (loan): Promise<EmailOutcome | null> => {
       if (!loan.user.email) {
         console.log(`Loan ${loan.id} has no user email`);
         return null;
@@ -88,15 +99,6 @@ export async function GET(request: Request) {
 
     // Prepare admin notification for loans at specific overdue intervals (1, 3, 7 days)
     let adminEmailPromises: Promise<EmailOutcome | null>[] = [];
-
-    // Filter loans to only those at notification intervals (1, 3, or 7 days overdue)
-    const notificationIntervals = [1, 3, 7];
-    const loansAtIntervals = overdueLoans.filter((loan) => {
-      const daysOverdue = Math.floor(
-        (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      return notificationIntervals.includes(daysOverdue);
-    });
 
     console.log(`Found ${loansAtIntervals.length} loans at notification intervals (1, 3, or 7 days)`);
 
@@ -134,19 +136,13 @@ export async function GET(request: Request) {
         }
 
         // Create loan info for only the loans we're notifying about
-        const loansToNotifyInfo = loansToNotify.map((loan) => {
-          const daysOverdue = Math.floor(
-            (now.getTime() - loan.endTime.getTime()) / (1000 * 60 * 60 * 24),
-          );
-
-          return {
-            id: loan.id,
-            userName: loan.user.name || loan.user.email || 'Unknown',
-            userEmail: loan.user.email,
-            endTime: formatDateNumeric(loan.endTime),
-            daysOverdue,
-          };
-        });
+        const loansToNotifyInfo = loansToNotify.map((loan) => ({
+          id: loan.id,
+          userName: loan.user.name || loan.user.email || 'Unknown',
+          userEmail: loan.user.email,
+          endTime: formatDateNumeric(loan.endTime),
+          daysOverdue: daysOverdueFor(loan.endTime),
+        }));
 
         // The query filters on `email: { not: null }`, so this is always set.
         const recipient = admin.email as string;

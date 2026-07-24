@@ -26,9 +26,9 @@ export function renderCreatedEmail(
     : `
     <p>Lainasi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
     <p>
-      <strong>Muista:</strong> kun olet hakenut tavarat varastosta, avaa laina ja paina
-      <strong>”Aloita lainaus”</strong>. Vasta silloin laina on merkitty käyttöön — muuten
-      tavarat näkyvät järjestelmässä yhä vapaina etkä voi myöhemmin palauttaa niitä normaalisti.
+      Kun olet hakenut tavarat varastosta, avaa laina ja paina <strong>”Aloita lainaus”</strong>,
+      niin varasto pysyy ajan tasalla. Jos unohdat, laina merkitään käyttöön automaattisesti
+      noutopäivän iltana.
     </p>
     `;
 

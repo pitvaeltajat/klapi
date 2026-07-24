@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { ReservationStatus, EmailType } from '@prisma/client';
 import {
   sendAdminReminderEmail,
-  sendPickupOverdueEmail,
   sendPickupReminderEmail,
   sendReminderEmail,
   trySendEmail,
@@ -93,64 +92,12 @@ export async function GET(request: Request) {
       },
     );
 
-    // Find loans whose pickup time has already passed but are still not marked
-    // in use (all reservations still ACCEPTED). These are loans the borrower
-    // likely picked up physically but forgot to start. We nudge daily for up to
-    // a week after the start time; the 23h email-log dedup keeps it to one/day.
-    const overduePickupLoans = await prisma.loan.findMany({
-      where: {
-        startTime: {
-          lt: now,
-          gte: oneWeekAgo,
-        },
-      },
-      include: {
-        user: true,
-        reservations: {
-          select: {
-            status: true,
-          },
-        },
-      },
-    });
-
-    const loansNeedingPickupNudge = overduePickupLoans.filter(
-      (loan) =>
-        loan.reservations.length > 0 &&
-        loan.reservations.every((res) => res.status === ReservationStatus.ACCEPTED),
-    );
-
-    console.log(`Found ${loansNeedingPickupNudge.length} loans not marked in use after pickup`);
-
-    const pickupOverduePromises = loansNeedingPickupNudge.map(
-      async (loan): Promise<EmailOutcome | null> => {
-        if (!loan.user.email) {
-          console.log(`Loan ${loan.id} has no user email`);
-          return null;
-        }
-
-        if (!loan.user.emailWeeklyReminder) {
-          console.log(`User ${loan.userId} has disabled reminder emails`);
-          return null;
-        }
-
-        const canSend = await shouldSendEmail(
-          loan.id,
-          loan.userId,
-          EmailType.PICKUP_OVERDUE_REMINDER,
-        );
-
-        if (!canSend) {
-          console.log(`Skipping pickup overdue reminder for loan ${loan.id} - already sent recently`);
-          return null;
-        }
-
-        const recipient = loan.user.email;
-        return trySendEmail(`pickup overdue reminder email for loan ${loan.id}`, () =>
-          sendPickupOverdueEmail(recipient, loan.id),
-        );
-      },
-    );
+    // NOTE: there used to be a "muista merkitä lainasi käyttöön" nudge here for
+    // loans past their start time but still ACCEPTED. `cron/startDueLoans` now
+    // auto-starts every such loan, so the nudge only ever caught the few hours
+    // between the two crons — and told the borrower to do something the system
+    // does for them. Removed; `EmailType.PICKUP_OVERDUE_REMINDER` is kept in the
+    // schema only so historical EmailLog rows still resolve.
 
     // Find loans that expire in the next 24-25 hours and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
@@ -172,21 +119,23 @@ export async function GET(request: Request) {
 
     console.log(`Found ${expiringLoans.length} expiring loans`);
 
-    // Send reminder emails to users (only if they have emailWeeklyReminder enabled)
+    // Send reminder emails to users. This one is opt-in (emailExpiringReminder
+    // defaults to false): most borrowers already know when their loan ends, and
+    // the overdue mails cover the ones who forget.
     const userEmailPromises = expiringLoans.map(async (loan): Promise<EmailOutcome | null> => {
       if (!loan.user.email) {
         console.log(`Loan ${loan.id} has no user email`);
         return null;
       }
 
-      // Check if user wants reminder emails
+      // Check if user opted into end-of-loan reminders
       const user = await prisma.user.findFirst({
         where: { id: loan.userId, deletedAt: null },
-        select: { emailWeeklyReminder: true },
+        select: { emailExpiringReminder: true },
       });
 
-      if (!user?.emailWeeklyReminder) {
-        console.log(`User ${loan.userId} has disabled reminder emails`);
+      if (!user?.emailExpiringReminder) {
+        console.log(`User ${loan.userId} has not enabled expiring-loan reminders`);
         return null;
       }
 
@@ -277,7 +226,6 @@ export async function GET(request: Request) {
     // abort the sweep; they surface in the tallies below.
     const outcomes = await Promise.all([
       ...pickupReminderPromises,
-      ...pickupOverduePromises,
       ...userEmailPromises,
       ...adminEmailPromises,
     ]);
@@ -285,7 +233,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       message: 'Cron job completed',
       upcomingPickupLoansChecked: upcomingPickupLoans.length,
-      overduePickupLoansChecked: loansNeedingPickupNudge.length,
       expiringLoansChecked: expiringLoans.length,
       oldBoxLoansChecked: oldBoxLoans.length,
       emailsSent: outcomes.filter((outcome) => outcome === 'sent').length,
