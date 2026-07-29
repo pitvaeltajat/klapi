@@ -154,6 +154,11 @@ revisit deliberately:
 
 - **@types/node**: track the runtime (currently Node 24 LTS — CI/deploy pin
   `node-version: 24`) — don't jump to `^25` until we're actually running Node 25.
+- **typescript**: stay on **6.x**. `typescript-eslint` (8.65) throws
+  `typescript-eslint does not support TS 7.0` at config load, so `pnpm lint`
+  dies outright on TS 7 even though `tsc --noEmit` is clean. Revisit once
+  typescript-eslint ships TS ≥7.1 support
+  (typescript-eslint/typescript-eslint#10940).
 
 ESLint is now on **10**. The flat config (`eslint.config.mjs`) pins
 `settings.react.version` so `eslint-plugin-react` skips React auto-detection,
