@@ -129,7 +129,9 @@ server components or route handlers.
 
 - `pnpm dev` — Next dev + local SES mock on :8005
 - `pnpm build` — `prisma migrate deploy && next build`
-- `pnpm type-check` — `tsc --noEmit`
+- `pnpm type-check` — `tsc --noEmit` (native TS 7)
+- `pnpm type-check:ts6` — same check through the TS 6 API (`tsc6`), the version
+  eslint and the editor use — see the TypeScript note further down
 - `pnpm lint` — ESLint (Next config)
 - `pnpm test` — Vitest against a disposable Postgres (docker-compose)
 
@@ -154,11 +156,21 @@ revisit deliberately:
 
 - **@types/node**: track the runtime (currently Node 24 LTS — CI/deploy pin
   `node-version: 24`) — don't jump to `^25` until we're actually running Node 25.
-- **typescript**: stay on **6.x**. `typescript-eslint` (8.65) throws
-  `typescript-eslint does not support TS 7.0` at config load, so `pnpm lint`
-  dies outright on TS 7 even though `tsc --noEmit` is clean. Revisit once
-  typescript-eslint ships TS ≥7.1 support
-  (typescript-eslint/typescript-eslint#10940).
+
+**TypeScript is installed twice, on purpose.** `typescript-eslint` (8.65)
+refuses to load against TS 7 (`typescript-eslint does not support TS 7.0`), and
+`eslint-config-next` depends on it directly — so a plain `typescript@7` kills
+`pnpm lint` even though `tsc --noEmit` is clean. The side-by-side layout keeps
+both:
+
+- `typescript` → `npm:@typescript/typescript6` — the TS 6 **JS API**, which is
+  what `require('typescript')` resolves to for typescript-eslint, Next and your
+  editor. Its binary is `tsc6` (`pnpm type-check:ts6`).
+- `typescript-7` → `npm:typescript@7` — the real, native TS 7. It owns the plain
+  `tsc` binary, so `pnpm type-check` is the fast native check.
+
+Don't collapse these back into one `typescript` entry until typescript-eslint
+ships TS ≥7.1 support (typescript-eslint/typescript-eslint#10940).
 
 ESLint is now on **10**. The flat config (`eslint.config.mjs`) pins
 `settings.react.version` so `eslint-plugin-react` skips React auto-detection,
