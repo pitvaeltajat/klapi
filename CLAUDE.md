@@ -104,6 +104,16 @@ server components or route handlers.
     `Dialog` is for forms, and their cancel button is `variant="outline"` too.
   - `SelectableRow`, `FilterChip`, `CountBadge` for tickable rows, pill toggles
     and the little number bubbles.
+- **Phones are the default size, not an afterthought.** The primitives already
+  carry the responsive step-down — `Card` padding is `p-4 sm:p-6`, `CardTitle`
+  `text-lg sm:text-xl`, `PageHeader`'s h1 `text-2xl sm:text-3xl`, the layout's
+  `main` `py-6 sm:py-10`, `DialogContent` `p-4 sm:p-6` with
+  `max-h-[calc(100dvh-2rem)] overflow-y-auto` so a long dialog scrolls itself
+  instead of running off both ends of a 390px screen. Compose from them and a
+  page is mobile-correct for free; hand-rolling `p-6`/`text-3xl` re-introduces
+  the "zoomed in" look. For dense metadata prefer a label/value row
+  (`<dl>` with `text-sm sm:text-base`) over full sentences — see
+  `app/loan/[id]/LoanView.tsx`.
 - Design tokens are CSS variables in `styles/globals.css` with `.dark` overrides.
   Tailwind maps them via `bg-primary`, `text-muted-foreground`, etc. Nothing
   outside that file should hard-code a colour — the app bar has its own

@@ -32,9 +32,9 @@ export function PageHeader({
   ...props
 }: PageHeaderProps) {
   return (
-    <div className={cn('mb-6 flex flex-col gap-2', className)} {...props}>
+    <div className={cn('mb-4 flex flex-col gap-2 sm:mb-6', className)} {...props}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 className="text-3xl font-semibold">{title}</h1>
+        <h1 className="text-2xl font-semibold break-words sm:text-3xl">{title}</h1>
         {actions && (
           <div
             className={cn(

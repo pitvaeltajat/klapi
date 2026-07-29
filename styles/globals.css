@@ -401,3 +401,34 @@
   border-top-color: hsl(var(--border));
   color: hsl(var(--popover-foreground));
 }
+
+/* react-datepicker sizes its day cells in fixed rem (1.7rem ≈ 27px), which on a
+   phone leaves the app's primary interaction — picking the loan window — well
+   under the ~44px touch target everyone else designs for. Below `sm` the
+   calendar spans the panel instead and the days share that width evenly. Both
+   themes; un-layered like the rest of this block so it beats the bundled
+   react-datepicker.css. */
+@media (max-width: 639px) {
+  .react-datepicker,
+  .react-datepicker .react-datepicker__month-container {
+    width: 100%;
+  }
+
+  .react-datepicker .react-datepicker__day-names,
+  .react-datepicker .react-datepicker__week {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .react-datepicker .react-datepicker__day,
+  .react-datepicker .react-datepicker__day-name {
+    flex: 1 1 0;
+    width: auto;
+    margin: 0.1rem 0;
+    line-height: 2.5rem;
+  }
+
+  .react-datepicker .react-datepicker__month {
+    margin: 0.4rem 0.3rem;
+  }
+}

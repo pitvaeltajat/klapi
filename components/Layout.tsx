@@ -20,7 +20,9 @@ export default function Layout({ children }: LayoutProps) {
         <CartButton onOpen={onOpen} onClose={onClose} isOpen={isOpen} />
       </TopBar>
       <CartDrawer isOpen={isOpen} onClose={onClose} />
-      <main className="container mx-auto px-4 py-10">{children}</main>
+      {/* Tighter vertical rhythm on phones — 40px of dead space above the
+          breadcrumbs costs a tenth of the viewport there. */}
+      <main className="container mx-auto px-4 py-6 sm:py-10">{children}</main>
     </>
   );
 }

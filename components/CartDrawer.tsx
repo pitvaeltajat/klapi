@@ -148,7 +148,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           <DrawerTitle>Ostoskori</DrawerTitle>
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-auto p-6">
+        <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
           <SubmitConfirmation
             isOpen={confirmOpen}
             onClose={() => setConfirmOpen(false)}

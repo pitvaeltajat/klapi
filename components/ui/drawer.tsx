@@ -45,11 +45,11 @@ const DrawerContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
 DrawerContent.displayName = 'DrawerContent';
 
 const DrawerHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex flex-col space-y-1.5 p-6 text-left', className)} {...props} />
+  <div className={cn('flex flex-col space-y-1.5 p-4 text-left sm:p-6', className)} {...props} />
 );
 
 const DrawerFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('mt-auto flex flex-col gap-2 p-6', className)} {...props} />
+  <div className={cn('mt-auto flex flex-col gap-2 p-4 sm:p-6', className)} {...props} />
 );
 
 const DrawerTitle = React.forwardRef<

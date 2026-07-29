@@ -156,7 +156,10 @@ export default function ItemView({
           <p className="text-base text-foreground/90 md:text-lg">{item.description}</p>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {/* Two columns from the smallest size: these are two or three short
+            values, and stacking them label-over-value pushed the photo a full
+            screen down on a phone. */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <div>
             <p className="text-sm font-semibold text-muted-foreground">Määrä:</p>
             <p className="text-lg font-bold">{item.amount} kpl</p>
@@ -168,7 +171,7 @@ export default function ItemView({
             </div>
           )}
           {item.categories && item.categories.length > 0 && (
-            <div>
+            <div className="col-span-2 md:col-span-1">
               <p className="mb-2 text-sm font-semibold text-muted-foreground">Kategoriat:</p>
               <div className="flex flex-wrap gap-2">
                 {item.categories.map((category) => (

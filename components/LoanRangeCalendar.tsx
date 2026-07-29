@@ -96,7 +96,13 @@ export default function LoanRangeCalendar({
         <p className="mt-1.5 text-center text-xs text-muted-foreground">{hint}</p>
       </div>
 
-      <div className="flex justify-center overflow-x-auto" onMouseLeave={() => setHovered(null)}>
+      {/* w-full so the calendar can span the panel on phones (globals.css lets
+          its day cells share that width and reach a real touch target); the
+          parent's items-center would otherwise shrink this to fit-content. */}
+      <div
+        className="flex w-full justify-center overflow-x-auto"
+        onMouseLeave={() => setHovered(null)}
+      >
         <DatePicker
           selected={start}
           onChange={handleChange}

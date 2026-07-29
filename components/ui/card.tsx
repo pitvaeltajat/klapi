@@ -16,11 +16,14 @@ const cardVariants = cva('', {
       inset: 'rounded-md border',
       muted: 'rounded-md border bg-muted',
     },
+    // Padding steps down one notch on phones. A 390px viewport spends 12% of
+    // its width on a p-6 panel's gutters alone, which is what made every card
+    // read as "zoomed in" on mobile.
     padding: {
       none: '',
       sm: 'p-3',
-      md: 'p-4',
-      lg: 'p-6',
+      md: 'p-3 sm:p-4',
+      lg: 'p-4 sm:p-6',
     },
   },
   defaultVariants: {
@@ -57,7 +60,11 @@ Card.displayName = 'Card';
  */
 export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h2 ref={ref} className={cn('mb-4 text-xl font-semibold', className)} {...props} />
+    <h2
+      ref={ref}
+      className={cn('mb-3 text-lg font-semibold sm:mb-4 sm:text-xl', className)}
+      {...props}
+    />
   ),
 );
 CardTitle.displayName = 'CardTitle';
@@ -79,7 +86,7 @@ export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<
     <div
       ref={ref}
       className={cn(
-        'mb-4 flex flex-wrap items-center justify-between gap-2 [&>h2]:mb-0',
+        'mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4 [&>h2]:mb-0',
         className,
       )}
       {...props}

@@ -241,19 +241,43 @@ export default function LoanView({
 
         <Card>
           <CardTitle>Perustiedot</CardTitle>
-          <div className="flex flex-col gap-3">
-            <p>
-              Aloitusaika: <DateTime value={loan.startTime} format="long" />
-            </p>
-            <p>
-              Lopetusaika: <DateTime value={loan.endTime} format="long" />
-            </p>
-            <p>Lainaaja: {loan.loaner || loan.user.name || loan.user.email}</p>
+          {/* A label/value grid rather than sentences: on a phone "Aloitusaika:
+              perjantaina 24. heinäkuuta 2026 klo 12.17" wrapped onto two lines
+              per row and the panel ate half the viewport. The label column is
+              fixed, so the values line up and each row stays one or two short
+              lines; the long weekday form only returns at sm. */}
+          <dl className="flex flex-col gap-2 text-sm sm:text-base">
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-muted-foreground">Aloitusaika:</dt>
+              <dd>
+                <DateTime value={loan.startTime} format="numeric" className="sm:hidden" />
+                <DateTime value={loan.startTime} format="long" className="hidden sm:inline" />
+              </dd>
+            </div>
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-muted-foreground">Lopetusaika:</dt>
+              <dd>
+                <DateTime value={loan.endTime} format="numeric" className="sm:hidden" />
+                <DateTime value={loan.endTime} format="long" className="hidden sm:inline" />
+              </dd>
+            </div>
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-muted-foreground">Lainaaja:</dt>
+              <dd className="break-all">{loan.loaner || loan.user.name || loan.user.email}</dd>
+            </div>
             {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
-              <p>Tili: {loan.user.name}</p>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="text-muted-foreground">Tili:</dt>
+                <dd>{loan.user.name}</dd>
+              </div>
             )}
-            {loan.box && <p>Laatikko: {loan.box.name}</p>}
-            <div className="flex flex-wrap gap-2">
+            {loan.box && (
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="text-muted-foreground">Laatikko:</dt>
+                <dd>{loan.box.name}</dd>
+              </div>
+            )}
+            <div className="mt-1 flex flex-wrap gap-2">
               <Badge variant={getLoanStatusColor(derivedStatus)}>
                 {getLoanStatusLabel(derivedStatus)}
               </Badge>
@@ -264,7 +288,7 @@ export default function LoanView({
                 </Badge>
               )}
             </div>
-          </div>
+          </dl>
         </Card>
 
         <Card>
