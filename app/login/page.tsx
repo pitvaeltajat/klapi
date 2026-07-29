@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -59,10 +59,14 @@ function LoginContent() {
   const [submitting, setSubmitting] = useState(false);
   const [showKiosk, setShowKiosk] = useState(false);
 
-  if (session) {
-    const from = searchParams.get('from');
-    router.push((from && decodeURIComponent(from)) || '/');
-  }
+  // Redirecting *during render* threw `ReferenceError: location is not defined`
+  // on the server (router.push reaches for `location` there) and made React warn
+  // about updating Router while rendering LoginContent. An effect runs after
+  // paint, on the client only, which is where a redirect belongs.
+  const from = searchParams.get('from');
+  useEffect(() => {
+    if (session) router.push((from && decodeURIComponent(from)) || '/');
+  }, [session, from, router]);
 
   if (status === 'loading' || session) {
     if (!showLoading) return null;

@@ -12,7 +12,25 @@ import { DatesProvider } from '@/contexts/DatesContext';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const fetcher = (...args: Parameters<typeof fetch>) => fetch(...args).then((res) => res.json());
+/**
+ * Throws on a non-2xx response instead of handing the error body back as data.
+ * Without this every consumer received `{ message: '...' }` where it expected
+ * its payload — `/admin` crashed with "users is not iterable" for a non-admin,
+ * because the 403 body sailed through as the user list. `onError` below already
+ * assumed this contract: it reads `error.status`.
+ */
+const fetcher = async (...args: Parameters<typeof fetch>) => {
+  const res = await fetch(...args);
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const error = Object.assign(new Error(body?.message || `Pyyntö epäonnistui (${res.status})`), {
+      status: res.status,
+      info: body,
+    });
+    throw error;
+  }
+  return body;
+};
 
 export default function Providers({
   children,
@@ -28,7 +46,11 @@ export default function Providers({
           value={{
             fetcher,
             onError: (error) => {
-              if (error.status !== 403 && error.status !== 404) {
+              // 401 is what `deny()` in utils/apiAuth.ts returns for both "log
+              // in" and "not allowed", so it belongs in this list too: the page
+              // already renders NotAuthenticated, and a toast on top of it just
+              // says the same thing twice.
+              if (![401, 403, 404].includes(error.status)) {
                 toast.error('Error', { description: error.message });
               }
             },
