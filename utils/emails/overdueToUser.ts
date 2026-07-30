@@ -3,16 +3,31 @@ import {
   renderItemGrid,
   renderLoanDetails,
   renderButton,
+  formatDate,
+  finnishDays,
 } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 import { sendEmail } from './ses-client';
 import { getLoanEmailData, type EmailContent, type LoanEmailData } from './shared';
 
-export function renderOverdueEmail(loan: LoanEmailData, loanUrl: string): EmailContent {
+/**
+ * @param daysOverdue — how late the loan is, so the borrower sees it without
+ *   subtracting dates themselves. Omitted only if a caller can't compute it.
+ */
+export function renderOverdueEmail(
+  loan: LoanEmailData,
+  loanUrl: string,
+  daysOverdue?: number,
+): EmailContent {
+  const lateness = daysOverdue
+    ? `, eli laina on ${finnishDays(daysOverdue)} myöhässä`
+    : ', eikä lainaa ole vielä palautettu';
+
   const html = renderEmail(`
     <h1>Lainasi on myöhässä</h1>
     <p>Hei!</p>
-    <p>Lainasi palautuspäivä on mennyt umpeen. Palauta tavarat mahdollisimman pian — jos tarvitset lisäaikaa, ota yhteyttä ylläpitoon.</p>
+    <p>Lainasi palautuspäivä oli <strong>${formatDate(loan.endTime)}</strong>${lateness}.</p>
+    <p>Palauta tavarat mahdollisimman pian. Jos tarvitset lisäaikaa, ota yhteyttä ylläpitoon.</p>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
@@ -27,14 +42,22 @@ export function renderOverdueEmail(loan: LoanEmailData, loanUrl: string): EmailC
   `);
 
   const subject = loan.description
-    ? `”${loan.description}” on myöhässä`
-    : 'Lainasi on myöhässä';
+    ? `Laina myöhässä – ”${loan.description}”`
+    : 'Laina myöhässä';
 
   return { subject, html };
 }
 
-export async function sendOverdueEmail(recipientEmail: string, loanId: string) {
+export async function sendOverdueEmail(
+  recipientEmail: string,
+  loanId: string,
+  daysOverdue?: number,
+) {
   const loan = await getLoanEmailData(loanId);
-  const { subject, html } = renderOverdueEmail(loan, `${getPublicUrl()}/loan/${loanId}`);
-  await sendEmail(recipientEmail, subject, html);
+  const { subject, html } = renderOverdueEmail(
+    loan,
+    `${getPublicUrl()}/loan/${loanId}`,
+    daysOverdue,
+  );
+  await sendEmail([recipientEmail], subject, html);
 }

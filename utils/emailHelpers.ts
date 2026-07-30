@@ -227,7 +227,7 @@ function renderFooter(): string {
   return `
     <div class="footer">
       <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
-      <p>Klapi — Kaluston lainausjärjestelmä</p>
+      <p>Klapi – kaluston lainausjärjestelmä</p>
     </div>
   `;
 }
@@ -253,21 +253,15 @@ export function renderEmail(innerHtml: string): string {
   `;
 }
 
-// Finnish genitive for names, used in subjects like "Matti Virtasen laina on myöhässä".
-// Handles the common cases: -nen → -sen, vowel-ending → +n, consonant-ending → +in.
-export function finnishGenitive(name: string | null | undefined): string {
-  if (!name) return '';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0) return '';
-  const last = parts[parts.length - 1];
-  let genitive: string;
-  if (/nen$/i.test(last)) {
-    genitive = last.slice(0, -3) + 'sen';
-  } else if (/[aeiouyäöå]$/i.test(last)) {
-    genitive = last + 'n';
-  } else {
-    genitive = last + 'in';
-  }
-  parts[parts.length - 1] = genitive;
-  return parts.join(' ');
+/**
+ * "3 päivää" / "yhden päivän" — the duration half of a "… myöhässä" phrase.
+ * Finnish takes the genitive singular for one and the partitive for the rest.
+ */
+export function finnishDays(days: number): string {
+  return days === 1 ? 'yhden päivän' : `${days} päivää`;
+}
+
+/** "1 laina" / "3 lainaa" — numeral + the case Finnish wants after it. */
+export function finnishLoanCount(count: number): string {
+  return count === 1 ? '1 laina' : `${count} lainaa`;
 }

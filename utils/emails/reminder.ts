@@ -11,7 +11,7 @@ import { getLoanEmailData, type EmailContent, type LoanEmailData } from './share
 
 export function renderReminderEmail(loan: LoanEmailData, loanUrl: string): EmailContent {
   const html = renderEmail(`
-    <h1>Lainasi päättyy pian</h1>
+    <h1>Lainasi päättyy huomenna</h1>
     <p>Hei!</p>
     <p>Lainasi päättyy <strong>${formatDate(loan.endTime)}</strong>. Muistathan palauttaa tavarat ajoissa.</p>
 
@@ -24,8 +24,8 @@ export function renderReminderEmail(loan: LoanEmailData, loanUrl: string): Email
   `);
 
   const subject = loan.description
-    ? `Muistutus: ”${loan.description}” päättyy pian`
-    : 'Muistutus: lainasi päättyy pian';
+    ? `Muistutus: laina päättyy huomenna – ”${loan.description}”`
+    : 'Muistutus: laina päättyy huomenna';
 
   return { subject, html };
 }

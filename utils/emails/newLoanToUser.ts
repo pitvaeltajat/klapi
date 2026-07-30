@@ -44,9 +44,7 @@ export function renderCreatedEmail(
     ${renderButton(loanUrl, 'Avaa laina')}
   `);
 
-  const subject = loan.description
-    ? `Lainasi ”${loan.description}” on luotu`
-    : 'Lainasi on luotu';
+  const subject = loan.description ? `Laina luotu – ”${loan.description}”` : 'Laina luotu';
 
   return { subject, html };
 }

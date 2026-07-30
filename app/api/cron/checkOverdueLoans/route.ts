@@ -93,7 +93,7 @@ export async function GET(request: Request) {
 
       const recipient = loan.user.email;
       return trySendEmail(`overdue reminder email for loan ${loan.id}`, () =>
-        sendOverdueEmail(recipient, loan.id),
+        sendOverdueEmail(recipient, loan.id, daysOverdueFor(loan.endTime)),
       );
     });
 

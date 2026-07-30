@@ -23,9 +23,13 @@ export function renderNewLoanEmail(loan: NewLoanAdminEmailData, loanUrl: string)
     'background-color: #f9fafb; border-left: 4px solid #2563eb; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
 
   const html = renderEmail(`
-    <h1>${creator}: uusi laina${isKioskLoan ? ' (kiosk)' : ''}</h1>
+    <h1>Uusi laina: ${creator}</h1>
     <p>Hei!</p>
-    <p>Järjestelmään on luotu uusi laina${isKioskLoan ? ' kaluston koneella' : ''}. Se on automaattisesti hyväksytty.</p>
+    <p>${
+      isKioskLoan
+        ? 'Kaluston koneella on luotu uusi laina, ja tavarat on merkitty käyttöön heti.'
+        : 'Järjestelmään on luotu uusi laina. Se on hyväksytty automaattisesti.'
+    }</p>
 
     <div class="info-box" style="${infoBoxStyle}">
       <strong>Lainaaja:</strong> ${creator}<br />
@@ -40,8 +44,10 @@ export function renderNewLoanEmail(loan: NewLoanAdminEmailData, loanUrl: string)
     ${renderButton(loanUrl, 'Avaa laina')}
   `);
 
-  const subjectBase = loan.description ? `${creator}: uusi laina ”${loan.description}”` : `${creator}: uusi laina`;
-  const subject = isKioskLoan ? `${subjectBase} (kiosk)` : subjectBase;
+  const subjectBase = loan.description
+    ? `Uusi laina: ${creator} – ”${loan.description}”`
+    : `Uusi laina: ${creator}`;
+  const subject = isKioskLoan ? `${subjectBase} (kaluston kone)` : subjectBase;
 
   return { subject, html };
 }

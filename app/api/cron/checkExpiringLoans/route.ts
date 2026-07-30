@@ -193,6 +193,7 @@ export async function GET(request: Request) {
       const loanInfo = oldBoxLoans.map((loan) => ({
         id: loan.id,
         userName: loan.user.name || loan.user.email || 'Unknown',
+        userEmail: loan.user.email,
         startTime: formatDateNumeric(loan.startTime),
         boxName: loan.box?.name,
       }));

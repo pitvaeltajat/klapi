@@ -1,5 +1,5 @@
 import prisma from '@/utils/prisma';
-import { renderEmail, renderButton, finnishGenitive } from '@/utils/emailHelpers';
+import { renderEmail, renderButton, finnishLoanCount } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 import { sendEmail } from './ses-client';
 import type { EmailContent } from './shared';
@@ -7,6 +7,8 @@ import type { EmailContent } from './shared';
 export interface BoxLoanInfo {
   id: string;
   userName: string;
+  /** The template asks admins to contact the loaner, so it lists the address. */
+  userEmail: string | null;
   startTime: string;
   boxName?: string;
 }
@@ -33,8 +35,9 @@ export function renderAdminReminderEmail(loans: BoxLoanCard[], publicUrl: string
         <div class="loan-card" style="${cardStyle}">
           <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;"><a href="${loanUrl}" style="color: inherit; text-decoration: none;">${loan.userName}</a></h3>
           <div class="meta" style="font-size: 13px; color: #4b5563; margin: 6px 0 10px 0;">
+            <div><strong>Sähköposti:</strong> ${loan.userEmail || 'Ei tiedossa'}</div>
             <div><strong>Boksi:</strong> ${loan.boxName || 'Tuntematon'}</div>
-            <div><strong>Aloitettu:</strong> ${loan.startTime}</div>
+            <div><strong>Laina alkoi:</strong> ${loan.startTime}</div>
             <div><strong>Tavarat:</strong> ${loan.itemsList}</div>
           </div>
           <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">Avaa laina →</a>
@@ -43,25 +46,29 @@ export function renderAdminReminderEmail(loans: BoxLoanCard[], publicUrl: string
     })
     .join('');
 
+  const single = loans.length === 1;
+
   const html = renderEmail(`
-    <h1>Lainoja odottaa palautusta</h1>
+    <h1>${single ? 'Laina odottaa palautusta' : 'Lainat odottavat palautusta'}</h1>
     <p>Hei!</p>
-    <p>${loans.length === 1
-      ? 'Seuraava laina on ollut boksissa yli viikon ja odottaa palautusta:'
-      : `Seuraavat <strong>${loans.length}</strong> lainaa ovat olleet bokseissa yli viikon ja odottavat palautusta:`}</p>
+    <p>${
+      single
+        ? 'Seuraava laina on ollut boksissa yli viikon eikä sitä ole vielä kuitattu palautetuksi:'
+        : `Seuraavat <strong>${loans.length}</strong> lainaa ovat olleet bokseissa yli viikon eikä niitä ole vielä kuitattu palautetuiksi:`
+    }</p>
 
     ${loansListHtml}
 
     <div class="info-box" style="${infoBoxStyle}">
-      Ota yhteyttä lainaajiin ja varmista, että tavarat palautetaan ajoissa.
+      ${single ? 'Muistuta lainaajaa palauttamaan tavarat.' : 'Muistuta lainaajia palauttamaan tavarat.'}
     </div>
 
     ${renderButton(`${publicUrl}/admin`, 'Avaa admin-paneeli')}
   `);
 
-  const subject = loans.length === 1
-    ? `${finnishGenitive(loans[0].userName)} laina on ollut boksissa yli viikon`
-    : `${loans.length} lainaa bokseissa yli viikon`;
+  // Numeral + partitive takes a singular verb ("3 lainaa odottaa"), so one
+  // phrasing is correct for both counts.
+  const subject = `${finnishLoanCount(loans.length)} odottaa palautusta yli viikon`;
 
   return { subject, html };
 }

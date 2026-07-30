@@ -71,7 +71,7 @@ writeFile('4-sendReminder', renderReminderEmail(sampleLoan, loanUrl));
 writeFile('5-sendPickupReminder', renderPickupReminderEmail(sampleLoan, loanUrl));
 
 // 6. sendOverdueToUser (user)
-writeFile('6-sendOverdueToUser', renderOverdueEmail(sampleLoan, loanUrl));
+writeFile('6-sendOverdueToUser', renderOverdueEmail(sampleLoan, loanUrl, 3));
 
 // 7. sendAdminReminder (admin — multiple loans in box > 1 week)
 writeFile(
@@ -81,6 +81,7 @@ writeFile(
       {
         id: 'A1',
         userName: 'Matti Virtanen',
+        userEmail: 'matti.virtanen@example.com',
         startTime: '14.4.2026 klo 18.00',
         boxName: 'Pohjoissali',
         itemsList: 'Teltta (1 kpl), Makuupussi (2 kpl)',
@@ -88,6 +89,7 @@ writeFile(
       {
         id: 'A2',
         userName: 'Anna Korhonen',
+        userEmail: 'anna.korhonen@example.com',
         startTime: '12.4.2026 klo 10.00',
         boxName: 'Eteläsali',
         itemsList: 'Retkikeitin (1 kpl)',
@@ -105,6 +107,7 @@ writeFile(
       {
         id: 'A1',
         userName: 'Justus Jutila',
+        userEmail: 'justus.jutila@example.com',
         startTime: '14.4.2026 klo 18.00',
         boxName: 'Pohjoissali',
         itemsList: 'Teltta (1 kpl), Makuupussi (2 kpl)',
@@ -169,6 +172,7 @@ writeFile(
 // Write an index page
 const files = [
   ['2-sendNewLoanToUser', 'sendNewLoanToUser — user, auto-approved loan'],
+  ['2b-sendNewLoanToUser-kiosk', 'sendNewLoanToUser — user, kiosk loan already in use'],
   ['3-sendNewLoanToAdmin', 'sendNewLoanToAdmin — admin, new loan notification'],
   ['4-sendReminder', 'sendReminder — user, loan expiring in 24h'],
   ['5-sendPickupReminder', 'sendPickupReminder — user, pickup starting tomorrow'],

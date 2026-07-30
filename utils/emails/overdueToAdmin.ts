@@ -1,5 +1,5 @@
 import prisma from '@/utils/prisma';
-import { renderEmail, renderButton, finnishGenitive } from '@/utils/emailHelpers';
+import { renderEmail, renderButton, finnishLoanCount } from '@/utils/emailHelpers';
 import { getPublicUrl } from '@/utils/urlHelpers';
 import { sendEmail } from './ses-client';
 import type { EmailContent } from './shared';
@@ -19,9 +19,9 @@ export interface OverdueLoanCard extends OverdueLoanInfo {
 }
 
 const INTERVAL_TITLES: Record<number, string> = {
-  1: 'Myöhässä 1 päivän',
-  3: 'Myöhässä 3 päivää',
-  7: 'Myöhässä 7 päivää',
+  1: '1 päivä myöhässä',
+  3: '3 päivää myöhässä',
+  7: '7 päivää myöhässä',
 };
 
 const INTERVAL_CLASS: Record<number, string> = {
@@ -63,7 +63,7 @@ export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: str
               <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;"><a href="${loanUrl}" style="color: inherit; text-decoration: none;">${loan.userName}</a></h3>
               <div class="meta" style="font-size: 13px; color: #4b5563; margin: 6px 0 10px 0;">
                 <div><strong>Sähköposti:</strong> ${loan.userEmail || 'Ei tiedossa'}</div>
-                <div><strong>Palautuspäivä oli:</strong> ${loan.endTime}</div>
+                <div><strong>Palautus oli:</strong> ${loan.endTime}</div>
                 <div><strong>Tavarat:</strong> ${loan.itemsList}</div>
               </div>
               <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">Avaa laina →</a>
@@ -73,7 +73,7 @@ export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: str
         .join('');
 
       return `
-        <h2>${INTERVAL_TITLES[interval]} (${intervalLoans.length} ${intervalLoans.length === 1 ? 'laina' : 'lainaa'})</h2>
+        <h2>${INTERVAL_TITLES[interval]} (${finnishLoanCount(intervalLoans.length)})</h2>
         ${loansHtml}
       `;
     })
@@ -83,25 +83,27 @@ export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: str
   const warningBoxStyle =
     'background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
 
+  const single = loans.length === 1;
+
   const html = renderEmail(`
-    <h1>Myöhästyneitä lainoja</h1>
+    <h1>${single ? 'Myöhästynyt laina' : 'Myöhästyneitä lainoja'}</h1>
     <p>Hei!</p>
-    <p>${loans.length === 1
-      ? 'Seuraava laina on saavuttanut muistutusrajan (1, 3 tai 7 päivää myöhässä):'
-      : `Seuraavat <strong>${loans.length}</strong> lainaa ovat saavuttaneet muistutusrajat (1, 3 tai 7 päivää myöhässä):`}</p>
+    <p>${
+      single
+        ? 'Seuraava laina on myöhässä. Lainaaja on saanut asiasta oman muistutuksensa.'
+        : `Seuraavat <strong>${loans.length}</strong> lainaa ovat myöhässä. Lainaajat ovat saaneet asiasta omat muistutuksensa.`
+    }</p>
 
     ${intervalSections}
 
     <div class="info-box warning" style="${warningBoxStyle}">
-      Ota yhteyttä lainaajiin ja varmista, että tavarat palautetaan. Mitä pidempään laina on myöhässä, sitä kiireellisempi toimenpide on.
+      ${single ? 'Ota yhteyttä lainaajaan, jos tavarat eivät palaudu.' : 'Ota yhteyttä lainaajiin, jos tavarat eivät palaudu.'}
     </div>
 
     ${renderButton(`${publicUrl}/admin`, 'Avaa admin-paneeli')}
   `);
 
-  const subject = loans.length === 1
-    ? `${finnishGenitive(loans[0].userName)} laina on myöhässä`
-    : `${loans.length} myöhästynyttä lainaa`;
+  const subject = single ? '1 myöhästynyt laina' : `${loans.length} myöhästynyttä lainaa`;
 
   return { subject, html };
 }
@@ -109,7 +111,7 @@ export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: str
 export async function sendOverdueAdminEmail(recipientEmail: string, loans: OverdueLoanInfo[]) {
   const cards = await Promise.all(loans.map(withItemsList));
   const { subject, html } = renderOverdueAdminEmail(cards, getPublicUrl());
-  await sendEmail(recipientEmail, subject, html);
+  await sendEmail([recipientEmail], subject, html);
 }
 
 async function withItemsList(loan: OverdueLoanInfo): Promise<OverdueLoanCard> {

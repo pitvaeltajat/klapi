@@ -11,9 +11,9 @@ import { getLoanEmailData, type EmailContent, type LoanEmailData } from './share
 
 export function renderPickupReminderEmail(loan: LoanEmailData, loanUrl: string): EmailContent {
   const html = renderEmail(`
-    <h1>Noutosi alkaa huomenna</h1>
+    <h1>Lainasi nouto on huomenna</h1>
     <p>Hei!</p>
-    <p>Lainasi nouto alkaa <strong>${formatDate(loan.startTime)}</strong>. Muistathan noutaa tavarat ajoissa.</p>
+    <p>Voit noutaa tavarat <strong>${formatDate(loan.startTime)}</strong> alkaen. Muistathan noutaa ne ajoissa.</p>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
@@ -24,8 +24,8 @@ export function renderPickupReminderEmail(loan: LoanEmailData, loanUrl: string):
   `);
 
   const subject = loan.description
-    ? `Muistutus: ”${loan.description}” — nouto alkaa huomenna`
-    : 'Muistutus: nouto alkaa huomenna';
+    ? `Muistutus: nouto huomenna – ”${loan.description}”`
+    : 'Muistutus: nouto huomenna';
 
   return { subject, html };
 }
