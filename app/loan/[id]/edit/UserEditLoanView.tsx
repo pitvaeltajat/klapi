@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -265,7 +265,7 @@ export default function UserEditLoanView({
                         }}
                         disabled={reservation.amount <= 1}
                       >
-                        <FaMinus />
+                        <Minus className="h-4 w-4" />
                       </Button>
                       <Input
                         value={reservation.amount}
@@ -285,7 +285,7 @@ export default function UserEditLoanView({
                         }}
                         disabled={reservation.amount >= getMaxForReservation(reservation)}
                       >
-                        <FaPlus />
+                        <Plus className="h-4 w-4" />
                       </Button>
                       <Button
                         aria-label="Poista varaus"
@@ -296,7 +296,7 @@ export default function UserEditLoanView({
                           setReservations(reservations.filter((r) => r.id !== reservation.id));
                         }}
                       >
-                        <FaTrash />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

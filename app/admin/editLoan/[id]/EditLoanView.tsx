@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { FaMinus, FaPlus, FaTrash, FaHistory } from 'react-icons/fa';
+import { History, Minus, Plus, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -256,7 +256,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
               onClick={() => setDescription(loan.description)}
               disabled={!isDescriptionModified}
             >
-              <FaHistory />
+              <History className="h-4 w-4" />
             </Button>
           </CardHeader>
           <Textarea
@@ -284,7 +284,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                   onClick={() => setStartDate(loan.startTime.toString().split('.')[0])}
                   disabled={!isStartDateModified}
                 >
-                  <FaHistory />
+                  <History className="h-4 w-4" />
                 </Button>
               </div>
               <Input
@@ -308,7 +308,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                   onClick={() => setEndDate(loan.endTime.toString().split('.')[0])}
                   disabled={!isEndDateModified}
                 >
-                  <FaHistory />
+                  <History className="h-4 w-4" />
                 </Button>
               </div>
               <Input
@@ -330,7 +330,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
               variant="ghost"
               onClick={() => setReservations(loan.reservations)}
             >
-              <FaHistory />
+              <History className="h-4 w-4" />
             </Button>
           </CardHeader>
 
@@ -377,7 +377,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                         }}
                         disabled={reservation.amount <= 1}
                       >
-                        <FaMinus />
+                        <Minus className="h-4 w-4" />
                       </Button>
                       <Input
                         value={reservation.amount}
@@ -397,7 +397,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                         }}
                         disabled={reservation.amount >= getMaxForReservation(reservation)}
                       >
-                        <FaPlus />
+                        <Plus className="h-4 w-4" />
                       </Button>
                       <Button
                         aria-label="Poista laina"
@@ -408,7 +408,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
                           setReservations(reservations.filter((r) => r.id !== reservation.id));
                         }}
                       >
-                        <FaTrash />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

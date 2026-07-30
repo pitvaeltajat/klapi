@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { LuTriangleAlert } from 'react-icons/lu';
+import { TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,7 +82,7 @@ export default function ItemAnnouncements({
   return (
     <Card as="section">
       <CardHeader className="justify-start gap-2">
-        <LuTriangleAlert className="text-destructive" />
+        <TriangleAlert className="h-4 w-4 text-destructive" />
         <CardTitle>Ilmoitukset{active.length > 0 ? ` (${active.length})` : ''}</CardTitle>
       </CardHeader>
 

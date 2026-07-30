@@ -2,10 +2,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// generator erd {
-//   provider = "prisma-erd-generator"
-//   output = "../ERD.pdf"
-// }
+// Markdown output is pure text generation — prisma-erd-generator writes the
+// mermaid source and returns before it ever reaches mermaid-cli/puppeteer, so
+// this is cheap enough to leave enabled on every `prisma generate`. Don't point
+// it at .pdf/.svg/.png: those rasterize through a headless Chrome download.
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../.erd.md"
+}
 
 datasource db {
   provider = "postgresql"

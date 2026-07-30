@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
-import { IoMdAlert } from 'react-icons/io';
+import { CircleAlert, Minus, Plus, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Item, LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -225,7 +224,7 @@ const EditItemsDialog = ({
                           }}
                           disabled={reservation.amount <= 1}
                         >
-                          <FaMinus />
+                          <Minus className="h-4 w-4" />
                         </Button>
                         <Input
                           value={reservation.amount}
@@ -245,7 +244,7 @@ const EditItemsDialog = ({
                           }}
                           disabled={reservation.amount >= getMaxForReservation(reservation)}
                         >
-                          <FaPlus />
+                          <Plus className="h-4 w-4" />
                         </Button>
                         <Button
                           aria-label="Poista varaus"
@@ -256,7 +255,7 @@ const EditItemsDialog = ({
                             setReservations((rs) => rs.filter((r) => r.id !== reservation.id));
                           }}
                         >
-                          <FaTrash />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -439,7 +438,7 @@ const LoanStartCard = ({
                 reikä laavussa tms.)
               </p>
               <p className="mt-2 leading-relaxed text-destructive">
-                <IoMdAlert className="mr-2 inline" />
+                <CircleAlert className="mr-2 inline h-4 w-4" />
                 Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
                 havaitsemiasi puutteita tai vahinkoja.
               </p>

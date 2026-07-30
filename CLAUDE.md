@@ -126,8 +126,12 @@ server components or route handlers.
   API so it respects dark mode + tokens).
 - Form labels/fields: use `Label` from `components/ui/label.tsx` and the small
   `Field` wrapper in `components/ui/field.tsx` for label + error + helper.
-- Icons: `lucide-react` preferred; `react-icons` (Fa*, Io*, Lu*) is also in use
-  from the Chakra era — keep existing usages, don't churn them.
+- Icons: `lucide-react` only. `react-icons` (the Chakra-era Fa*/Io*/Md*/Lu*
+  imports) is gone — don't reintroduce it. Note lucide defaults to a 24px icon
+  where react-icons used `1em`, so **always pass an explicit size class**
+  (`h-4 w-4` in a default/`icon-sm` Button, `h-5 w-5` where the surrounding text
+  is larger); `Button` does not normalize child SVG size. Prefer the current
+  lucide names over deprecated aliases (`TriangleAlert`, not `AlertTriangle`).
 - Color scale when picking a Badge/Button variant:
   - `default` = primary (blue)
   - `success` = green

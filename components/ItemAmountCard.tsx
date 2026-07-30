@@ -1,8 +1,7 @@
 'use client';
 
 import { memo, MouseEvent, ReactNode, useCallback } from 'react';
-import { FaPlus, FaMinus } from 'react-icons/fa';
-import { X } from 'lucide-react';
+import { Minus, Plus, X } from 'lucide-react';
 import { useItemImageState } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +58,7 @@ const ItemAmountCard = memo(function ItemAmountCard({
         disabled={decrementDisabled}
         className="h-full w-10 shrink-0 rounded-r-none"
       >
-        <FaMinus />
+        <Minus className="h-4 w-4" />
       </Button>
       <Input
         value={amount}
@@ -76,7 +75,7 @@ const ItemAmountCard = memo(function ItemAmountCard({
         disabled={incrementDisabled}
         className="h-full w-10 shrink-0 rounded-l-none"
       >
-        <FaPlus />
+        <Plus className="h-4 w-4" />
       </Button>
     </div>
   );

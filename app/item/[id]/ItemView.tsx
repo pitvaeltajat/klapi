@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import { AlertTriangle } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -142,7 +142,7 @@ export default function ItemView({
                 aria-label={`${openReportCount} avointa vikailmoitusta`}
               >
                 <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="size-3.5" aria-hidden />
+                  <TriangleAlert className="size-3.5" aria-hidden />
                   {openReportCount === 1
                     ? 'Avoin vikailmoitus'
                     : `${openReportCount} avointa vikailmoitusta`}

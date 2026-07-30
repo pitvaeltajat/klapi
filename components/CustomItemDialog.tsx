@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useCart } from '@/contexts/CartContext';
-import { FaCartArrowDown } from 'react-icons/fa';
+import { ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -71,7 +71,7 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
           </Button>
           <Button onClick={handleSubmit} className="gap-2">
             Lisää
-            <FaCartArrowDown />
+            <ShoppingCart className="h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>

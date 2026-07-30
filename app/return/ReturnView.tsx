@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IoMdAlert } from 'react-icons/io';
+import { CircleAlert } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -278,7 +278,7 @@ const LoanReturnCard = ({
                     niistä.
                   </p>
                   <p className="mt-2 text-sm font-bold leading-relaxed text-destructive">
-                    <IoMdAlert className="mr-2 inline" />
+                    <CircleAlert className="mr-2 inline h-4 w-4" />
                     Huomio: Tapahtuneiden vahinkojen ilmoittamatta jättäminen johtaa
                     automaattisesti kaluston lainauskieltoon sekä korvausvastuuseen
                     vahingoittuneen kaluston koko arvoon asti.

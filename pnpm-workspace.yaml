@@ -6,7 +6,11 @@ allowBuilds:
   bcrypt: true
   esbuild: true
   prisma: true
-  puppeteer: true
+  # puppeteer is pulled in as an auto-installed peer of @mermaid-js/mermaid-cli,
+  # which prisma-erd-generator depends on. We only generate ERD.md (pure text —
+  # no browser), so keep its postinstall off: that script downloads a full Chrome
+  # build (~GBs in ~/.cache/puppeteer) we never launch.
+  puppeteer: false
   sharp: true
   unrs-resolver: true
   vue-demi: true

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextLink from 'next/link';
-import { LuTriangleAlert } from 'react-icons/lu';
+import { TriangleAlert } from 'lucide-react';
 import type { Announcement } from '@prisma/client';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cardVariants } from '@/components/ui/card';
@@ -130,7 +130,7 @@ export default function ItemCardShell({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="mt-1 flex w-fit max-w-full items-center gap-1 text-xs font-semibold text-destructive">
-                <LuTriangleAlert className="shrink-0" />
+                <TriangleAlert className="h-3 w-3 shrink-0" />
                 <span className="truncate">
                   Sisältää ilmoitukse{activeAnnouncements.length > 1 ? 't' : 'n'}
                 </span>

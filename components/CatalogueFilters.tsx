@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FaSearch, FaTimes } from 'react-icons/fa';
+import { Search, X } from 'lucide-react';
 import { Category } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,14 +64,14 @@ export default function CatalogueFilters({
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             {search ? (
-              <FaTimes
+              <X
                 role="button"
-                className="cursor-pointer"
+                className="h-4 w-4 cursor-pointer"
                 onClick={() => onSearchChange('')}
                 aria-label="Tyhjennä haku"
               />
             ) : (
-              <FaSearch />
+              <Search className="h-4 w-4" />
             )}
           </div>
         </div>

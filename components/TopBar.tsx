@@ -1,6 +1,6 @@
 'use client';
 
-import { FaBars } from 'react-icons/fa';
+import { Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
@@ -228,7 +228,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   onClick={isOpen ? onClose : onOpen}
                   className="hover:bg-header-foreground/20 active:bg-header-foreground/30 md:hidden"
                 >
-                  <FaBars />
+                  <Menu className="h-4 w-4" />
                 </Button>
               )}
 

@@ -1,7 +1,6 @@
 'use client';
 
-import { FaTrash } from 'react-icons/fa';
-import { MdOutlinePassword } from 'react-icons/md';
+import { KeyRound, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useMemo, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -294,11 +293,11 @@ export default function AdminPage() {
           actions={
             <>
               <Button onClick={showKioskPassword} variant="warning" className="gap-2">
-                <MdOutlinePassword /> Näytä kioskikäyttäjän salasana
+                <KeyRound className="h-4 w-4" /> Näytä kioskikäyttäjän salasana
               </Button>
               {!session?.user?.adminExpiry && (
                 <Button onClick={() => setPinDialogOpen(true)} variant="warning" className="gap-2">
-                  <MdOutlinePassword /> Aseta oma admin-PIN
+                  <KeyRound className="h-4 w-4" /> Aseta oma admin-PIN
                 </Button>
               )}
             </>
@@ -376,7 +375,7 @@ export default function AdminPage() {
                     }
                     className="text-destructive hover:bg-destructive/10"
                   >
-                    <FaTrash />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </Card>
@@ -418,7 +417,7 @@ export default function AdminPage() {
                         }
                         className="text-destructive hover:bg-destructive/10"
                       >
-                        <FaTrash />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>

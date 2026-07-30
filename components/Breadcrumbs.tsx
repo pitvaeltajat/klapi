@@ -1,7 +1,7 @@
 'use client';
 
 import NextLink from 'next/link';
-import { FaChevronCircleRight } from 'react-icons/fa';
+import { CircleChevronRight } from 'lucide-react';
 import React from 'react';
 
 export interface BreadcrumbItem {
@@ -27,7 +27,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
           return (
             <React.Fragment key={index}>
               <li aria-hidden className="text-muted-foreground">
-                <FaChevronCircleRight />
+                <CircleChevronRight className="h-3.5 w-3.5" />
               </li>
               <li aria-current={isCurrentPage ? 'page' : undefined}>
                 {isCurrentPage || !item.href ? (

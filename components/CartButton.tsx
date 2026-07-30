@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FaShoppingCart } from 'react-icons/fa';
+import { ShoppingCart } from 'lucide-react';
 import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
 
@@ -23,7 +23,7 @@ export default function CartButton({ onOpen, onClose, isOpen }: CartButtonProps)
       onClick={isOpen ? onClose : onOpen}
       disabled={!dates.datesSet}
     >
-      <FaShoppingCart />
+      <ShoppingCart className="h-4 w-4" />
     </Button>
   );
 }

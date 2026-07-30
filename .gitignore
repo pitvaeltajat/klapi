@@ -16,6 +16,8 @@ tsconfig.tsbuildinfo
 .swc/
 
 # misc
+# Intermediate ERD from prisma-erd-generator; `pnpm erd` splices it into README.md.
+.erd.md
 .DS_Store
 *.pem
 # Editor settings are shared (.vscode/settings.json is tracked), so only ignore

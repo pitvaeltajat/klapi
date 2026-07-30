@@ -1,8 +1,7 @@
 'use client';
 
 import React, { Suspense, use, useState } from 'react';
-import { FaPlus } from 'react-icons/fa';
-import { LayoutGrid, Table as TableIcon } from 'lucide-react';
+import { LayoutGrid, Plus, Table as TableIcon } from 'lucide-react';
 import DateSelector from '@/components/DateSelector';
 import DateSummaryBar from '@/components/DateSummaryBar';
 import KioskModeSelector from '@/components/KioskModeSelector';
@@ -46,7 +45,7 @@ function BrowseModeHeader({
         <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
         {isAdmin && (
           <Button variant="success" className="gap-2" onClick={onCreateItem}>
-            <FaPlus /> Luo uusi kama
+            <Plus className="h-4 w-4" /> Luo uusi kama
           </Button>
         )}
         {isAdmin && (

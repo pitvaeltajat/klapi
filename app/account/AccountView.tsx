@@ -7,7 +7,7 @@ import PendingPickupBanner from '@/components/PendingPickupBanner';
 import type { Loan, User, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import { useState, useSyncExternalStore } from 'react';
 import React from 'react';
-import { LuTriangleAlert } from 'react-icons/lu';
+import { TriangleAlert } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -153,7 +153,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
         description="Olet kirjautumassa ulos kaluston koneen käyttäjältä. Tätä ei yleensä pitäisi tehdä jotta myös seuraava käyttäjä voi käyttää laitetta normaalisti. Haluatko varmasti kirjautua ulos?"
         confirmLabel={
           <>
-            <LuTriangleAlert className="mr-2" />
+            <TriangleAlert className="mr-2 h-4 w-4" />
             Kirjaudu ulos
           </>
         }

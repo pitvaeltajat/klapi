@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FaSearch, FaInfoCircle, FaTimes } from 'react-icons/fa';
-import { SlidersHorizontal } from 'lucide-react';
+import { Info, Search, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
@@ -191,14 +190,14 @@ export default function ItemBrowser({
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 {search ? (
-                  <FaTimes
+                  <X
                     role="button"
-                    className="cursor-pointer"
+                    className="h-4 w-4 cursor-pointer"
                     onClick={() => setSearch('')}
                     aria-label="Tyhjennä haku"
                   />
                 ) : (
-                  <FaSearch />
+                  <Search className="h-4 w-4" />
                 )}
               </div>
             </div>
@@ -215,7 +214,7 @@ export default function ItemBrowser({
           </div>
           {showCustomItemLink && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FaInfoCircle className="h-4 w-4 shrink-0 text-primary" />
+              <Info className="h-4 w-4 shrink-0 text-primary" />
               <p>
                 Jos haluamaasi kamaa ei löydy,{' '}
                 <button

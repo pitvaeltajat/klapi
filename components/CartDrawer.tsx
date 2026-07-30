@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, useMemo } from 'react';
-import { IoMdAlert } from 'react-icons/io';
+import { CircleAlert } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import SubmitConfirmation from './SubmitConfirmation';
 import LoanerAutocomplete from './LoanerAutocomplete';
@@ -234,7 +234,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 laavussa tms.)
               </p>
               <p className="mt-2 text-base leading-relaxed text-destructive">
-                <IoMdAlert className="mr-2 inline" />
+                <CircleAlert className="mr-2 inline h-4 w-4" />
                 Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
                 havaitsemiasi puutteita tai vahinkoja.
               </p>

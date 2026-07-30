@@ -3,8 +3,7 @@
 import { ItemCardProps } from '../types';
 import { useCart } from '@/contexts/CartContext';
 import { useCallback, useMemo, memo, MouseEvent } from 'react';
-import { FaCartArrowDown, FaPlus, FaMinus } from 'react-icons/fa';
-import { Package } from 'lucide-react';
+import { Minus, Package, Plus, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useItemImageState } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,7 @@ const ItemCard = memo(function ItemCard({
           onClick={handleDecrement}
           className="h-full w-12 shrink-0 rounded-r-none text-lg sm:w-14 sm:text-lg"
         >
-          <FaMinus />
+          <Minus className="h-5 w-5" />
         </Button>
         <Input
           value={amountInCart}
@@ -95,7 +94,7 @@ const ItemCard = memo(function ItemCard({
           disabled={!canTakeMoreItems}
           className="h-full w-12 shrink-0 rounded-l-none text-lg sm:w-14 sm:text-lg"
         >
-          <FaPlus />
+          <Plus className="h-5 w-5" />
         </Button>
       </div>
     ) : (
@@ -109,7 +108,7 @@ const ItemCard = memo(function ItemCard({
           : canTakeMoreItems
             ? 'Lisää'
             : 'Ei saatavilla'}
-        {availabilityKnown && canTakeMoreItems && <FaCartArrowDown />}
+        {availabilityKnown && canTakeMoreItems && <ShoppingCart className="h-4 w-4" />}
       </Button>
     );
 
