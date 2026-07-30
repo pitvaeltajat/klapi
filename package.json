@@ -11,7 +11,7 @@
     "test": "docker compose -f docker-compose.test.yml up -d && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/klapi_test pnpm prisma migrate deploy && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/klapi_test vitest run",
     "test:ci": "pnpm prisma migrate deploy && vitest run"
   },
-  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
+  "packageManager": "pnpm@11.18.0+sha512.33d83c77da82f49fba836925c6f1b841181ec3132b670639bd012f7075f5c7cf634c5f870147c19aae7478fac01df09d8892e880454896edd23ee9b33757563c",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1097.0",
     "@aws-sdk/client-ses": "^3.1097.0",
