@@ -136,6 +136,7 @@ when it's free, which is what makes the picture line up.
 | `loanReturned` | POST | returned to box |
 | `loanProcessed` | POST | process returned-from-box |
 | `editReport` | POST | triage a huomio: set status + re-tag affected kamat (admin only) |
+| `handledReports` | GET | the huomiot archive: RESOLVED reports, newest 100 (admin only) |
 | `myPendingPickups` | GET | current user's pending pickups |
 
 `submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when a kiosk
@@ -174,7 +175,7 @@ cron sweeps — import and call them directly.
 |---|---|
 | `/` | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own) |
 | `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**) |
-| `/notices` | the huomiot page: published list for everyone, triage queue for admins |
+| `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
 | `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
 | `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
 | `/admin` | user management |

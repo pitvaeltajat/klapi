@@ -3,6 +3,7 @@
 import React from 'react';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { toast } from 'sonner';
 import { Item, Announcement, Loan, Reservation, ReportAffectedItem } from '@prisma/client';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -47,12 +48,74 @@ interface NoticesViewProps {
   isAdmin: boolean;
 }
 
+/** One loaner-written huomio, in the triage queue or in the archive below it. */
+function ReportCard({
+  report,
+  onHandle,
+  dimmed,
+}: {
+  report: PendingNotice;
+  onHandle: () => void;
+  dimmed?: boolean;
+}) {
+  return (
+    <Card padding="md" className={`flex flex-col gap-2${dimmed ? ' opacity-60' : ''}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={getReportStatusColor(report.status)}>
+          {getReportStatusLabel(report.status)}
+        </Badge>
+        <span className="text-xs text-muted-foreground">
+          {getReportCreatedLabel(report.created)}
+          {' · '}
+          <DateTime value={report.createdAt} format="numeric" />
+        </span>
+        {report.announcements.length > 0 && <Badge variant="secondary">Julkaistu</Badge>}
+      </div>
+
+      <p className="whitespace-pre-wrap break-words text-sm">{report.content}</p>
+
+      {report.affectedItems.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Koskee: {report.affectedItems.map((a) => `${a.item.name} (${a.amount} kpl)`).join(', ')}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <NextLink
+          href={`/loan/${report.loanId}`}
+          className="text-sm text-primary hover:underline"
+        >
+          {report.loan.loaner || report.loan.user.name}
+          {report.loan.description ? ` — ${report.loan.description}` : ''}
+        </NextLink>
+        <Button size="sm" variant={dimmed ? 'outline' : 'default'} onClick={onHandle}>
+          {dimmed ? 'Avaa' : 'Käsittele'}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export default function NoticesView({ announcements, reports, isAdmin }: NoticesViewProps) {
   const router = useRouter();
   const [showRemoved, setShowRemoved] = React.useState(false);
+  const [showHandled, setShowHandled] = React.useState(false);
   const [removingId, setRemovingId] = React.useState('');
   const [activeId, setActiveId] = React.useState<string | null>(null);
-  const activeReport = reports.find((r) => r.id === activeId) ?? null;
+
+  // Handled huomiot are the archive: the page payload carries the queue only,
+  // so they are fetched the first time an admin asks to see them.
+  const { data: handled, isLoading: handledLoading, mutate: refreshHandled } = useSWR<{
+    reports: PendingNotice[];
+    hasMore: boolean;
+    limit: number;
+  }>(isAdmin && showHandled ? '/api/loan/handledReports' : null);
+
+  const handledReports = handled?.reports ?? [];
+  const activeReport =
+    reports.find((r) => r.id === activeId) ??
+    handledReports.find((r) => r.id === activeId) ??
+    null;
 
   const isRemoved = (a: PublishedNotice) =>
     a.expiresAt != null && new Date(a.expiresAt) <= new Date();
@@ -94,9 +157,15 @@ export default function NoticesView({ announcements, reports, isAdmin }: Notices
 
       {isAdmin && (
         <section className="mb-8">
-          <div className="mb-3 flex items-center gap-2">
-            <h2 className="text-lg font-semibold sm:text-xl">Odottaa käsittelyä</h2>
-            {reports.length > 0 && <CountBadge count={reports.length} />}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold sm:text-xl">Odottaa käsittelyä</h2>
+              {reports.length > 0 && <CountBadge count={reports.length} />}
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox checked={showHandled} onChange={() => setShowHandled(!showHandled)} />
+              Näytä käsitellyt
+            </label>
           </div>
 
           {reports.length === 0 ? (
@@ -104,46 +173,46 @@ export default function NoticesView({ announcements, reports, isAdmin }: Notices
           ) : (
             <div className="flex flex-col gap-3">
               {reports.map((report) => (
-                <Card key={report.id} padding="md" className="flex flex-col gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={getReportStatusColor(report.status)}>
-                      {getReportStatusLabel(report.status)}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {getReportCreatedLabel(report.created)}
-                      {' · '}
-                      <DateTime value={report.createdAt} format="numeric" />
-                    </span>
-                    {report.announcements.length > 0 && (
-                      <Badge variant="secondary">Julkaistu</Badge>
-                    )}
+                <ReportCard
+                  key={report.id}
+                  report={report}
+                  onHandle={() => setActiveId(report.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {showHandled && (
+            <div className="mt-6">
+              <div className="mb-3 flex items-center gap-2">
+                <h3 className="font-medium text-muted-foreground">Käsitellyt</h3>
+                {handledReports.length > 0 && <CountBadge count={handledReports.length} />}
+              </div>
+
+              {handledLoading ? (
+                <EmptyState variant="inline" title="Ladataan…" />
+              ) : handledReports.length === 0 ? (
+                <EmptyState variant="inline" title="Ei käsiteltyjä huomioita" />
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3">
+                    {handledReports.map((report) => (
+                      <ReportCard
+                        key={report.id}
+                        report={report}
+                        dimmed
+                        onHandle={() => setActiveId(report.id)}
+                      />
+                    ))}
                   </div>
-
-                  <p className="whitespace-pre-wrap break-words text-sm">{report.content}</p>
-
-                  {report.affectedItems.length > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Koskee:{' '}
-                      {report.affectedItems
-                        .map((a) => `${a.item.name} (${a.amount} kpl)`)
-                        .join(', ')}
+                  {handled?.hasMore && (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Näytetään {handled.limit} viimeisintä käsiteltyä huomiota. Vanhemmat
+                      löytyvät oman lainansa sivulta.
                     </p>
                   )}
-
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <NextLink
-                      href={`/loan/${report.loanId}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      {report.loan.loaner || report.loan.user.name}
-                      {report.loan.description ? ` — ${report.loan.description}` : ''}
-                    </NextLink>
-                    <Button size="sm" onClick={() => setActiveId(report.id)}>
-                      Käsittele
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+                </>
+              )}
             </div>
           )}
         </section>
@@ -231,7 +300,13 @@ export default function NoticesView({ announcements, reports, isAdmin }: Notices
           }))}
           open={activeId !== null}
           onOpenChange={(open) => {
-            if (!open) setActiveId(null);
+            if (!open) {
+              setActiveId(null);
+              // The dialog refreshes the server payload itself; the archive is
+              // client-fetched, so a huomio just closed out (or reopened) only
+              // moves between the two lists if we revalidate it here.
+              if (showHandled) void refreshHandled();
+            }
           }}
         />
       )}
