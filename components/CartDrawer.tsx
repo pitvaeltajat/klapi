@@ -24,6 +24,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
+import { isCustomItemId } from '@/utils/customItems';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
@@ -116,7 +117,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     const over = new Map<string, number>();
     if (!availabilities) return over;
     for (const item of cartItems) {
-      if (item.id.startsWith('custom-')) continue;
+      if (isCustomItemId(item.id)) continue;
       const available = availabilities[item.id]?.available ?? 0;
       if (item.amount > available) over.set(item.id, available);
     }
@@ -262,7 +263,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               )}
               {cart.items.map((item) => {
                 if (item.amount <= 0) return null;
-                const isCustomItem = item.id.startsWith('custom-');
+                const isCustomItem = isCustomItemId(item.id);
                 const available = availabilities?.[item.id]?.available ?? 0;
                 const isIncrementDisabled = isCustomItem
                   ? false

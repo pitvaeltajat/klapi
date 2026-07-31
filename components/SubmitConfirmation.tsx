@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useInBoxItems } from '@/hooks/useInBoxItems';
+import { isCustomItemId } from '@/utils/customItems';
 
 export default function SubmitConfirmation({
   isOpen,
@@ -61,7 +62,7 @@ export default function SubmitConfirmation({
     const reservations = cart.items.map((cartitem: CartItem) => ({
       itemId: cartitem.id,
       amount: cartitem.amount,
-      ...(cartitem.id.startsWith('custom-') ? { name: cartitem.name } : {}),
+      ...(isCustomItemId(cartitem.id) ? { name: cartitem.name } : {}),
     }));
 
     const body = {

@@ -3,6 +3,7 @@ import prisma from '@/utils/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
+import { isUploadableCustomItemId } from '@/utils/customItems';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { sendCreatedEmail, sendNewLoanEmail } from '@/utils/emails';
 
@@ -52,10 +53,28 @@ export async function POST(request: Request) {
         );
       }
     }
+    // A custom item keeps its client-generated id where it can: the loaner may
+    // already have uploaded a photo to S3 under that key, and the image URLs are
+    // derived from the item id. Ids of the wrong shape (older clients) and ones
+    // already taken by a soft-deleted item fall back to a generated one — the
+    // loan matters more than the picture.
+    const takenIds = new Set(
+      customReservations.length === 0
+        ? []
+        : (
+            await prisma.item.findMany({
+              where: { id: { in: customReservations.map((r) => r.itemId) } },
+              select: { id: true },
+            })
+          ).map((i) => i.id),
+    );
     const createdCustomItems = await Promise.all(
       customReservations.map((r) =>
         prisma.item.create({
           data: {
+            ...(isUploadableCustomItemId(r.itemId) && !takenIds.has(r.itemId)
+              ? { id: r.itemId }
+              : {}),
             name: r.name!,
             description: 'Automaattisesti luotu väliaikainen item',
             amount: r.amount ?? 1,

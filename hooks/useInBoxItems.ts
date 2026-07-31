@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { isCustomItemId } from '@/utils/customItems';
 
 export interface InBoxItem {
   itemId: string;
@@ -27,7 +28,7 @@ export function useInBoxItems(itemIds: string[], enabled: boolean) {
     let cancelled = false;
 
     const check = async () => {
-      const ids = key.split(',').filter((id) => id && !id.startsWith('custom-'));
+      const ids = key.split(',').filter((id) => id && !isCustomItemId(id));
       if (!enabled || ids.length === 0) {
         setInBoxItems([]);
         return;

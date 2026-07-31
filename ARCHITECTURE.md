@@ -82,12 +82,15 @@ the entity's detail page:
 | `promoteItem` | POST | temporary → normal item; logs `PROMOTED` |
 | `bulkItems` | POST | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item |
 | `getInventory` | GET | inventory listing (admin table source) |
-| `uploadImage` | POST | S3 presigned URL for the item image |
+| `uploadImage` | POST | S3 presigned URL for the item image (admin — or any non-kiosk user for a `custom-<uuid>` key) |
 | `createAnnouncement` / `expireAnnouncement` | POST | item notices |
 
 Items are **soft-deleted** (`deletedAt`), so reservations + history survive.
-Temporary items are auto-created during `loan/submitLoan` and are **not**
-history-logged.
+Temporary items ("omat kamat") are auto-created during `loan/submitLoan` and are
+**not** history-logged. Their id is minted in the browser by
+`utils/customItems.ts` (`custom-<uuid>`) so an optional photo can be uploaded to
+S3 under that key before the row exists; `submitLoan` reuses the id verbatim
+when it's free, which is what makes the picture line up.
 
 ### `loan/*` — loans
 | Route | Method | Purpose |
@@ -176,6 +179,9 @@ came from one). Migrations in `prisma/migrations/`; seed in
   only the rows the admin could see. Client components take `TemplateView` from
   `@/types` instead — that module imports Prisma.
 - `hooks/useItemImage.ts` — item image with theme-aware placeholder + SSR guard.
+- `utils/customItems.ts` — the `custom-<uuid>` id for a loaner's own item: minted
+  client-side, recognised by the cart, and accepted as an upload key / explicit
+  `Item.id` only in its strict UUID form.
 - `contexts/CartContext`, `contexts/DatesContext` — loan-cart + date-range state
   (mounted in `app/providers.tsx`). Both mirror themselves into `sessionStorage`
   via `utils/sessionState.ts` so a reload doesn't lose a half-built loan; entries
