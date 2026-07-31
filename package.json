@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",
-    "build": "prisma migrate deploy && next build",
+    "build": "prisma migrate deploy && DISABLE_ERD=true prisma generate && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "erd": "prisma generate && node scripts/inline-erd.mjs",
