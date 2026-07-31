@@ -39,6 +39,14 @@ export interface LoanType {
 export default function LoanCard({ loan }: { loan: LoanType }) {
   const unresolvedReports = loan.reports?.filter((r) => r.status !== 'RESOLVED') || [];
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
+  // A partially returned loan has kamat waiting in the box that its status
+  // badge doesn't mention — say how many, so the "Laatikossa" filter's results
+  // all explain themselves. When the status already reads "Laatikossa" the
+  // whole loan is in there and the count would just repeat it.
+  const inBoxCount =
+    derivedStatus === LoanStatus.IN_BOX
+      ? 0
+      : loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).length;
   const isOverdue =
     (derivedStatus === LoanStatus.INUSE || derivedStatus === LoanStatus.ACCEPTED) &&
     new Date(loan.endTime) < new Date();
@@ -65,6 +73,11 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
         <Badge variant={getLoanStatusColor(derivedStatus)} className="shrink-0">
           {getLoanStatusLabel(derivedStatus)}
         </Badge>
+        {inBoxCount > 0 && (
+          <Badge variant="secondary" className="shrink-0">
+            Laatikossa: {inBoxCount}
+          </Badge>
+        )}
         {unresolvedReports.length > 0 && (
           <Badge variant="destructive" className="shrink-0">
             Huomioita: {unresolvedReports.length}

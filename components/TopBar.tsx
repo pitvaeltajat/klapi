@@ -319,9 +319,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
               )}
               {role === 'ADMIN' && (
                 <>
-                  <NextLink href="/admin/boxes" className={linkClass(isPathActive('/admin/boxes'))}>
-                    Laatikot
-                  </NextLink>
                   <NextLink
                     href="/admin/templates"
                     className={linkClass(isPathActive('/admin/templates'))}
@@ -411,13 +408,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
             )}
             {role === 'ADMIN' && (
               <>
-                <NextLink
-                  href="/admin/boxes"
-                  onClick={onClose}
-                  className={`px-6 py-4 ${isPathActive('/admin/boxes') ? 'font-bold' : ''}`}
-                >
-                  Laatikot
-                </NextLink>
                 <NextLink
                   href="/admin/templates"
                   onClick={onClose}

@@ -1,6 +1,6 @@
 'use client';
 
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -71,7 +71,16 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   const filteredLoans = loans.filter((loan) => {
     if (selectedStatuses.size === 0) return true;
     const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
-    return selectedStatuses.has(derivedStatus);
+    if (selectedStatuses.has(derivedStatus)) return true;
+    // "Laatikossa" answers "what is sitting in the palautuslaatikko right now",
+    // which is wider than the derived status: a loan with some kamat still out
+    // and some already dropped off derives as PARTIALLY_RETURNED, yet its
+    // returned half is in the box waiting to be checked. This chip is what
+    // replaced the separate /admin/boxes page, so it has to catch those too.
+    return (
+      selectedStatuses.has(LoanStatus.IN_BOX) &&
+      loan.reservations.some((r) => r.status === ReservationStatus.IN_BOX)
+    );
   });
 
   return (

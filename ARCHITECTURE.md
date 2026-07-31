@@ -177,13 +177,27 @@ cron sweeps — import and call them directly.
 | `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**) |
 | `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
 | `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
+| `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
 | `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
 | `/admin` | user management |
-| `/admin/editLoan/[id]`, `/admin/boxes` | admin loan edit / boxes |
+| `/admin/editLoan/[id]` | admin loan edit |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
 | `/kiosk/startloan` | kiosk pickup queue |
 | `/account`, `/login` | account settings / sign-in |
+
+### Laatikot (no page of its own)
+
+There is one physical palautuslaatikko, so "what's in the box" is a filter, not
+a place: the **Laatikossa** chip on `/loan` (preselected, alongside the other
+status chips). It is the one chip that is *not* a plain derived-status match —
+it also catches loans deriving as `PARTIALLY_RETURNED`, whose returned half is
+sitting in the box while the rest is still out (`app/loan/LoanListClient.tsx`).
+`LoanCard` badges those with "Laatikossa: N"; checking items back in stays on
+`/loan/[id]`, per item.
+
+`Box` is still a model — `loan/loanReturned` assigns the emptiest box on return
+and `/loan/[id]` shows its name. Only the page is gone.
 
 ## Prisma models (`prisma/schema.prisma`)
 
