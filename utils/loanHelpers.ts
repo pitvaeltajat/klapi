@@ -1,4 +1,11 @@
-import { LoanStatus, ReservationStatus, LoanHistoryAction } from '@prisma/client';
+import {
+  LoanStatus,
+  ReservationStatus,
+  LoanHistoryAction,
+  ReportStatus,
+  ReportCreated,
+  AnnouncementKind,
+} from '@prisma/client';
 
 export const getLoanHistoryActionLabel = (action: LoanHistoryAction): string => {
   switch (action) {
@@ -107,6 +114,57 @@ export const getReservationStatusColor = (status: ReservationStatus): BadgeVaria
       return 'gray';
   }
 };
+
+/**
+ * The UI calls both `Report` and `Announcement` a **huomio** — something
+ * noticed about a kama. A Report is the unpublished one a loaner writes about a
+ * loan; an Announcement is the published one every loaner sees on the kama.
+ * These helpers are the single source of that vocabulary, so the same state
+ * never reads as two different things on two pages.
+ *
+ * OPEN and IN_PROGRESS both mean "still on the admin's plate"; the difference
+ * is only whether someone has claimed it, so IN_PROGRESS is the *calmer* badge.
+ */
+export const getReportStatusLabel = (status: ReportStatus | string): string => {
+  switch (status) {
+    case ReportStatus.OPEN:
+      return 'Uusi';
+    case ReportStatus.IN_PROGRESS:
+      return 'Selvityksessä';
+    case ReportStatus.RESOLVED:
+      return 'Hoidettu';
+    default:
+      return 'Tuntematon';
+  }
+};
+
+export const getReportStatusColor = (status: ReportStatus | string): BadgeVariant => {
+  switch (status) {
+    case ReportStatus.OPEN:
+      return 'destructive';
+    case ReportStatus.IN_PROGRESS:
+      return 'warning';
+    case ReportStatus.RESOLVED:
+      return 'success';
+    default:
+      return 'gray';
+  }
+};
+
+/** When the loaner wrote it — at pickup, or when returning the gear. */
+export const getReportCreatedLabel = (created: ReportCreated | string): string =>
+  created === ReportCreated.AFTER_LOAN ? 'Palautettaessa' : 'Noudettaessa';
+
+/**
+ * A published huomio is either a fault (red, carries the fix-it lifecycle) or a
+ * neutral heads-up that simply stands until an admin removes it. Everything a
+ * loaner writes starts life as a fault; most admin-written notices don't.
+ */
+export const getAnnouncementKindLabel = (kind: AnnouncementKind | string): string =>
+  kind === AnnouncementKind.KORJATTAVAA ? 'Korjattavaa' : 'Tiedoksi';
+
+export const getAnnouncementKindColor = (kind: AnnouncementKind | string): BadgeVariant =>
+  kind === AnnouncementKind.KORJATTAVAA ? 'destructive' : 'secondary';
 
 /**
  * Derives the overall loan status from its reservations.

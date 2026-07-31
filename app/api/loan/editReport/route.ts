@@ -1,44 +1,64 @@
 import { NextResponse } from 'next/server';
+import { ReportStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
-import { requireUser } from '@/utils/apiAuth';
+import { requireAdmin } from '@/utils/apiAuth';
 
+/**
+ * Triage a loaner's huomio: set its state and re-tag which kamat it concerns.
+ *
+ * `affectedItems` is `{ [itemId]: amount }` and is treated as the complete set
+ * — sending `{}` clears the tags. (It used to skip the clear when the object
+ * was empty, so untagging was impossible and tags outlived their huomio.)
+ * Omitting the field entirely leaves existing tags alone.
+ */
 export async function POST(request: Request) {
   try {
-    const { denied } = await requireUser();
+    const { denied } = await requireAdmin();
     if (denied) return denied;
 
-    const { id, status, affectedItems } = await request.json();
+    const body = (await request.json()) as {
+      id?: unknown;
+      status?: unknown;
+      affectedItems?: unknown;
+    };
+    const { id, status, affectedItems } = body;
 
-    const report = await prisma.report.update({
-      where: {
-        id: id,
-      },
-      data: {
-        status: status,
-      },
-    });
-
-    let affected = null;
-    // affectedItems is an object: { [itemId]: amount }
-    if (
-      affectedItems &&
-      typeof affectedItems === 'object' &&
-      Object.keys(affectedItems).length > 0
-    ) {
-      // Remove previous affected items for this report
-      await prisma.reportAffectedItem.deleteMany({ where: { reportId: report.id } });
-      // Convert to array for DB insert
-      const affectedArray = Object.entries(affectedItems)
-        .filter(([, amount]) => Number(amount) > 0)
-        .map(([itemId, amount]) => ({ reportId: report.id, itemId, amount: Number(amount) }));
-      if (affectedArray.length > 0) {
-        affected = await prisma.reportAffectedItem.createMany({ data: affectedArray });
-      }
+    if (typeof id !== 'string' || id === '') {
+      return NextResponse.json({ message: 'Huomion ID puuttuu' }, { status: 400 });
     }
 
-    return NextResponse.json({ report, affected });
+    const isReportStatus = (value: unknown): value is ReportStatus =>
+      typeof value === 'string' && (Object.values(ReportStatus) as string[]).includes(value);
+
+    if (!isReportStatus(status)) {
+      return NextResponse.json({ message: 'Virheellinen tila' }, { status: 400 });
+    }
+
+    const tags =
+      affectedItems && typeof affectedItems === 'object' && !Array.isArray(affectedItems)
+        ? Object.entries(affectedItems as Record<string, unknown>)
+            .map(([itemId, amount]) => ({ itemId, amount: Number(amount) }))
+            .filter(({ amount }) => Number.isFinite(amount) && amount > 0)
+        : null;
+
+    const report = await prisma.$transaction(async (tx) => {
+      const updated = await tx.report.update({ where: { id }, data: { status } });
+
+      if (tags !== null) {
+        await tx.reportAffectedItem.deleteMany({ where: { reportId: updated.id } });
+        if (tags.length > 0) {
+          await tx.reportAffectedItem.createMany({
+            data: tags.map(({ itemId, amount }) => ({ reportId: updated.id, itemId, amount })),
+          });
+        }
+      }
+
+      return updated;
+    });
+
+    return NextResponse.json({ report });
   } catch (error) {
-    console.error('Virhe muokattaessa raporttia:', error);
+    console.error('Virhe käsiteltäessä huomiota:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

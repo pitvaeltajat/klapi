@@ -432,18 +432,21 @@ const LoanStartCard = ({
               lähettää mihinkään — säilytä se omassa puhelimessasi.
             </Alert>
             <Card variant="muted" padding="sm" className="mb-4">
-              <p className="leading-relaxed">
-                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja
-                mahdolliset vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat,
-                reikä laavussa tms.)
+              <Label htmlFor="pickup-notice" className="text-base">
+                Huomasitko kamoissa jotain?
+              </Label>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa, ja kirjaa
+                puutteet tähän (esim. puuttuvat kiilat, reikä laavussa). Ylläpito käy huomiot läpi.
               </p>
-              <p className="mt-2 leading-relaxed text-destructive">
+              <p className="mt-2 text-sm leading-relaxed text-destructive">
                 <CircleAlert className="mr-2 inline h-4 w-4" />
-                Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
-                havaitsemiasi puutteita tai vahinkoja.
+                Voit joutua korvausvastuuseen, mikäli et kirjaa etukäteen kamoissa havaitsemiasi
+                puutteita tai vahinkoja.
               </p>
               <Textarea
-                placeholder="Kirjoita puutteet tai huomiot tähän..."
+                id="pickup-notice"
+                placeholder="Esim. laavun kulmassa pieni reikä"
                 value={reportContent}
                 onChange={(e) => setReportContent(e.target.value)}
                 className="mt-2 min-h-[100px] text-sm"
@@ -483,7 +486,11 @@ export default function StartLoanView({ loans, items }: { loans: LoanType[]; ite
         body: JSON.stringify({ id: loanId, reportContent }),
       });
       if (response.ok) {
-        toast.success('Lainaus aloitettu!');
+        toast.success('Lainaus aloitettu!', {
+          description: reportContent.trim()
+            ? 'Huomiosi kirjattiin — ylläpito käy sen läpi.'
+            : undefined,
+        });
       } else {
         throw new Error('Lainauksen aloitus epäonnistui');
       }

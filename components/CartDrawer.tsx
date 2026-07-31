@@ -227,26 +227,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             </Tooltip>
           </div>
 
-          {isKiosk && (
-            <Card variant="muted" padding="md" className="mt-6">
-              <p className="text-base leading-relaxed">
-                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa ja mahdolliset
-                vahingot on raportoitu alla olevaan kenttään. (Esim. puuttuvat kiilat, reikä
-                laavussa tms.)
-              </p>
-              <p className="mt-2 text-base leading-relaxed text-destructive">
-                <CircleAlert className="mr-2 inline h-4 w-4" />
-                Huomio: Voit joutua korvausvastuuseen, mikäli et ole raportoinut etukäteen kamoissa
-                havaitsemiasi puutteita tai vahinkoja.
-              </p>
-              <Textarea
-                placeholder="Kirjoita raportti tähän..."
-                value={reportContent}
-                onChange={(e) => setReportContent(e.target.value)}
-                className="mt-3 min-h-[100px] text-sm"
-              />
-            </Card>
-          )}
           {cart.items.length > 0 ? (
             <div className="mt-5 space-y-2">
               <h3 className="text-base font-semibold">Valitut tavarat</h3>
@@ -297,6 +277,30 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               title="Ostoskori on tyhjä"
               description="Lisää tavaroita ostoskoriin aloittaaksesi lainauksen"
             />
+          )}
+
+          {isKiosk && cart.items.length > 0 && (
+            <Card variant="muted" padding="md" className="mt-6">
+              <Label htmlFor="pickup-notice" className="text-base">
+                Huomasitko kamoissa jotain?
+              </Label>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa, ja kirjaa
+                puutteet tähän (esim. puuttuvat kiilat, reikä laavussa). Ylläpito käy huomiot läpi.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-destructive">
+                <CircleAlert className="mr-2 inline h-4 w-4" />
+                Voit joutua korvausvastuuseen, mikäli et kirjaa etukäteen kamoissa havaitsemiasi
+                puutteita tai vahinkoja.
+              </p>
+              <Textarea
+                id="pickup-notice"
+                placeholder="Esim. laavun kulmassa pieni reikä"
+                value={reportContent}
+                onChange={(e) => setReportContent(e.target.value)}
+                className="mt-3 min-h-[100px] text-sm"
+              />
+            </Card>
           )}
         </div>
 

@@ -170,6 +170,13 @@ PROMOTED PROMOTED
     
 
 
+        AnnouncementKind {
+            KORJATTAVAA KORJATTAVAA
+TIEDOKSI TIEDOKSI
+        }
+    
+
+
         LoanHistoryAction {
             CREATED CREATED
 UPDATED UPDATED
@@ -323,6 +330,7 @@ OLD_BOX_ADMIN_NOTIFICATION OLD_BOX_ADMIN_NOTIFICATION
   "Announcement" {
     String id "🗝️"
     String message 
+    AnnouncementKind kind 
     DateTime createdAt 
     DateTime expiresAt "❓"
     }
@@ -408,7 +416,9 @@ OLD_BOX_ADMIN_NOTIFICATION OLD_BOX_ADMIN_NOTIFICATION
     "ItemHistory" |o--|| "ItemHistoryAction" : "enum:action"
     "ItemHistory" }o--|| "Item" : "item"
     "ItemHistory" }o--|o "User" : "actedBy"
+    "Announcement" |o--|| "AnnouncementKind" : "enum:kind"
     "Announcement" }o--|o "Item" : "item"
+    "Announcement" }o--|o "Report" : "report"
     "Reservation" |o--|| "ReservationStatus" : "enum:status"
     "Reservation" }o--|| "Item" : "item"
     "Reservation" }o--|| "Loan" : "loan"

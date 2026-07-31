@@ -21,6 +21,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert } from '@/components/ui/alert';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { DateTime } from '@/components/DateTime';
 import { useInBoxItems } from '@/hooks/useInBoxItems';
 
@@ -43,6 +46,7 @@ export default function StartLoanConfirmation({
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [reportContent, setReportContent] = useState('');
 
   const itemIds = useMemo(
     () => loan.reservations.map((res) => res.itemId),
@@ -56,12 +60,14 @@ export default function StartLoanConfirmation({
       const response = await fetch('/api/loan/startLoan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loan.id }),
+        body: JSON.stringify({ id: loan.id, reportContent }),
       });
 
       if (response.ok) {
         toast.success('Lainaus aloitettu', {
-          description: 'Lainaus on nyt käynnissä. Muista palauttaa kamat ajoissa!',
+          description: reportContent.trim()
+            ? 'Lainaus on käynnissä ja huomiosi kirjattiin. Muista palauttaa kamat ajoissa!'
+            : 'Lainaus on nyt käynnissä. Muista palauttaa kamat ajoissa!',
         });
         router.refresh();
       } else {
@@ -86,7 +92,7 @@ export default function StartLoanConfirmation({
         </DialogHeader>
         <div>
           {inBoxItems.length > 0 && (
-            <Alert variant="warning" title="Huomio: Kamoja laatikossa" className="mb-4">
+            <Alert variant="warning" title="Kamoja on vielä laatikossa" className="mb-4">
               Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat täyden
               vastuun tarkistaa kamojen kunnon noudettaessa.
             </Alert>
@@ -119,6 +125,22 @@ export default function StartLoanConfirmation({
               ))}
             </TableBody>
           </Table>
+
+          <Card variant="muted" padding="md" className="mt-4">
+            <Label htmlFor="web-pickup-notice">Huomasitko kamoissa jotain?</Label>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Kirjaa puutteet tai vahingot tähän ennen kuin aloitat lainauksen. Ylläpito käy
+              huomiot läpi. Ilman kirjausta voit joutua korvausvastuuseen jo olemassa olevista
+              vioista.
+            </p>
+            <Textarea
+              id="web-pickup-notice"
+              placeholder="Esim. laavun kulmassa pieni reikä"
+              value={reportContent}
+              onChange={(e) => setReportContent(e.target.value)}
+              className="mt-2 min-h-[80px] text-sm"
+            />
+          </Card>
         </div>
 
         <DialogFooter>

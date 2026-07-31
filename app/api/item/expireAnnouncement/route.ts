@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
-import { requireUser } from '@/utils/apiAuth';
+import { requireAdmin } from '@/utils/apiAuth';
 
+/** Unpublish a huomio: it stops showing to loaners but stays in the history. */
 export async function POST(request: Request) {
   try {
-    const { session, denied } = await requireUser();
+    const { denied } = await requireAdmin();
     if (denied) return denied;
-
-    if (session?.user?.group !== 'ADMIN') {
-      return NextResponse.json({ message: 'Ei oikeutta tähän toimintoon' }, { status: 403 });
-    }
 
     const { id } = await request.json();
 
@@ -22,7 +19,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ expiredAnnouncement });
   } catch (error) {
-    console.error('Virhe vanhennettaessa ilmoitusta:', error);
+    console.error('Virhe poistettaessa huomiota:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

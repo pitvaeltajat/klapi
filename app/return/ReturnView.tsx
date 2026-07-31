@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDateOnly } from '@/utils/dateFormat';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -243,7 +244,10 @@ const LoanReturnCard = ({
                 )}
               </div>
 
-              {/* Right: tip, damage report, terms */}
+              {/* Right: tip, then the huomio field, then the terms gate. The
+                  field sits *above* the checkbox on purpose — it used to be
+                  below the thing that unlocks the confirm button, so on a phone
+                  you had already committed before you saw it. */}
               <div className="flex flex-col gap-4">
                 <Alert variant="info" title="💡 Vinkki: Ota kuva palautettavista kamoista">
                   Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
@@ -252,10 +256,34 @@ const LoanReturnCard = ({
                   säilytä se omassa puhelimessasi.
                 </Alert>
 
+                <Card variant="muted" padding="md" className="lg:flex lg:flex-1 lg:flex-col">
+                  <Label htmlFor="return-notice" className="text-base">
+                    Huomasitko kamoissa jotain?
+                  </Label>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Jos jokin tavara puuttuu tai vahingoittui lainauksen aikana, kirjaa se tähän.
+                    Tavanomaisesta käytöstä johtuneista vahingoista et ole lähtökohtaisesti
+                    korvausvastuussa, kunhan kirjaat ne. Ylläpito käy huomiot läpi.
+                  </p>
+                  <p className="mt-2 text-sm font-bold leading-relaxed text-destructive">
+                    <CircleAlert className="mr-2 inline h-4 w-4" />
+                    Vahinkojen ilmoittamatta jättäminen johtaa automaattisesti kaluston
+                    lainauskieltoon sekä korvausvastuuseen vahingoittuneen kaluston koko arvoon
+                    asti.
+                  </p>
+                  <Textarea
+                    id="return-notice"
+                    placeholder="Esim. kattilan kahva irtosi"
+                    value={reportContent}
+                    onChange={(e) => setReportContent(e.target.value)}
+                    className="mt-2 min-h-[100px] resize-y text-base lg:flex-1"
+                  />
+                </Card>
+
                 <Alert variant="info" icon={false}>
                   <p className="leading-relaxed">
                     Vahvistamalla palautuksen otat vastuun siitä, että valitsemasi tavarat ovat
-                    mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot raportoituna.
+                    mukana, puhtaita ja toimivassa kunnossa sekä mahdolliset vahingot kirjattuna.
                     Palauta tavarat oikeaan laatikkoon.
                   </p>
                   <label className="mt-3 flex cursor-pointer items-center gap-2">
@@ -269,27 +297,6 @@ const LoanReturnCard = ({
                       : 'Ymmärrän että valitsemattomat tavarat jäävät yhä minun vastuulleni.'}
                   </label>
                 </Alert>
-
-                <Card variant="muted" padding="md" className="lg:flex lg:flex-1 lg:flex-col">
-                  <p className="text-sm leading-relaxed">
-                    Mikäli jokin tavara puuttuu tai on vahingoittunut lainauksen aikana, kirjoita
-                    siitä vapaamuotoinen raportti alle. Tavanomaisesta käytöstä johtuneiden
-                    vahinkojen osalta et ole lähtökohtaisesti korvausvastuussa kunhan raportoit
-                    niistä.
-                  </p>
-                  <p className="mt-2 text-sm font-bold leading-relaxed text-destructive">
-                    <CircleAlert className="mr-2 inline h-4 w-4" />
-                    Huomio: Tapahtuneiden vahinkojen ilmoittamatta jättäminen johtaa
-                    automaattisesti kaluston lainauskieltoon sekä korvausvastuuseen
-                    vahingoittuneen kaluston koko arvoon asti.
-                  </p>
-                  <Textarea
-                    placeholder="Kirjoita raportti tähän..."
-                    value={reportContent}
-                    onChange={(e) => setReportContent(e.target.value)}
-                    className="mt-2 min-h-[100px] resize-y text-base lg:flex-1"
-                  />
-                </Card>
               </div>
             </div>
           </div>
@@ -371,7 +378,11 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
 
       if (response.ok) {
         const result = await response.json();
-        toast.success('Palautus onnistui!', { description: 'Laina on merkitty palautetuksi.' });
+        toast.success('Palautus onnistui!', {
+          description: reportContent.trim()
+            ? 'Laina merkittiin palautetuksi ja huomiosi kirjattiin.'
+            : 'Laina on merkitty palautetuksi.',
+        });
         return result.box;
       } else {
         throw new Error('Palautus epäonnistui');

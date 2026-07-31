@@ -28,7 +28,16 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
     }),
     prisma.report.findMany({
       where: { loanId: id },
-      select: { id: true, content: true, createdAt: true, status: true },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        created: true,
+        status: true,
+        affectedItems: { select: { itemId: true, amount: true } },
+        announcements: { select: { id: true } },
+      },
     }),
     prisma.loanHistory.findMany({
       where: { loanId: id },

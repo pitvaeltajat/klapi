@@ -3,7 +3,6 @@
 import { Item, Category, Reservation, LoanStatus, ItemHistoryAction } from '@prisma/client';
 import { useItemOriginalImageState } from '@/hooks/useItemImage';
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
@@ -12,7 +11,7 @@ import { TriangleAlert } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Badge, type BadgeProps } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
@@ -24,7 +23,7 @@ import {
 } from '@/utils/itemHelpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import EditItemDialog from '@/components/EditItemDialog';
-import ItemAnnouncements, { type ItemAnnouncement } from './ItemAnnouncements';
+import ItemNotices, { type ItemAnnouncement, type ItemReport } from './ItemNotices';
 
 interface ItemHistoryEntry {
   id: string;
@@ -32,23 +31,6 @@ interface ItemHistoryEntry {
   details: unknown;
   createdAt: string | Date;
   actedBy: { id: string; name: string | null; email: string | null } | null;
-}
-
-interface ReportAffectedItemWithReport {
-  id: string;
-  amount: number;
-  report: {
-    id: string;
-    content: string;
-    status: string;
-    created: string;
-    createdAt: string | Date;
-    loan: {
-      id: string;
-      description: string | null;
-      user: { name: string | null };
-    };
-  };
 }
 
 interface ItemWithRelations extends Item {
@@ -68,12 +50,6 @@ interface ItemWithRelations extends Item {
   })[];
 }
 
-const REPORT_STATUS: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
-  OPEN: { label: 'Käsittelemättä', variant: 'destructive' },
-  IN_PROGRESS: { label: 'Käsittelyssä', variant: 'warning' },
-  RESOLVED: { label: 'Ratkaistu', variant: 'success' },
-};
-
 export default function ItemView({
   item,
   history,
@@ -81,7 +57,7 @@ export default function ItemView({
 }: {
   item: ItemWithRelations;
   history: ItemHistoryEntry[];
-  reportAffectedItems?: ReportAffectedItemWithReport[];
+  reportAffectedItems?: ItemReport[];
 }) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -97,8 +73,8 @@ export default function ItemView({
       new Date(b.report.createdAt).getTime() - new Date(a.report.createdAt).getTime(),
   );
 
-  // Admin-only at-a-glance flag: does this item have an unresolved condition
-  // report? Reports aren't fetched for non-admins, so this is always 0 for them.
+  // Admin-only at-a-glance flag: does this kama have an untriaged huomio on it?
+  // They aren't fetched for non-admins, so this is always 0 for them.
   const openReportCount = reportAffectedItems.filter(
     ({ report }) => report.status === 'OPEN' || report.status === 'IN_PROGRESS',
   ).length;
@@ -137,15 +113,15 @@ export default function ItemView({
             isAdmin &&
             openReportCount > 0 && (
               <a
-                href="#raportit"
+                href="#huomiot"
                 className="no-underline"
-                aria-label={`${openReportCount} avointa vikailmoitusta`}
+                aria-label={`${openReportCount} käsittelemätöntä huomiota`}
               >
                 <Badge variant="destructive" className="gap-1">
                   <TriangleAlert className="size-3.5" aria-hidden />
                   {openReportCount === 1
-                    ? 'Avoin vikailmoitus'
-                    : `${openReportCount} avointa vikailmoitusta`}
+                    ? 'Käsittelemätön huomio'
+                    : `${openReportCount} käsittelemätöntä huomiota`}
                 </Badge>
               </a>
             )
@@ -207,47 +183,12 @@ export default function ItemView({
           </div>
         )}
 
-        <ItemAnnouncements
+        <ItemNotices
           itemId={item.id}
           announcements={item.announcements}
+          reports={reportAffectedItems}
           isAdmin={isAdmin}
         />
-
-        {isAdmin && reportAffectedItems.length > 0 && (
-          <Card as="section" id="raportit">
-            <CardTitle>Raportit ({reportAffectedItems.length})</CardTitle>
-            <ul className="flex flex-col gap-3">
-              {reportAffectedItems.map(({ id, amount, report }) => {
-                const status = REPORT_STATUS[report.status] ?? {
-                  label: report.status,
-                  variant: 'secondary' as const,
-                };
-                return (
-                  <Card as="li" key={id} variant="muted" padding="sm">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {report.created === 'BEFORE_LOAN' ? 'Ennen lainaa' : 'Lainan jälkeen'}
-                        {' · '}
-                        <DateTime value={report.createdAt} format="numeric" />
-                        {' · koski '}
-                        {amount} kpl
-                      </span>
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm">{report.content}</p>
-                    <Link
-                      href={`/loan/${report.loan.id}`}
-                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-                    >
-                      Avaa laina
-                      {report.loan.user.name ? ` — ${report.loan.user.name}` : ''}
-                    </Link>
-                  </Card>
-                );
-              })}
-            </ul>
-          </Card>
-        )}
 
         <Card as="section">
           <CardTitle>Lainat ja varaukset</CardTitle>

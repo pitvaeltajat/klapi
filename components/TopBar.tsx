@@ -309,11 +309,8 @@ export default function TopBar({ children }: { children: ReactNode }) {
               )}
               <div className="h-6 w-px bg-header-foreground/30" />
               {browseLink}
-              <NextLink
-                href="/item/announcements"
-                className={linkClass(isPathActive('/item/announcements'))}
-              >
-                Ilmoitukset
+              <NextLink href="/notices" className={linkClass(isPathActive('/notices'))}>
+                Huomiot
               </NextLink>
               {(role === 'ADMIN' || role === 'KIOSK') && (
                 <NextLink href="/loan" className={linkClass(isPathActive('/loan'))}>
@@ -324,9 +321,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 <>
                   <NextLink href="/admin/boxes" className={linkClass(isPathActive('/admin/boxes'))}>
                     Laatikot
-                  </NextLink>
-                  <NextLink href="/admin/reports" className={linkClass(isPathActive('/admin/reports'))}>
-                    Raportit
                   </NextLink>
                   <NextLink
                     href="/admin/templates"
@@ -400,11 +394,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
               Kamat
             </button>
             <NextLink
-              href="/item/announcements"
+              href="/notices"
               onClick={onClose}
-              className={`px-6 py-4 ${isPathActive('/item/announcements') ? 'font-bold' : ''}`}
+              className={`px-6 py-4 ${isPathActive('/notices') ? 'font-bold' : ''}`}
             >
-              Ilmoitukset
+              Huomiot
             </NextLink>
             {(role === 'ADMIN' || role === 'KIOSK') && (
               <NextLink
@@ -423,13 +417,6 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   className={`px-6 py-4 ${isPathActive('/admin/boxes') ? 'font-bold' : ''}`}
                 >
                   Laatikot
-                </NextLink>
-                <NextLink
-                  href="/admin/reports"
-                  onClick={onClose}
-                  className={`px-6 py-4 ${isPathActive('/admin/reports') ? 'font-bold' : ''}`}
-                >
-                  Raportit
                 </NextLink>
                 <NextLink
                   href="/admin/templates"

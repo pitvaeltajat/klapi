@@ -67,7 +67,7 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
         </Badge>
         {unresolvedReports.length > 0 && (
           <Badge variant="destructive" className="shrink-0">
-            Raportteja: {unresolvedReports.length}
+            Huomioita: {unresolvedReports.length}
           </Badge>
         )}
       </div>

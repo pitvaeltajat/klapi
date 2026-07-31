@@ -142,13 +142,30 @@ enum ItemHistoryAction {
   PROMOTED
 }
 
+/// A *published* huomio: the notice loaners see on a kama while browsing.
+/// Its unpublished counterpart is `Report` — the note a loaner writes about a
+/// loan. The UI calls both "huomio"; the split is only who can see it.
 model Announcement {
-  id        String    @id @default(cuid())
+  id        String           @id @default(cuid())
   message   String
-  createdAt DateTime  @default(now())
+  kind      AnnouncementKind @default(TIEDOKSI)
+  createdAt DateTime         @default(now())
   expiresAt DateTime?
-  item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item      Item?            @relation(fields: [itemId], references: [id], onDelete: Cascade)
   itemId    String?
+  /// Set when an admin published this out of a loaner's report. Several
+  /// announcements (one per affected kama) can share one reportId.
+  report    Report?          @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  reportId  String?
+
+  @@index([reportId])
+}
+
+/// KORJATTAVAA carries the "something is wrong" lifecycle and shows red to
+/// loaners; TIEDOKSI is a neutral heads-up that just stands until removed.
+enum AnnouncementKind {
+  KORJATTAVAA
+  TIEDOKSI
 }
 
 model Location {
@@ -225,6 +242,8 @@ enum LoanHistoryAction {
   PROCESSED_FROM_BOX
 }
 
+/// An *unpublished* huomio: what a loaner wrote when picking up or returning a
+/// loan. An admin triages it and may publish it as one or more `Announcement`s.
 model Report {
   id            String               @id @default(cuid())
   content       String
@@ -234,8 +253,12 @@ model Report {
   loanId        String
   loan          Loan                 @relation(fields: [loanId], references: [id], onDelete: Cascade)
   affectedItems ReportAffectedItem[]
+  announcements Announcement[]
 }
 
+/// Which kamat a report concerns, tagged by an admin during triage. This is
+/// bookkeeping only — it deliberately does NOT reduce availability, so a tagged
+/// kama stays loanable. Publish a KORJATTAVAA announcement to warn loaners.
 model ReportAffectedItem {
   id       String @id @default(cuid())
   report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)

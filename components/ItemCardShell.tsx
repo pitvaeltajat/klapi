@@ -2,8 +2,8 @@
 
 import React from 'react';
 import NextLink from 'next/link';
-import { TriangleAlert } from 'lucide-react';
-import type { Announcement } from '@prisma/client';
+import { Info, TriangleAlert } from 'lucide-react';
+import { AnnouncementKind, type Announcement } from '@prisma/client';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -78,10 +78,15 @@ export default function ItemCardShell({
       'transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl',
     className,
   );
-  // Expired announcements shouldn't surface on the card — only live ones.
+  // Removed huomiot shouldn't surface on the card — only live ones.
   const activeAnnouncements = Array.isArray(announcements)
     ? announcements.filter((a) => !a.expiresAt || new Date(a.expiresAt) > new Date())
     : [];
+
+  // A fault is a warning; a heads-up is not. The card used to shout both in red,
+  // which trained people to ignore the red.
+  const hasFault = activeAnnouncements.some((a) => a.kind === AnnouncementKind.KORJATTAVAA);
+  const NoticeIcon = hasFault ? TriangleAlert : Info;
 
   const Inner = (
     <>
@@ -129,14 +134,24 @@ export default function ItemCardShell({
         {activeAnnouncements.length > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="mt-1 flex w-fit max-w-full items-center gap-1 text-xs font-semibold text-destructive">
-                <TriangleAlert className="h-3 w-3 shrink-0" />
+              <div
+                className={cn(
+                  'mt-1 flex w-fit max-w-full items-center gap-1 text-xs font-semibold',
+                  hasFault ? 'text-destructive' : 'text-muted-foreground',
+                )}
+              >
+                <NoticeIcon className="h-3 w-3 shrink-0" />
                 <span className="truncate">
-                  Sisältää ilmoitukse{activeAnnouncements.length > 1 ? 't' : 'n'}
+                  {hasFault ? 'Korjattavaa' : 'Huomioitavaa'}
                 </span>
               </div>
             </TooltipTrigger>
-            <TooltipContent className="max-w-xs whitespace-pre-wrap bg-destructive text-sm text-destructive-foreground">
+            <TooltipContent
+              className={cn(
+                'max-w-xs whitespace-pre-wrap text-sm',
+                hasFault && 'bg-destructive text-destructive-foreground',
+              )}
+            >
               <div className="flex flex-col gap-2">
                 {activeAnnouncements.map((a) => (
                   <p key={a.id}>{a.message}</p>

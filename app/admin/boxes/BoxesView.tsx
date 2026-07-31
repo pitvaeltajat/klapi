@@ -89,7 +89,7 @@ export default function BoxesView({ boxes, reports }: BoxesViewProps) {
                               </div>
                               {hasReports(loan.id) && (
                                 <Badge variant="destructive" className="self-end">
-                                  Raportteja:{' '}
+                                  Huomioita:{' '}
                                   {
                                     reports.filter(
                                       (r) => r.loanId === loan.id && r.status !== 'RESOLVED',

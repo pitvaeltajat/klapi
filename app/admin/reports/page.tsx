@@ -1,25 +1,7 @@
-export const dynamic = 'force-dynamic';
+import { permanentRedirect } from 'next/navigation';
 
-import prisma from '@/utils/prisma';
-import { serialize } from '@/utils/serialize';
-import ReportsView from './ReportsView';
-
-export const metadata = { title: 'Raportit | Klapi' };
-
-export default async function ReportsPage() {
-  const reports = await prisma.report.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      loan: {
-        include: {
-          reservations: { include: { item: true } },
-          box: true,
-          user: true,
-        },
-      },
-      affectedItems: { include: { item: true } },
-    },
-  });
-
-  return <ReportsView reports={serialize(reports)} />;
+// The admin report queue is no longer a separate feature: it is the untriaged
+// half of "huomiot" and lives at `/notices`, above the published ones.
+export default function ReportsRedirect() {
+  permanentRedirect('/notices');
 }

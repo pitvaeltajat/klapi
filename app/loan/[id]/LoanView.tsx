@@ -6,7 +6,8 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import NextLink from 'next/link';
 import { CalendarRange, Inbox, MoveRight, UserRound } from 'lucide-react';
 import LoanItemList from '@/components/LoanItemList';
-import ReportCard from '@/components/ReportCard';
+import LoanNotices from '@/components/LoanNotices';
+import { type NoticeReport } from '@/components/HandleNoticeDialog';
 import StartLoanConfirmation from '@/components/StartLoanConfirmation';
 import SaveAsTemplateButton from '@/components/SaveAsTemplateButton';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -37,13 +38,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DateTime } from '@/components/DateTime';
 
-interface Report {
-  id: string;
-  content: string;
-  createdAt: Date | string;
-  status: string;
-}
-
 interface LoanWithRelations extends Loan {
   user: User;
   box: BoxType | null;
@@ -67,7 +61,7 @@ export default function LoanView({
   history,
 }: {
   loan: LoanWithRelations;
-  reports: Report[];
+  reports: NoticeReport[];
   history: HistoryEntry[];
 }) {
   const router = useRouter();
@@ -226,7 +220,11 @@ export default function LoanView({
     (r) => r.status === ReservationStatus.IN_BOX,
   );
   const canMarkReturned = isAdmin && inBoxReservations.length > 0;
-  const canSeeReports = isAdmin && reports.length > 0;
+
+  // The loaner is asked to write huomiot under a liability warning, so they get
+  // to read their own back. Admins see them on every loan; a kiosk session is a
+  // shared terminal, so it doesn't.
+  const canSeeNotices = (isAdmin || isOwner) && reports.length > 0;
   const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED').length;
 
   return (
@@ -250,7 +248,7 @@ export default function LoanView({
               </Badge>
               {unresolvedReports > 0 && (
                 <Badge variant="destructive">
-                  Käsittelemättömiä raportteja: {unresolvedReports}
+                  Käsittelemättömiä huomioita: {unresolvedReports}
                 </Badge>
               )}
             </>
@@ -354,8 +352,12 @@ export default function LoanView({
           )}
         </Card>
 
-        {canSeeReports && (
-          <ReportCard reports={reports} reservations={loan.reservations} />
+        {canSeeNotices && (
+          <LoanNotices
+            reports={reports}
+            reservations={loan.reservations}
+            isAdmin={isAdmin}
+          />
         )}
 
         {derivedStatus === 'RETURNED' ? (

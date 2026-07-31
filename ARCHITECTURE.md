@@ -22,13 +22,46 @@ The UI is Finnish; models/code are English. Map concepts before grepping:
 | laatikko       | `Box`                   | physical return box at the kiosk |
 | sijainti       | `Location`              | storage location of an item |
 | kategoria      | `Category`              | item category (many-to-many) |
-| raportti       | `Report`                | condition report tied to a loan |
-| ilmoitus       | `Announcement`          | per-item notice |
+| huomio         | `Report` **or** `Announcement` | see "Huomiot" below — one UI concept, two tables |
+| (huomio, käsittelemätön) | `Report`      | what a loaner wrote about a loan, at pickup or return |
+| (huomio, julkaistu) | `Announcement`     | what an admin published on a kama, visible to everyone |
 | pohja, valmis setti | `Template`         | pre-picked item set the loaner drops into the cart |
 | käyttäjä       | `User`                  | group = ADMIN \| USER \| KIOSK |
 | kiosk          | KIOSK group / `app/kiosk`| shared terminal; admins elevate via PIN |
 | muokkaushistoria | `ItemHistory`         | per-item audit log |
 | (loan) historia | `LoanHistory`          | per-loan audit log |
+
+## Huomiot (one feature, two tables)
+
+The UI has **one** concept — a *huomio*, something noticed about a kama — backed
+by two models. They used to be two separate features ("raportit" and
+"ilmoitukset") with their own pages and words, which is why nobody could tell
+when to use which:
+
+```
+loaner writes a huomio          →  Report      (per Loan, at pickup or return)
+   ↓  admin triages it at /notices
+admin publishes a huomio        →  Announcement (per Item, everyone sees it)
+```
+
+- **`Report`** — untriaged, admin-visible only. `status` OPEN → IN_PROGRESS →
+  RESOLVED; `created` says whether it was written at pickup or return.
+- **`Announcement`** — published. `kind` is `KORJATTAVAA` (a fault: red, warns
+  loaners) or `TIEDOKSI` (a neutral heads-up). `expiresAt` stamped = unpublished.
+- **`Announcement.reportId`** links a published huomio back to the loaner's
+  original; publishing onto N kamat writes N rows sharing one `reportId`.
+- **`ReportAffectedItem`** tags which kamat a report concerns. It is bookkeeping
+  only and **deliberately does not affect availability** — a tagged kama stays
+  loanable. Don't wire it into `availability/getAvailabilities`; warn loaners by
+  publishing a KORJATTAVAA announcement instead.
+
+All labels/colours come from `utils/loanHelpers.ts`
+(`getReportStatus*`, `getReportCreatedLabel`, `getAnnouncementKind*`) — add
+vocabulary there, not in a per-page map.
+
+Surfaces: `/notices` (both halves), `app/item/[id]/ItemNotices.tsx` (per kama),
+`components/LoanNotices.tsx` (per loan; the owner sees their own),
+`components/HandleNoticeDialog.tsx` (triage + publish).
 
 ## Auth pattern
 
@@ -83,7 +116,8 @@ the entity's detail page:
 | `bulkItems` | POST | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item |
 | `getInventory` | GET | inventory listing (admin table source) |
 | `uploadImage` | POST | S3 presigned URL for the item image (admin — or any non-kiosk user for a `custom-<uuid>` key) |
-| `createAnnouncement` / `expireAnnouncement` | POST | item notices |
+| `createAnnouncement` | POST | publish a huomio onto one or more kamat (`{ itemIds, message, kind, reportId? }`) |
+| `expireAnnouncement` | POST | unpublish one (stamps `expiresAt`) |
 
 Items are **soft-deleted** (`deletedAt`), so reservations + history survive.
 Temporary items ("omat kamat") are auto-created during `loan/submitLoan` and are
@@ -101,7 +135,7 @@ when it's free, which is what makes the picture line up.
 | `startLoan` | POST | mark in use |
 | `loanReturned` | POST | returned to box |
 | `loanProcessed` | POST | process returned-from-box |
-| `editReport` | POST | edit a condition report |
+| `editReport` | POST | triage a huomio: set status + re-tag affected kamat (admin only) |
 | `myPendingPickups` | GET | current user's pending pickups |
 
 `submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when a kiosk
@@ -139,11 +173,12 @@ cron sweeps — import and call them directly.
 | Path | Purpose |
 |---|---|
 | `/` | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own) |
-| `/item/[id]` | item detail (+ admin announcements, reports, **muokkaushistoria**) |
-| `/item/announcements` | announcements overview |
+| `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**) |
+| `/notices` | the huomiot page: published list for everyone, triage queue for admins |
+| `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
 | `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
 | `/admin` | user management |
-| `/admin/editLoan/[id]`, `/admin/reports`, `/admin/boxes` | admin loan edit / reports / boxes |
+| `/admin/editLoan/[id]`, `/admin/boxes` | admin loan edit / boxes |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
 | `/kiosk/startloan` | kiosk pickup queue |
@@ -156,7 +191,7 @@ elevation, and email recipients so `Loan.user` history survives) ·
 `Account`/`Session` (NextAuth) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, optional `Box`) · `Box` · `Location` · `Category` ·
-`Report` + `ReportAffectedItem` · `Announcement` · `LoanHistory` /
+`Report` + `ReportAffectedItem` · `Announcement` (both are "huomiot" — see above) · `LoanHistory` /
 `ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
 templates; **no** back-reference from `Loan` — a loan doesn't record whether it
 came from one). Migrations in `prisma/migrations/`; seed in

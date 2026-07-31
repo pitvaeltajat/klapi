@@ -85,7 +85,9 @@ export default function SubmitConfirmation({
       setReportContent('');
       clearCart();
       toast.success('Laina lähetetty', {
-        description: 'Laina rekisteröitiin onnistuneesti.',
+        description: reportContent?.trim()
+          ? 'Laina rekisteröitiin ja huomiosi kirjattiin.'
+          : 'Laina rekisteröitiin onnistuneesti.',
         duration: 9000,
       });
       if (session?.user?.group === 'KIOSK') {
@@ -112,7 +114,7 @@ export default function SubmitConfirmation({
         </DialogHeader>
         <div>
           {inBoxItems.length > 0 && (
-            <Alert variant="warning" title="Huomio: Kamoja laatikossa" className="mb-4">
+            <Alert variant="warning" title="Kamoja on vielä laatikossa" className="mb-4">
               Jotkin näistä kamoista ovat laatikossa edellisen lainauksen jäljiltä. Otat täyden
               vastuun tarkistaa kamojen kunnon noudettaessa.
             </Alert>
