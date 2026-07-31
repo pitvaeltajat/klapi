@@ -5,6 +5,13 @@ import { diffItemFields, logItemHistory } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
 import { badRequest, failed } from '@/utils/apiResponse';
 
+/** What CreatableSelect hands back for a sijainti — `value` is the id, or the
+ *  typed text when the option is brand new. */
+interface LocationInput {
+  value: string;
+  label: string;
+}
+
 export async function POST(request: Request) {
   const { session, denied } = await requireAdmin();
   if (denied) return denied;
@@ -20,9 +27,17 @@ export async function POST(request: Request) {
     // Snapshot before the edit so we can record a field-level diff.
     const before = await prisma.item.findUnique({
       where: { id: body.id },
-      include: { categories: true },
+      include: { categories: true, location: true },
     });
     if (!before) return badRequest('Kamaa ei löytynyt', 404);
+
+    // Sijainti, in the same `{ value, label }` shape createItem takes: an
+    // absent key leaves it alone, `null` clears it, and an option the admin
+    // typed instead of picked carries its label as `value` and mints a new
+    // Location. `undefined` and `null` mean different things here, so this is
+    // deliberately `in`-checked rather than truthiness-checked.
+    const hasLocation = 'locationId' in body;
+    const location = (body.locationId ?? null) as LocationInput | null;
 
     // When it is sent, the list is the whole desired set — an empty array means
     // "no kategoriat". A missing key means "leave them alone" instead: only
@@ -42,14 +57,27 @@ export async function POST(request: Request) {
     const removed = before.categories.filter((category) => !keptIds.has(category.id));
 
     // edit the item in the database
-    await prisma.item.update({
+    const updated = await prisma.item.update({
       where: {
         id: body.id,
       },
+      include: { location: true },
       data: {
         name,
         description: body.description,
         amount: body.amount,
+        ...(hasLocation
+          ? {
+              location: location
+                ? {
+                    connectOrCreate: {
+                      where: { id: location.value },
+                      create: { name: location.value },
+                    },
+                  }
+                : { disconnect: true },
+            }
+          : {}),
         categories: categories
           ? {
               disconnect: removed.map((category) => ({ id: category.id })),
@@ -67,12 +95,17 @@ export async function POST(request: Request) {
         name: before.name,
         description: before.description,
         amount: before.amount,
+        location: before.location?.name ?? null,
         categories: before.categories.map((c) => c.name),
       },
       {
         name,
         description: body.description ?? null,
         amount: Number(body.amount),
+        // Read back from the row rather than from `location.label`: a newly
+        // minted Location is named after what was typed, so this is the only
+        // value guaranteed to match what the kama now points at.
+        location: updated.location?.name ?? null,
         categories: (categories ?? before.categories).map((c) => c.name),
       },
     );

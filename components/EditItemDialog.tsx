@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import type { Category } from '@prisma/client';
+import type { Category, Location } from '@prisma/client';
 import {
   Dialog,
   DialogContent,
@@ -25,12 +25,18 @@ import { cn } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
 export interface EditableItem {
   id: string;
   name: string;
   description: string | null;
   amount: number;
   categories: Category[];
+  location: { id: string; name: string } | null;
 }
 
 interface EditItemDialogProps {
@@ -55,10 +61,14 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
   const existingImageSrc = useItemOriginalImage(item.id);
   const placeholder = usePlaceholder();
 
-  // Only an admin can open this, and the categories endpoint is admin-only —
-  // fetch it lazily so a plain item page never pays for the request.
+  // Only an admin can open this, and both endpoints are admin-only — fetch
+  // them lazily so a plain item page never pays for the requests.
   const { data: categories = [] } = useSWR<Category[]>(
     open ? '/api/category/getCategories' : null,
+    fetcher,
+  );
+  const { data: locations = [] } = useSWR<Location[]>(
+    open ? '/api/location/getLocations' : null,
     fetcher,
   );
 
@@ -66,6 +76,9 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
   const [description, setDescription] = useState(item.description);
   const [amount, setAmount] = useState(item.amount);
   const [itemCategories, setItemCategories] = useState(item.categories);
+  const [location, setLocation] = useState<SelectOption | null>(
+    item.location ? { value: item.location.id, label: item.location.name } : null,
+  );
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
@@ -116,6 +129,10 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
           description,
           amount,
           categories: itemCategories,
+          // `null` clears the sijainti; an option the admin typed rather than
+          // picked carries its own label as `value`, which the route turns
+          // into a new Location (same contract as createItem).
+          locationId: location,
         }),
       });
       await readJson(response, 'Virhe kaman päivityksessä');
@@ -187,6 +204,17 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
                   })),
                 )
               }
+            />
+          </Field>
+
+          <Field label="Sijainti" htmlFor="edit-item-location">
+            <CreatableSelect
+              inputId="edit-item-location"
+              placeholder="Kolon vessa"
+              value={location}
+              options={locations.map((loc) => ({ value: loc.id, label: loc.name }))}
+              onChange={(option) => setLocation(option as SelectOption | null)}
+              isClearable
             />
           </Field>
 
