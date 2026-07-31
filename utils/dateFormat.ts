@@ -45,6 +45,11 @@ export function formatDateLongShort(date: Date | string): string {
   });
 }
 
+/** "1.1.2025 klo 09.30" — the compact everyday form: numeric date + "klo" + time */
+export function formatDateKlo(date: Date | string): string {
+  return `${formatDateOnly(date)} klo ${formatTimeOnly(date)}`;
+}
+
 /** "ma 23.5." — short weekday + day.month, for compact date summaries */
 export function formatDateShortWeekday(date: Date | string): string {
   return new Date(date).toLocaleDateString('fi-FI', {

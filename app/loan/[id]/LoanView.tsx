@@ -4,7 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import NotAuthenticated from '@/components/NotAuthenticated';
 import NextLink from 'next/link';
-import ReservationTableLoanView from '@/components/ReservationTableLoanView';
+import { CalendarRange, Inbox, MoveRight, UserRound } from 'lucide-react';
+import LoanItemList from '@/components/LoanItemList';
 import ReportCard from '@/components/ReportCard';
 import StartLoanConfirmation from '@/components/StartLoanConfirmation';
 import SaveAsTemplateButton from '@/components/SaveAsTemplateButton';
@@ -33,7 +34,6 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { SelectableRow } from '@/components/ui/selectable-row';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DateTime } from '@/components/DateTime';
 
@@ -227,6 +227,7 @@ export default function LoanView({
   );
   const canMarkReturned = isAdmin && inBoxReservations.length > 0;
   const canSeeReports = isAdmin && reports.length > 0;
+  const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED').length;
 
   return (
     <>
@@ -237,60 +238,73 @@ export default function LoanView({
         ]}
       />
       <div className="flex flex-col gap-6">
-        <PageHeader className="mb-0" title={`Laina: ${loan.description || 'Ei kuvausta'}`} />
-
-        <Card>
-          <CardTitle>Perustiedot</CardTitle>
-          {/* A label/value grid rather than sentences: on a phone "Aloitusaika:
-              perjantaina 24. heinäkuuta 2026 klo 12.17" wrapped onto two lines
-              per row and the panel ate half the viewport. The label column is
-              fixed, so the values line up and each row stays one or two short
-              lines; the long weekday form only returns at sm. */}
-          <dl className="flex flex-col gap-2 text-sm sm:text-base">
-            <div className="flex flex-wrap gap-x-2">
-              <dt className="text-muted-foreground">Aloitusaika:</dt>
-              <dd>
-                <DateTime value={loan.startTime} format="numeric" className="sm:hidden" />
-                <DateTime value={loan.startTime} format="long" className="hidden sm:inline" />
-              </dd>
-            </div>
-            <div className="flex flex-wrap gap-x-2">
-              <dt className="text-muted-foreground">Lopetusaika:</dt>
-              <dd>
-                <DateTime value={loan.endTime} format="numeric" className="sm:hidden" />
-                <DateTime value={loan.endTime} format="long" className="hidden sm:inline" />
-              </dd>
-            </div>
-            <div className="flex flex-wrap gap-x-2">
-              <dt className="text-muted-foreground">Lainaaja:</dt>
-              <dd className="break-all">{loan.loaner || loan.user.name || loan.user.email}</dd>
-            </div>
-            {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="text-muted-foreground">Tili:</dt>
-                <dd>{loan.user.name}</dd>
-              </div>
-            )}
-            {loan.box && (
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="text-muted-foreground">Laatikko:</dt>
-                <dd>{loan.box.name}</dd>
-              </div>
-            )}
-            <div className="mt-1 flex flex-wrap gap-2">
+        {/* The status is what you check the page for, so it sits in the page's
+            top-right corner rather than buried at the bottom of Perustiedot. */}
+        <PageHeader
+          className="mb-0"
+          title={`Laina: ${loan.description || 'Ei kuvausta'}`}
+          actions={
+            <>
               <Badge variant={getLoanStatusColor(derivedStatus)}>
                 {getLoanStatusLabel(derivedStatus)}
               </Badge>
-              {reports.filter((r) => r.status !== 'RESOLVED').length > 0 && (
+              {unresolvedReports > 0 && (
                 <Badge variant="destructive">
-                  Käsittelemättömiä raportteja:{' '}
-                  {reports.filter((r) => r.status !== 'RESOLVED').length}
+                  Käsittelemättömiä raportteja: {unresolvedReports}
                 </Badge>
               )}
+            </>
+          }
+        />
+
+        <Card>
+          <CardTitle>Perustiedot</CardTitle>
+          {/* Icon-led rows rather than "Aloitusaika: perjantaina 24. heinäkuuta
+              2026 klo 12.17" — the label words were longer than the values they
+              introduced and wrapped every row onto two lines on a phone. The
+              icon carries the meaning; the sr-only text carries it for readers
+              that can't see it. */}
+          <dl className="flex flex-col gap-3 text-sm sm:text-base">
+            <div className="flex items-center gap-3">
+              <dt className="shrink-0 text-muted-foreground">
+                <CalendarRange aria-hidden className="h-5 w-5" />
+                <span className="sr-only">Laina-aika</span>
+              </dt>
+              <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <DateTime value={loan.startTime} format="klo" />
+                <MoveRight aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <DateTime value={loan.endTime} format="klo" />
+              </dd>
             </div>
+            <div className="flex items-center gap-3">
+              <dt className="shrink-0 text-muted-foreground">
+                <UserRound aria-hidden className="h-5 w-5" />
+                <span className="sr-only">Lainaaja</span>
+              </dt>
+              <dd className="flex flex-wrap items-baseline gap-x-2 break-all">
+                {loan.loaner || loan.user.name || loan.user.email}
+                {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
+                  <span className="text-sm text-muted-foreground">
+                    <span className="sr-only">Tili: </span>
+                    {loan.user.name}
+                  </span>
+                )}
+              </dd>
+            </div>
+            {loan.box && (
+              <div className="flex items-center gap-3">
+                <dt className="shrink-0 text-muted-foreground">
+                  <Inbox aria-hidden className="h-5 w-5" />
+                  <span className="sr-only">Laatikko</span>
+                </dt>
+                <dd>{loan.box.name}</dd>
+              </div>
+            )}
           </dl>
         </Card>
 
+        {/* One list, not two: the items and the "tick what's back in the box"
+            step used to be separate panels that repeated the same rows. */}
         <Card>
           <CardHeader>
             <CardTitle>Kamat</CardTitle>
@@ -301,18 +315,43 @@ export default function LoanView({
               />
             )}
           </CardHeader>
-          <ReservationTableLoanView
-            loan={{
-              id: loan.id,
-              reservations: loan.reservations.map((r) => ({
-                id: r.id,
-                itemId: r.itemId,
-                amount: r.amount,
-                status: r.status,
-                item: { name: r.item.name },
-              })),
-            }}
+          {canMarkReturned && (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta.
+            </p>
+          )}
+          <LoanItemList
+            reservations={loan.reservations.map((r) => ({
+              id: r.id,
+              itemId: r.itemId,
+              amount: r.amount,
+              status: r.status,
+              item: { name: r.item.name },
+            }))}
+            selection={
+              canMarkReturned
+                ? {
+                    isSelectable: (r) => r.status === ReservationStatus.IN_BOX,
+                    selected: processingIds,
+                    onToggle: toggleProcessing,
+                  }
+                : undefined
+            }
           />
+          {canMarkReturned && (
+            <Button
+              onClick={loanProcessed}
+              variant="success"
+              size="lg"
+              className="mt-4 w-full"
+              isLoading={busy}
+              disabled={processingIds.size === 0}
+            >
+              {processingIds.size === inBoxReservations.length
+                ? 'Merkitse kaikki laatikossa olevat palautetuksi'
+                : `Merkitse valitut palautetuksi (${processingIds.size})`}
+            </Button>
+          )}
         </Card>
 
         {canSeeReports && (
@@ -321,39 +360,11 @@ export default function LoanView({
 
         {derivedStatus === 'RETURNED' ? (
           <Alert variant="success" title="Lainaustapahtuma suoritettu loppuun" />
-        ) : canMarkReturned ? (
-          <Card>
-            <div className="flex flex-col gap-3">
-              <h3 className="mb-2 text-xl font-semibold">Merkitse laatikossa olevat palautetuksi</h3>
-              <p className="text-sm text-muted-foreground">
-                Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta.
-              </p>
-              <div className="flex flex-col gap-2">
-                {inBoxReservations.map((r) => (
-                  <SelectableRow
-                    key={r.id}
-                    selected={processingIds.has(r.id)}
-                    onSelectedChange={() => toggleProcessing(r.id)}
-                  >
-                    {r.item.name} <span className="text-muted-foreground">({r.amount} kpl)</span>
-                  </SelectableRow>
-                ))}
-              </div>
-              <Button
-                onClick={loanProcessed}
-                variant="success"
-                size="lg"
-                className="w-full"
-                isLoading={busy}
-                disabled={processingIds.size === 0}
-              >
-                {processingIds.size === inBoxReservations.length
-                  ? 'Merkitse kaikki laatikossa olevat palautetuksi'
-                  : `Merkitse valitut palautetuksi (${processingIds.size})`}
-              </Button>
-            </div>
-          </Card>
         ) : (
+          // While there is still something to check back in, the return step in
+          // the Kamat card is the only action offered — same as before it moved
+          // up there.
+          !canMarkReturned &&
           (canReject || canCancel || canEdit || canApprove || canStartUse) && (
             <Card>
               <div className="flex flex-col gap-3">

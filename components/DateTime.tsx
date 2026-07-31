@@ -1,16 +1,18 @@
 import {
   formatDateNumeric,
   formatDateOnly,
+  formatDateKlo,
   formatDateLong,
   formatDateLongShort,
   formatDateTimeKiosk,
 } from '@/utils/dateFormat';
 
-type DateTimeFormat = 'numeric' | 'date' | 'long' | 'longShort' | 'kiosk';
+type DateTimeFormat = 'numeric' | 'date' | 'klo' | 'long' | 'longShort' | 'kiosk';
 
 const FORMATTERS: Record<DateTimeFormat, (d: Date | string) => string> = {
   numeric: formatDateNumeric,
   date: formatDateOnly,
+  klo: formatDateKlo,
   long: formatDateLong,
   longShort: formatDateLongShort,
   kiosk: formatDateTimeKiosk,
