@@ -2,6 +2,7 @@
 
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import '@/utils/datepickerLocale';
 import React from 'react';
 import { useDates } from '@/contexts/DatesContext';
 import { useCart } from '@/contexts/CartContext';
@@ -52,7 +53,6 @@ export default function KioskDateSelector() {
               monthsShown={2}
               minDate={new Date()}
               dateFormat="dd.MM.yyyy"
-              calendarStartDay={1}
             />
           </div>
         </Card>

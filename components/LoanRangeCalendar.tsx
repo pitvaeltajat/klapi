@@ -2,6 +2,7 @@
 
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import '@/utils/datepickerLocale';
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -115,7 +116,6 @@ export default function LoanRangeCalendar({
           minDate={minDate}
           monthsShown={monthsShown}
           dateFormat="dd.MM.yyyy"
-          calendarStartDay={1}
         />
       </div>
     </div>
