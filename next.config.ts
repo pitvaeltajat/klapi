@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: turbopackRoot,
   },
+  experimental: {
+    // Next 16.3 flipped this default to true, which makes it shell out to
+    // `typescript/bin/tsc`. We deliberately alias `typescript` to the TS 6 *JS
+    // API* package (`@typescript/typescript6`, whose binary is `tsc6`) so
+    // typescript-eslint keeps working — see the TypeScript note in CLAUDE.md —
+    // so there is no `bin/tsc` to find and Next reports typescript as missing,
+    // then tries to auto-install it. Keep it on the compiler API, which that
+    // package does provide at `typescript/lib/typescript.js`.
+    useTypeScriptCli: false,
+  },
 };
 
 export default nextConfig;

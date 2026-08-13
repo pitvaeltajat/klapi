@@ -198,7 +198,26 @@ both:
 Don't collapse these back into one `typescript` entry until typescript-eslint
 ships TS ≥7.1 support (typescript-eslint/typescript-eslint#10940).
 
+That alias is also why `next.config.ts` sets `experimental.useTypeScriptCli:
+false`. Next 16.3 flipped that default to `true`, which makes it run
+`typescript/bin/tsc` — a path `@typescript/typescript6` doesn't have (its binary
+is `tsc6`). Next then declares typescript missing, prints "you don't have the
+required package(s) installed" and tries to **auto-install** it on every `next
+dev` / `next build`. `false` keeps it on the compiler API at
+`typescript/lib/typescript.js`, which that package does ship. Revisit only if the
+`typescript` entry stops being an alias.
+
 ESLint is now on **10**. The flat config (`eslint.config.mjs`) pins
 `settings.react.version` so `eslint-plugin-react` skips React auto-detection,
 which still calls the legacy `context.getFilename()` API removed in ESLint 10.
 Don't drop that setting.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

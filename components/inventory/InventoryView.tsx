@@ -1,8 +1,12 @@
 'use client';
 
 import {
-  useReactTable,
-  getCoreRowModel,
+  useTable,
+  tableFeatures,
+  columnSizingFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
   flexRender,
   createColumnHelper,
   type CellContext,
@@ -182,7 +186,7 @@ function makeEditableCell<T>({
   toEditValue,
   renderDisplay,
 }: EditableCellConfig<T>) {
-  return function EditableCell({ row, getValue }: CellContext<InventoryItem, T>) {
+  return function EditableCell({ row, getValue }: CellContext<typeof features, InventoryItem, T>) {
     const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } =
       useEditCell();
     const id = row.original.id;
@@ -343,7 +347,20 @@ const TYPE_FILTERS = [
   { value: 'temporary', label: 'Väliaikainen' },
 ] as const;
 
-const colHelper = createColumnHelper<InventoryItem>();
+// TanStack Table v9 features are opt-in — an API is missing at runtime when its
+// feature isn't registered here. The server does all the filtering, sorting and
+// paging (the table only ever holds one page), so we register the interaction
+// features we actually call and no row models: sorting for the header toggles,
+// pagination for the pager buttons, selection for the bulk-action checkboxes,
+// and sizing for the per-column `size` / `header.getSize()`.
+const features = tableFeatures({
+  columnSizingFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+});
+
+const colHelper = createColumnHelper<typeof features, InventoryItem>();
 
 export default function InventoryView() {
   // Filtering, sorting, and pagination all happen server-side: the Item table
@@ -616,7 +633,9 @@ export default function InventoryView() {
     );
   };
 
-  const columns = useMemo(() => [
+  // colHelper.columns() (rather than a bare array literal) keeps each column's
+  // own value type instead of widening them all to `unknown`.
+  const columns = useMemo(() => colHelper.columns([
     colHelper.display({
       id: 'select',
       header: ({ table }) => (
@@ -748,7 +767,7 @@ export default function InventoryView() {
         );
       },
     }),
-  ], [handleRestoreRow]);
+  ]), [handleRestoreRow]);
 
   const editCellValue = useMemo<EditCellContextValue>(
     () => ({ editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef }),
@@ -757,14 +776,13 @@ export default function InventoryView() {
 
   const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize));
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 returns non-memoizable functions; safe under React Compiler skip
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data: items,
     columns,
     state: { sorting, rowSelection, pagination },
-    // Server does the filtering/sorting/paging; the table just renders one page.
+    // Server does the sorting/paging; the table just renders one page.
     manualSorting: true,
-    manualFiltering: true,
     manualPagination: true,
     pageCount,
     rowCount: total,
@@ -774,7 +792,6 @@ export default function InventoryView() {
     },
     onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.id,
   });
 
@@ -921,7 +938,9 @@ export default function InventoryView() {
                     className={classes}
                     data-state={row.getIsSelected() ? 'selected' : undefined}
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {/* getAllCells, not getVisibleCells: no column is ever
+                        hidden, so this saves registering columnVisibilityFeature. */}
+                    {row.getAllCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
