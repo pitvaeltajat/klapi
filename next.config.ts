@@ -8,8 +8,16 @@ const dir = import.meta.dirname;
 const worktreeMatch = dir.match(/^(.*)\/\.claude\/worktrees\/[^/]+$/);
 const turbopackRoot = worktreeMatch ? worktreeMatch[1] : dir;
 
+// No `output: 'standalone'` on purpose. Nothing here consumes it — production
+// is Vercel (see vercel.json), and the Dockerfile deliberately runs `pnpm dev`
+// rather than a standalone server. It also actively breaks the deploy: Vercel
+// builds through Next's adapter API, and under Turbopack the standalone copy
+// step looks for a `.next/next-server.js.nft.json` that the adapter build never
+// writes, failing with ENOENT after "Running onBuildComplete from Vercel".
+// Next's own build source flags the combination ("in the future output:
+// standalone might not be allowed if an adapter with onBuildComplete is
+// configured"). Only reintroduce it alongside a real self-hosted target.
 const nextConfig: NextConfig = {
-  output: 'standalone',
   turbopack: {
     root: turbopackRoot,
   },
