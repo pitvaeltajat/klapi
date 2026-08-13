@@ -1,13 +1,14 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
   resolve: {
     tsconfigPaths: true,
   },
   test: {
-    environment: 'jsdom',
+    // Every test here is a pure-function or API-route test — nothing renders a
+    // component or touches document/window. The 'node' environment skips
+    // standing up a DOM per test file, which is most of the wall clock.
+    environment: 'node',
     exclude: ['.claude/**', '.next/**', 'node_modules/**'],
     // The API integration tests share one Postgres database and several read
     // globally (e.g. getAvailabilities scans all items/reservations). Running
