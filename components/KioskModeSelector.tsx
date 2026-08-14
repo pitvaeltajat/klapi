@@ -29,7 +29,8 @@ export default function KioskModeSelector() {
           </p>
           <p className="mb-3">Palauta tavarat sovittuna ajankohtana hyvässä kunnossa.</p>
           <p>
-            Mikäli sinulle tulee jotain kysyttävää, ota yhteyttä kalustonhoitajaan: 044 987 7397
+            Mikäli sinulle tulee jotain kysyttävää, ota yhteyttä kalustonhoitajaan: Ville 040 568
+            1520
           </p>
         </Alert>
 
