@@ -225,12 +225,13 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
 
           <Field label="Kuva" htmlFor="add-item-image">
             {preview && (
-              /* eslint-disable-next-line @next/next/no-img-element -- local blob preview */
-              <img
-                src={preview}
-                alt="Esikatselu"
-                className="mb-2 max-h-[220px] max-w-full rounded-md object-contain"
-              />
+              /* Fixed box, `object-contain` inside it: letting the <img> size
+                 itself made the form reflow differently for every photo — tall
+                 and narrow for a portrait, short and wide for a panorama. */
+              <div className="mb-2 aspect-5/3 w-full max-w-sm overflow-hidden rounded-md bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
+                <img src={preview} alt="Esikatselu" className="h-full w-full object-contain" />
+              </div>
             )}
             <Input
               id="add-item-image"

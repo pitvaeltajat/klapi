@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/utils/loanHelpers';
-import { useItemImage, usePlaceholder } from '@/hooks/useItemImage';
+import ItemThumb from '@/components/ItemThumb';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDateOnly } from '@/utils/dateFormat';
@@ -38,21 +38,6 @@ interface Reservation {
     id: string;
     name: string;
   };
-}
-
-function ReservationItemImage({ itemId, itemName }: { itemId: string; itemName: string }) {
-  const imageSrc = useItemImage(itemId);
-  const placeholder = usePlaceholder();
-  const [err, setErr] = useState(false);
-  return (
-    /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
-    <img
-      src={err ? placeholder : imageSrc}
-      alt={itemName}
-      onError={() => setErr(true)}
-      className="h-20 w-20 rounded-md object-cover"
-    />
-  );
 }
 
 interface LoanType {
@@ -218,9 +203,10 @@ const LoanReturnCard = ({
                         className="bg-muted"
                       >
                         <div className="flex items-center gap-3">
-                          <ReservationItemImage
+                          <ItemThumb
                             itemId={reservation.item.id}
-                            itemName={reservation.item.name}
+                            alt={reservation.item.name}
+                            className="h-20 w-20 rounded-md"
                           />
                           <div className="flex min-w-0 flex-1 flex-col">
                             <p className="truncate text-base font-bold">{reservation.item.name}</p>

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
-import { useItemImage } from '@/hooks/useItemImage';
+import ItemThumb from '@/components/ItemThumb';
 
 export interface LoanItemRow {
   id: string;
@@ -25,24 +25,10 @@ export interface LoanItemSelection {
   onToggle: (id: string) => void;
 }
 
-function ItemThumb({ itemId }: { itemId: string }) {
-  const src = useItemImage(itemId);
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with hook-based fallback
-    <img
-      src={src}
-      alt=""
-      aria-hidden
-      loading="lazy"
-      className="h-10 w-10 shrink-0 rounded border border-border object-cover"
-    />
-  );
-}
-
 function RowBody({ reservation }: { reservation: LoanItemRow }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <ItemThumb itemId={reservation.itemId} />
+      <ItemThumb itemId={reservation.itemId} alt="" className="h-10 w-10 rounded border border-border" />
       <div className="min-w-0 flex-1">
         <NextLink
           href={`/item/${reservation.itemId}`}

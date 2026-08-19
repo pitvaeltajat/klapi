@@ -50,7 +50,7 @@ import {
 } from '@/components/ui/tooltip';
 import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useItemImage } from '@/hooks/useItemImage';
+import ItemThumb from '@/components/ItemThumb';
 import { cn } from '@/lib/utils';
 import PromoteItemDialog from '@/components/PromoteItemDialog';
 import EditItemDialog from '@/components/EditItemDialog';
@@ -107,19 +107,6 @@ function Truncated({ text }: { text: string | null | undefined }) {
       </TooltipTrigger>
       <TooltipContent className="max-w-xs whitespace-pre-wrap">{text}</TooltipContent>
     </Tooltip>
-  );
-}
-
-function RowImage({ itemId, name }: { itemId: string; name: string }) {
-  const src = useItemImage(itemId);
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with hook-based fallback
-    <img
-      src={src}
-      alt={name}
-      className="h-9 w-9 rounded border border-border object-cover"
-      loading="lazy"
-    />
   );
 }
 
@@ -663,7 +650,11 @@ export default function InventoryView() {
           aria-label={`Avaa ${row.original.name}`}
           className="inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
         >
-          <RowImage itemId={row.original.id} name={row.original.name} />
+          <ItemThumb
+            itemId={row.original.id}
+            alt={row.original.name}
+            className="h-9 w-9 rounded border border-border"
+          />
         </Link>
       ),
       size: 52,

@@ -174,6 +174,19 @@ run the real `pnpm build`.
   surface still looks light in dark mode, add the missing class there.
 - `useItemImage` reads `resolvedTheme` from `next-themes`, which is undefined
   until mount — the hook handles SSR by defaulting to the light placeholder.
+- **A kaman kuva always goes in a box; it never sizes itself.** The photo's
+  dimensions aren't known until it has loaded, so a `max-h`/`max-w` `<img>`
+  leaves the skeleton standing in for a box of the wrong size and the page
+  jumps when the picture lands. Give the container the size (`aspect-5/3` for
+  the big ones, a square `h-N w-N` for thumbnails) plus `overflow-hidden
+  bg-muted`, and let the image fill it with `object-contain`/`object-cover`;
+  the skeleton then fills the identical box. `components/ItemThumb.tsx` is the
+  list/table thumbnail, `ItemCardShell` the card, and `/item/[id]` the detail
+  photo — reach for one of those before hand-rolling a fourth.
+- Prefer `useItemImageState` over `useItemImage`: the plain hook answers with
+  the "Ei kuvaa" placeholder while it is still probing, so every row flashes
+  the placeholder before the real photo. The `…State` variant reports
+  `status: 'loading'` so the box can pulse instead.
 - The Chakra-era color helpers in `utils/loanHelpers.ts` return shadcn `Badge`
   variants now (`success`, `destructive`, `warning`, `default`, `secondary`,
   `gray`). Keep them returning those literals — the `BadgeVariant` type is

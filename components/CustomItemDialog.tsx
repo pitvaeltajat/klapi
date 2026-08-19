@@ -152,16 +152,13 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
               htmlFor="custom-image"
               helper="Kuvan voi jättää lisäämättä. Se auttaa tunnistamaan kaman palautuksessa."
             >
-              {/* The preview's min-w keeps the remove button on the picture
-                  even when the chosen file is a sliver of an image. */}
+              {/* Fixed box, `object-contain` inside it: sizing the box off the
+                  photo reflowed the dialog differently for every file, and a
+                  sliver of an image left no corner to pin the remove button to. */}
               {preview ? (
-                <div className="relative w-fit min-w-24">
+                <div className="relative aspect-5/3 w-full max-w-sm overflow-hidden rounded-md bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
-                  <img
-                    src={preview}
-                    alt="Esikatselu"
-                    className="max-h-[220px] max-w-full rounded-md object-contain"
-                  />
+                  <img src={preview} alt="Esikatselu" className="h-full w-full object-contain" />
                   <Button
                     type="button"
                     variant="secondary"
