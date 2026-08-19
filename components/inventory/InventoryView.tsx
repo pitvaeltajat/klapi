@@ -52,7 +52,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useItemImage } from '@/hooks/useItemImage';
 import { cn } from '@/lib/utils';
-import PromoteDialog from './PromoteDialog';
+import PromoteItemDialog from '@/components/PromoteItemDialog';
 import EditItemDialog from '@/components/EditItemDialog';
 
 // Inline types so we don't depend on @prisma/client direct exports
@@ -1034,16 +1034,14 @@ export default function InventoryView() {
 
       {/* Promote dialog */}
       {promoteItem && (
-        <PromoteDialog
+        <PromoteItemDialog
           key={promoteItem.id}
           item={promoteItem}
-          categories={categories}
-          locations={locations}
           onOpenChange={(open) => {
             if (!open) setPromoteItem(null);
           }}
           onSuccess={(updated) => {
-            updateItemLocal(updated as InventoryItem);
+            updateItemLocal(updated);
             setPromoteItem(null);
           }}
         />

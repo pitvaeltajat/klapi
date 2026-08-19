@@ -4,18 +4,22 @@ import { Item, Category, Reservation, LoanStatus, ItemHistoryAction } from '@pri
 import { useItemOriginalImageState } from '@/hooks/useItemImage';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import { TriangleAlert } from 'lucide-react';
+import { ArrowUpCircle, TriangleAlert } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
 import { Card, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { CreatableSelect } from '@/components/ui/creatable-select';
+import { InlineEdit, InlineEditShell } from '@/components/ui/inline-edit';
 import {
   getItemHistoryActionLabel,
   formatItemHistoryChanges,
@@ -23,7 +27,11 @@ import {
 } from '@/utils/itemHelpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import EditItemDialog from '@/components/EditItemDialog';
+import PromoteItemDialog from '@/components/PromoteItemDialog';
+import { ApiError, readJson } from '@/utils/apiError';
 import ItemNotices, { type ItemAnnouncement, type ItemReport } from './ItemNotices';
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface ItemHistoryEntry {
   id: string;
@@ -50,8 +58,23 @@ interface ItemWithRelations extends Item {
   })[];
 }
 
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * The image sits in a box of its own rather than sizing itself: the photo's
+ * dimensions aren't known until it has loaded, so a self-sizing <img> means the
+ * skeleton stands in for a box of the wrong size and the whole page jumps the
+ * moment the picture lands. Fixed ratio + `object-contain` gives the skeleton
+ * and the photo exactly the same footprint. 5:3 matches the "Ei kuvaa"
+ * placeholder and the catalogue cards.
+ */
+const IMAGE_BOX_CLASS = 'aspect-5/3 w-full max-w-2xl overflow-hidden rounded-md bg-muted';
+
 export default function ItemView({
-  item,
+  item: itemProp,
   history,
   reportAffectedItems: reportAffectedItemsProp = [],
 }: {
@@ -62,11 +85,41 @@ export default function ItemView({
   const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = session?.user?.group === 'ADMIN';
+
+  // The inline editors write straight into this copy so an edit shows the
+  // instant it is saved; `router.refresh()` then re-runs the page and the fresh
+  // props reseed it (which is also how the muokkaushistoria below catches up).
+  const [item, setItem] = useState(itemProp);
+  const [seed, setSeed] = useState(itemProp);
+  if (itemProp !== seed) {
+    setSeed(itemProp);
+    setItem(itemProp);
+  }
+
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [promoteOpen, setPromoteOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
   const { src: imageSrc, status: imageStatus, placeholder } = useItemOriginalImageState(item.id);
+
+  // Only an admin can open the pickers, and both endpoints are admin-only —
+  // fetch them lazily so a plain item page never pays for the requests.
+  const [locationEditing, setLocationEditing] = useState(false);
+  const [categoriesEditing, setCategoriesEditing] = useState(false);
+  const pickersOpen = locationEditing || categoriesEditing;
+  const { data: allCategories = [] } = useSWR<{ id: string; name: string }[]>(
+    pickersOpen ? '/api/category/getCategories' : null,
+    fetcher,
+  );
+  const { data: allLocations = [] } = useSWR<{ id: string; name: string }[]>(
+    pickersOpen ? '/api/location/getLocations' : null,
+    fetcher,
+  );
+
+  const [locationDraft, setLocationDraft] = useState<SelectOption | null>(null);
+  const [categoriesDraft, setCategoriesDraft] = useState<SelectOption[]>([]);
+  const [relationSaving, setRelationSaving] = useState(false);
 
   const reportAffectedItems = [...reportAffectedItemsProp].sort(
     (a, b) =>
@@ -78,6 +131,102 @@ export default function ItemView({
   const openReportCount = reportAffectedItems.filter(
     ({ report }) => report.status === 'OPEN' || report.status === 'IN_PROGRESS',
   ).length;
+
+  const isTemporary = item.type === 'temporary';
+
+  const reportSaveError = (err: unknown, fallback: string) => {
+    toast.error(err instanceof Error ? err.message : fallback, {
+      description: err instanceof ApiError ? err.detail : undefined,
+    });
+  };
+
+  /**
+   * One field, one PATCH — the same route the inventory table's inline cells
+   * use, so an edit made here shows up in the muokkaushistoria the same way.
+   * Rethrows so the editor stays open on a failure with the typing intact.
+   */
+  const patchField = async (
+    field: 'name' | 'description' | 'amount',
+    value: string | number | null,
+  ) => {
+    try {
+      const response = await fetch('/api/item/patchItem', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, field, value }),
+      });
+      const updated = await readJson<Pick<Item, 'name' | 'description' | 'amount'>>(
+        response,
+        'Tallennus epäonnistui',
+      );
+      setItem((current) => ({
+        ...current,
+        name: updated.name,
+        description: updated.description,
+        amount: updated.amount,
+      }));
+      toast.success('Tallennettu');
+      router.refresh();
+    } catch (err) {
+      reportSaveError(err, 'Tallennus epäonnistui');
+      throw err;
+    }
+  };
+
+  /**
+   * Sijainti and kategoriat go through editItem, which is the only route that
+   * can mint a Location or a Category the admin typed instead of picked. It
+   * leaves out any key it isn't sent, so one picker never overwrites the other.
+   */
+  const saveRelations = async (patch: {
+    locationId?: SelectOption | null;
+    categories?: { id: string; name: string }[];
+  }) => {
+    setRelationSaving(true);
+    try {
+      const response = await fetch('/api/item/editItem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          amount: item.amount,
+          ...patch,
+        }),
+      });
+      await readJson(response, 'Tallennus epäonnistui');
+      toast.success('Tallennettu');
+      // A freshly typed sijainti/kategoria has no real id yet — show the label
+      // now and let the refresh below replace it with the stored row.
+      setItem((current) => ({
+        ...current,
+        ...('locationId' in patch
+          ? {
+              locationId: patch.locationId?.value ?? null,
+              location: patch.locationId
+                ? { id: patch.locationId.value, name: patch.locationId.label }
+                : null,
+            }
+          : {}),
+        ...(patch.categories
+          ? {
+              categories: patch.categories.map((category) => ({
+                ...category,
+                description: null,
+              })),
+            }
+          : {}),
+      }));
+      router.refresh();
+      return true;
+    } catch (err) {
+      reportSaveError(err, 'Tallennus epäonnistui');
+      return false;
+    } finally {
+      setRelationSaving(false);
+    }
+  };
 
   const deleteItem = async () => {
     try {
@@ -101,35 +250,77 @@ export default function ItemView({
     }
   };
 
+  const categoryBadges =
+    item.categories.length > 0 ? (
+      <span className="flex flex-wrap gap-2">
+        {item.categories.map((category) => (
+          <Badge key={category.id}>{category.name}</Badge>
+        ))}
+      </span>
+    ) : (
+      <span className="text-lg font-bold text-muted-foreground">—</span>
+    );
+
   return (
     <>
       <Breadcrumbs items={[{ label: item.name }]} />
       <div className="flex flex-col gap-6">
         <PageHeader
           className="mb-0"
-          title={item.name}
+          title={
+            <InlineEdit
+              value={item.name}
+              disabled={!isAdmin}
+              label="nimeä"
+              inputClassName="h-auto py-1 text-2xl font-semibold sm:text-3xl"
+              validate={(next) => (next ? null : 'Nimi on pakollinen')}
+              onSave={(next) => patchField('name', next)}
+            />
+          }
           actionsAlign="inline"
           actions={
-            isAdmin &&
-            openReportCount > 0 && (
-              <a
-                href="#huomiot"
-                className="no-underline"
-                aria-label={`${openReportCount} käsittelemätöntä huomiota`}
-              >
-                <Badge variant="destructive" className="gap-1">
-                  <TriangleAlert className="size-3.5" aria-hidden />
-                  {openReportCount === 1
-                    ? 'Käsittelemätön huomio'
-                    : `${openReportCount} käsittelemätöntä huomiota`}
-                </Badge>
-              </a>
+            isAdmin && (
+              <>
+                {isTemporary && <Badge variant="warning">Väliaikainen</Badge>}
+                {openReportCount > 0 && (
+                  <a
+                    href="#huomiot"
+                    className="no-underline"
+                    aria-label={`${openReportCount} käsittelemätöntä huomiota`}
+                  >
+                    <Badge variant="destructive" className="gap-1">
+                      <TriangleAlert className="size-3.5" aria-hidden />
+                      {openReportCount === 1
+                        ? 'Käsittelemätön huomio'
+                        : `${openReportCount} käsittelemätöntä huomiota`}
+                    </Badge>
+                  </a>
+                )}
+              </>
             )
           }
         />
 
-        {item.description && (
-          <p className="text-base text-foreground/90 md:text-lg">{item.description}</p>
+        {isAdmin && isTemporary && (
+          <Alert variant="info" title="Väliaikainen kama">
+            Lainaaja lisäsi tämän itse omaan koriinsa, joten se ei näy kaluston listauksessa.
+            Siirrä se kirjastoon, jos kama jää pysyvästi kalustoon.
+          </Alert>
+        )}
+
+        {(item.description || isAdmin) && (
+          <p className="text-base text-foreground/90 md:text-lg">
+            <InlineEdit
+              value={item.description ?? ''}
+              disabled={!isAdmin}
+              label="kuvausta"
+              multiline
+              emptyLabel="Ei kuvausta"
+              placeholder="Viihteeksi reissuille kaluston vessaan."
+              inputClassName="text-base md:text-lg"
+              onSave={(next) => patchField('description', next || null)}
+            />
+          </p>
         )}
 
         {/* Two columns from the smallest size: these are two or three short
@@ -138,45 +329,133 @@ export default function ItemView({
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <div>
             <p className="text-sm font-semibold text-muted-foreground">Määrä:</p>
-            <p className="text-lg font-bold">{item.amount} kpl</p>
+            <InlineEdit
+              value={String(item.amount)}
+              disabled={!isAdmin}
+              label="määrää"
+              type="number"
+              min={1}
+              validate={(next) => {
+                const parsed = Number(next);
+                return Number.isInteger(parsed) && parsed >= 1
+                  ? null
+                  : 'Määrän tulee olla positiivinen kokonaisluku';
+              }}
+              onSave={(next) => patchField('amount', Number(next))}
+            >
+              <span className="text-lg font-bold">{item.amount} kpl</span>
+            </InlineEdit>
           </div>
-          {item.location && (
+
+          {(item.location || isAdmin) && (
             <div>
               <p className="text-sm font-semibold text-muted-foreground">Sijainti:</p>
-              <p className="text-lg font-bold">{item.location.name}</p>
+              <InlineEditShell
+                label="sijaintia"
+                disabled={!isAdmin}
+                editing={locationEditing}
+                saving={relationSaving}
+                display={
+                  item.location ? (
+                    <span className="text-lg font-bold">{item.location.name}</span>
+                  ) : (
+                    <span className="text-lg font-bold text-muted-foreground">—</span>
+                  )
+                }
+                onStart={() => {
+                  setLocationDraft(
+                    item.location
+                      ? { value: item.location.id, label: item.location.name }
+                      : null,
+                  );
+                  setLocationEditing(true);
+                }}
+                onCancel={() => setLocationEditing(false)}
+                onSave={async () => {
+                  if (await saveRelations({ locationId: locationDraft })) {
+                    setLocationEditing(false);
+                  }
+                }}
+              >
+                <CreatableSelect
+                  aria-label="Sijainti"
+                  placeholder="Kolon vessa"
+                  value={locationDraft}
+                  options={allLocations.map((loc) => ({ value: loc.id, label: loc.name }))}
+                  onChange={(option) => setLocationDraft(option as SelectOption | null)}
+                  isClearable
+                />
+              </InlineEditShell>
             </div>
           )}
-          {item.categories && item.categories.length > 0 && (
+
+          {(item.categories.length > 0 || isAdmin) && (
             <div className="col-span-2 md:col-span-1">
               <p className="mb-2 text-sm font-semibold text-muted-foreground">Kategoriat:</p>
-              <div className="flex flex-wrap gap-2">
-                {item.categories.map((category) => (
-                  <Badge key={category.id}>{category.name}</Badge>
-                ))}
-              </div>
+              <InlineEditShell
+                label="kategorioita"
+                disabled={!isAdmin}
+                editing={categoriesEditing}
+                saving={relationSaving}
+                display={categoryBadges}
+                onStart={() => {
+                  setCategoriesDraft(
+                    item.categories.map((category) => ({
+                      value: category.id,
+                      label: category.name,
+                    })),
+                  );
+                  setCategoriesEditing(true);
+                }}
+                onCancel={() => setCategoriesEditing(false)}
+                onSave={async () => {
+                  const saved = await saveRelations({
+                    categories: categoriesDraft.map((option) => ({
+                      id: option.value,
+                      name: option.label,
+                    })),
+                  });
+                  if (saved) setCategoriesEditing(false);
+                }}
+              >
+                <CreatableSelect
+                  aria-label="Kategoriat"
+                  isMulti
+                  placeholder="Valitse tai luo kategorioita"
+                  value={categoriesDraft}
+                  options={allCategories.map((cat) => ({ value: cat.id, label: cat.name }))}
+                  onChange={(options) => setCategoriesDraft([...(options as SelectOption[])])}
+                />
+              </InlineEditShell>
             </div>
           )}
         </div>
 
         <hr />
 
-        <div>
+        <div className={IMAGE_BOX_CLASS}>
           {imageStatus === 'loading' ? (
-            <Skeleton className="h-[300px] w-full max-w-xl rounded-md md:h-[500px]" />
+            <Skeleton className="h-full w-full rounded-md" />
           ) : (
             /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
             <img
               src={imgError ? placeholder : imageSrc}
               alt={item.name}
               onError={() => setImgError(true)}
-              className="max-h-[300px] max-w-full rounded-md object-contain md:max-h-[500px]"
+              className="h-full w-full object-contain"
             />
           )}
         </div>
 
         {isAdmin && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button onClick={() => setEditOpen(true)}>Muokkaa</Button>
+            {isTemporary && (
+              <Button variant="success" className="gap-2" onClick={() => setPromoteOpen(true)}>
+                <ArrowUpCircle className="h-4 w-4" />
+                Siirrä kirjastoon
+              </Button>
+            )}
             <Button variant="destructive" onClick={() => setOpen(true)}>
               Poista
             </Button>
@@ -245,6 +524,14 @@ export default function ItemView({
       {/* Mounted only while open so the form always seeds fresh from `item`. */}
       {isAdmin && editOpen && (
         <EditItemDialog item={item} open onOpenChange={setEditOpen} />
+      )}
+
+      {isAdmin && promoteOpen && (
+        <PromoteItemDialog
+          item={item}
+          onOpenChange={setPromoteOpen}
+          onSuccess={() => router.refresh()}
+        />
       )}
 
       <ConfirmDialog

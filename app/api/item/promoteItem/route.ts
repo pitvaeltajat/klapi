@@ -14,7 +14,10 @@ export async function POST(request: Request) {
     description?: string | null;
     amount: number;
     categories: { id?: string; name: string }[];
-    locationId?: string | null;
+    /** Sijainti in the same `{ value, label }` shape createItem/editItem take:
+     *  `null` clears it, and an option the admin typed rather than picked
+     *  carries its label as `value` and mints a new Location. */
+    locationId?: { value: string; label: string } | null;
   };
 
   if (!id || !name || !amount) {
@@ -39,7 +42,14 @@ export async function POST(request: Request) {
       name,
       description: description ?? null,
       amount,
-      locationId: locationId ?? null,
+      location: locationId
+        ? {
+            connectOrCreate: {
+              where: { id: locationId.value },
+              create: { name: locationId.value },
+            },
+          }
+        : { disconnect: true },
       categories: {
         set: [],
         connectOrCreate: categories.map((cat) => ({

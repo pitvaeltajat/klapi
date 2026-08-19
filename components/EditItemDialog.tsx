@@ -20,8 +20,9 @@ import { Field } from '@/components/ui/field';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
 import { ApiError, readJson } from '@/utils/apiError';
-import { useItemOriginalImage, usePlaceholder } from '@/hooks/useItemImage';
+import { useItemOriginalImageState } from '@/hooks/useItemImage';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -58,8 +59,11 @@ interface EditItemDialogProps {
  */
 export default function EditItemDialog({ item, open, onOpenChange, onSaved }: EditItemDialogProps) {
   const router = useRouter();
-  const existingImageSrc = useItemOriginalImage(item.id);
-  const placeholder = usePlaceholder();
+  const {
+    src: existingImageSrc,
+    status: imageStatus,
+    placeholder,
+  } = useItemOriginalImageState(item.id);
 
   // Only an admin can open this, and both endpoints are admin-only — fetch
   // them lazily so a plain item page never pays for the requests.
@@ -219,13 +223,22 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
           </Field>
 
           <Field label="Kuva" htmlFor="edit-item-image">
-            {/* eslint-disable-next-line @next/next/no-img-element -- blob preview / dynamic S3 URL with onError fallback */}
-            <img
-              src={preview ?? (imgError ? placeholder : existingImageSrc)}
-              alt={item.name}
-              onError={() => setImgError(true)}
-              className="mb-2 max-h-[220px] max-w-full rounded-md object-contain"
-            />
+            {/* Fixed box, `object-contain` inside it: the photo's dimensions
+                aren't known until it loads, so letting the <img> size itself
+                made the whole form jump the moment the picture arrived. */}
+            <div className="mb-2 aspect-5/3 w-full max-w-sm overflow-hidden rounded-md bg-muted">
+              {!preview && imageStatus === 'loading' ? (
+                <Skeleton className="h-full w-full rounded-md" />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element -- blob preview / dynamic S3 URL with onError fallback */
+                <img
+                  src={preview ?? (imgError ? placeholder : existingImageSrc)}
+                  alt={item.name}
+                  onError={() => setImgError(true)}
+                  className="h-full w-full object-contain"
+                />
+              )}
+            </div>
             <Input
               id="edit-item-image"
               type="file"

@@ -112,7 +112,7 @@ the entity's detail page:
 | `patchItem` | PATCH | single-field inline edit (name/description/amount/locationId); logs `UPDATED` |
 | `deleteItem` | POST | soft-delete (stamp `deletedAt`); logs `ARCHIVED` |
 | `restoreItem` | POST | clear `deletedAt`; logs `RESTORED` |
-| `promoteItem` | POST | temporary → normal item; logs `PROMOTED` |
+| `promoteItem` | POST | temporary → normal item (`locationId` takes the `{ value, label }` sijainti shape, same as createItem/editItem); logs `PROMOTED` |
 | `bulkItems` | POST | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item |
 | `getInventory` | GET | inventory listing (admin table source) |
 | `uploadImage` | POST | S3 presigned URL for the item image (admin — or any non-kiosk user for a `custom-<uuid>` key) |
@@ -174,7 +174,7 @@ cron sweeps — import and call them directly.
 | Path | Purpose |
 |---|---|
 | `/` | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own) |
-| `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**) |
+| `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**). Admins edit nimi/kuvaus/määrä/sijainti/kategoriat inline on the page (`components/ui/inline-edit.tsx`); the photo and a batch edit stay in `EditItemDialog`, and a väliaikainen kama gets "Siirrä kirjastoon" (`components/PromoteItemDialog.tsx`, shared with the inventory table) |
 | `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
 | `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
 | `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |

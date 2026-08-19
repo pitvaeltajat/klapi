@@ -99,6 +99,10 @@ server components or route handlers.
     `variant="inline"` for one muted line inside a panel.
   - `Checkbox` / `CheckboxIndicator` (`checkbox.tsx`) — never a raw
     `<input type="checkbox">`.
+  - `InlineEdit` / `InlineEditShell` (`inline-edit.tsx`) — click-to-edit for one
+    value shown in place, the way an admin edits a kama on `/item/[id]`. Both
+    render as phrasing content, so they drop into an `h1` or a `<p>` unchanged;
+    `InlineEditShell` wraps a picker (CreatableSelect) in the same affordance.
   - `ConfirmDialog` (`confirm-dialog.tsx`) — every "are you sure?". Cancel is
     always left and `outline`; the destructive action is always right. Plain
     `Dialog` is for forms, and their cancel button is `variant="outline"` too.

@@ -49,7 +49,7 @@ function adminGuard(session: { group: Group } | null) {
 
 async function promoteItemDirect(
   id: string,
-  payload: { name: string; description?: string | null; amount: number; categories: { id?: string; name: string }[]; locationId?: string | null },
+  payload: { name: string; description?: string | null; amount: number; categories: { id?: string; name: string }[]; locationId?: { value: string; label: string } | null },
   session: { group: Group } | null,
 ) {
   const guard = adminGuard(session);
@@ -66,7 +66,14 @@ async function promoteItemDirect(
       name: payload.name,
       description: payload.description ?? null,
       amount: payload.amount,
-      locationId: payload.locationId ?? null,
+      location: payload.locationId
+        ? {
+            connectOrCreate: {
+              where: { id: payload.locationId.value },
+              create: { name: payload.locationId.value },
+            },
+          }
+        : { disconnect: true },
       categories: {
         set: [],
         connectOrCreate: payload.categories.map((cat) => ({
