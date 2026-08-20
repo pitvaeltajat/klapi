@@ -151,7 +151,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
 | `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt`; raw SQL, ordered by name (email as fallback) with the `fi-FI-x-icu` collation |
 | `user/kioskPassword` | GET/POST | read / rotate the reusable static kiosk password |
-| `user/updateEmailPreferences` | POST | notification prefs |
+| `user/updateEmailPreferences` | POST | notification prefs — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
 | `auth/createPin` | POST | set the admin kiosk-elevation PIN |
 | `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
 | `auth/[...nextauth]` | — | NextAuth handler |
@@ -211,6 +211,7 @@ soft-deletes a user must set it.
 | `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
 | `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
 | `/admin` | user management |
+| `/admin/user/[userId]` | one person as an admin sees them: role, email-ilmoitukset, lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/editLoan/[id]` | admin loan edit |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |

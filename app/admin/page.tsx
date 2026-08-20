@@ -1,6 +1,7 @@
 'use client';
 
 import { KeyRound, Trash2 } from 'lucide-react';
+import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useMemo, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -352,7 +353,12 @@ export default function AdminPage() {
               <Card key={user.id} variant="inset" padding="md" className="flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{user.name || '-'}</p>
+                    <NextLink
+                      href={`/admin/user/${user.id}`}
+                      className="font-medium underline-offset-2 hover:underline"
+                    >
+                      {user.name || user.email || '-'}
+                    </NextLink>
                     <p className="break-all text-sm text-muted-foreground">{user.email}</p>
                   </div>
                   {getGroupBadge(user.group)}
@@ -397,7 +403,14 @@ export default function AdminPage() {
               <TableBody>
                 {sortedUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name || '-'}</TableCell>
+                    <TableCell className="font-medium">
+                      <NextLink
+                        href={`/admin/user/${user.id}`}
+                        className="underline-offset-2 hover:underline"
+                      >
+                        {user.name || user.email || '-'}
+                      </NextLink>
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getGroupBadge(user.group)}</TableCell>
                     <TableCell>
