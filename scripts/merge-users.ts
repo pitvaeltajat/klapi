@@ -22,7 +22,15 @@
 import { mergeUsers, MergeUsersError } from '@/utils/mergeUsers';
 import prisma from '@/utils/prisma';
 
-/** `[duplicate email, primary email]`, confirmed by exact full-name match. */
+/**
+ * `[duplicate email, primary email]`.
+ *
+ * The first block is confirmed by an exact full-name match between the two
+ * Klapi rows. The second is confirmed by Workspace itself: the primary's
+ * directory entry lists the personal address as its recovery or alternate
+ * email, which is a stronger signal than any name comparison — the Klapi names
+ * on those two rows are "Nuutti" and "Quesbox".
+ */
 const PAIRS: Array<[duplicate: string, primary: string]> = [
   ['kristian.juhani@gmail.com', 'kristian.karjalainen@pitkajarvenvaeltajat.fi'],
   ['martta.vaahteranoksa@gmail.com', 'martta.vaahteranoksa@pitkajarvenvaeltajat.fi'],
@@ -39,6 +47,12 @@ const PAIRS: Array<[duplicate: string, primary: string]> = [
   ['hymy.hietakymi@eduespoo.fi', 'hymy.hietakymi@pitkajarvenvaeltajat.fi'],
   ['niina.hurme@gmail.com', 'niina.hurme@pitkajarvenvaeltajat.fi'],
   ['thpentti@gmail.com', 'teemu.penttila@pitkajarvenvaeltajat.fi'],
+
+  // Confirmed by the primary's own Workspace directory entry:
+  //   nuutti.vaahteranoksa@…  recoveryEmail = nuutti.vaahteranoksa@gmail.com
+  //   maija.timonen@…         alternate     = maija.mesimarja@gmail.com
+  ['nuutti.vaahteranoksa@gmail.com', 'nuutti.vaahteranoksa@pitkajarvenvaeltajat.fi'],
+  ['maija.mesimarja@gmail.com', 'maija.timonen@pitkajarvenvaeltajat.fi'],
 ];
 
 async function main() {
