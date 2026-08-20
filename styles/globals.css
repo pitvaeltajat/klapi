@@ -167,10 +167,22 @@
     --primary: 206 100% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
+    /* One notch ABOVE --card, never equal to it. These two are the "raised
+       chip" surfaces — the secondary Badge/Button, the gray Badge, Skeleton,
+       the kaman kuva box, a disabled Input, every hover:bg-muted. All of those
+       sit on a Card, so at --card's own lightness they render as nothing at
+       all: an invisible admin badge, a skeleton that doesn't appear to load, a
+       photo box with no box. They were 17% — identical to --card — until it was
+       noticed on the role badge in /admin.
+
+       24% is the ceiling, not a preference: it is the lightest these can go
+       while --muted-foreground text on top still clears WCAG AA (4.57:1; at
+       26% it drops to 4.25:1 and fails). Don't raise it without re-checking
+       that, and don't collapse it back onto --card. */
+    --secondary: 217 33% 24%;
     --secondary-foreground: 210 20% 98%;
 
-    --muted: 217 33% 17%;
+    --muted: 217 33% 24%;
     --muted-foreground: 215 20% 65%;
 
     --accent: 217 33% 22%;

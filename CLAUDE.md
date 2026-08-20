@@ -119,6 +119,14 @@ server components or route handlers.
   (`<dl>` with `text-sm sm:text-base`) over full sentences — see
   `app/loan/[id]/LoanView.tsx`.
 - Design tokens are CSS variables in `styles/globals.css` with `.dark` overrides.
+  **A surface token must never equal the token of the surface it sits on.** In
+  dark mode `--secondary` and `--muted` were both `217 33% 17%` — exactly
+  `--card` — so every raised chip on a Card rendered as nothing: the secondary
+  and gray `Badge`, `Skeleton`, the kaman kuva box, a disabled `Input`, every
+  `hover:bg-muted`. They are `24%` now, which is the lightest they can be while
+  `--muted-foreground` on top still clears WCAG AA (4.57:1; 26% gives 4.25:1
+  and fails). The ladder is `--background` 11% → `--card`/`--popover` 17% →
+  `--accent` 22% → `--secondary`/`--muted` 24%.
   Tailwind maps them via `bg-primary`, `text-muted-foreground`, etc. Nothing
   outside that file should hard-code a colour — the app bar has its own
   `--header` / `--header-foreground` pair rather than `text-white`.
