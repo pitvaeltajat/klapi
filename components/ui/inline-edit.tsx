@@ -39,7 +39,13 @@ function EditableDisplay({
       className={cn(
         // The negative margin cancels the padding, so the resting value lines
         // up with the rest of the page instead of sitting two pixels in.
-        'group -mx-2 flex w-full max-w-full items-start gap-1.5 rounded-md border border-transparent px-2 py-1 text-left transition-colors hover:border-input hover:bg-background focus-visible:border-input focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring',
+        //
+        // No `w-full`/`max-w-full`: this is a block-level flex box, so `width:
+        // auto` already fills the line. Pinning it to 100% *of the parent* while
+        // the negative margins widen the box by 16px left the value with 16px
+        // less room than it asks for — enough to break a page title onto a
+        // second line mid-word when the row was nowhere near full.
+        'group -mx-2 flex items-start gap-1.5 rounded-md border border-transparent px-2 py-1 text-left transition-colors hover:border-input hover:bg-background focus-visible:border-input focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring',
         className,
       )}
     >
