@@ -11,6 +11,11 @@ interface User {
   name: string | null;
 }
 
+/** A name is what an admin recognises, so the list reads by name — in Finnish
+ *  order, which is not the order the database sorted the emails in. */
+const byName = new Intl.Collator('fi');
+const loanerLabel = (user: User) => user.name || user.email;
+
 interface LoanerAutocompleteProps {
   value: string;
   onChange: (value: string, userId?: string) => void;
@@ -56,7 +61,9 @@ export default function LoanerAutocomplete({
   useEffect(() => {
     fetch('/api/users/getUsers')
       .then((res) => res.json())
-      .then((data) => setUsers(data))
+      .then((data: User[]) =>
+        setUsers([...data].sort((a, b) => byName.compare(loanerLabel(a), loanerLabel(b)))),
+      )
       .catch((err) => console.error('Failed to fetch users:', err));
   }, []);
 
@@ -119,8 +126,8 @@ export default function LoanerAutocomplete({
               className="cursor-pointer border-b px-4 py-3 last:border-b-0 hover:bg-accent"
               onClick={() => handleUserSelect(user)}
             >
-              <div className="font-medium">{user.email}</div>
-              {user.name && <div className="text-sm text-muted-foreground">{user.name}</div>}
+              <div className="font-medium">{loanerLabel(user)}</div>
+              {user.name && <div className="text-sm text-muted-foreground">{user.email}</div>}
             </li>
           ))}
         </ul>
