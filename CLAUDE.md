@@ -181,8 +181,17 @@ run the real `pnpm build`.
   the big ones, a square `h-N w-N` for thumbnails) plus `overflow-hidden
   bg-muted`, and let the image fill it with `object-contain`/`object-cover`;
   the skeleton then fills the identical box. `components/ItemThumb.tsx` is the
-  list/table thumbnail, `ItemCardShell` the card, and `/item/[id]` the detail
-  photo — reach for one of those before hand-rolling a fourth.
+  list/table thumbnail, `ItemCardShell` the card, and `components/ItemPhoto.tsx`
+  the `/item/[id]` detail photo — reach for one of those before hand-rolling a
+  fourth.
+- The detail photo is the one box that doesn't keep a fixed ratio: `ItemPhoto`
+  opens at the placeholder's 5:3 and then adopts the picture's own ratio from
+  `onLoad` (clamped to 3:4…3:1), so a 4:3 phone snap fills it instead of sitting
+  in a letterbox of grey. It is still a *box* — the skeleton and the empty state
+  have the same footprint — it just stops guessing the shape once it knows it.
+  `ItemPhoto` also owns the "Lisää kuva" empty state: any signed-in non-kiosk
+  user may add a *missing* photo, and `item/uploadImage` enforces that (the kama
+  must exist and have no picture yet); replacing one stays admin-only.
 - Prefer `useItemImageState` over `useItemImage`: the plain hook answers with
   the "Ei kuvaa" placeholder while it is still probing, so every row flashes
   the placeholder before the real photo. The `…State` variant reports

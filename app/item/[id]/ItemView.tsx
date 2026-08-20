@@ -1,7 +1,6 @@
 'use client';
 
 import { Item, Category, Reservation, LoanStatus, ItemHistoryAction } from '@prisma/client';
-import { useItemOriginalImageState } from '@/hooks/useItemImage';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -25,8 +24,8 @@ import {
   formatItemHistoryChanges,
   isBulkItemHistory,
 } from '@/utils/itemHelpers';
-import { Skeleton } from '@/components/ui/skeleton';
 import EditItemDialog from '@/components/EditItemDialog';
+import ItemPhoto from '@/components/ItemPhoto';
 import PromoteItemDialog from '@/components/PromoteItemDialog';
 import { ApiError, readJson } from '@/utils/apiError';
 import ItemNotices, { type ItemAnnouncement, type ItemReport } from './ItemNotices';
@@ -63,16 +62,6 @@ interface SelectOption {
   label: string;
 }
 
-/**
- * The image sits in a box of its own rather than sizing itself: the photo's
- * dimensions aren't known until it has loaded, so a self-sizing <img> means the
- * skeleton stands in for a box of the wrong size and the whole page jumps the
- * moment the picture lands. Fixed ratio + `object-contain` gives the skeleton
- * and the photo exactly the same footprint. 5:3 matches the "Ei kuvaa"
- * placeholder and the catalogue cards.
- */
-const IMAGE_BOX_CLASS = 'aspect-5/3 w-full max-w-2xl overflow-hidden rounded-md bg-muted';
-
 export default function ItemView({
   item: itemProp,
   history,
@@ -99,9 +88,6 @@ export default function ItemView({
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [promoteOpen, setPromoteOpen] = useState(false);
-  const [imgError, setImgError] = useState(false);
-
-  const { src: imageSrc, status: imageStatus, placeholder } = useItemOriginalImageState(item.id);
 
   // Only an admin can open the pickers, and both endpoints are admin-only —
   // fetch them lazily so a plain item page never pays for the requests.
@@ -433,19 +419,7 @@ export default function ItemView({
 
         <hr />
 
-        <div className={IMAGE_BOX_CLASS}>
-          {imageStatus === 'loading' ? (
-            <Skeleton className="h-full w-full rounded-md" />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
-            <img
-              src={imgError ? placeholder : imageSrc}
-              alt={item.name}
-              onError={() => setImgError(true)}
-              className="h-full w-full object-contain"
-            />
-          )}
-        </div>
+        <ItemPhoto itemId={item.id} itemName={item.name} />
 
         {isAdmin && (
           <div className="flex flex-wrap gap-3">
