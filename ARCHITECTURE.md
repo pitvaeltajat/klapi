@@ -149,7 +149,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 |---|---|---|
 | `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`, `deletedBySync: false`) so loans + history survive; restore by clearing `deletedAt` |
 | `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
-| `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt` |
+| `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt`; raw SQL, ordered by name (email as fallback) with the `fi-FI-x-icu` collation |
 | `user/kioskPassword` | GET/POST | read / rotate the reusable static kiosk password |
 | `user/updateEmailPreferences` | POST | notification prefs |
 | `auth/createPin` | POST | set the admin kiosk-elevation PIN |

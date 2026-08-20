@@ -11,9 +11,8 @@ interface User {
   name: string | null;
 }
 
-/** A name is what an admin recognises, so the list reads by name — in Finnish
- *  order, which is not the order the database sorted the emails in. */
-const byName = new Intl.Collator('fi');
+/** A name is what an admin recognises; the address is the disambiguator.
+ *  `getUsers` already returns the rows in this label's Finnish order. */
 const loanerLabel = (user: User) => user.name || user.email;
 
 interface LoanerAutocompleteProps {
@@ -61,9 +60,7 @@ export default function LoanerAutocomplete({
   useEffect(() => {
     fetch('/api/users/getUsers')
       .then((res) => res.json())
-      .then((data: User[]) =>
-        setUsers([...data].sort((a, b) => byName.compare(loanerLabel(a), loanerLabel(b)))),
-      )
+      .then((data: User[]) => setUsers(data))
       .catch((err) => console.error('Failed to fetch users:', err));
   }, []);
 

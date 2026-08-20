@@ -11,22 +11,17 @@ export async function GET() {
     const { denied } = await requireAdminOrKiosk();
     if (denied) return denied;
 
-    const users = await prisma.user.findMany({
-      where: {
-        deletedAt: null,
-        group: {
-          not: 'KIOSK',
-        },
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
-      orderBy: {
-        email: 'asc',
-      },
-    });
+    // Ordered the way the picker reads the rows — by name, falling back to the
+    // address for an account that has none. Finnish sorts `ä å ö` after `z`,
+    // which neither Prisma's `orderBy` (it inherits the database's collation,
+    // usually en_US) nor `localeCompare` gets right, so the ICU collation is
+    // named explicitly. That is raw SQL because `orderBy` has no COLLATE.
+    const users = await prisma.$queryRaw<{ id: string; email: string | null; name: string | null }[]>`
+      SELECT id, email, name
+      FROM "User"
+      WHERE "deletedAt" IS NULL AND "group" <> 'KIOSK'
+      ORDER BY COALESCE(NULLIF(name, ''), email, '') COLLATE "fi-FI-x-icu" ASC
+    `;
 
     return NextResponse.json(users);
   } catch (err) {
