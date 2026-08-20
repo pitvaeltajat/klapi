@@ -185,6 +185,16 @@ README § *Google Workspace user sync* for the setup and the env vars.
 The split matters: `userSync` takes an already-fetched roster, so every
 lock-people-out decision is testable without a key or a network.
 
+**Merging duplicate accounts.** Members who predate the sync may hold two rows
+— a personal Gmail one and a Workspace one — with loan history split across the
+pair. `utils/mergeUsers.ts` folds one into the other: `Loan`, `EmailLog`,
+`LoanHistory.actedById`, `ItemHistory.actedById`, `Account` and `Session` all
+move, in one transaction, then the duplicate is soft-deleted with
+`mergedIntoId` pointing at the survivor. The duplicate's row is **kept** so its
+email stays claimed — `lib/auth.ts` then refuses that Google login instead of
+minting a fresh empty account for it. `scripts/merge-users.ts` drives it over a
+hand-reviewed list of email pairs (`--apply`; dry run by default).
+
 **`User.deletedBySync` is the provenance of `deletedAt`** — true when the sync
 stamped it, false when a human did. The sync only undoes its own deletions, so
 an admin's manual delete in `/admin` survives the night. Anything that

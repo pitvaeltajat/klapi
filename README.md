@@ -508,6 +508,24 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 A `unauthorized_client` error from the token exchange means step 2 is missing or
 the scopes don't match exactly.
 
+#### Merging duplicate accounts
+
+Members who predate the sync may hold two Klapi accounts — one from a personal
+Gmail, one under their work address — with loan history split across the pair.
+`scripts/merge-users.ts` folds the personal one into the Workspace one, moving
+every loan, email log and audit entry:
+
+```bash
+pnpm tsx scripts/merge-users.ts            # dry run — reports, writes nothing
+pnpm tsx scripts/merge-users.ts --apply
+```
+
+Its pair list is keyed on **email**, not name, and was reviewed by hand — names
+are free text and a surname heuristic merging the wrong two people is not
+recoverable by looking at the data afterwards. The merged-away row is kept and
+soft-deleted with `mergedIntoId` set, so that Google login is refused (rather
+than silently creating a third account) and the merge stays reversible.
+
 > The member group carries a `type: CUSTOMER` member ("the whole organisation is
 > in this group"). The API returns that entry rather than expanding it, so the
 > sync reads it as *every domain user is a member* — which is what it means, and

@@ -57,6 +57,15 @@ model User {
   // deletions — an admin who deletes someone by hand stays deleted even while
   // they are still a Workspace member, instead of being resurrected overnight.
   deletedBySync            Boolean        @default(false)
+  // Set when this row was merged into another and soft-deleted: everything it
+  // owned (loans, email logs, history) now hangs off `mergedInto`. It exists to
+  // answer "why is this account deleted, and where did its kamat go?" — and to
+  // make the merge reversible. The row is kept rather than hard-deleted so its
+  // email stays claimed; `lib/auth.ts` then refuses that Google login instead
+  // of silently minting a fresh empty duplicate.
+  mergedIntoId             String?
+  mergedInto               User?          @relation("UserMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom               User[]         @relation("UserMerge")
   group                    Group          @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
