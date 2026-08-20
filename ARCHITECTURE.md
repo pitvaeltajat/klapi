@@ -147,7 +147,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 ### `user/*`, `auth/*`, misc
 | Route | Method | Purpose |
 |---|---|---|
-| `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`) so loans + history survive; restore by clearing `deletedAt` |
+| `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`, `deletedBySync: false`) so loans + history survive; restore by clearing `deletedAt` |
 | `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
 | `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt` |
 | `user/kioskPassword` | GET/POST | read / rotate the reusable static kiosk password |
@@ -168,6 +168,27 @@ Transactional email is **not** a route: the senders live in `utils/emails/`
 once-per-day dedup in `utils/emailLogHelpers`. Callers — `submitLoan` and the
 cron sweeps — import and call them directly.
 | `cron/checkExpiringLoans`, `cron/checkOverdueLoans`, `cron/startDueLoans` | GET | scheduled jobs; require `Authorization: Bearer $CRON_SECRET`. Schedules live in `vercel.json` |
+| `cron/syncWorkspaceUsers` | GET | nightly Google Workspace → `User` reconciliation; `?dryRun=1` reports without writing. Same `CRON_SECRET` guard |
+
+## Google Workspace user sync
+
+The troop roster lives in Google Workspace and Klapi follows it — see
+README § *Google Workspace user sync* for the setup and the env vars.
+
+| | Where |
+|---|---|
+| Directory API client (service account, domain-wide delegation) | `utils/googleWorkspace.ts` |
+| Reconciliation + guards | `utils/userSync.ts` |
+| Cron wrapper | `app/api/cron/syncWorkspaceUsers/route.ts` |
+| Tests | `__tests__/api/syncWorkspaceUsers.integration.test.ts` |
+
+The split matters: `userSync` takes an already-fetched roster, so every
+lock-people-out decision is testable without a key or a network.
+
+**`User.deletedBySync` is the provenance of `deletedAt`** — true when the sync
+stamped it, false when a human did. The sync only undoes its own deletions, so
+an admin's manual delete in `/admin` survives the night. Anything that
+soft-deletes a user must set it.
 
 ## Pages (`app/**/page.tsx`)
 

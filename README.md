@@ -452,6 +452,68 @@ Supports Google OAuth and username/password authentication via NextAuth.js. Conf
 
 Admins can elevate a kiosk session to ADMIN temporarily via a 4-digit PIN (set in `/admin`). The elevated session auto-expires after 30 minutes.
 
+### Google Workspace user sync
+
+The troop's roster lives in Google Workspace, so Klapi follows it rather than
+keeping a second list by hand. `/api/cron/syncWorkspaceUsers` runs nightly (see
+`vercel.json`) and reconciles the two:
+
+- a member of the Workspace group with no Klapi account **gets one**, so the
+  whole troop is pickable in `/admin` and `LoanerAutocomplete` before they have
+  ever logged in;
+- a name that changed in the directory **is refreshed**;
+- someone deleted, suspended, archived, or removed from the group **is
+  soft-deleted** — `deletedAt` is stamped, so their loans and loan history
+  survive and `lib/auth.ts` refuses the login;
+- someone who comes back **is restored**, but only if the sync is the one that
+  deactivated them. `User.deletedBySync` records that provenance: an admin who
+  deletes a user by hand in `/admin` stays deleted, instead of being resurrected
+  the same night.
+
+`GOOGLE_WORKSPACE_EXCLUDE` drops the robot accounts (`admin@`, `pitvadev@`)
+out of scope entirely — neither provisioned nor deactivated. They need it
+because the member group carries a whole-organisation member, which puts every
+domain user in the group whether or not they were added by hand.
+
+Only accounts Workspace can plausibly own are in scope — a `@$GOOGLE_WORKSPACE_DOMAIN`
+email and a group other than KIOSK. The local `admin` account, the shared kiosk
+terminal and anyone signed in with a personal Gmail are invisible to it.
+
+Three guards fence the destructive half: an empty roster aborts the run, a run
+that would deactivate more than `WORKSPACE_SYNC_MAX_DEACTIVATIONS` accounts
+aborts before writing anything (HTTP 409), and the last live ADMIN is never
+deactivated.
+
+**Setup.** The cron authenticates as a service account with domain-wide
+delegation — the only Google auth flow that works unattended:
+
+1. Create a service account in the project that owns the Klapi OAuth client and
+   download a JSON key.
+2. In **Admin console → Security → API controls → Domain-wide delegation**, add
+   the service account's *client id* (the numeric `uniqueId`, not the email)
+   with exactly these scopes:
+   `https://www.googleapis.com/auth/admin.directory.user.readonly` and
+   `https://www.googleapis.com/auth/admin.directory.group.member.readonly`.
+3. Set `GOOGLE_WORKSPACE_SA_KEY` (base64 of the JSON key),
+   `GOOGLE_WORKSPACE_SUBJECT`, `GOOGLE_WORKSPACE_DOMAIN` and
+   `GOOGLE_WORKSPACE_GROUP` — see `.env.example`.
+
+Verify without writing anything:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://<host>/api/cron/syncWorkspaceUsers?dryRun=1"
+```
+
+A `unauthorized_client` error from the token exchange means step 2 is missing or
+the scopes don't match exactly.
+
+> The member group carries a `type: CUSTOMER` member ("the whole organisation is
+> in this group"). The API returns that entry rather than expanding it, so the
+> sync reads it as *every domain user is a member* — which is what it means, and
+> what keeps a brand-new member from waiting on someone re-running
+> `pitva-calendar-sync.sh` before they get a Klapi account.
+
 ## Hosting
 
 ### Production Deployment

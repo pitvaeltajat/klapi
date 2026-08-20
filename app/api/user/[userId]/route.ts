@@ -100,6 +100,10 @@ export async function DELETE(
     // delete would take the whole ledger with it). Deleted users are filtered
     // out of auth, listings, elevation, and email recipients. Restore by
     // clearing deletedAt. Idempotent: re-deleting keeps the original timestamp.
+    //
+    // `deletedBySync: false` marks this as a human's decision, which the nightly
+    // Workspace sync (utils/userSync.ts) will not undo — deleting someone here
+    // sticks even while they are still a Workspace member.
     const user = await prisma.user.update({
       where: {
         id: userId,
@@ -107,6 +111,7 @@ export async function DELETE(
       },
       data: {
         deletedAt: new Date(),
+        deletedBySync: false,
       },
     });
     return NextResponse.json(user);

@@ -52,6 +52,11 @@ model User {
   // of auth (can't log in), admin/loaner listings, elevation, and email/cron
   // recipients. Unset it (back to null) to restore the account.
   deletedAt                DateTime?
+  // Provenance for `deletedAt`: true when the nightly Google Workspace sync
+  // stamped it, false when a human did. The sync only ever *undoes* its own
+  // deletions — an admin who deletes someone by hand stays deleted even while
+  // they are still a Workspace member, instead of being resurrected overnight.
+  deletedBySync            Boolean        @default(false)
   group                    Group          @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?

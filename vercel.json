@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/syncWorkspaceUsers",
+      "schedule": "0 3 * * *"
+    },
+    {
       "path": "/api/cron/checkExpiringLoans",
       "schedule": "0 9 * * *"
     },
