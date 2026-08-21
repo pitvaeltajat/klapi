@@ -122,8 +122,18 @@ server components or route handlers.
   They are **the Pitväeltäjät brand palette** ("Värit" sheet): light blue
   `#BBD1FB` and dark blue `#221E5D` are the pääväri pair, plus gray `#C9C5C3`,
   brown `#82593E`, cream `#FBE7B2` and red `#A23936`. Light mode is the light
-  blue as the page with navy primary/app bar; dark mode inverts it — navy page,
-  light blue primary — and the app bar stays `#221E5D` in both. Statuses map
+  blue as the page with navy ink/app bar; dark mode inverts it — navy page,
+  light blue ink — and the app bar stays `#221E5D` in both.
+  **`--primary` is the brand *ink*, `--cta` is the filled button.** They are
+  separate on purpose: the default `Button` fills with the light blue, but
+  `text-primary` (18 links, icons, the spinner, the `bg-primary/10` Badge) has
+  to stay dark enough to read on white, where `#BBD1FB` is a 1.5:1 whisper. So
+  in light mode `--primary` stays navy and only `--cta`/`--cta-foreground` —
+  plus `--cta-hover`, a *deeper* step, since a translucent hover would lighten
+  the button and read as the press doing less — carry the light blue; in dark
+  mode the two coincide. `--secondary` is the brand gray rather than the light
+  blue: it is the quieter button beside a `--cta` one, and two light-blue
+  buttons in a dialog read as two confirms. Statuses map
   destructive→red, warning→brown (labelled in cream); `--success` is the one
   colour the sheet doesn't supply and is kept green, pulled to the palette's
   muted register. The header block of that file lists the six with their HSL.

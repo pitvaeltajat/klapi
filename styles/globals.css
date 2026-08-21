@@ -47,6 +47,10 @@
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
 
+  --color-cta: hsl(var(--cta));
+  --color-cta-foreground: hsl(var(--cta-foreground));
+  --color-cta-hover: hsl(var(--cta-hover));
+
   --color-header: hsl(var(--header) / var(--header-alpha));
   --color-header-foreground: hsl(var(--header-foreground));
 
@@ -131,13 +135,28 @@
     --popover: 0 0% 100%;
     --popover-foreground: 244 51% 24%;
 
-    /* Brand dark blue */
+    /* Brand dark blue. `primary` is the brand *ink*: every link, icon, spinner
+       and `bg-primary/10` chip, plus the small solid indicators (checked
+       Checkbox, active FilterChip, tooltip). It is not the filled button —
+       that's --cta. */
     --primary: 244 51% 24%;
     --primary-foreground: 219 89% 97%;
 
-    /* Brand light blue, exactly — the secondary Badge/Button is the one chip
-       that carries it at full strength. */
-    --secondary: 219 89% 86%;
+    /* Brand light blue, exactly: the filled call-to-action button. Its own pair
+       rather than `primary`, because primary has to stay dark enough to be
+       readable as text on white — #BBD1FB is a 1.5:1 whisper there. */
+    --cta: 219 89% 86%;
+    --cta-foreground: 244 51% 24%;
+    /* Hover goes a step *deeper*, not translucent: `bg-cta/80` over a white
+       card would lighten the button, which reads as the press doing less.
+       Shared by both themes — `.dark` doesn't override it. */
+    --cta-hover: 219 85% 80%;
+
+    /* Brand gray. The quieter button beside a --cta one (a dialog's "Peruuta")
+       and the neutral chip. It was the light blue until the filled button took
+       that over — two light-blue buttons side by side in a dialog read as two
+       confirms. */
+    --secondary: 20 6% 87%;
     --secondary-foreground: 244 51% 24%;
 
     /* The quiet surface: EmptyState, Skeleton, the kaman kuva box, every
@@ -193,9 +212,13 @@
     --popover: 244 45% 15%;
     --popover-foreground: 219 60% 93%;
 
-    /* Brand light blue, exactly. */
+    /* Brand light blue, exactly — here it is both the ink and the filled
+       button, so --cta repeats it. */
     --primary: 219 89% 86%;
     --primary-foreground: 244 51% 15%;
+
+    --cta: 219 89% 86%;
+    --cta-foreground: 244 51% 15%;
 
     /* One notch ABOVE --card, never equal to it. These two are the "raised
        chip" surfaces — the secondary Badge/Button, the gray Badge, Skeleton,
