@@ -109,10 +109,13 @@ export const authConfig: NextAuthConfig = {
       // Klapi authorises on the `User` row — so the id token's `hd` claim never
       // has to be checked.
       //
-      // Deliberately NO `prompt: 'select_account'`. That parameter overrides the
-      // hint, so shipping both would put the chooser back on every sign-in and
-      // this would buy nothing. next-auth deep-merges these params over the
-      // provider's defaults, so `scope` survives.
+      // `hd` on its own does NOT skip the chooser: Google renders it even when
+      // exactly one account matches, so this only shortens the list. The
+      // parameter that removes the tap is `prompt=none`, sent per-click from
+      // `/login` — see `utils/loginHelpers.ts`. Nothing here may set `prompt`,
+      // or that per-click value would have nothing to override.
+      // Auth.js merges these params over the provider defaults, so `scope`
+      // survives.
       ...(WORKSPACE_DOMAIN ? { authorization: { params: { hd: WORKSPACE_DOMAIN } } } : {}),
     }),
     Credentials({
@@ -275,6 +278,16 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: 'jwt',
+  },
+  pages: {
+    // Send every sign-in failure to our own page instead of Auth.js's built-in
+    // English one. `/login` is where the Finnish wording lives, and — the
+    // reason this exists — where a bounced silent attempt is turned back into
+    // an ordinary sign-in. A failed OAuth callback is a `signIn`-kind error, a
+    // rejected account (`AccessDenied`, a soft-deleted user) an `error`-kind
+    // one, so both keys have to point here.
+    signIn: '/login',
+    error: '/login',
   },
 };
 

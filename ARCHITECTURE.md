@@ -88,11 +88,14 @@ provider live in `lib/auth.ts`, which also exports `auth()` — v5's replacement
 for `getServerSession(authOptions)`, taking no arguments because it reads the
 request out of `next/headers` itself.
 
-The Google provider there passes `hd: GOOGLE_WORKSPACE_DOMAIN`, which is what
-makes "Jatka Googlella" skip Google's account chooser for a member signed into
-both the troop account and a personal Gmail. A hint only — a Gmail login still
-works — and it must not be paired with `prompt: 'select_account'`, which
-overrides it. Covered by `__tests__/google-domain-hint.test.ts`.
+"Jatka Googlella" skips Google's account chooser via two parameters. The
+provider in `lib/auth.ts` passes `hd: GOOGLE_WORKSPACE_DOMAIN` (a hint, not a
+fence — a personal Gmail still signs in), and `/login` adds `prompt=none` per
+click, because `hd` alone only filters the chooser and never removes it. A
+silent attempt that bounces comes back to `/login` (`pages.signIn`/`pages.error`)
+and is retried once, interactively; `utils/loginHelpers.ts` owns that policy and
+the loop guard. Covered by `__tests__/google-domain-hint.test.ts` and
+`__tests__/login-helpers.test.ts`.
 
 ## Audit / history pattern
 

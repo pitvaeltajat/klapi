@@ -9,6 +9,39 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import {
+  SILENT_ATTEMPT_KEY,
+  SILENT_AUTH_PARAMS,
+  loginErrorMessage,
+  nextStepAfterLoginError,
+} from '@/utils/loginHelpers';
+
+/**
+ * Remember that a silent sign-in is in flight, and report whether we managed
+ * to. A browser that refuses `sessionStorage` (private mode, cookies blocked)
+ * would leave us unable to tell a bounced silent attempt from a real failure on
+ * the way back — and a silent attempt we cannot recover from is a dead end, so
+ * in that case we simply never make one.
+ */
+function markSilentAttempt(): boolean {
+  try {
+    sessionStorage.setItem(SILENT_ATTEMPT_KEY, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Read the flag and clear it — a mark is only ever good for one trip. */
+function takeSilentAttempt(): boolean {
+  try {
+    const marked = sessionStorage.getItem(SILENT_ATTEMPT_KEY) === '1';
+    sessionStorage.removeItem(SILENT_ATTEMPT_KEY);
+    return marked;
+  } catch {
+    return false;
+  }
+}
 
 function LoginSkeleton() {
   return (
@@ -52,7 +85,13 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const showLoading = useDelayedLoading(status === 'loading' || !!session);
+
+  // Auth.js sends a failed sign-in back here as `?error=`. Both outcomes below
+  // navigate, so the page stays a skeleton for as long as the parameter is
+  // there rather than flashing the form up in between.
+  const error = searchParams.get('error');
+
+  const showLoading = useDelayedLoading(status === 'loading' || !!session || !!error);
 
   const [username, setUsername] = useState('pitva');
   const [password, setPassword] = useState('');
@@ -64,16 +103,44 @@ function LoginContent() {
   // about updating Router while rendering LoginContent. An effect runs after
   // paint, on the client only, which is where a redirect belongs.
   const from = searchParams.get('from');
+  const callbackUrl = (from && decodeURIComponent(from)) || '/';
   useEffect(() => {
-    if (session) router.push((from && decodeURIComponent(from)) || '/');
-  }, [session, from, router]);
+    if (session) router.push(callbackUrl);
+  }, [session, callbackUrl, router]);
 
-  if (status === 'loading' || session) {
+  // If it was our silent attempt that bounced, Google is only saying it needs
+  // the user — go straight back out the ordinary way, so the visitor's single
+  // click still lands them signed in. Anything else is a real failure: say so,
+  // and drop the skeleton for the form.
+  useEffect(() => {
+    if (!error) return;
+    if (nextStepAfterLoginError(takeSilentAttempt()) === 'retry-interactive') {
+      void signIn('google', { callbackUrl });
+      return;
+    }
+    toast.error(loginErrorMessage(error));
+    // Drop the code from the URL rather than tracking "handled" in state: it
+    // renders the form, and a refresh then can't re-announce a failure the
+    // reader has already seen. `from` has to survive — it is where they were
+    // headed before they were sent here to log in.
+    router.replace(from ? `/login?from=${from}` : '/login');
+  }, [error, callbackUrl, from, router]);
+
+  if (status === 'loading' || session || error) {
     if (!showLoading) return null;
     return <LoginSkeleton />;
   }
 
-  const callbackUrl = decodeURIComponent(searchParams.get('from') || '') || '/';
+  /**
+   * Ask Google to complete the sign-in without showing anything. It answers
+   * with an error whenever that is impossible — signed out, never consented,
+   * or two accounts in the domain to choose between — and the effect above
+   * turns that into the ordinary flow.
+   */
+  const handleGoogle = () => {
+    const silent = markSilentAttempt();
+    void signIn('google', { callbackUrl }, silent ? { ...SILENT_AUTH_PARAMS } : undefined);
+  };
 
   const handleCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +172,7 @@ function LoginContent() {
         <Button
           variant="outline"
           size="lg"
-          onClick={() => signIn('google', { callbackUrl })}
+          onClick={handleGoogle}
           className="gap-3"
         >
           <GoogleLogo />

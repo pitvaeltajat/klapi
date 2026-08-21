@@ -444,16 +444,27 @@ OLD_BOX_ADMIN_NOTIFICATION OLD_BOX_ADMIN_NOTIFICATION
 
 Supports Google OAuth and username/password authentication via Auth.js (next-auth v5). `lib/auth.ts` holds the whole config and exports `auth()`, `handlers`, `signIn` and `signOut`; `app/api/auth/[...nextauth]/route.ts` is three lines re-exporting the handlers.
 
-**"Jatka Googlella" skips the account chooser.** Klapi sends
-`GOOGLE_WORKSPACE_DOMAIN` to Google as the `hd` (hosted domain) hint, so a
-member signed into both their `@pitkajarvenvaeltajat.fi` account and a personal
-Gmail — most of them are — goes straight through instead of picking from a list
-every time. It is a hint, not a fence: Google still returns a personal Gmail to
-anyone who chooses "use another account", which is what keeps the pre-Workspace
-logins working (see [Merging duplicate accounts](#merging-duplicate-accounts)).
-Leaving the variable blank turns the hint off. `lib/auth.ts` deliberately does
-*not* also set `prompt=select_account` — that parameter overrides the hint and
-would put the chooser back on every sign-in.
+**"Jatka Googlella" skips the account chooser.** Two parameters do that, and
+only together:
+
+- `hd` (from `GOOGLE_WORKSPACE_DOMAIN`) tells Google which domain the visitor
+  belongs to, so its chooser is filtered to the troop account and a personal
+  Gmail is out of the way. It is a hint, not a fence — Google still returns a
+  Gmail account to anyone who picks "use another account", which is what keeps
+  the pre-Workspace logins working (see
+  [Merging duplicate accounts](#merging-duplicate-accounts)). Blank turns it off.
+- `prompt=none` is what actually removes the tap. **`hd` alone does not:** Google
+  shows the chooser even when exactly one account matches, so filtering the list
+  to one entry still leaves the member tapping it. `prompt=none` asks Google to
+  finish silently and to answer with an error rather than render anything.
+
+So the button tries silently first, and `/login` turns a bounce straight back
+into an ordinary sign-in — the member still only clicked once. That fallback is
+load-bearing: a silent attempt fails for everyone who is signed out, has never
+consented, or has two accounts in the domain, and all of them must still get in.
+`utils/loginHelpers.ts` holds the policy and the one-shot guard that keeps the
+retry from looping; `pages.signIn`/`pages.error` in `lib/auth.ts` are what route
+the bounce to `/login` in the first place.
 
 **User Roles:**
 
