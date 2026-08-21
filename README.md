@@ -444,6 +444,17 @@ OLD_BOX_ADMIN_NOTIFICATION OLD_BOX_ADMIN_NOTIFICATION
 
 Supports Google OAuth and username/password authentication via NextAuth.js. Configure providers in the NextAuth API route.
 
+**"Jatka Googlella" skips the account chooser.** Klapi sends
+`GOOGLE_WORKSPACE_DOMAIN` to Google as the `hd` (hosted domain) hint, so a
+member signed into both their `@pitkajarvenvaeltajat.fi` account and a personal
+Gmail — most of them are — goes straight through instead of picking from a list
+every time. It is a hint, not a fence: Google still returns a personal Gmail to
+anyone who chooses "use another account", which is what keeps the pre-Workspace
+logins working (see [Merging duplicate accounts](#merging-duplicate-accounts)).
+Leaving the variable blank turns the hint off. `lib/auth.ts` deliberately does
+*not* also set `prompt=select_account` — that parameter overrides the hint and
+would put the chooser back on every sign-in.
+
 **User Roles:**
 
 - **Admin**: Full access to manage catalog, users, and loans

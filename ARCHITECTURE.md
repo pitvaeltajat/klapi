@@ -86,6 +86,12 @@ load-bearing, not decoration: `isElevationInvalid` in `lib/auth.ts` demotes the
 session back to KIOSK once it passes. NextAuth config + the credentials
 provider live in `lib/auth.ts`.
 
+The Google provider there passes `hd: GOOGLE_WORKSPACE_DOMAIN`, which is what
+makes "Jatka Googlella" skip Google's account chooser for a member signed into
+both the troop account and a personal Gmail. A hint only — a Gmail login still
+works — and it must not be paired with `prompt: 'select_account'`, which
+overrides it. Covered by `__tests__/google-domain-hint.test.ts`.
+
 ## Audit / history pattern
 
 Two parallel audit logs, same shape (`{ id, <fk>, action, details Json?,

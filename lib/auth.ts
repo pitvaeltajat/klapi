@@ -14,6 +14,13 @@ declare module 'next-auth/jwt' {
   }
 }
 
+/**
+ * The troop's Google Workspace domain, shared with the nightly directory sync.
+ * Sent to Google as the `hd` (hosted domain) hint on sign-in — see the provider
+ * below. Unset (local dev, a fork) simply means no hint.
+ */
+const WORKSPACE_DOMAIN = process.env.GOOGLE_WORKSPACE_DOMAIN?.trim() || undefined;
+
 // Kiosk admin elevation lasts 30 minutes. This is enforced server-side in the
 // jwt callback below — the browser timer in TopBar is only cosmetic.
 const ELEVATION_TTL_MS = 30 * 60 * 1000;
@@ -74,6 +81,24 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      // `hd` names the account the visitor almost certainly means: their
+      // `@$GOOGLE_WORKSPACE_DOMAIN` one. Google then filters its chooser to that
+      // domain, and a member signed into both the troop account and a personal
+      // Gmail — most of them — is sent straight through with no chooser at all,
+      // instead of picking from a list every single time.
+      //
+      // It is a hint, not a fence: Google documents `hd` as a sign-in UI
+      // optimisation and still returns a personal Gmail to anyone who picks
+      // "use another account", which is what keeps the pre-Workspace logins
+      // (`scripts/merge-users.ts`) reachable. Nothing here authorises on it —
+      // Klapi authorises on the `User` row — so the id token's `hd` claim never
+      // has to be checked.
+      //
+      // Deliberately NO `prompt: 'select_account'`. That parameter overrides the
+      // hint, so shipping both would put the chooser back on every sign-in and
+      // this would buy nothing. next-auth deep-merges these params over the
+      // provider's defaults, so `scope` survives.
+      ...(WORKSPACE_DOMAIN ? { authorization: { params: { hd: WORKSPACE_DOMAIN } } } : {}),
     }),
     CredentialsProvider({
       name: 'Credentials',
