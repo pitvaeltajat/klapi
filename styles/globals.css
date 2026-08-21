@@ -103,69 +103,99 @@
   }
 }
 
+/*
+  ── Brand palette (Pitväeltäjät "Värit" sheet) ────────────────────────────
+  The two blues are the pääväri pair; the app must read as one of them first.
+
+    light blue  #BBD1FB   hsl(219 89% 86%)   raised/selected surfaces, dark-mode primary
+    dark blue   #221E5D   hsl(244 51% 24%)   primary, app bar, all body text
+    gray        #C9C5C3   hsl(20  5% 78%)    borders and muted surfaces
+    brown       #82593E   hsl(24 35% 38%)    warning
+    cream       #FBE7B2   hsl(44 90% 84%)    text on a solid brown fill
+    red         #A23936   hsl(2  50% 42%)    destructive
+
+  The tokens below are those six, plus lighter/darker steps of the same hue
+  where a surface needs one (a page wash, a hover fill, a dark-mode chip).
+  Nothing here is a hue the sheet doesn't contain, with one exception noted at
+  --success: the sheet has no green, and "palautettu" has to stay green.
+*/
 @layer base {
   :root {
-    /* Chakra gray.50 background in light mode */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* The light blue, opened up until body text clears 13:1 on it. */
+    --background: 219 89% 96%;
+    --foreground: 244 51% 24%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 244 51% 24%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 244 51% 24%;
 
-    /* Chakra blue.500 primary */
-    --primary: 206 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Brand dark blue */
+    --primary: 244 51% 24%;
+    --primary-foreground: 219 89% 97%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    /* Brand light blue, exactly — the secondary Badge/Button is the one chip
+       that carries it at full strength. */
+    --secondary: 219 89% 86%;
+    --secondary-foreground: 244 51% 24%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* The quiet surface: EmptyState, Skeleton, the kaman kuva box, every
+       hover:bg-muted. This one is NOT the sheet's gray, deliberately — that
+       gray is warm (#C9C5C3), and a block of it next to the light-blue page
+       reads pink. The gray keeps its warmth where it is only a line
+       (--border/--input); at full-block size it goes cool instead. */
+    --muted: 220 22% 93%;
+    --muted-foreground: 244 14% 40%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 219 80% 91%;
+    --accent-foreground: 244 51% 24%;
 
-    /* Chakra red.500 */
-    --destructive: 0 84% 60%;
+    /* Brand red */
+    --destructive: 2 50% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Chakra green.500 */
-    --success: 145 63% 42%;
+    /* The sheet has no green. Kept as a status colour because "palautettu" /
+       "saatavilla" have to read as green, but pulled down to the palette's
+       muted, earthy register so it sits beside the red and the brown. */
+    --success: 150 45% 30%;
     --success-foreground: 0 0% 100%;
 
-    /* Chakra orange.500 */
-    --warning: 28 100% 50%;
-    --warning-foreground: 0 0% 100%;
+    /* Brand brown, labelled in brand cream (5.1:1). */
+    --warning: 24 35% 38%;
+    --warning-foreground: 44 90% 84%;
 
     /* The translucent app bar. Its own pair rather than `primary`, because it
        is a fixed brand surface that stays dark-on-light in both themes. */
-    --header: 213 61% 54%;
-    --header-alpha: 0.9;
-    --header-foreground: 0 0% 100%;
+    --header: 244 51% 24%;
+    --header-alpha: 0.92;
+    --header-foreground: 219 89% 97%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 206 100% 50%;
+    /* Brand gray */
+    --border: 20 7% 82%;
+    --input: 20 7% 82%;
+    --ring: 244 51% 24%;
 
     --radius: 0.375rem;
   }
 
   .dark {
-    /* Chakra gray.900 background in dark mode */
-    --background: 221 39% 11%;
-    --foreground: 210 20% 98%;
+    /* Dark mode is the brand dark blue: the page is that navy taken down, the
+       Card is very nearly #221E5D itself, and the light blue becomes the
+       primary — the inverse of the light theme, and of the two compositions on
+       the brand sheet. */
+    --background: 244 45% 9%;
+    --foreground: 219 60% 93%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 20% 98%;
+    --card: 244 45% 15%;
+    --card-foreground: 219 60% 93%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 244 45% 15%;
+    --popover-foreground: 219 60% 93%;
 
-    --primary: 206 100% 55%;
-    --primary-foreground: 0 0% 100%;
+    /* Brand light blue, exactly. */
+    --primary: 219 89% 86%;
+    --primary-foreground: 244 51% 15%;
 
     /* One notch ABOVE --card, never equal to it. These two are the "raised
        chip" surfaces — the secondary Badge/Button, the gray Badge, Skeleton,
@@ -175,35 +205,41 @@
        photo box with no box. They were 17% — identical to --card — until it was
        noticed on the role badge in /admin.
 
-       24% is the ceiling, not a preference: it is the lightest these can go
-       while --muted-foreground text on top still clears WCAG AA (4.57:1; at
-       26% it drops to 4.25:1 and fails). Don't raise it without re-checking
-       that, and don't collapse it back onto --card. */
-    --secondary: 217 33% 24%;
-    --secondary-foreground: 210 20% 98%;
+       The ladder is --background 9% → --card/--popover 15% → --accent 21% →
+       --secondary/--muted 24%, all on the brand navy hue. 24% keeps
+       --muted-foreground text on top at 5.9:1; don't raise it without
+       re-checking that, and don't collapse it back onto --card. */
+    --secondary: 244 30% 24%;
+    --secondary-foreground: 219 60% 93%;
 
-    --muted: 217 33% 24%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 244 30% 24%;
+    --muted-foreground: 220 25% 70%;
 
-    --accent: 217 33% 22%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 244 32% 21%;
+    --accent-foreground: 219 60% 93%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    /* The brand red/brown/green, lightened until each still works as *text* on
+       its own 10%-tint Badge over a Card (the sheet's own values are far too
+       dark to read on this background). */
+    --destructive: 3 60% 62%;
+    --destructive-foreground: 244 51% 15%;
 
-    --success: 145 63% 42%;
-    --success-foreground: 0 0% 100%;
+    --success: 150 40% 48%;
+    --success-foreground: 244 51% 15%;
 
-    --warning: 28 100% 55%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 26 45% 55%;
+    --warning-foreground: 244 51% 15%;
 
-    --header: 220 26% 14%;
+    /* The same #221E5D as in light mode — the app bar is the brand block, so
+       it does not follow the theme down. Here it is *lighter* than the page it
+       floats over, which is the point: it reads as the dark blue in both. */
+    --header: 244 51% 24%;
     --header-alpha: 0.95;
-    --header-foreground: 0 0% 100%;
+    --header-foreground: 219 89% 97%;
 
-    --border: 217 33% 22%;
-    --input: 217 33% 22%;
-    --ring: 206 100% 55%;
+    --border: 244 28% 26%;
+    --input: 244 28% 26%;
+    --ring: 219 89% 86%;
   }
 }
 

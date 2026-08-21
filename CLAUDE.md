@@ -119,17 +119,32 @@ server components or route handlers.
   (`<dl>` with `text-sm sm:text-base`) over full sentences — see
   `app/loan/[id]/LoanView.tsx`.
 - Design tokens are CSS variables in `styles/globals.css` with `.dark` overrides.
+  They are **the Pitväeltäjät brand palette** ("Värit" sheet): light blue
+  `#BBD1FB` and dark blue `#221E5D` are the pääväri pair, plus gray `#C9C5C3`,
+  brown `#82593E`, cream `#FBE7B2` and red `#A23936`. Light mode is the light
+  blue as the page with navy primary/app bar; dark mode inverts it — navy page,
+  light blue primary — and the app bar stays `#221E5D` in both. Statuses map
+  destructive→red, warning→brown (labelled in cream); `--success` is the one
+  colour the sheet doesn't supply and is kept green, pulled to the palette's
+  muted register. The header block of that file lists the six with their HSL.
+  Pick new colours from those six or a lighter/darker step of one — with one
+  standing exception: `--muted` in light mode is deliberately *cool*, because a
+  full block of the warm brand gray next to the light-blue page reads pink. The
+  gray keeps its warmth at line size (`--border`/`--input`).
   **A surface token must never equal the token of the surface it sits on.** In
-  dark mode `--secondary` and `--muted` were both `217 33% 17%` — exactly
-  `--card` — so every raised chip on a Card rendered as nothing: the secondary
-  and gray `Badge`, `Skeleton`, the kaman kuva box, a disabled `Input`, every
-  `hover:bg-muted`. They are `24%` now, which is the lightest they can be while
-  `--muted-foreground` on top still clears WCAG AA (4.57:1; 26% gives 4.25:1
-  and fails). The ladder is `--background` 11% → `--card`/`--popover` 17% →
-  `--accent` 22% → `--secondary`/`--muted` 24%.
+  dark mode `--secondary` and `--muted` were once identical to `--card`, so
+  every raised chip on a Card rendered as nothing: the secondary and gray
+  `Badge`, `Skeleton`, the kaman kuva box, a disabled `Input`, every
+  `hover:bg-muted`. The dark ladder is `--background` 9% → `--card`/`--popover`
+  15% → `--accent` 21% → `--secondary`/`--muted` 24%, all on the navy hue; 24%
+  keeps `--muted-foreground` on top at 5.9:1. Every token pair in that file
+  clears WCAG AA — re-check with a contrast calculator before nudging one.
   Tailwind maps them via `bg-primary`, `text-muted-foreground`, etc. Nothing
   outside that file should hard-code a colour — the app bar has its own
-  `--header` / `--header-foreground` pair rather than `text-white`.
+  `--header` / `--header-foreground` pair rather than `text-white`. The two
+  places a colour is unavoidably literal are `utils/emailHelpers.ts` (email
+  clients have no CSS variables) and `utils/imageHelpers.ts` (the placehold.co
+  "Ei kuvaa" URLs); both carry the palette's hexes and must be updated by hand.
 - Dark mode is class-based via `next-themes` (`attribute="class"`).
 - Toasts: `import { toast } from 'sonner'` — use `toast.success/error/warning`.
   The `Toaster` is already mounted in `app/providers.tsx`.

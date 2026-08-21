@@ -1,6 +1,6 @@
 // Placeholder URLs for light and dark mode
-const PLACEHOLDER_LIGHT = 'https://placehold.co/500x300/e2e8f0/64748b?text=Ei+kuvaa';
-const PLACEHOLDER_DARK = 'https://placehold.co/500x300/1a202c/a0aec0?text=Ei+kuvaa';
+const PLACEHOLDER_LIGHT = 'https://placehold.co/500x300/EAE7E6/5A5874?text=Ei+kuvaa';
+const PLACEHOLDER_DARK = 'https://placehold.co/500x300/2D2B50/9FACC6?text=Ei+kuvaa';
 
 export function getPlaceholderUrl(isDarkMode: boolean): string {
   return isDarkMode ? PLACEHOLDER_DARK : PLACEHOLDER_LIGHT;
