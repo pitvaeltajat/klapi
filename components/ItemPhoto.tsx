@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { ImagePlus, Loader2 } from 'lucide-react';
+import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { useItemOriginalImageState } from '@/hooks/useItemImage';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { readJson } from '@/utils/apiError';
 
@@ -30,6 +32,10 @@ const clampRatio = (ratio: number) => Math.min(MAX_RATIO, Math.max(MIN_RATIO, ra
  * has no photo and the person holding the kama is the one who can take it.
  * Replacing a photo that already exists stays an admin job (Muokkaa), and the
  * upload route enforces that; the kiosk terminal is left out, it has no camera.
+ *
+ * An admin can also just throw the picture away — the edit dialog could only
+ * ever swap one photo for another, so a wrong picture had to stay up until
+ * somebody took a better one. Deleting drops the box back to "Lisää kuva".
  */
 export default function ItemPhoto({ itemId, itemName }: { itemId: string; itemName: string }) {
   const router = useRouter();
@@ -43,17 +49,25 @@ export default function ItemPhoto({ itemId, itemName }: { itemId: string; itemNa
   const [uploading, setUploading] = useState(false);
   const [ratio, setRatio] = useState<number | null>(null);
   const [imgError, setImgError] = useState(false);
+  // The probe in `useItemOriginalImageState` doesn't re-run, so a deletion has
+  // to be remembered here for the box to fall back to the empty state.
+  const [deleted, setDeleted] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // The blob URL for the local preview is ours to release.
-  useEffect(() => () => { if (uploaded) URL.revokeObjectURL(uploaded); }, [uploaded]);
+  useEffect(
+    () => () => {
+      if (uploaded) URL.revokeObjectURL(uploaded);
+    },
+    [uploaded],
+  );
 
-  const hasPhoto = uploaded !== null || status === 'loaded';
+  const hasPhoto = !deleted && (uploaded !== null || status === 'loaded');
   const canAdd =
-    !hasPhoto &&
-    status !== 'loading' &&
-    Boolean(session?.user) &&
-    session?.user?.group !== 'KIOSK';
+    !hasPhoto && status !== 'loading' && Boolean(session?.user) && session?.user?.group !== 'KIOSK';
+  const canDelete = hasPhoto && session?.user?.group === 'ADMIN';
 
   const upload = async (file: File) => {
     setUploading(true);
@@ -75,6 +89,7 @@ export default function ItemPhoto({ itemId, itemName }: { itemId: string; itemNa
 
       setUploaded(URL.createObjectURL(file));
       setImgError(false);
+      setDeleted(false);
       toast.success('Kuva lisätty');
       router.refresh();
     } catch (err) {
@@ -84,59 +99,111 @@ export default function ItemPhoto({ itemId, itemName }: { itemId: string; itemNa
     }
   };
 
+  const remove = async () => {
+    setRemoving(true);
+    try {
+      const response = await fetch('/api/item/deleteImage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId }),
+      });
+      await readJson(response, 'Kuvan poisto epäonnistui');
+
+      setUploaded((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setRatio(null);
+      setImgError(false);
+      setDeleted(true);
+      setConfirmOpen(false);
+      toast.success('Kuva poistettu');
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Kuvan poisto epäonnistui');
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   return (
-    <div
-      className="relative w-full max-w-2xl overflow-hidden rounded-md bg-muted"
-      style={{ aspectRatio: ratio ?? PLACEHOLDER_RATIO }}
-    >
-      {status === 'loading' ? (
-        <Skeleton className="h-full w-full rounded-md" />
-      ) : hasPhoto ? (
-        /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
-        <img
-          src={uploaded ?? (imgError ? placeholder : src)}
-          alt={itemName}
-          onError={() => setImgError(true)}
-          onLoad={(e) => {
-            const { naturalWidth, naturalHeight } = e.currentTarget;
-            if (naturalWidth && naturalHeight) setRatio(clampRatio(naturalWidth / naturalHeight));
-          }}
-          className="h-full w-full object-contain"
-        />
-      ) : canAdd ? (
-        <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              // Cleared first: picking the same file twice must still fire onChange.
-              e.target.value = '';
-              if (file) void upload(file);
+    <div className="flex flex-col items-start gap-2">
+      <div
+        className="relative w-full max-w-2xl overflow-hidden rounded-md bg-muted"
+        style={{ aspectRatio: ratio ?? PLACEHOLDER_RATIO }}
+      >
+        {status === 'loading' ? (
+          <Skeleton className="h-full w-full rounded-md" />
+        ) : hasPhoto ? (
+          /* eslint-disable-next-line @next/next/no-img-element -- dynamic S3 URL with onError fallback */
+          <img
+            src={uploaded ?? (imgError ? placeholder : src)}
+            alt={itemName}
+            onError={() => setImgError(true)}
+            onLoad={(e) => {
+              const { naturalWidth, naturalHeight } = e.currentTarget;
+              if (naturalWidth && naturalHeight) setRatio(clampRatio(naturalWidth / naturalHeight));
             }}
+            className="h-full w-full object-contain"
           />
-          {/* The whole empty box is the button — "Ei kuvaa" with a pill floating
+        ) : canAdd ? (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                // Cleared first: picking the same file twice must still fire onChange.
+                e.target.value = '';
+                if (file) void upload(file);
+              }}
+            />
+            {/* The whole empty box is the button — "Ei kuvaa" with a pill floating
               over it read as a picture of a caption, not as something to press. */}
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input text-muted-foreground transition-colors hover:border-primary hover:bg-background hover:text-foreground focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input text-muted-foreground transition-colors hover:border-primary hover:bg-background hover:text-foreground focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            >
+              {uploading ? (
+                <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+              ) : (
+                <ImagePlus className="h-8 w-8" aria-hidden />
+              )}
+              <span className="text-sm font-medium">{uploading ? 'Ladataan…' : 'Lisää kuva'}</span>
+              {!uploading && <span className="text-xs">Kamasta ei ole vielä kuvaa</span>}
+            </button>
+          </>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element -- the "Ei kuvaa" placeholder */
+          <img src={placeholder} alt={itemName} className="h-full w-full object-contain" />
+        )}
+      </div>
+
+      {canDelete && (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setConfirmOpen(true)}
           >
-            {uploading ? (
-              <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-            ) : (
-              <ImagePlus className="h-8 w-8" aria-hidden />
-            )}
-            <span className="text-sm font-medium">{uploading ? 'Ladataan…' : 'Lisää kuva'}</span>
-            {!uploading && <span className="text-xs">Kamasta ei ole vielä kuvaa</span>}
-          </button>
+            <Trash2 className="h-4 w-4" />
+            Poista kuva
+          </Button>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title="Poista kuva?"
+            description={`Kaman "${itemName}" kuva poistetaan pysyvästi. Uuden kuvan voi lisätä tilalle jälkeenpäin.`}
+            confirmLabel="Poista kuva"
+            onConfirm={() => void remove()}
+            isLoading={removing}
+          />
         </>
-      ) : (
-        /* eslint-disable-next-line @next/next/no-img-element -- the "Ei kuvaa" placeholder */
-        <img src={placeholder} alt={itemName} className="h-full w-full object-contain" />
       )}
     </div>
   );

@@ -116,6 +116,7 @@ the entity's detail page:
 | `bulkItems` | POST | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item |
 | `getInventory` | GET | inventory listing (admin table source) |
 | `uploadImage` | POST | S3 presigned URL for the item image (admin; any non-kiosk user for a `custom-<uuid>` key, or for a real kama that has **no** photo yet — HEADs the public bucket to check) |
+| `deleteImage` | POST | drop a kama's photo without replacing it (admin; deletes the raw key plus the `original/` and `compressed/` renditions); logs `UPDATED` with a note |
 | `createAnnouncement` | POST | publish a huomio onto one or more kamat (`{ itemIds, message, kind, reportId? }`) |
 | `expireAnnouncement` | POST | unpublish one (stamps `expiresAt`) |
 
