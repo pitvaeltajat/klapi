@@ -343,7 +343,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 </NextLink>
                 {children}
                 {totalItems > 0 && (
-                  <CountBadge count={totalItems} variant="destructive" size="md" floating />
+                  <CountBadge count={totalItems} variant="destructive" floating />
                 )}
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <div className="relative md:hidden">
                 {children}
                 {totalItems > 0 && (
-                  <CountBadge count={totalItems} variant="destructive" size="md" floating />
+                  <CountBadge count={totalItems} variant="destructive" floating />
                 )}
               </div>
             )}

@@ -11,8 +11,8 @@ const countBadgeVariants = cva('flex shrink-0 items-center justify-center rounde
       destructive: 'bg-destructive text-destructive-foreground shadow-md',
     },
     size: {
-      sm: 'size-5 text-xs',
-      md: 'size-6 text-sm',
+      sm: 'h-5 min-w-5 px-1 text-xs',
+      md: 'h-6 min-w-6 px-1.5 text-sm',
     },
   },
   defaultVariants: {
@@ -35,7 +35,7 @@ export function CountBadge({ count, variant, size, floating, className, ...props
     <span
       className={cn(
         countBadgeVariants({ variant, size }),
-        floating && 'absolute -right-3 -top-3',
+        floating && 'absolute -right-2 -top-2',
         className,
       )}
       {...props}
