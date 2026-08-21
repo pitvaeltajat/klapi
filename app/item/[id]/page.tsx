@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic';
 import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import ItemView from './ItemView';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +40,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   // catalog). Reports also carry free-text that may name people, so keeping
   // them out of the non-admin payload entirely is a privacy win, not just a
   // perf one.
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   const isAdmin = session?.user?.group === 'ADMIN';
 
   const [history, reportAffectedItems] = isAdmin

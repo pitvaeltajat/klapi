@@ -1,7 +1,6 @@
 import { NextResponse, after } from 'next/server';
 import prisma from '@/utils/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
 import { isUploadableCustomItemId } from '@/utils/customItems';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
@@ -12,7 +11,7 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Ei kirjautunut' }, { status: 401 });
     }

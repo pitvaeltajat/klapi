@@ -43,7 +43,7 @@ A web-based equipment loan management system for organizations. Browse inventory
 - [React 19](https://react.dev) with TypeScript (strict)
 - [Prisma 7](https://www.prisma.io) — Database ORM
 - [PostgreSQL](https://www.postgresql.org) — Database
-- [NextAuth.js](https://next-auth.js.org/) — Authentication
+- [Auth.js / next-auth v5](https://authjs.dev/) — Authentication
 - [Tailwind CSS 4](https://tailwindcss.com) — Utility-first styling (CSS-first config)
 - [shadcn/ui](https://ui.shadcn.com) — Component primitives (owned in `components/ui/`)
 - [Radix UI](https://www.radix-ui.com) — Unstyled accessible primitives (Dialog, Switch, Tooltip, Label)
@@ -442,7 +442,7 @@ OLD_BOX_ADMIN_NOTIFICATION OLD_BOX_ADMIN_NOTIFICATION
 
 ## Authentication
 
-Supports Google OAuth and username/password authentication via NextAuth.js. Configure providers in the NextAuth API route.
+Supports Google OAuth and username/password authentication via Auth.js (next-auth v5). `lib/auth.ts` holds the whole config and exports `auth()`, `handlers`, `signIn` and `signOut`; `app/api/auth/[...nextauth]/route.ts` is three lines re-exporting the handlers.
 
 **"Jatka Googlella" skips the account chooser.** Klapi sends
 `GOOGLE_WORKSPACE_DOMAIN` to Google as the `hd` (hosted domain) hint, so a
@@ -615,7 +615,7 @@ See [.env.example](.env.example) for the full list with comments. The ones a
 deployment cannot run without:
 
 - `DATABASE_URL`: PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Random secret for NextAuth (generate with `openssl rand -base64 32`)
+- `NEXTAUTH_SECRET`: Random secret for Auth.js (generate with `openssl rand -base64 32`). v5 prefers `AUTH_SECRET` and falls back to this name, so the deployed variable did not have to be renamed.
 - `NEXTAUTH_URL`: Public URL of your deployment
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: Google OAuth credentials
 - `KLAPI_AWS_REGION`, `KLAPI_AWS_ACCESS_KEY_ID`, `KLAPI_AWS_SECRET_ACCESS_KEY`: AWS credentials for SES and S3 (prefixed because Vercel reserves `AWS_*`)
@@ -632,9 +632,9 @@ components/         App-specific React components
 components/ui/      shadcn/ui primitives (owned source, edit freely)
 contexts/           React contexts (cart, dates)
 hooks/              Custom hooks
-lib/                `cn()` className merger and the NextAuth config
+lib/                `cn()` className merger and the Auth.js config
 styles/globals.css  Tailwind import + `@theme` design tokens (light/dark)
-types/              Shared types and the next-auth session augmentation
+types/              Shared types and the Auth.js session augmentation
 utils/              Server and shared helpers (Prisma client, loan helpers, etc.)
 prisma/             Schema, migrations, seed
 scripts/            Operator scripts run with `tsx` (kiosk user, email previews)

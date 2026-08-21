@@ -2,8 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import AccountView from './AccountView';
 import { notificationPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
 import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
@@ -12,7 +11,7 @@ import type { ReportCreated, ReportStatus } from '@prisma/client';
 export const metadata = { title: 'Oma tili | Klapi' };
 
 export default async function AccountPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user?.id) {
     return (

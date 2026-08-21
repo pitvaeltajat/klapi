@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/utils/prisma';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { requireAdmin } from '@/utils/apiAuth';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   const { userId } = await params;
 
   // allow only admins to do this, or the user himself

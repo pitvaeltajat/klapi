@@ -8,12 +8,12 @@ vi.mock('@/utils/prisma', () => ({
 }));
 
 import prisma from '@/utils/prisma';
-import { authOptions } from '@/lib/auth';
+import { authConfig } from '@/lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const jwt = authOptions.callbacks!.jwt as any;
+const jwt = authConfig.callbacks!.jwt as any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sessionCb = authOptions.callbacks!.session as any;
+const sessionCb = authConfig.callbacks!.session as any;
 
 // All values below are fictional test fixtures. Two admins deliberately SHARE a
 // PIN to prove that elevation is name-scoped: a shared PIN must still elevate as

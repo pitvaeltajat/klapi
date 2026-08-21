@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import type { Session } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 
 /**
  * Session guards for route handlers.
  *
- * Every protected route used to inline `getServerSession` plus its own 401,
+ * Every protected route used to inline the session read plus its own 401,
  * which drifted into four different bodies for the same condition ('Kirjaudu
  * sisään', 'Ei kirjautunut', 'Ei kirjautunut sisään', 'Unauthorized'). These
  * return one wording per condition, in Finnish like the rest of the UI — the
@@ -34,14 +33,14 @@ const deny = (message: string): Guard => ({
 
 /** Any signed-in user. */
 export async function requireUser(): Promise<Guard> {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) return deny('Kirjaudu sisään');
   return allow(session);
 }
 
 /** ADMIN only — including a kiosk session currently elevated to ADMIN. */
 export async function requireAdmin(): Promise<Guard> {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (session?.user?.group !== 'ADMIN') {
     return deny('Sinulla ei ole oikeutta tähän toimintoon');
   }
@@ -50,7 +49,7 @@ export async function requireAdmin(): Promise<Guard> {
 
 /** ADMIN or a kiosk terminal — for the shared-terminal flows. */
 export async function requireAdminOrKiosk(): Promise<Guard> {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (session?.user?.group !== 'ADMIN' && session?.user?.group !== 'KIOSK') {
     return deny('Sinulla ei ole oikeutta tähän toimintoon');
   }

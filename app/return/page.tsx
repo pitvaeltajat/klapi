@@ -3,15 +3,14 @@ export const dynamic = 'force-dynamic';
 import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import ReturnView from './ReturnView';
 import { loanWithReservationsInclude } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Palauta lainoja | Klapi' };
 
 export default async function ReturnPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   // ADMIN/KIOSK can return any loan; regular users only see their own.
   const isAdminOrKiosk =

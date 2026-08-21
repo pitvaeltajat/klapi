@@ -16,14 +16,17 @@ const prisma = new PrismaClient({ adapter });
 
 const testPrefix = `prefs-${Date.now()}`;
 
-// `requireUser` reads getServerSession, so that is what the tests drive.
-const getServerSession = vi.hoisted(() => vi.fn());
-vi.mock('next-auth', () => ({ getServerSession }));
+// `requireUser` reads `auth()` — v5's replacement for the old session read — so
+// that is what the tests drive. Mocking `@/lib/auth` rather than `next-auth`
+// keeps the whole NextAuth config out of the test: the route only ever reaches
+// that one export.
+const auth = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/auth', () => ({ auth }));
 
 const { POST } = await import('@/app/api/user/updateEmailPreferences/route');
 
 function asUser(id: string, group: Group) {
-  getServerSession.mockResolvedValue({ user: { id, group } });
+  auth.mockResolvedValue({ user: { id, group } });
 }
 
 function post(body: unknown) {
@@ -53,7 +56,7 @@ const cleanUp = () => prisma.user.deleteMany({ where: { id: { startsWith: testPr
 
 beforeAll(cleanUp);
 beforeEach(async () => {
-  getServerSession.mockReset();
+  auth.mockReset();
   await cleanUp();
 });
 afterAll(async () => {
@@ -127,7 +130,7 @@ describe('updateEmailPreferences', () => {
   });
 
   it('refuses an unauthenticated caller', async () => {
-    getServerSession.mockResolvedValue(null);
+    auth.mockResolvedValue(null);
 
     const response = await post({ emailWeeklyReminder: false });
 

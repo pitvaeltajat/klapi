@@ -1,16 +1,24 @@
-import { NextAuthOptions } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
-import CredentialsProvider from 'next-auth/providers/credentials';
+import NextAuth, { type NextAuthConfig } from 'next-auth';
+import Google from 'next-auth/providers/google';
+import Credentials from 'next-auth/providers/credentials';
 import prisma from '@/utils/prisma';
 import bcrypt from 'bcrypt';
 
-declare module 'next-auth/jwt' {
+// Augmented on `@auth/core/jwt`, not `next-auth/jwt`. The latter is a bare
+// `export * from '@auth/core/jwt'` re-export, and TypeScript refuses to augment
+// it ("Invalid module name in augmentation") — the interface has to be widened
+// where it is declared. That is the only reason `@auth/core` is a direct
+// devDependency; nothing imports it at runtime, and it is pinned to the exact
+// version next-auth itself depends on.
+declare module '@auth/core/jwt' {
   interface JWT {
     group: 'ADMIN' | 'USER' | 'KIOSK';
     userId?: string;
     adminExpiry?: string | null;
     elevatedById?: string | null;
     elevatedByName?: string | null;
+    /** Which provider minted this token — the kiosk's year-long session hangs off it. */
+    provider?: string;
   }
 }
 
@@ -30,7 +38,7 @@ const ELEVATION_TTL_MS = 30 * 60 * 1000;
  * honoured: it has no expiry, its expiry has passed, is malformed, or is
  * implausibly far in the future (a sign of a forged/tampered token). Enforced
  * in BOTH the jwt and session callbacks — the session callback is what runs on
- * every getServerSession read, so authorization actually depends on it.
+ * every `auth()` read, so authorization actually depends on it.
  */
 function isElevationInvalid(elevatedById: unknown, adminExpiry: unknown): boolean {
   if (!elevatedById) return false; // not elevated — nothing to invalidate
@@ -75,10 +83,17 @@ async function verifyElevationPin(
   return { id: admin.id, name: admin.name };
 }
 
-export const authOptions: NextAuthOptions = {
+/**
+ * The Auth.js (next-auth v5) config. Exported on its own so tests can read the
+ * provider setup without standing up the handlers; everything the app uses —
+ * `auth`, `handlers`, `signIn`, `signOut` — comes out of `NextAuth()` below.
+ */
+export const authConfig: NextAuthConfig = {
+  // v5 would pick `AUTH_SECRET` up by itself and falls back to
+  // `NEXTAUTH_SECRET`; naming it keeps the deployed variable authoritative.
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
       // `hd` names the account the visitor almost certainly means: their
@@ -100,26 +115,32 @@ export const authOptions: NextAuthOptions = {
       // provider's defaults, so `scope` survives.
       ...(WORKSPACE_DOMAIN ? { authorization: { params: { hd: WORKSPACE_DOMAIN } } } : {}),
     }),
-    CredentialsProvider({
+    Credentials({
       name: 'Credentials',
       credentials: {
         username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
+        // v5 types the credentials bag as `unknown` per field — it is raw form
+        // input and the framework does no validation — so narrow before use.
+        const { username, password } = credentials ?? {};
+        if (typeof username !== 'string' || typeof password !== 'string') {
+          return null;
+        }
+        if (!username || !password) {
           return null;
         }
 
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
+          where: { username },
         });
 
         if (!user || !user.password || user.deletedAt) {
           return null;
         }
 
-        const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+        const isValidPassword = await bcrypt.compare(password, user.password);
         const now = new Date();
         const isPasswordExpired = user.passwordExpiresAt && user.passwordExpiresAt < now;
 
@@ -171,17 +192,22 @@ export const authOptions: NextAuthOptions = {
         session.user.elevatedById = token.elevatedById || null;
         session.user.elevatedByName = token.elevatedByName || null;
         // Lapsed/forged elevation is presented as a plain KIOSK session, so every
-        // route reading getServerSession sees the reverted privileges.
+        // route reading `auth()` sees the reverted privileges.
         if (isElevationInvalid(session.user.elevatedById, session.user.adminExpiry)) {
           session.user.group = 'KIOSK';
           session.user.adminExpiry = null;
           session.user.elevatedById = null;
           session.user.elevatedByName = null;
         }
-        // If group is KIOSK and login was via CredentialsProvider, set session expiration to one year
+        // If group is KIOSK and login was via Credentials, set session expiration to one year
         if (session.user.group === 'KIOSK' && token.provider === 'credentials') {
           const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-          session.expires = new Date(Date.now() + oneYearMs).toISOString();
+          // v5 types this callback's `session` as the *intersection* of the
+          // database-strategy and jwt-strategy shapes, which leaves `expires`
+          // as `Date & string` — a type no value can satisfy. We only ever run
+          // the jwt strategy, where it is the ISO string it has always been.
+          const jwtSession = session as unknown as { expires: string };
+          jwtSession.expires = new Date(Date.now() + oneYearMs).toISOString();
         }
       }
       return session;
@@ -251,3 +277,12 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
 };
+
+/**
+ * v5 hands back the handlers and the server-side session reader together.
+ * `auth()` is what replaced `getServerSession(authOptions)` — it reads the
+ * request from `next/headers` itself, so callers pass nothing. `signIn` /
+ * `signOut` are the *server* actions; components keep importing the client
+ * versions from `next-auth/react`.
+ */
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

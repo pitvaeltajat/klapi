@@ -1,8 +1,9 @@
 # Klapi — agent notes
 
 Equipment loan management app. Next.js 16 **App Router**, React 19, TypeScript
-strict, Prisma 7, PostgreSQL, NextAuth v4, Tailwind v4 + shadcn/ui, sonner for
-toasts, next-themes for dark mode, SWR for data fetching. UI is in Finnish.
+strict, Prisma 7, PostgreSQL, Auth.js (next-auth v5), Tailwind v4 + shadcn/ui,
+sonner for toasts, next-themes for dark mode, SWR for data fetching. UI is in
+Finnish.
 
 See `README.md` for the product overview, tech stack, and project layout.
 
@@ -241,6 +242,13 @@ revisit deliberately:
 
 - **@types/node**: track the runtime (currently Node 24 LTS — CI/deploy pin
   `node-version: 24`) — don't jump to `^25` until we're actually running Node 25.
+- **next-auth** and **@auth/core**: pinned to *exact* versions (`5.0.0-beta.32`
+  / `0.41.3`), no caret. v5 has been a beta since October 2023 — npm's `latest`
+  tag still points at the v4 line — and each beta has been free to move the API,
+  so a range would let an unreviewed breaking change in on any install. Bump
+  them together and deliberately: `@auth/core` must stay on the exact version
+  next-auth depends on, or the JWT augmentation in `lib/auth.ts` widens a
+  different copy of the interface than the one the callbacks see.
 
 **TypeScript is installed twice, on purpose.** `typescript-eslint` (8.65)
 refuses to load against TS 7 (`typescript-eslint does not support TS 7.0`), and

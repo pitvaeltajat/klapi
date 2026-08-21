@@ -1,8 +1,7 @@
 import '@/styles/globals.css';
 import { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import Providers from './providers';
 
 export const metadata: Metadata = {
@@ -18,7 +17,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // stops gating SSR behind a client `/api/auth/session` round-trip, and
   // authenticated pages render real HTML in the first response (faster FCP).
   // JWT strategy means this is a cookie decode, not a DB hit.
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   return (
     <html lang="fi" translate="no" suppressHydrationWarning>
       <body>

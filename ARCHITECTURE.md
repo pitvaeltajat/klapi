@@ -83,8 +83,10 @@ They only answer "may this caller call this route at all". Per-resource checks
 `session.user` carries `id`, `group`, `email`, and — for a PIN-elevated kiosk
 session — `elevatedById`, `elevatedByName` and `adminExpiry`. `adminExpiry` is
 load-bearing, not decoration: `isElevationInvalid` in `lib/auth.ts` demotes the
-session back to KIOSK once it passes. NextAuth config + the credentials
-provider live in `lib/auth.ts`.
+session back to KIOSK once it passes. The Auth.js config + the credentials
+provider live in `lib/auth.ts`, which also exports `auth()` — v5's replacement
+for `getServerSession(authOptions)`, taking no arguments because it reads the
+request out of `next/headers` itself.
 
 The Google provider there passes `hd: GOOGLE_WORKSPACE_DOMAIN`, which is what
 makes "Jatka Googlella" skip Google's account chooser for a member signed into
@@ -161,7 +163,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `user/updateEmailPreferences` | POST | notification prefs (the `email*` toggles **and** `calendarLoanEvents`) — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
 | `auth/createPin` | POST | set the admin kiosk-elevation PIN |
 | `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
-| `auth/[...nextauth]` | — | NextAuth handler |
+| `auth/[...nextauth]` | — | Auth.js handler (`export const { GET, POST } = handlers`) |
 | `availability/getAvailabilities` | POST | item availability over a date range |
 | `category/getCategories`, `location/getLocations` | GET | option lists |
 | `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
@@ -271,7 +273,7 @@ and `/loan/[id]` shows its name. Only the page is gone.
 `User` (group enum, soft-delete via `deletedAt` — filtered out of auth, listings,
 elevation, and email recipients so `Loan.user` history survives; the
 `email*Notification` toggles plus `calendarLoanEvents`) ·
-`Account`/`Session` (NextAuth) · `Item` (soft-delete via
+`Account`/`Session` (Auth.js) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, optional `Box`, `calendarEventId` for the shared
 calendar) · `Box` · `Location` · `Category` ·
@@ -286,7 +288,7 @@ came from one). Migrations in `prisma/migrations/`; seed in
 - `utils/prisma` — Prisma client singleton.
 - `utils/serialize.ts` — serialize server data (Date → string) before passing to
   client components.
-- `lib/auth.ts` — NextAuth `authOptions`; `lib/utils.ts` — `cn()` etc.
+- `lib/auth.ts` — Auth.js `authConfig` + `auth`/`handlers`; `lib/utils.ts` — `cn()` etc.
 - `utils/dateFormat.ts` / `dateRange.ts` + `components/DateTime` — date display.
 - `utils/loanHelpers.ts` / `itemHelpers.ts` — **client-safe** badge variants +
   history labels (no Prisma import).

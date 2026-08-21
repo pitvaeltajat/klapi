@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import prisma from '@/utils/prisma';
 import { activeItemsWhere } from '@/utils/itemQueries';
 import { serialize } from '@/utils/serialize';
@@ -12,7 +11,7 @@ export const metadata = { title: 'Muokkaa varausta | Klapi' };
 
 export default async function UserEditLoanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user) redirect('/api/auth/signin');
 

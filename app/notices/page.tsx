@@ -2,8 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import NoticesView from './NoticesView';
 
 export const metadata = { title: 'Huomiot | Klapi' };
@@ -16,7 +15,7 @@ export const metadata = { title: 'Huomiot | Klapi' };
  * they were unrelated features.
  */
 export default async function NoticesPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   const isAdmin = session?.user?.group === 'ADMIN';
 
   const [rawAnnouncements, reports] = await Promise.all([

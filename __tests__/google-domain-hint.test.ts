@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import type { OAuthConfig } from 'next-auth/providers/oauth';
+import type { OAuthConfig } from '@auth/core/providers/oauth';
 
 // lib/auth pulls in the Prisma singleton for the credentials provider and the
 // callbacks. None of that is exercised here, so a stub keeps this file
@@ -18,10 +18,10 @@ async function googleAuthParams(domain: string | undefined) {
   if (domain === undefined) delete process.env.GOOGLE_WORKSPACE_DOMAIN;
   else process.env.GOOGLE_WORKSPACE_DOMAIN = domain;
 
-  const { authOptions } = await import('@/lib/auth');
-  const google = authOptions.providers.find((p) => p.id === 'google') as OAuthConfig<unknown> & {
-    options?: OAuthConfig<unknown>;
-  };
+  const { authConfig } = await import('@/lib/auth');
+  const google = authConfig.providers.find(
+    (p) => 'id' in p && p.id === 'google',
+  ) as OAuthConfig<unknown> & { options?: OAuthConfig<unknown> };
   // Provider factories stash the caller's options under `options`; next-auth
   // merges them over the defaults at request time.
   const authorization = google.options?.authorization;

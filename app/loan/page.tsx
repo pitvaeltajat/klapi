@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 import prisma from '@/utils/prisma';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { serialize } from '@/utils/serialize';
 import { LoanType } from '@/components/LoanCard';
 import LoanListClient from './LoanListClient';
@@ -12,7 +11,7 @@ import { reportSummarySelect } from '@/utils/loanQueries';
 export const metadata = { title: 'Lainat | Klapi' };
 
 export default async function LoanListPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user) {
     redirect('/login?from=' + encodeURIComponent('/loan'));
   }

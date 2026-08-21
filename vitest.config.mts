@@ -17,5 +17,15 @@ export default defineConfig({
     // concurrent deleteMany can orphan a relation mid-read. Run files serially
     // so each gets a clean, isolated view of the database.
     fileParallelism: false,
+    server: {
+      deps: {
+        // next-auth v5 is ESM and imports `next/server`, but the `next` package
+        // ships no `exports` map, so Node's ESM loader refuses the extensionless
+        // specifier ("Did you mean next/server.js?"). Vite's resolver does add
+        // the extension, so inlining these two instead of externalising them is
+        // what lets a test import `@/lib/auth` at all.
+        inline: [/next-auth/, /@auth\/core/],
+      },
+    },
   },
 });

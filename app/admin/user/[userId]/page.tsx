@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic';
 import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import NotAuthenticated from '@/components/NotAuthenticated';
 import { notificationPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
 import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
@@ -24,7 +23,7 @@ export default async function AdminUserPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
 
   const { userId } = await params;
