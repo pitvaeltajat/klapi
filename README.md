@@ -559,16 +559,31 @@ Who gets invited as a guest:
 
 **Setup.** Unlike the user sync, this needs *no* Admin console change and no
 domain-wide delegation. The service account acts as itself and reaches exactly
-one calendar, because that calendar was shared with it:
+one calendar, because that calendar was shared with it.
 
-1. Create the calendar (e.g. "Klapi – lainat") in Google Calendar.
-2. **Settings → Share with specific people → Add people**: add the service
-   account's own email address (`…@….iam.gserviceaccount.com`) with permission
-   **"Tee muutoksia tapahtumiin"**.
-3. Copy the calendar id from **Settings → Integrate calendar → Kalenterin
-   tunnus** into `GOOGLE_CALENDAR_ID`.
-4. Share the calendar with the troop however you like — read-only is enough for
-   everyone else.
+The calendar already exists — **"PitVa – Klapin lainat"**, owned by `admin@`,
+`Europe/Helsinki`:
+
+```
+c_da0d0879ecccdd2ea46f3ff536a54caeb9b07b864ebc08488188ce7f077a21ca@group.calendar.google.com
+```
+
+`klapi-workspace-sync@login-201416.iam.gserviceaccount.com` is a **writer** on
+it and the domain is a **reader**; the Calendar API is enabled in the
+`login-201416` project. Set that id as `GOOGLE_CALENDAR_ID` and the mirror is
+live. `~/bin/pitva-calendar-sync.sh` subscribes every member to it, alongside
+the troop's other shared calendars.
+
+To rebuild it from scratch (GAM, as a Workspace admin):
+
+```bash
+gam user admin@pitkajarvenvaeltajat.fi create calendar \
+  summary "PitVa – Klapin lainat" timezone Europe/Helsinki
+gam user admin@pitkajarvenvaeltajat.fi add calendaracls <calId> \
+  writer user:klapi-workspace-sync@login-201416.iam.gserviceaccount.com
+gam user admin@pitkajarvenvaeltajat.fi add calendaracls <calId> \
+  reader domain:pitkajarvenvaeltajat.fi
+```
 
 Leave `GOOGLE_CALENDAR_ID` unset and the mirror switches off cleanly: loans save
 exactly as before, they just get no events. That is also why local dev and the
