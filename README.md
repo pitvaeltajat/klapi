@@ -532,6 +532,51 @@ than silently creating a third account) and the merge stays reversible.
 > what keeps a brand-new member from waiting on someone re-running
 > `pitva-calendar-sync.sh` before they get a Klapi account.
 
+### Loans on the shared calendar
+
+Every loan is mirrored onto one shared Google Calendar — "what is out of the
+varasto, and until when" — as a single event per loan, and the borrower is
+invited as a guest so the loan also shows up in their own calendar. The event
+carries the item list and a link back to the loan in Klapi, and is marked *free*
+rather than *busy*: a loan is not a meeting.
+
+`utils/loanCalendar` owns it. Every route that creates, edits, cancels, rejects
+or un-rejects a loan calls the same `syncLoanCalendarInBackground(loanId)`,
+which reconciles rather than commands — it reads the loan as it now stands and
+makes the calendar agree, creating, updating or removing the event as needed.
+`Loan.calendarEventId` is the link between the two. It runs in `after()`, so a
+slow or broken Google never delays or fails the request that saved the loan; a
+failure is logged and healed by the next edit.
+
+Who gets invited as a guest:
+
+- a live **Workspace** address (`@$GOOGLE_WORKSPACE_DOMAIN`) — a personal Gmail
+  login is never invited to a troop event, and the shared kiosk terminal's
+  calendar is nobody's;
+- who hasn't turned **"Lainat kalenteriisi"** off on `/account` (an admin can
+  flip it for them on `/admin/user/[userId]`). That switch is only about the
+  personal copy — the loan is on the shared calendar either way.
+
+**Setup.** Unlike the user sync, this needs *no* Admin console change and no
+domain-wide delegation. The service account acts as itself and reaches exactly
+one calendar, because that calendar was shared with it:
+
+1. Create the calendar (e.g. "Klapi – lainat") in Google Calendar.
+2. **Settings → Share with specific people → Add people**: add the service
+   account's own email address (`…@….iam.gserviceaccount.com`) with permission
+   **"Tee muutoksia tapahtumiin"**.
+3. Copy the calendar id from **Settings → Integrate calendar → Kalenterin
+   tunnus** into `GOOGLE_CALENDAR_ID`.
+4. Share the calendar with the troop however you like — read-only is enough for
+   everyone else.
+
+Leave `GOOGLE_CALENDAR_ID` unset and the mirror switches off cleanly: loans save
+exactly as before, they just get no events. That is also why local dev and the
+test suite need no Google credentials.
+
+Returning a loan early does **not** shorten its event — the event stands until
+the return date the loan was booked for. Cancelling or rejecting removes it.
+
 ## Hosting
 
 ### Production Deployment

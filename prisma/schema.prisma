@@ -42,9 +42,9 @@ model Session {
 }
 
 model User {
-  id                       String         @id @default(cuid())
+  id                       String        @id @default(cuid())
   name                     String?
-  email                    String?        @unique
+  email                    String?       @unique
   emailVerified            DateTime?
   image                    String?
   // Soft delete: admin "delete user" sets this instead of hard-deleting the row,
@@ -56,7 +56,7 @@ model User {
   // stamped it, false when a human did. The sync only ever *undoes* its own
   // deletions — an admin who deletes someone by hand stays deleted even while
   // they are still a Workspace member, instead of being resurrected overnight.
-  deletedBySync            Boolean        @default(false)
+  deletedBySync            Boolean       @default(false)
   // Set when this row was merged into another and soft-deleted: everything it
   // owned (loans, email logs, history) now hangs off `mergedInto`. It exists to
   // answer "why is this account deleted, and where did its kamat go?" — and to
@@ -64,9 +64,9 @@ model User {
   // email stays claimed; `lib/auth.ts` then refuses that Google login instead
   // of silently minting a fresh empty duplicate.
   mergedIntoId             String?
-  mergedInto               User?          @relation("UserMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
-  mergedFrom               User[]         @relation("UserMerge")
-  group                    Group          @default(USER)
+  mergedInto               User?         @relation("UserMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom               User[]        @relation("UserMerge")
+  group                    Group         @default(USER)
   password                 String?
   passwordExpiresAt        DateTime?
   // Recoverable (AES-256-GCM encrypted) copy of the KIOSK user's current
@@ -74,15 +74,21 @@ model User {
   // bcrypt hash used for auth; this is display-only. KIOSK rows only.
   kioskPasswordEnc         String?
   kioskElevatePin          String?
-  username                 String?        @unique
-  emailNewLoanNotification Boolean        @default(true)
-  emailWeeklyReminder      Boolean        @default(true)
+  username                 String?       @unique
+  emailNewLoanNotification Boolean       @default(true)
+  emailWeeklyReminder      Boolean       @default(true)
   // Opt-in, unlike the others: the "lainasi päättyy pian" mail is off unless the
   // borrower asks for it. Most people know when their loan ends, and the overdue
   // escalation already covers the ones who don't.
-  emailExpiringReminder    Boolean        @default(false)
-  emailOldBoxNotification  Boolean        @default(true)
-  emailOverdueNotification Boolean        @default(true)
+  emailExpiringReminder    Boolean       @default(false)
+  emailOldBoxNotification  Boolean       @default(true)
+  emailOverdueNotification Boolean       @default(true)
+  // Whether this person is invited as a guest to the calendar event mirroring
+  // their loans (`utils/loanCalendar`), which is what puts a loan in their own
+  // Google Calendar. Off only turns the personal copy off — the loan still
+  // appears on the troop's shared calendar. Inert for anyone without a
+  // Workspace account, so `/account` hides the toggle for them.
+  calendarLoanEvents       Boolean       @default(true)
   accounts                 Account[]
   loans                    Loan[]
   sessions                 Session[]
@@ -216,20 +222,24 @@ model Reservation {
 }
 
 model Loan {
-  id           String        @id @default(cuid())
-  status       LoanStatus    @default(ACCEPTED)
-  startTime    DateTime
-  endTime      DateTime
-  userId       String
-  description  String?       @db.VarChar(100)
-  loaner       String?
-  boxId        String?
-  box          Box?          @relation(fields: [boxId], references: [id])
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
-  reports      Report[]
-  emailLogs    EmailLog[]
-  history      LoanHistory[]
+  id              String        @id @default(cuid())
+  status          LoanStatus    @default(ACCEPTED)
+  startTime       DateTime
+  endTime         DateTime
+  userId          String
+  description     String?       @db.VarChar(100)
+  loaner          String?
+  // The event mirroring this loan on the shared Google Calendar, or null when
+  // it has none — not configured, not created yet, or removed because the loan
+  // was cancelled. `utils/loanCalendar` owns it; nothing else reads it.
+  calendarEventId String?
+  boxId           String?
+  box             Box?          @relation(fields: [boxId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservations    Reservation[]
+  reports         Report[]
+  emailLogs       EmailLog[]
+  history         LoanHistory[]
 }
 
 model LoanHistory {
@@ -325,13 +335,13 @@ enum ReservationStatus {
 }
 
 model EmailLog {
-  id        String         @id @default(cuid())
+  id        String    @id @default(cuid())
   emailType EmailType
   loanId    String
   userId    String
-  sentAt    DateTime       @default(now())
-  loan      Loan           @relation(fields: [loanId], references: [id], onDelete: Cascade)
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentAt    DateTime  @default(now())
+  loan      Loan      @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([loanId, emailType, sentAt])
   @@index([userId, emailType, sentAt])

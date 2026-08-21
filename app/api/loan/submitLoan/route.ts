@@ -6,6 +6,7 @@ import { ReservationStatus } from '@prisma/client';
 import { isUploadableCustomItemId } from '@/utils/customItems';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { sendCreatedEmail, sendNewLoanEmail } from '@/utils/emails';
+import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 
 export const maxDuration = 60;
 
@@ -157,6 +158,8 @@ export async function POST(request: Request) {
         description: description ?? null,
       },
     });
+
+    syncLoanCalendarInBackground(result.id);
 
     // Emails are sent after the response is returned so a slow SES call
     // can't time out the request. Failures are logged; the loan is already committed.

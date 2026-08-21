@@ -4,6 +4,7 @@ import { activeItemsWhere } from '@/utils/itemQueries';
 import { ReservationStatus } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { requireUser } from '@/utils/apiAuth';
+import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 
 export async function POST(request: Request) {
   try {
@@ -230,6 +231,10 @@ export async function POST(request: Request) {
         ...(dates ? { dates } : {}),
       },
     });
+
+    // Dates, items and description all show in the event, so re-sync on any
+    // edit rather than trying to work out whether this one mattered.
+    syncLoanCalendarInBackground(id);
 
     return NextResponse.json(result);
   } catch (err) {

@@ -3,6 +3,7 @@ import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { requireUser } from '@/utils/apiAuth';
+import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 
 // Lets the loan owner (or an admin) cancel an approved loan that has not yet
 // been picked up. Distinct from admin rejection: cancelling is the borrower
@@ -59,6 +60,9 @@ export async function POST(request: Request) {
     action: 'CANCELLED',
     ...resolveLoanActor(session),
   });
+
+  // A cancelled loan never happened: its event comes off the calendar.
+  syncLoanCalendarInBackground(id);
 
   return NextResponse.json(result);
 }

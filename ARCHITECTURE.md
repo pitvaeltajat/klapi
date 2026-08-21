@@ -152,7 +152,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
 | `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt`; raw SQL, ordered by name (email as fallback) with the `fi-FI-x-icu` collation |
 | `user/kioskPassword` | GET/POST | read / rotate the reusable static kiosk password |
-| `user/updateEmailPreferences` | POST | notification prefs — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
+| `user/updateEmailPreferences` | POST | notification prefs (the `email*` toggles **and** `calendarLoanEvents`) — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
 | `auth/createPin` | POST | set the admin kiosk-elevation PIN |
 | `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
 | `auth/[...nextauth]` | — | NextAuth handler |
@@ -178,7 +178,8 @@ README § *Google Workspace user sync* for the setup and the env vars.
 
 | | Where |
 |---|---|
-| Directory API client (service account, domain-wide delegation) | `utils/googleWorkspace.ts` |
+| Service-account auth (JWT → token), shared by both Google integrations | `utils/googleAuth.ts` |
+| Directory API client (impersonates `GOOGLE_WORKSPACE_SUBJECT`) | `utils/googleWorkspace.ts` |
 | Reconciliation + guards | `utils/userSync.ts` |
 | Cron wrapper | `app/api/cron/syncWorkspaceUsers/route.ts` |
 | Tests | `__tests__/api/syncWorkspaceUsers.integration.test.ts` |
@@ -201,6 +202,33 @@ stamped it, false when a human did. The sync only undoes its own deletions, so
 an admin's manual delete in `/admin` survives the night. Anything that
 soft-deletes a user must set it.
 
+## Loans on the shared calendar
+
+One event per loan on one shared Google Calendar, with the borrower invited as a
+guest so it lands in their own calendar too — README § *Loans on the shared
+calendar* has the setup. Unset `GOOGLE_CALENDAR_ID` and the whole thing is a
+no-op, which is what local dev and the tests run with.
+
+| | Where |
+|---|---|
+| Calendar API client (SA acts as **itself**; the calendar is shared with it) | `utils/googleCalendar.ts` |
+| Which loans get an event, what it says, who is invited | `utils/loanCalendar.ts` |
+| Tests (fake `CalendarClient`, no key, no network) | `__tests__/api/loanCalendar.integration.test.ts` |
+
+`syncLoanCalendarInBackground(loanId)` is the whole API for routes, and it
+**reconciles** rather than commands: it reads the loan as it now stands and
+makes the calendar agree — create, patch, or delete for a CANCELLED/REJECTED
+loan. `submitLoan`, `updateLoan`, `cancelLoan`, `rejectLoan` and `approveLoan`
+each call exactly that one line, so no route tracks which field moved. It runs
+in `after()` and swallows failures: the loan is already committed, and Google
+must never fail the request that saved it.
+
+`Loan.calendarEventId` links the two (null = no event). A patch that comes back
+`CalendarEventGone` (somebody deleted the event by hand) falls through to a
+fresh create. Guests are only ever live `@$GOOGLE_WORKSPACE_DOMAIN` accounts
+that haven't turned `User.calendarLoanEvents` off — never a Gmail login, never
+the kiosk; the shared calendar gets the event either way.
+
 ## Pages (`app/**/page.tsx`)
 
 | Path | Purpose |
@@ -212,7 +240,7 @@ soft-deletes a user must set it.
 | `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
 | `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
 | `/admin` | user management |
-| `/admin/user/[userId]` | one person as an admin sees them: role, email-ilmoitukset, lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
+| `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/editLoan/[id]` | admin loan edit |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
@@ -235,10 +263,12 @@ and `/loan/[id]` shows its name. Only the page is gone.
 ## Prisma models (`prisma/schema.prisma`)
 
 `User` (group enum, soft-delete via `deletedAt` — filtered out of auth, listings,
-elevation, and email recipients so `Loan.user` history survives) ·
+elevation, and email recipients so `Loan.user` history survives; the
+`email*Notification` toggles plus `calendarLoanEvents`) ·
 `Account`/`Session` (NextAuth) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
-line) · `Loan` (status enum, optional `Box`) · `Box` · `Location` · `Category` ·
+line) · `Loan` (status enum, optional `Box`, `calendarEventId` for the shared
+calendar) · `Box` · `Location` · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` (both are "huomiot" — see above) · `LoanHistory` /
 `ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
 templates; **no** back-reference from `Loan` — a loan doesn't record whether it

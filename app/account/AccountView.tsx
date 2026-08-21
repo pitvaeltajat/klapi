@@ -38,36 +38,50 @@ interface LoanWithUser extends Loan {
 
 interface AccountViewProps {
   loans: LoanWithUser[];
-  userEmailPreferences: {
+  notificationPreferences: {
     emailWeeklyReminder: boolean;
     emailNewLoanNotification: boolean;
     emailExpiringReminder: boolean;
     emailOldBoxNotification: boolean;
     emailOverdueNotification: boolean;
+    calendarLoanEvents: boolean;
   };
+  /**
+   * Whether the loan calendar is configured *and* this account is one it can
+   * invite — a Workspace address, not a Gmail login or the kiosk. The toggle is
+   * hidden otherwise rather than shown doing nothing.
+   */
+  calendarAvailable: boolean;
 }
 
 /** How many loan cards to render at once — the rest are a click away. */
 const PAGE_SIZE = 10;
 
-export default function AccountView({ loans, userEmailPreferences }: AccountViewProps) {
+export default function AccountView({
+  loans,
+  notificationPreferences,
+  calendarAvailable,
+}: AccountViewProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
 
   const [emailWeeklyReminder, setEmailWeeklyReminder] = useState(
-    userEmailPreferences.emailWeeklyReminder,
+    notificationPreferences.emailWeeklyReminder,
   );
   const [emailNewLoanNotification, setEmailNewLoanNotification] = useState(
-    userEmailPreferences.emailNewLoanNotification,
+    notificationPreferences.emailNewLoanNotification,
   );
   const [emailExpiringReminder, setEmailExpiringReminder] = useState(
-    userEmailPreferences.emailExpiringReminder,
+    notificationPreferences.emailExpiringReminder,
   );
   const [emailOldBoxNotification, setEmailOldBoxNotification] = useState(
-    userEmailPreferences.emailOldBoxNotification,
+    notificationPreferences.emailOldBoxNotification,
   );
   const [emailOverdueNotification, setEmailOverdueNotification] = useState(
-    userEmailPreferences.emailOverdueNotification,
+    notificationPreferences.emailOverdueNotification,
+  );
+  const [calendarLoanEvents, setCalendarLoanEvents] = useState(
+    notificationPreferences.calendarLoanEvents,
   );
 
   const [signOutOpen, setSignOutOpen] = useState(false);
@@ -80,7 +94,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleEmailPreferenceChange = async (
-    preference: 'weekly' | 'newLoan' | 'expiring' | 'oldBox' | 'overdue',
+    preference: 'weekly' | 'newLoan' | 'expiring' | 'oldBox' | 'overdue' | 'calendar',
     value: boolean,
   ) => {
     const setters = {
@@ -89,6 +103,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
       expiring: setEmailExpiringReminder,
       oldBox: setEmailOldBoxNotification,
       overdue: setEmailOverdueNotification,
+      calendar: setCalendarLoanEvents,
     } as const;
     const previous = {
       weekly: emailWeeklyReminder,
@@ -96,6 +111,7 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
       expiring: emailExpiringReminder,
       oldBox: emailOldBoxNotification,
       overdue: emailOverdueNotification,
+      calendar: calendarLoanEvents,
     }[preference];
 
     setters[preference](value);
@@ -110,12 +126,13 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
           emailExpiringReminder: preference === 'expiring' ? value : emailExpiringReminder,
           emailOldBoxNotification: preference === 'oldBox' ? value : emailOldBoxNotification,
           emailOverdueNotification: preference === 'overdue' ? value : emailOverdueNotification,
+          calendarLoanEvents: preference === 'calendar' ? value : calendarLoanEvents,
         }),
       });
 
       if (!response.ok) throw new Error('Failed to update preferences');
     } catch (error) {
-      console.error('Error updating email preferences:', error);
+      console.error('Error updating notification preferences:', error);
       setters[preference](previous);
     }
   };
@@ -246,6 +263,20 @@ export default function AccountView({ loans, userEmailPreferences }: AccountView
             />
           </div>
         </Card>
+
+        {calendarAvailable && (
+          <Card>
+            <CardTitle>Kalenteri</CardTitle>
+            <div className="flex flex-col items-start gap-4">
+              <PrefRow
+                title="Lainat kalenteriisi"
+                description="Lisää lainasi Google-kalenteriisi. Lainat näkyvät kaluston yhteisessä kalenterissa tästä riippumatta."
+                checked={calendarLoanEvents}
+                onCheckedChange={(v) => handleEmailPreferenceChange('calendar', v)}
+              />
+            </div>
+          </Card>
+        )}
 
         <Card>
           <CardTitle>Ulkoasu</CardTitle>

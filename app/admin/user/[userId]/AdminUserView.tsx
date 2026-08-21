@@ -35,10 +35,13 @@ export interface AdminUserViewProps {
     emailExpiringReminder: boolean;
     emailOldBoxNotification: boolean;
     emailOverdueNotification: boolean;
+    calendarLoanEvents: boolean;
     mergedInto: MergeRef | null;
     mergedFrom: MergeRef[];
   };
   loans: LoanType[];
+  /** Whether the loan calendar can invite this account at all — see `/account`. */
+  calendarAvailable: boolean;
   /** The signed-in admin, so the page can refuse to let them delete themselves. */
   viewerId: string;
 }
@@ -63,9 +66,15 @@ type PrefKey =
   | 'emailNewLoanNotification'
   | 'emailExpiringReminder'
   | 'emailOldBoxNotification'
-  | 'emailOverdueNotification';
+  | 'emailOverdueNotification'
+  | 'calendarLoanEvents';
 
-export default function AdminUserView({ user, loans, viewerId }: AdminUserViewProps) {
+export default function AdminUserView({
+  user,
+  loans,
+  calendarAvailable,
+  viewerId,
+}: AdminUserViewProps) {
   const router = useRouter();
 
   const [group, setGroup] = useState<Group>(user.group);
@@ -75,6 +84,7 @@ export default function AdminUserView({ user, loans, viewerId }: AdminUserViewPr
     emailExpiringReminder: user.emailExpiringReminder,
     emailOldBoxNotification: user.emailOldBoxNotification,
     emailOverdueNotification: user.emailOverdueNotification,
+    calendarLoanEvents: user.calendarLoanEvents,
   });
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -306,6 +316,15 @@ export default function AdminUserView({ user, loans, viewerId }: AdminUserViewPr
               disabled={isDeleted}
               onCheckedChange={(v) => updatePreference('emailExpiringReminder', v)}
             />
+            {calendarAvailable && (
+              <PrefRow
+                title="Lainat kalenteriin"
+                description="Lisää käyttäjän lainat hänen Google-kalenteriinsa. Kaluston yhteiseen kalenteriin ne tulevat tästä riippumatta."
+                checked={prefs.calendarLoanEvents}
+                disabled={isDeleted}
+                onCheckedChange={(v) => updatePreference('calendarLoanEvents', v)}
+              />
+            )}
           </div>
         </Card>
         ) : null}

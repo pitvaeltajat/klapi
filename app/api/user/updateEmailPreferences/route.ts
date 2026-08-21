@@ -3,8 +3,10 @@ import prisma from '@/utils/prisma';
 import { requireUser } from '@/utils/apiAuth';
 
 /**
- * Updates the email toggles for the signed-in user, or — for an ADMIN — for
- * someone else via `userId`.
+ * Updates the notification toggles for the signed-in user, or — for an ADMIN —
+ * for someone else via `userId`. The route is named for the email ones it
+ * started with; `calendarLoanEvents` (the loan calendar invite) rides along
+ * because it sits in the same section of `/account`.
  *
  * The admin path exists for `/admin/user/[userId]`: "lopeta noiden viestien
  * lähettäminen" is a thing people ask an admin in person, and the alternative
@@ -24,6 +26,7 @@ export async function POST(request: Request) {
     emailExpiringReminder,
     emailOldBoxNotification,
     emailOverdueNotification,
+    calendarLoanEvents,
   } = await request.json();
 
   let targetId = session.user.id;
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
           emailOldBoxNotification !== undefined ? emailOldBoxNotification : undefined,
         emailOverdueNotification:
           emailOverdueNotification !== undefined ? emailOverdueNotification : undefined,
+        calendarLoanEvents: calendarLoanEvents !== undefined ? calendarLoanEvents : undefined,
       },
     });
 
@@ -60,6 +64,7 @@ export async function POST(request: Request) {
       emailExpiringReminder: updatedUser.emailExpiringReminder,
       emailOldBoxNotification: updatedUser.emailOldBoxNotification,
       emailOverdueNotification: updatedUser.emailOverdueNotification,
+      calendarLoanEvents: updatedUser.calendarLoanEvents,
     });
   } catch (error) {
     console.error('Error updating email preferences:', error);

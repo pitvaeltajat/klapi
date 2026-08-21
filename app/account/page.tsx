@@ -5,7 +5,8 @@ import { serialize } from '@/utils/serialize';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import AccountView from './AccountView';
-import { emailPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
+import { notificationPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
+import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 
 export const metadata = { title: 'Oma tili | Klapi' };
@@ -17,13 +18,15 @@ export default async function AccountPage() {
     return (
       <AccountView
         loans={[]}
-        userEmailPreferences={{
+        notificationPreferences={{
           emailWeeklyReminder: true,
           emailNewLoanNotification: true,
           emailExpiringReminder: false,
           emailOldBoxNotification: true,
           emailOverdueNotification: true,
+          calendarLoanEvents: true,
         }}
+        calendarAvailable={false}
       />
     );
   }
@@ -46,7 +49,7 @@ export default async function AccountPage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: emailPreferenceSelect,
+      select: { ...notificationPreferenceSelect, email: true, group: true },
     }),
   ]);
 
@@ -62,13 +65,15 @@ export default async function AccountPage() {
   return (
     <AccountView
       loans={serialize(loans)}
-      userEmailPreferences={{
+      notificationPreferences={{
         emailWeeklyReminder: user?.emailWeeklyReminder ?? true,
         emailNewLoanNotification: user?.emailNewLoanNotification ?? true,
         emailExpiringReminder: user?.emailExpiringReminder ?? false,
         emailOldBoxNotification: user?.emailOldBoxNotification ?? true,
         emailOverdueNotification: user?.emailOverdueNotification ?? true,
+        calendarLoanEvents: user?.calendarLoanEvents ?? true,
       }}
+      calendarAvailable={canReceiveLoanCalendarEvents(user?.email ?? null, user?.group ?? 'USER')}
     />
   );
 }

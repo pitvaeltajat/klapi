@@ -6,7 +6,8 @@ import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import NotAuthenticated from '@/components/NotAuthenticated';
-import { emailPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
+import { notificationPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
+import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 import AdminUserView from './AdminUserView';
 
@@ -38,7 +39,7 @@ export default async function AdminUserPage({
       deletedAt: true,
       deletedBySync: true,
       kioskElevatePin: true,
-      ...emailPreferenceSelect,
+      ...notificationPreferenceSelect,
       // Provenance for the accounts folded in by `scripts/merge-users.ts`, so
       // "minne Ollin vanha gmail-tili katosi" is answerable from the page of
       // the account that absorbed it.
@@ -78,6 +79,7 @@ export default async function AdminUserPage({
       // is set.
       user={serialize({ ...rest, hasElevatePin: Boolean(kioskElevatePin) })}
       loans={serialize(loans)}
+      calendarAvailable={canReceiveLoanCalendarEvents(user.email, user.group)}
       viewerId={session.user.id}
     />
   );
