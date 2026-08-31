@@ -84,9 +84,37 @@ function itemCountLabel(count: number): string {
   return count === 1 ? '1 kama' : `${count} kamaa`;
 }
 
+/**
+ * Who the event is titled after.
+ *
+ * `Loan.loaner` is free text: the kiosk asks whoever is at the terminal to type
+ * a name, but the self-service cart used to fill it with the signed-in *address*
+ * in preference to the name (`components/CartDrawer.tsx`), so loans made before
+ * that was fixed carry one. An address is a poor event title — "Melontaviikko"
+ * on the troop calendar should say who has the trailer, not which mailbox — and
+ * when the address is merely this account's own, the account's name says the
+ * same thing and reads like a person.
+ *
+ * Only that exact case is substituted. A `loaner` that differs from the account
+ * is someone the operator deliberately named — a patrol, a person borrowing on
+ * another's card — and is left alone whatever it looks like.
+ */
+function loanerLabel(loan: LoanForCalendar): string {
+  const loaner = loan.loaner?.trim();
+  const name = loan.user.name?.trim();
+  const email = loan.user.email?.trim();
+
+  const loanerIsOwnAddress = Boolean(
+    loaner && email && loaner.toLowerCase() === email.toLowerCase(),
+  );
+  if (loaner && !loanerIsOwnAddress) return loaner;
+
+  return name || loaner || email || 'Tuntematon';
+}
+
 /** The event body for one loan. Pure, so the wording is testable. */
 export function buildLoanEvent(loan: LoanForCalendar): CalendarEventInput {
-  const who = loan.loaner?.trim() || loan.user.name?.trim() || loan.user.email || 'Tuntematon';
+  const who = loanerLabel(loan);
   const what = loan.description?.trim() || itemCountLabel(loan.reservations.length);
   const loanUrl = `${getPublicUrl()}/loan/${loan.id}`;
 

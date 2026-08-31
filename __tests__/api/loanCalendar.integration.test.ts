@@ -276,6 +276,30 @@ describe('buildLoanEvent', () => {
     expect(buildLoanEvent({ ...base, loaner: 'Sudenpennut' }).summary).toBe('Sudenpennut: 1 kama');
   });
 
+  // The self-service cart used to stamp `loaner` with the signed-in address, so
+  // plenty of stored loans carry one. Titling the troop's calendar after a
+  // mailbox helps nobody when the account's own name is right there.
+  it('titles after the account name when loaner is merely its own address', () => {
+    expect(buildLoanEvent({ ...base, loaner: 'eero@pitva.test' }).summary).toBe('Eero: 1 kama');
+    expect(buildLoanEvent({ ...base, loaner: 'Eero@Pitva.Test' }).summary).toBe('Eero: 1 kama');
+  });
+
+  it('keeps a loaner that names somebody other than the account', () => {
+    // Deliberately named by whoever made the loan — not ours to second-guess,
+    // whether it is a patrol, a person, or another address.
+    expect(buildLoanEvent({ ...base, loaner: 'aino@pitva.test' }).summary).toBe(
+      'aino@pitva.test: 1 kama',
+    );
+  });
+
+  it('still has something to say when the account has no name', () => {
+    const nameless = { ...base, user: { ...base.user, name: null } };
+    expect(buildLoanEvent({ ...nameless, loaner: 'eero@pitva.test' }).summary).toBe(
+      'eero@pitva.test: 1 kama',
+    );
+    expect(buildLoanEvent({ ...nameless, loaner: null }).summary).toBe('eero@pitva.test: 1 kama');
+  });
+
   it('leaves the loan free rather than busy in the borrower’s calendar', () => {
     expect(buildLoanEvent(base).transparency).toBe('transparent');
   });

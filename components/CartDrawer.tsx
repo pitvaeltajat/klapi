@@ -102,7 +102,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   useEffect(() => {
     if (!isKiosk && session?.user && !hasInitializedLoaner.current) {
-      const userDisplayName = session.user.email || session.user.name || '';
+      // Name first: `loaner` is what the loan is labelled by everywhere it is
+      // shown — the loan page, the return screen, the calendar event's title —
+      // and an address reads like a mailbox rather than a person.
+      const userDisplayName = session.user.name || session.user.email || '';
       setLoaner(userDisplayName);
       setUserId(session.user.id);
       hasInitializedLoaner.current = true;
