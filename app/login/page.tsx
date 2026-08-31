@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PitvaLogo } from '@/components/PitvaLogo';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import {
   SILENT_ATTEMPT_KEY,
@@ -48,6 +49,9 @@ function LoginSkeleton() {
     <div className="flex min-h-screen items-start justify-center pt-[15vh]">
       <div className="flex w-full max-w-sm flex-col items-stretch gap-6 px-6">
         <div className="space-y-3">
+          {/* Stands in for the emblem, so the page does not jump by its height
+              when the real content replaces this. */}
+          <Skeleton className="mx-auto mb-4 h-28 w-28 rounded-full" />
           <Skeleton className="mx-auto h-9 w-2/3" />
           <Skeleton className="mx-auto h-4 w-full" />
         </div>
@@ -164,6 +168,15 @@ function LoginContent() {
     <div className="flex min-h-screen items-start justify-center pt-[15vh]">
       <div className="flex w-full max-w-sm flex-col items-stretch gap-6 px-6 text-center">
         <div className="space-y-2">
+          {/* text-foreground, not text-header: --header is the same navy in both
+              themes because the app bar never follows the theme, and on the dark
+              login background that navy would be all but invisible. --foreground
+              is that navy in light mode and pale in dark, which is what a
+              single-colour line drawing needs. */}
+          <PitvaLogo
+            title="Pitkäjärven Vaeltajat ry"
+            className="mx-auto mb-4 h-28 w-28 text-foreground"
+          />
           <h1 className="text-3xl font-semibold">Kirjaudu sisään</h1>
           <p className="text-sm text-muted-foreground">
             Käyttääksesi Klapia sinun tulee kirjautua palveluun.

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { CountBadge } from '@/components/ui/count-badge';
+import { PitvaMark } from '@/components/PitvaLogo';
 
 // "Eero Sahlberg" -> "ES", "Eero" -> "EE". Used to label the elevated admin
 // in the top bar without showing their full name on a shared kiosk screen.
@@ -233,7 +234,10 @@ export default function TopBar({ children }: { children: ReactNode }) {
               )}
 
               <div className="flex items-center text-2xl font-semibold leading-none tracking-[0.02em] transition-transform hover:scale-105">
-                <NextLink href="/" aria-label="KLAPI">
+                <NextLink href="/" aria-label="KLAPI" className="flex items-center gap-2.5">
+                  {/* h-8 is the floor: the emblem is outline art, and any smaller
+                      its strokes fall under a device pixel and smudge. */}
+                  <PitvaMark className="h-8 w-8 shrink-0" />
                   KLAPI
                 </NextLink>
               </div>
