@@ -150,6 +150,7 @@ when it's free, which is what makes the picture line up.
 | `editReport` | POST | triage a huomio: set status + re-tag affected kamat (admin only) |
 | `handledReports` | GET | the huomiot archive: RESOLVED reports, newest 100 (admin only) |
 | `myPendingPickups` | GET | current user's pending pickups |
+| `syncCalendar` | POST | force one loan's calendar event back in sync (admin only); repair tool, no UI |
 
 `submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when a kiosk
 session makes it) — there is no approval queue. `approveLoan` therefore only
