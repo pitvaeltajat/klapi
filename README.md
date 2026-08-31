@@ -579,9 +579,19 @@ Who gets invited as a guest:
   flip it for them on `/admin/user/[userId]`). That switch is only about the
   personal copy — the loan is on the shared calendar either way.
 
-**Setup.** Unlike the user sync, this needs *no* Admin console change and no
-domain-wide delegation. The service account acts as itself and reaches exactly
-one calendar, because that calendar was shared with it.
+**Setup.** The service account **impersonates `GOOGLE_WORKSPACE_SUBJECT`** —
+`admin@`, who owns the calendar — exactly as the user sync does, so the calendar
+scope needs a domain-wide delegation grant too.
+
+It is tempting to skip that: share the calendar with the SA's own address, let
+it act as itself, and no Admin console trip is needed. That is how the mirror
+first shipped, and it wrote nothing at all for nine days. A service account
+acting as itself may create events, but not events *with guests* — Calendar
+answers `403 forbiddenForServiceAccounts`, "Service accounts cannot invite
+attendees without Domain-Wide Delegation of Authority", and since a loan by any
+troop member carries the borrower as a guest, every single insert failed.
+`syncLoanCalendarInBackground` swallowed the error into a log line nobody was
+reading, so the feature looked configured and did nothing.
 
 The calendar already exists — **"PitVa – Klapin lainat"**, owned by `admin@`,
 `Europe/Helsinki`:
@@ -592,9 +602,20 @@ c_da0d0879ecccdd2ea46f3ff536a54caeb9b07b864ebc08488188ce7f077a21ca@group.calenda
 
 `klapi-workspace-sync@login-201416.iam.gserviceaccount.com` is a **writer** on
 it and the domain is a **reader**; the Calendar API is enabled in the
-`login-201416` project. Set that id as `GOOGLE_CALENDAR_ID` and the mirror is
-live. `~/bin/pitva-calendar-sync.sh` subscribes every member to it, alongside
-the troop's other shared calendars.
+`login-201416` project. `~/bin/pitva-calendar-sync.sh` subscribes every member
+to it, alongside the troop's other shared calendars.
+
+Two things make it live:
+
+1. Add `https://www.googleapis.com/auth/calendar.events` to the SA's client id
+   under **Admin console → Security → API controls → Domain-wide delegation**,
+   beside the two `admin.directory.*` scopes already granted there. Editing that
+   entry means re-entering the *full* scope list — Google replaces it rather
+   than appending — so all three go in together.
+2. Set the calendar id as `GOOGLE_CALENDAR_ID`.
+
+`GOOGLE_WORKSPACE_SUBJECT` must be an account that can write to the calendar;
+`admin@` owns it, so it already can.
 
 To rebuild it from scratch (GAM, as a Workspace admin):
 
@@ -607,9 +628,14 @@ gam user admin@pitkajarvenvaeltajat.fi add calendaracls <calId> \
   reader domain:pitkajarvenvaeltajat.fi
 ```
 
-Leave `GOOGLE_CALENDAR_ID` unset and the mirror switches off cleanly: loans save
-exactly as before, they just get no events. That is also why local dev and the
-test suite need no Google credentials.
+Leave `GOOGLE_CALENDAR_ID` (or `GOOGLE_WORKSPACE_SUBJECT`, or the key) unset and
+the mirror switches off cleanly: loans save exactly as before, they just get no
+events. That is also why local dev and the test suite need no Google
+credentials.
+
+Nothing backfills. `syncLoanCalendar` only ever runs off a route that changed a
+loan, so every loan that already existed when the mirror went live has no event
+and will not get one unless somebody edits it.
 
 Returning a loan early does **not** shorten its event — the event stands until
 the return date the loan was booked for. Cancelling or rejecting removes it.

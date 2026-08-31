@@ -1,14 +1,16 @@
-import { getGoogleAccessToken } from '@/utils/googleAuth';
+import { getGoogleAccessToken, requireEnv } from '@/utils/googleAuth';
 
 /**
  * Minimal write client for one shared Google Calendar — the troop's
  * "Klapi-lainat" calendar, whose id is `GOOGLE_CALENDAR_ID`.
  *
- * The service account acts **as itself** here, not as a person: the calendar is
- * shared with the SA's own email address ("Tee muutoksia tapahtumiin") exactly
- * the way you'd share it with a colleague. That is the whole authorisation
- * story — no domain-wide delegation, no Admin console, and the SA can reach
- * nothing else in anybody's calendar. Setup is in `README.md`
+ * The service account impersonates `GOOGLE_WORKSPACE_SUBJECT` (admin@, who
+ * owns the calendar), so the calendar scope has to be authorised for the SA's
+ * client id in the Admin console alongside the directory ones. Sharing the
+ * calendar with the SA's own address is *not* enough, however much it looks
+ * like it should be: a service account acting as itself may write events, but
+ * an `insert` carrying `attendees` comes back `403 forbiddenForServiceAccounts`
+ * — and every loan by a troop member carries one. Setup is in `README.md`
  * (§ Loans on the shared calendar).
  *
  * Everything above this file lives in `utils/loanCalendar`, which decides
@@ -56,7 +58,13 @@ export interface CalendarClient {
  * be the reason a loan fails to save.
  */
 export function isCalendarConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_CALENDAR_ID && process.env.GOOGLE_WORKSPACE_SA_KEY);
+  return Boolean(
+    process.env.GOOGLE_CALENDAR_ID &&
+      process.env.GOOGLE_WORKSPACE_SA_KEY &&
+      // Impersonation is mandatory (see above), so a subject is as much a
+      // prerequisite as the key itself.
+      process.env.GOOGLE_WORKSPACE_SUBJECT,
+  );
 }
 
 async function calendarFetch(
@@ -64,7 +72,7 @@ async function calendarFetch(
   init: { method: string; body?: CalendarEventInput },
 ): Promise<Response> {
   const calendarId = process.env.GOOGLE_CALENDAR_ID!;
-  const token = await getGoogleAccessToken(SCOPES);
+  const token = await getGoogleAccessToken(SCOPES, requireEnv('GOOGLE_WORKSPACE_SUBJECT'));
 
   const url = new URL(`${CALENDAR_URL}/${encodeURIComponent(calendarId)}/events${path}`);
   // Klapi mails about loans itself; Google must not send a second round of

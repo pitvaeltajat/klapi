@@ -211,6 +211,34 @@ describe('syncLoanCalendar', () => {
     const stored = await prisma.loan.findUnique({ where: { id: loan.id } });
     expect(stored?.calendarEventId).toBeNull();
   });
+
+  // The calendar client impersonates the calendar's owner, because a service
+  // account acting as itself cannot invite attendees. A half-set environment
+  // must therefore skip rather than mint a token that Google will refuse.
+  it('is a no-op when the impersonation subject is missing', async () => {
+    const user = await createUser();
+    const loan = await createLoan(user.id);
+
+    const saved = {
+      GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID,
+      GOOGLE_WORKSPACE_SA_KEY: process.env.GOOGLE_WORKSPACE_SA_KEY,
+      GOOGLE_WORKSPACE_SUBJECT: process.env.GOOGLE_WORKSPACE_SUBJECT,
+    };
+    process.env.GOOGLE_CALENDAR_ID = 'calendar@example.com';
+    process.env.GOOGLE_WORKSPACE_SA_KEY = 'irrelevant';
+    delete process.env.GOOGLE_WORKSPACE_SUBJECT;
+    try {
+      expect(await syncLoanCalendar(loan.id)).toBe('skipped');
+    } finally {
+      for (const [name, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+
+    const stored = await prisma.loan.findUnique({ where: { id: loan.id } });
+    expect(stored?.calendarEventId).toBeNull();
+  });
 });
 
 describe('buildLoanEvent', () => {

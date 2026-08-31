@@ -222,7 +222,7 @@ no-op, which is what local dev and the tests run with.
 
 | | Where |
 |---|---|
-| Calendar API client (SA acts as **itself**; the calendar is shared with it) | `utils/googleCalendar.ts` |
+| Calendar API client (SA **impersonates** `GOOGLE_WORKSPACE_SUBJECT`, the calendar's owner) | `utils/googleCalendar.ts` |
 | Which loans get an event, what it says, who is invited | `utils/loanCalendar.ts` |
 | Tests (fake `CalendarClient`, no key, no network) | `__tests__/api/loanCalendar.integration.test.ts` |
 
@@ -239,6 +239,14 @@ must never fail the request that saved it.
 fresh create. Guests are only ever live `@$GOOGLE_WORKSPACE_DOMAIN` accounts
 that haven't turned `User.calendarLoanEvents` off — never a Gmail login, never
 the kiosk; the shared calendar gets the event either way.
+
+Those guests are also why the client impersonates instead of acting as the
+service account itself. Sharing the calendar with the SA's own address is
+enough to write events with no guests, and *only* those: an `insert` carrying
+`attendees` is refused with `403 forbiddenForServiceAccounts`. The mirror
+shipped that way and silently wrote nothing for nine days, so
+`GOOGLE_WORKSPACE_SUBJECT` is now part of `isCalendarConfigured()` — a
+half-configured calendar skips rather than minting a token Google will refuse.
 
 ## Pages (`app/**/page.tsx`)
 

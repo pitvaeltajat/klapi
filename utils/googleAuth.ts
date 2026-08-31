@@ -8,17 +8,19 @@ import { createSign } from 'node:crypto';
  * unattended, which is what the nightly `cron/syncWorkspaceUsers` and the
  * calendar mirror both need — there is no signed-in person in either.
  *
- * Two shapes of token come out of here:
+ * Every token is **impersonating**: `subject` names a person in the domain and
+ * the SA acts as them, which is domain-wide delegation and requires the scopes
+ * to be authorised for the SA's client id in the Admin console.
  *
- * - **Impersonating** (`subject` set) — domain-wide delegation. The SA acts as
- *   a person in the domain. `utils/googleWorkspace` needs this: only an admin
- *   may read the Directory. It requires the scopes to be authorised for the
- *   SA's client id in the Admin console.
- * - **As itself** (`subject` omitted) — the SA is just another account, and
- *   reaches only what has been shared with its own email address.
- *   `utils/googleCalendar` uses this: the loan calendar is shared with the SA
- *   the way you'd share it with a colleague, so no domain-wide grant — and no
- *   trip to the Admin console — is involved.
+ * A service account can also act **as itself**, reaching only what has been
+ * shared with its own email address, and `utils/googleCalendar` used to. That
+ * is deliberately no longer an option here, because Calendar forbids the one
+ * thing the loan mirror exists to do: an event `insert` carrying `attendees`
+ * is refused with `403 forbiddenForServiceAccounts` — "Service accounts cannot
+ * invite attendees without Domain-Wide Delegation of Authority" — unless the
+ * SA is impersonating a real user. Sharing the calendar with the SA is enough
+ * to write *guestless* events and nothing more, which is why the mirror looked
+ * configured and quietly wrote nothing.
  *
  * Hand-rolled rather than via `google-auth-library`: the whole flow is one
  * signed JWT and one form POST, and the library would pull half a dozen
@@ -72,9 +74,10 @@ function loadServiceAccountKey(): ServiceAccountKey {
  * Signed JWT → OAuth access token.
  *
  * @param scopes  the scopes to request
- * @param subject the person to impersonate; omit to act as the SA itself
+ * @param subject the person to impersonate. Required: see the note above on
+ *   why acting as the SA itself is not a mode Klapi can use.
  */
-export async function getGoogleAccessToken(scopes: string[], subject?: string): Promise<string> {
+export async function getGoogleAccessToken(scopes: string[], subject: string): Promise<string> {
   const key = loadServiceAccountKey();
 
   const issuedAt = Math.floor(Date.now() / 1000);
@@ -82,7 +85,7 @@ export async function getGoogleAccessToken(scopes: string[], subject?: string): 
   const claims = base64url(
     JSON.stringify({
       iss: key.client_email,
-      ...(subject ? { sub: subject } : {}),
+      sub: subject,
       scope: scopes.join(' '),
       aud: TOKEN_URL,
       iat: issuedAt,
@@ -105,8 +108,9 @@ export async function getGoogleAccessToken(scopes: string[], subject?: string): 
 
   const body = (await response.json()) as { access_token?: string; error_description?: string };
   if (!response.ok || !body.access_token) {
-    // `unauthorized_client` on an impersonating call almost always means the
-    // scopes are not authorised for this SA's client id in the Admin console.
+    // `unauthorized_client` almost always means the scopes are not authorised
+    // for this SA's client id in the Admin console — every call here is an
+    // impersonating one.
     throw new Error(
       `Google token exchange failed (${response.status}): ${body.error_description ?? 'unknown error'}`,
     );
