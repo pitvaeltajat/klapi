@@ -51,7 +51,7 @@
   --color-cta-foreground: hsl(var(--cta-foreground));
   --color-cta-hover: hsl(var(--cta-hover));
 
-  --color-header: hsl(var(--header) / var(--header-alpha));
+  --color-header: hsl(var(--header));
   --color-header-foreground: hsl(var(--header-foreground));
 
   --radius-lg: var(--radius);
@@ -184,10 +184,13 @@
     --warning: 24 35% 38%;
     --warning-foreground: 44 90% 84%;
 
-    /* The translucent app bar. Its own pair rather than `primary`, because it
-       is a fixed brand surface that stays dark-on-light in both themes. */
+    /* The app bar. Its own pair rather than `primary`, because it is a fixed
+       brand surface that stays dark-on-light in both themes.
+
+       Opaque. It used to carry an alpha, which let 8% of the page through and
+       composited to #322F6A rather than the #221E5D it names — the brand navy
+       everywhere else, Budu's top bar included, is the flat colour. */
     --header: 244 51% 24%;
-    --header-alpha: 0.92;
     --header-foreground: 219 89% 97%;
 
     /* Brand gray */
@@ -257,7 +260,6 @@
        it does not follow the theme down. Here it is *lighter* than the page it
        floats over, which is the point: it reads as the dark blue in both. */
     --header: 244 51% 24%;
-    --header-alpha: 0.95;
     --header-foreground: 219 89% 97%;
 
     --border: 244 28% 26%;

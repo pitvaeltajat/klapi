@@ -217,7 +217,9 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-1000 bg-header text-header-foreground shadow-xs backdrop-blur-xs">
+      {/* No backdrop-blur: the bar is opaque, so there is nothing showing
+          through for a blur to soften — it would only cost a compositing layer. */}
+      <header className="fixed inset-x-0 top-0 z-1000 bg-header text-header-foreground shadow-xs">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-4">
