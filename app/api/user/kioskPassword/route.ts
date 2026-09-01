@@ -23,8 +23,19 @@ export async function GET() {
   try {
     return NextResponse.json({ kioskPassword: decryptKioskSecret(kioskUser.kioskPasswordEnc) });
   } catch (error) {
-    console.error('Failed to decrypt kiosk password:', error);
-    return NextResponse.json({ message: 'Could not decrypt kiosk password' }, { status: 500 });
+    // Ciphertext we cannot read — almost always because the key changed under
+    // it (see utils/kioskSecret.ts). Report it as "no password", not as an
+    // error, because the two are the same thing to an admin: there is no
+    // usable credential here either way.
+    //
+    // The 500 this used to return was a dead end. The admin panel only offers
+    // to generate a password when this route says there is none, so a failed
+    // decrypt left the one control that could fix it unreachable — the button
+    // raised a toast and nothing else, with no way out of the UI. Answering
+    // null lets that same click mint a fresh password, which also rewrites the
+    // bcrypt hash the kiosk actually logs in with.
+    console.error('Failed to decrypt kiosk password; reporting as unset:', error);
+    return NextResponse.json({ kioskPassword: null });
   }
 }
 
