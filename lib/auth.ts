@@ -13,7 +13,20 @@ import bcrypt from 'bcrypt';
 declare module '@auth/core/jwt' {
   interface JWT {
     group: 'ADMIN' | 'USER' | 'KIOSK';
-    userId?: string;
+    /**
+     * Klapi's own User.id. Namespaced because the session cookie is now shared
+     * across pitva.fi (see `COOKIE_DOMAIN`) and Budu keeps its users in a
+     * different database — a bare `userId` claim would have the two apps
+     * overwriting each other's primary keys on every request.
+     */
+    klapiUserId?: string;
+    /**
+     * The Google-verified hosted domain (`hd`) of the account that signed in,
+     * or null for a personal Gmail. Klapi does not gate on it — the
+     * pre-Workspace logins are legitimate here — but it records it, because
+     * Budu does gate on it and now has to judge sessions Klapi minted.
+     */
+    hd?: string | null;
     adminExpiry?: string | null;
     elevatedById?: string | null;
     elevatedByName?: string | null;
@@ -28,6 +41,24 @@ declare module '@auth/core/jwt' {
  * below. Unset (local dev, a fork) simply means no hint.
  */
 const WORKSPACE_DOMAIN = process.env.GOOGLE_WORKSPACE_DOMAIN?.trim() || undefined;
+
+/**
+ * The parent domain the session cookie is pinned to, e.g. `.pitva.fi`. Setting
+ * it is what makes one sign-in cover Klapi and Budu both: the cookie issued at
+ * klapi.pitva.fi is then sent to budu.pitva.fi as well.
+ *
+ * Two things must match between the apps or neither can read the other's
+ * cookie, and both are easy to break silently:
+ *   - NEXTAUTH_SECRET / AUTH_SECRET must hold the same value, and
+ *   - the cookie NAME must be identical, because @auth/core derives the JWE
+ *     key with HKDF salted by it (`lib/actions/session.js`: `const salt =
+ *     options.cookies.sessionToken.name`). That is why the name below is
+ *     written out rather than left to the library default.
+ *
+ * Unset — localhost, *.vercel.app previews — the cookie stays host-scoped and
+ * everything behaves exactly as it did before.
+ */
+const COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN?.trim() || undefined;
 
 // Kiosk admin elevation lasts 30 minutes. This is enforced server-side in the
 // jwt callback below — the browser timer in TopBar is only cosmetic.
@@ -92,6 +123,28 @@ export const authConfig: NextAuthConfig = {
   // v5 would pick `AUTH_SECRET` up by itself and falls back to
   // `NEXTAUTH_SECRET`; naming it keeps the deployed variable authoritative.
   secret: process.env.NEXTAUTH_SECRET,
+  // Only overridden when a parent domain is configured, so local and preview
+  // deploys keep the stock host-scoped defaults. `__Secure-` (not `__Host-`)
+  // is required here: the `__Host-` prefix forbids a Domain attribute
+  // outright, which is exactly what this needs to set. The CSRF cookie is
+  // deliberately left alone — it stays `__Host-` and per-app, because a
+  // sign-in flow belongs to the app that started it.
+  ...(COOKIE_DOMAIN
+    ? {
+        cookies: {
+          sessionToken: {
+            name: '__Secure-authjs.session-token',
+            options: {
+              httpOnly: true,
+              sameSite: 'lax' as const,
+              path: '/',
+              secure: true,
+              domain: COOKIE_DOMAIN,
+            },
+          },
+        },
+      }
+    : {}),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
@@ -189,7 +242,18 @@ export const authConfig: NextAuthConfig = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.userId as string;
+        // Identity is shared across pitva.fi; entitlement is not. `klapiUserId`
+        // is written only by the block in `jwt` that has checked this email
+        // against Klapi's own User table, so its absence means "signed in on a
+        // sibling app, but not a Klapi user". Leaving `user.id` unset is what
+        // makes requireUser/requireAdmin in utils/apiAuth.ts deny — and it does
+        // so WITHOUT deleting the cookie, which Budu is relying on too.
+        //
+        // The old `token.group || 'USER'` cannot survive a shared cookie: a
+        // token minted by Budu carries no `group` at all, and defaulting that
+        // to USER would hand every Budu user an ordinary Klapi account.
+        if (!token.klapiUserId) return session;
+        session.user.id = token.klapiUserId;
         session.user.group = token.group || 'USER';
         session.user.adminExpiry = token.adminExpiry || null;
         session.user.elevatedById = token.elevatedById || null;
@@ -215,10 +279,10 @@ export const authConfig: NextAuthConfig = {
       }
       return session;
     },
-    async jwt({ token, user, account, trigger, session }) {
+    async jwt({ token, user, account, profile, trigger, session }) {
       if (user) {
         token.group = user.group;
-        token.userId = user.id;
+        token.klapiUserId = user.id;
       }
       // Store provider in token for session expiration logic
       if (account?.provider) {
@@ -231,9 +295,37 @@ export const authConfig: NextAuthConfig = {
         });
         if (dbUser) {
           token.group = dbUser.group;
-          token.userId = dbUser.id;
+          token.klapiUserId = dbUser.id;
         } else {
           token.group = 'USER';
+        }
+      }
+
+      // Record Google's `hd` claim for Budu's benefit. Klapi itself authorises
+      // on its User row and never on `hd` — see the provider comment above —
+      // but Budu's domain fence now has to judge sessions minted here, and
+      // `profile` is only populated on this one sign-in pass.
+      if (account?.provider === 'google') {
+        token.hd = typeof profile?.hd === 'string' ? profile.hd.trim().toLowerCase() : null;
+      }
+
+      // A session minted by a sibling pitva.fi app carries no Klapi claims, and
+      // Klapi's `signIn` callback never ran for it. The same admission rules
+      // have to be applied here, or the shared cookie becomes a way around
+      // them: a member soft-deleted in Klapi could sign in on Budu and come
+      // back as an ordinary USER.
+      //
+      // Deliberately NOT `return null`. That invalidates the whole token, and
+      // the token is shared — it would sign the person out of Budu, where they
+      // are still perfectly welcome. Withholding the claims is enough; the
+      // `session` callback above turns that into a denial for Klapi alone.
+      if (!token.klapiUserId && token.email) {
+        const sibling = await prisma.user.findUnique({
+          where: { email: token.email },
+        });
+        if (sibling && !sibling.deletedAt) {
+          token.klapiUserId = sibling.id;
+          token.group = sibling.group;
         }
       }
 
@@ -246,7 +338,7 @@ export const authConfig: NextAuthConfig = {
         | null
         | undefined;
       if (trigger === 'update' && req?.action === 'elevate') {
-        const admin = await verifyElevationPin(req.pin, token.userId, req.adminId);
+        const admin = await verifyElevationPin(req.pin, token.klapiUserId, req.adminId);
         if (admin) {
           token.group = 'ADMIN';
           token.elevatedById = admin.id;

@@ -41,7 +41,7 @@ const past = (ms: number) => new Date(Date.now() - ms).toISOString();
 
 describe('jwt callback — kiosk elevation is server-authoritative', () => {
   it('IGNORES a client that self-asserts group/elevatedById (the original vuln)', async () => {
-    const token = { group: 'KIOSK', userId: 'kiosk-1' };
+    const token = { group: 'KIOSK', klapiUserId: 'kiosk-1' };
     const out = await jwt({
       token,
       trigger: 'update',
@@ -54,7 +54,7 @@ describe('jwt callback — kiosk elevation is server-authoritative', () => {
 
   it('elevates with the correct PIN for the NAMED admin', async () => {
     const out = await jwt({
-      token: { group: 'KIOSK', userId: 'kiosk-1' },
+      token: { group: 'KIOSK', klapiUserId: 'kiosk-1' },
       trigger: 'update',
       session: { action: 'elevate', adminId: 'admin-2', pin: SHARED_PIN },
     });
@@ -66,7 +66,7 @@ describe('jwt callback — kiosk elevation is server-authoritative', () => {
 
   it('with a SHARED PIN, elevates as whoever was named — never the other admin', async () => {
     const out = await jwt({
-      token: { group: 'KIOSK', userId: 'kiosk-1' },
+      token: { group: 'KIOSK', klapiUserId: 'kiosk-1' },
       trigger: 'update',
       session: { action: 'elevate', adminId: 'admin-2', pin: SHARED_PIN },
     });
@@ -76,7 +76,7 @@ describe('jwt callback — kiosk elevation is server-authoritative', () => {
 
   it('rejects a wrong PIN (stays KIOSK)', async () => {
     const out = await jwt({
-      token: { group: 'KIOSK', userId: 'kiosk-1' },
+      token: { group: 'KIOSK', klapiUserId: 'kiosk-1' },
       trigger: 'update',
       session: { action: 'elevate', adminId: 'admin-1', pin: '0000' },
     });
@@ -86,7 +86,7 @@ describe('jwt callback — kiosk elevation is server-authoritative', () => {
 
   it('refuses to elevate a non-KIOSK base session', async () => {
     const out = await jwt({
-      token: { group: 'USER', userId: 'user-1' },
+      token: { group: 'USER', klapiUserId: 'user-1' },
       trigger: 'update',
       session: { action: 'elevate', adminId: 'admin-1', pin: SHARED_PIN },
     });
@@ -96,7 +96,7 @@ describe('jwt callback — kiosk elevation is server-authoritative', () => {
 
   it('deElevate returns an elevated token to KIOSK', async () => {
     const out = await jwt({
-      token: { group: 'ADMIN', userId: 'kiosk-1', elevatedById: 'admin-2', elevatedByName: 'Admin Two', adminExpiry: future(30 * 60_000) },
+      token: { group: 'ADMIN', klapiUserId: 'kiosk-1', elevatedById: 'admin-2', elevatedByName: 'Admin Two', adminExpiry: future(30 * 60_000) },
       trigger: 'update',
       session: { action: 'deElevate' },
     });
@@ -109,7 +109,7 @@ describe('session callback — expiry is enforced server-side', () => {
   const build = async (adminExpiry: string | null) =>
     sessionCb({
       session: { user: {} },
-      token: { group: 'ADMIN', userId: 'kiosk-1', elevatedById: 'admin-2', elevatedByName: 'Admin Two', adminExpiry },
+      token: { group: 'ADMIN', klapiUserId: 'kiosk-1', elevatedById: 'admin-2', elevatedByName: 'Admin Two', adminExpiry },
     });
 
   it('presents a LAPSED elevation as plain KIOSK', async () => {
