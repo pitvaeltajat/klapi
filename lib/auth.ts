@@ -150,6 +150,28 @@ export const authConfig: NextAuthConfig = {
               domain: COOKIE_DOMAIN,
             },
           },
+          // The CSRF cookie is renamed for the same reason as the session one,
+          // and it is the more urgent of the two. Its value is HMAC'd with the
+          // auth secret, so every cookie minted under the old secret now fails
+          // to verify — and Auth.js rejects the sign-in POST with MissingCSRF
+          // *before* it ever checks the password. That is not a stale session
+          // that expires on its own: it is a browser that cannot sign in at
+          // all until someone clears site data by hand, which on a kiosk means
+          // physical access.
+          //
+          // Renaming sidesteps it. The stale cookie stops being consulted, a
+          // fresh one is minted on the next request, and nobody has to touch a
+          // machine. Stays `__Host-` (secure, path=/, no Domain) — CSRF is
+          // per-app and must not be shared across pitva.fi.
+          csrfToken: {
+            name: '__Host-pitva.csrf-token',
+            options: {
+              httpOnly: true,
+              sameSite: 'lax' as const,
+              path: '/',
+              secure: true,
+            },
+          },
         },
       }
     : {}),
