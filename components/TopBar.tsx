@@ -49,6 +49,20 @@ export default function TopBar({ children }: { children: ReactNode }) {
     }
   }, [session?.user, update]);
   const role = session?.user?.group;
+  /**
+   * A kiosk session, elevated or not.
+   *
+   * The kiosk is a shared screen bolted to the store room wall, and the point
+   * of it is that it goes nowhere: no way out to a signed-in front door that
+   * would hand the next person in the queue somebody else's session. So it gets
+   * no link back to ATK.
+   *
+   * `group` flips to ADMIN while an admin is elevated, so checking it alone
+   * would put the link back on the kiosk for those fifteen minutes;
+   * `adminExpiry` is what marks that as a temporary elevation on top of a kiosk
+   * rather than a real admin login. Same pair the admin switch below tests.
+   */
+  const isKiosk = role === 'KIOSK' || (role === 'ADMIN' && !!session?.user?.adminExpiry);
   const adminInitials = getInitials(session?.user?.elevatedByName);
   const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -243,6 +257,19 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   KLAPI
                 </NextLink>
               </div>
+              {/* Back to the front door that issued this session. A plain <a>
+                  and not NextLink: it leaves the app for another origin. Hidden
+                  on the narrowest screens, where it would crowd the wordmark
+                  against the cart — the drawer carries it there instead. */}
+              {!isKiosk && (
+                <a
+                  href="https://atk.pitva.fi"
+                  title="Kaikki PitVan palvelut"
+                  className="hidden text-sm font-medium opacity-80 transition hover:underline hover:opacity-100 sm:inline"
+                >
+                  ← ATK
+                </a>
+              )}
               {session && (role === 'KIOSK' || (role === 'ADMIN' && session.user.adminExpiry)) && (
                 <div className="ml-4 flex items-center gap-2">
                   <span className="text-sm">
@@ -437,6 +464,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
             >
               Oma tili
             </NextLink>
+            {!isKiosk && (
+              <a href="https://atk.pitva.fi" onClick={onClose} className="px-6 py-4">
+                ← ATK
+              </a>
+            )}
           </nav>
         </DrawerContent>
       </Drawer>
