@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { CartState, CartItem } from '../types';
 import { CART_STORAGE_KEY, loadPersisted, savePersisted } from '@/utils/sessionState';
 
@@ -54,17 +54,24 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         ...state,
         items: state.items.filter((item) => item.id !== action.payload),
       };
+    // The three scalar setters return the SAME object when nothing actually
+    // changes. useReducer bails out on an identical reference, so a debounce
+    // that re-fires with the value it already wrote costs no render and no
+    // sessionStorage write — on the kiosk that idle churn ran all day.
     case 'SET_DESCRIPTION':
+      if (state.description === action.payload) return state;
       return {
         ...state,
         description: action.payload,
       };
     case 'SET_LOANER':
+      if (state.loaner === action.payload) return state;
       return {
         ...state,
         loaner: action.payload,
       };
     case 'SET_USER_ID':
+      if (state.userId === action.payload) return state;
       return {
         ...state,
         userId: action.payload,
@@ -78,7 +85,20 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     case 'RESET_CART':
       return { ...initialCartState };
     case 'RESTORE_CART':
-      return { ...initialCartState, ...action.payload };
+      return {
+        ...initialCartState,
+        ...action.payload,
+        // Who the loan is for is decided by the session, not by the basket, and
+        // it is decided EARLIER than this: CartDrawer sits below this provider,
+        // so React runs its "seed the loaner from the session" effect before
+        // the provider's own mount effect gets to restore. A blind spread then
+        // threw that identity away, and the drawer's one-shot ref meant it was
+        // never re-seeded — the Lainaaja field stayed empty for the rest of the
+        // tab's life, with the submit button disabled behind it. Only take the
+        // stored identity when the state doesn't already carry one.
+        loaner: state.loaner ?? action.payload.loaner,
+        userId: state.userId ?? action.payload.userId,
+      };
     default:
       return state;
   }
@@ -117,19 +137,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     savePersisted(CART_STORAGE_KEY, state);
   }, [state]);
 
-  const value = {
-    state,
-    addToCart: (item: CartItem) => dispatch({ type: 'ADD_TO_CART', payload: item }),
-    incrementAmount: (id: string) => dispatch({ type: 'INCREMENT_AMOUNT', payload: id }),
-    decrementAmount: (id: string) => dispatch({ type: 'DECREMENT_AMOUNT', payload: id }),
-    removeFromCart: (id: string) => dispatch({ type: 'REMOVE_FROM_CART', payload: id }),
-    clearCart: () => dispatch({ type: 'CLEAR_CART' }),
-    resetCart: () => dispatch({ type: 'RESET_CART' }),
-    setDescription: (description: string) =>
-      dispatch({ type: 'SET_DESCRIPTION', payload: description }),
-    setLoaner: (loaner: string) => dispatch({ type: 'SET_LOANER', payload: loaner }),
-    setUserId: (userId: string | undefined) => dispatch({ type: 'SET_USER_ID', payload: userId }),
-  };
+  // Memoised with no dependencies, so the identities never change for the life
+  // of the provider. `dispatch` is stable, so they can be — and they have to
+  // be: a fresh object here handed every consumer new functions on each render,
+  // which spun CartDrawer's debounced `setDescription` effect into a permanent
+  // loop (dispatch → new state → re-render → new `setDescription` → the effect
+  // re-arms → dispatch, every 300ms, on every page including /login). Deriving
+  // them from `state` would keep that loop alive, since it is a state change
+  // that closes it; they must not depend on the state at all.
+  const actions = useMemo(
+    () => ({
+      addToCart: (item: CartItem) => dispatch({ type: 'ADD_TO_CART', payload: item }),
+      incrementAmount: (id: string) => dispatch({ type: 'INCREMENT_AMOUNT', payload: id }),
+      decrementAmount: (id: string) => dispatch({ type: 'DECREMENT_AMOUNT', payload: id }),
+      removeFromCart: (id: string) => dispatch({ type: 'REMOVE_FROM_CART', payload: id }),
+      clearCart: () => dispatch({ type: 'CLEAR_CART' }),
+      resetCart: () => dispatch({ type: 'RESET_CART' }),
+      setDescription: (description: string) =>
+        dispatch({ type: 'SET_DESCRIPTION', payload: description }),
+      setLoaner: (loaner: string) => dispatch({ type: 'SET_LOANER', payload: loaner }),
+      setUserId: (userId: string | undefined) => dispatch({ type: 'SET_USER_ID', payload: userId }),
+    }),
+    [],
+  );
+
+  const value = useMemo(() => ({ state, ...actions }), [state, actions]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

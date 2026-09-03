@@ -101,16 +101,25 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isKiosk && session?.user && !hasInitializedLoaner.current) {
-      // Name first: `loaner` is what the loan is labelled by everywhere it is
-      // shown — the loan page, the return screen, the calendar event's title —
-      // and an address reads like a mailbox rather than a person.
-      const userDisplayName = session.user.name || session.user.email || '';
-      setLoaner(userDisplayName);
-      setUserId(session.user.id);
+    if (isKiosk || !session?.user) return;
+    // Name first: `loaner` is what the loan is labelled by everywhere it is
+    // shown — the loan page, the return screen, the calendar event's title —
+    // and an address reads like a mailbox rather than a person.
+    const userDisplayName = session.user.name || session.user.email || '';
+    // An admin may retype the field to lend on someone else's behalf, so seed
+    // it once and then leave it alone. For an ordinary member it is read-only
+    // and can only ever be their own account, so keep it in sync instead of
+    // latching: a one-shot ref there had no way back if the value was lost
+    // after it fired, and the empty field disables the submit button.
+    if (isAdmin) {
+      if (hasInitializedLoaner.current) return;
       hasInitializedLoaner.current = true;
+    } else if (cart.loaner === userDisplayName && cart.userId === session.user.id) {
+      return;
     }
-  }, [isKiosk, session, setLoaner, setUserId]);
+    setLoaner(userDisplayName);
+    setUserId(session.user.id);
+  }, [isAdmin, isKiosk, session, cart.loaner, cart.userId, setLoaner, setUserId]);
 
   // Changing the loan dates keeps the cart, so a basket built for one range can
   // outrun what's free in another. Anything now over its limit is listed here
