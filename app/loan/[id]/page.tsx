@@ -4,6 +4,7 @@ import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import LoanView from './LoanView';
+import { auth } from '@/lib/auth';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,6 +17,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function LoanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  const session = await auth();
 
   const [loan, reports, history] = await Promise.all([
     prisma.loan.findUnique({
@@ -49,6 +52,10 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
   ]);
 
   if (!loan) notFound();
+
+  // A deleted loan is invisible to everyone but an admin — this page is where
+  // they look at what was removed and restore it.
+  if (loan.deletedAt && session?.user?.group !== 'ADMIN') notFound();
 
   return (
     <LoanView

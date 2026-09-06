@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     include: { reservations: true },
   });
 
-  if (!loan) {
+  if (!loan || loan.deletedAt) {
     return NextResponse.json({ message: 'Lainaa ei löydy' }, { status: 404 });
   }
 

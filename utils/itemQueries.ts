@@ -1,6 +1,7 @@
 import { Prisma, LoanStatus } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import prisma from '@/utils/prisma';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 /**
  * Items that have not been soft-archived. Use anywhere a "live" item is
@@ -53,6 +54,7 @@ export const getPopularityMap = unstable_cache(
       by: ['itemId'],
       where: {
         loan: {
+          ...activeLoansWhere,
           startTime: { gte: cutoff },
           status: { notIn: [LoanStatus.REJECTED, LoanStatus.CANCELLED] },
         },

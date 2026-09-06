@@ -5,7 +5,7 @@ import { serialize } from '@/utils/serialize';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import ReturnView from './ReturnView';
-import { loanWithReservationsInclude } from '@/utils/loanQueries';
+import { activeLoansWhere, loanWithReservationsInclude } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Palauta lainoja | Klapi' };
 
@@ -23,6 +23,7 @@ export default async function ReturnPage() {
   const loans = session?.user
     ? await prisma.loan.findMany({
         where: {
+          ...activeLoansWhere,
           OR: [
             { reservations: { some: { status: ReservationStatus.INUSE } } },
             {

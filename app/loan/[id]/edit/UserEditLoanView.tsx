@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import CustomItemDialog from '@/components/CustomItemDialog';
 import { Loan, Item, User, Reservation, ReservationStatus } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
+import { isCustomItemId } from '@/utils/customItems';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AvailabilityData {
@@ -42,6 +44,7 @@ export default function UserEditLoanView({
   const [selectedItemAmount, setSelectedItemAmount] = useState(0);
   const [reservations, setReservations] = useState(loan.reservations);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
   const router = useRouter();
@@ -87,6 +90,36 @@ export default function UserEditLoanView({
     return Math.max(0, effectiveAvail - currentInOtherRows);
   };
 
+  // A kama the loaner typed in themselves: it isn't the troop's, so there is
+  // no availability to check it against and no catalogue row behind it yet.
+  const isCustomReservation = (reservation: (typeof reservations)[0]): boolean =>
+    isCustomItemId(reservation.item.id);
+
+  // The id is minted in the browser so an optional photo can go to S3 under it
+  // before the row exists; updateLoan creates the item with that same id.
+  const addCustomItem = ({ id, name, amount }: { id: string; name: string; amount: number }) => {
+    const existingStatus = loan.reservations[0]?.status || ReservationStatus.ACCEPTED;
+    setReservations((current) => [
+      ...current,
+      {
+        id,
+        amount,
+        itemId: id,
+        loanId: loan.id,
+        status: existingStatus,
+        item: {
+          id,
+          name,
+          description: null,
+          amount,
+          locationId: null,
+          type: 'temporary',
+          deletedAt: null,
+        },
+      },
+    ]);
+  };
+
   const getMaxForNewItem = (itemId: string): number => {
     const effectiveAvail = getEffectiveAvailability(itemId);
     const currentTotal = getCurrentReservationAmount(itemId);
@@ -115,6 +148,9 @@ export default function UserEditLoanView({
           reservations: reservations.map((r) => ({
             amount: r.amount,
             item: { connect: { id: r.item.id } },
+            // Only an oma kama carries a name: it is what updateLoan creates the
+            // temporary item from.
+            ...(isCustomItemId(r.item.id) ? { name: r.item.name } : {}),
           })),
         }),
       });
@@ -185,6 +221,15 @@ export default function UserEditLoanView({
           onConfirm={updateLoan}
         />
 
+        <CustomItemDialog
+          isOpen={customOpen}
+          onClose={() => setCustomOpen(false)}
+          onAdd={addCustomItem}
+          title="Lisää oma kama lainaan"
+          successMessage="Lisätty lainaan"
+          submitIcon={Plus}
+        />
+
         <PageHeader className="mb-0" title="Muokkaa varausta" />
 
         <Card>
@@ -242,7 +287,11 @@ export default function UserEditLoanView({
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                     <div className="flex flex-1 flex-wrap items-center gap-2">
                       <p className="font-medium">{reservation.item.name}</p>
-                      <Badge variant="gray">max: {getMaxForReservation(reservation)}</Badge>
+                      {isCustomReservation(reservation) ? (
+                        <Badge variant="secondary">Oma kama</Badge>
+                      ) : (
+                        <Badge variant="gray">max: {getMaxForReservation(reservation)}</Badge>
+                      )}
                       {isNewReservation(reservation) && <Badge variant="success">Uusi</Badge>}
                       {!isNewReservation(reservation) && isReservationModified(reservation) && (
                         <Badge variant="warning">Muokattu</Badge>
@@ -283,7 +332,10 @@ export default function UserEditLoanView({
                             ),
                           );
                         }}
-                        disabled={reservation.amount >= getMaxForReservation(reservation)}
+                        disabled={
+                          !isCustomReservation(reservation) &&
+                          reservation.amount >= getMaxForReservation(reservation)
+                        }
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -307,7 +359,13 @@ export default function UserEditLoanView({
         </Card>
 
         <Card>
-          <CardTitle>Lisää kama</CardTitle>
+          <CardHeader>
+            <CardTitle>Lisää kama</CardTitle>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setCustomOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Oma kama
+            </Button>
+          </CardHeader>
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-2">
               <Label>Kama</Label>

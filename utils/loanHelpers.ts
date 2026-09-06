@@ -25,6 +25,10 @@ export const getLoanHistoryActionLabel = (action: LoanHistoryAction): string => 
       return 'Kamat palautettu laatikkoon';
     case 'PROCESSED_FROM_BOX':
       return 'Kamat merkitty palautetuksi';
+    case 'DELETED':
+      return 'Laina poistettu';
+    case 'RESTORED':
+      return 'Laina palautettu';
     default:
       return action;
   }

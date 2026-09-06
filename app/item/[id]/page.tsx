@@ -5,6 +5,7 @@ import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import ItemView from './ItemView';
+import { activeLoanReservationWhere, activeLoansWhere } from '@/utils/loanQueries';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,6 +26,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       location: true,
       announcements: { orderBy: { createdAt: 'desc' } },
       reservations: {
+        // Reservations of a deleted loan are still on the row (a restore has to
+        // be exact), but this page reads as "who has this kama out" — so they
+        // stay out of it.
+        where: activeLoanReservationWhere,
         include: {
           loan: true,
           item: { select: { name: true } },
@@ -51,7 +56,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           include: { actedBy: { select: { id: true, name: true, email: true } } },
         }),
         prisma.reportAffectedItem.findMany({
-          where: { itemId: id },
+          where: { itemId: id, report: { loan: activeLoansWhere } },
           include: {
             report: {
               include: {

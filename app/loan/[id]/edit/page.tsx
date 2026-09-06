@@ -25,6 +25,9 @@ export default async function UserEditLoanPage({ params }: { params: Promise<{ i
 
   if (!loan) notFound();
 
+  // A deleted loan is not editable; only an admin even sees that it exists.
+  if (loan.deletedAt) redirect(`/loan/${id}`);
+
   const isAdmin = session.user.group === 'ADMIN';
   const isOwner = session.user.id === loan.userId;
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { ReservationStatus } from '@prisma/client';
+import { activeLoanReservationWhere } from '@/utils/loanQueries';
 
 export async function POST(request: Request) {
   const { itemIds } = await request.json();
@@ -12,6 +13,7 @@ export async function POST(request: Request) {
   // Find all reservations with IN_BOX status for the given items
   const inBoxReservations = await prisma.reservation.findMany({
     where: {
+      ...activeLoanReservationWhere,
       itemId: { in: itemIds },
       status: ReservationStatus.IN_BOX,
     },

@@ -4,6 +4,7 @@ import prisma from '@/utils/prisma';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { requireUser } from '@/utils/apiAuth';
+import { activeLoanReservationWhere, activeLoansWhere } from '@/utils/loanQueries';
 
 // Marks loan items as returned to a box.
 // Can be called by:
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     },
   });
 
-  if (!loan) {
+  if (!loan || loan.deletedAt) {
     return NextResponse.json({ message: 'Loan not found' }, { status: 404 });
   }
 
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
       prisma.loan.groupBy({
         by: ['boxId'],
         where: {
+          ...activeLoansWhere,
           boxId: { not: null },
           status: { in: [LoanStatus.IN_BOX, LoanStatus.PARTIALLY_RETURNED] },
         },
@@ -97,7 +99,11 @@ export async function POST(request: Request) {
       }),
       loanItemIds.length > 0
         ? prisma.reservation.findMany({
-            where: { status: ReservationStatus.IN_BOX, itemId: { in: loanItemIds } },
+            where: {
+              ...activeLoanReservationWhere,
+              status: ReservationStatus.IN_BOX,
+              itemId: { in: loanItemIds },
+            },
             select: { loan: { select: { boxId: true } } },
           })
         : Promise.resolve([] as { loan: { boxId: string | null } }[]),

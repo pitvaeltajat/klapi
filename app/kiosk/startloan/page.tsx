@@ -5,14 +5,14 @@ import { serialize } from '@/utils/serialize';
 import { activeItemsWhere } from '@/utils/itemQueries';
 import { LoanStatus } from '@prisma/client';
 import StartLoanView from './StartLoanView';
-import { loanWithReservationsInclude } from '@/utils/loanQueries';
+import { activeLoansWhere, loanWithReservationsInclude } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Aloita lainaus | Klapi' };
 
 export default async function StartLoanPage() {
   const [loans, items] = await Promise.all([
     prisma.loan.findMany({
-      where: { status: LoanStatus.ACCEPTED },
+      where: { ...activeLoansWhere, status: LoanStatus.ACCEPTED },
       include: loanWithReservationsInclude,
       orderBy: { startTime: 'asc' },
     }),

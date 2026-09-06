@@ -5,6 +5,9 @@ import { ReservationStatus } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { requireUser } from '@/utils/apiAuth';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
+import { activeLoansWhere } from '@/utils/loanQueries';
+import { isCustomItemId } from '@/utils/customItems';
+import { createTemporaryItems } from '@/utils/temporaryItems';
 
 export async function POST(request: Request) {
   try {
@@ -19,6 +22,7 @@ export async function POST(request: Request) {
       select: {
         userId: true,
         status: true,
+        deletedAt: true,
         startTime: true,
         endTime: true,
         reservations: { select: { status: true, itemId: true, amount: true } },
@@ -27,6 +31,14 @@ export async function POST(request: Request) {
 
     if (!existingLoan) {
       return NextResponse.json({ message: 'Lainaa ei löydy' }, { status: 404 });
+    }
+
+    // A deleted loan is restored first, then edited — never edited in place.
+    if (existingLoan.deletedAt) {
+      return NextResponse.json(
+        { message: 'Poistettua lainaa ei voi muokata' },
+        { status: 409 },
+      );
     }
 
     const isAdmin = session.user.group === 'ADMIN';
@@ -55,9 +67,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Lainaa ei voi muokata tässä tilassa' }, { status: 403 });
     }
 
-    // Validate availability for each item in reservations
+    // Validate availability for each item in reservations. A row carrying a
+    // `name` under a `custom-…` id is an "oma kama" typed into the edit form;
+    // it has no Item row yet, so it is created further down (once the rest of
+    // the edit has validated) rather than looked up here.
     const requestedReservations = reservations as Array<{
       amount: number;
+      name?: string;
       item: { connect: { id: string } };
     }>;
 
@@ -65,6 +81,19 @@ export async function POST(request: Request) {
     // edit cannot pull a previously soft-deleted item back into a loan.
     const items = await prisma.item.findMany({ where: activeItemsWhere });
     const itemMap = new Map(items.map((item) => [item.id, item]));
+
+    const customReservations = requestedReservations.filter(
+      (r) => !itemMap.has(r.item.connect.id) && isCustomItemId(r.item.connect.id),
+    );
+    for (const r of customReservations) {
+      if (!r.name?.trim()) {
+        return NextResponse.json(
+          { message: `Omalta kamalta puuttuu nimi (${r.item.connect.id})` },
+          { status: 400 },
+        );
+      }
+    }
+    const customIds = new Set(customReservations.map((r) => r.item.connect.id));
 
     // Get all other reservations that overlap with the requested date range
     const requestedStart = new Date(startTime);
@@ -75,6 +104,7 @@ export async function POST(request: Request) {
     const overlappingReservations = await prisma.reservation.findMany({
       where: {
         loan: {
+          ...activeLoansWhere,
           id: { not: id }, // Exclude current loan
           startTime: { lte: requestedEnd },
           endTime: { gte: requestedStart },
@@ -120,9 +150,12 @@ export async function POST(request: Request) {
     };
 
     // Aggregate requested amounts by item
+    // Custom kamat are the loaner's own gear, not the troop's, so there is
+    // nothing to check them against — they never enter the availability sums.
     const requestedByItem = new Map<string, number>();
     for (const res of requestedReservations) {
       const itemId = res.item.connect.id;
+      if (customIds.has(itemId)) continue;
       const current = requestedByItem.get(itemId) ?? 0;
       requestedByItem.set(itemId, current + res.amount);
     }
@@ -161,17 +194,35 @@ export async function POST(request: Request) {
         ? ReservationStatus.INUSE
         : ReservationStatus.ACCEPTED;
 
-    // Add status to each reservation
-    const reservationsWithStatus = reservations.map(
-      (r: { amount: number; item: { connect: { id: string } } }) => ({
-        ...r,
-        status: reservationStatus,
-      }),
+    // Only now — with availability settled — do the loaner's own kamat become
+    // real rows, so a rejected edit doesn't leave orphan items behind.
+    const customIdByOriginal = await createTemporaryItems(
+      customReservations.map((r) => ({
+        itemId: r.item.connect.id,
+        name: r.name!.trim(),
+        amount: r.amount,
+      })),
     );
 
-    // Build a diff of reservation changes for history
+    const resolvedReservations = requestedReservations.map((r) => ({
+      amount: r.amount,
+      itemId: customIdByOriginal.get(r.item.connect.id) ?? r.item.connect.id,
+      name: r.name?.trim(),
+    }));
+
+    const reservationsWithStatus = resolvedReservations.map((r) => ({
+      amount: r.amount,
+      item: { connect: { id: r.itemId } },
+      status: reservationStatus,
+    }));
+
+    // Build a diff of reservation changes for history. A kama created a moment
+    // ago isn't in `itemMap`, so its name comes off the request.
+    const nameByItem = new Map<string, string | undefined>(
+      resolvedReservations.map((r) => [r.itemId, itemMap.get(r.itemId)?.name ?? r.name]),
+    );
     const originalByItem = new Map(existingLoan.reservations.map((r) => [r.itemId, r.amount]));
-    const newByItem = new Map(requestedReservations.map((r) => [r.item.connect.id, r.amount]));
+    const newByItem = new Map(resolvedReservations.map((r) => [r.itemId, r.amount]));
 
     const addedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
     const changedItems: Array<{ itemId: string; name: string | undefined; from: number; to: number }> = [];
@@ -179,11 +230,11 @@ export async function POST(request: Request) {
 
     for (const [itemId, newAmount] of newByItem.entries()) {
       if (!originalByItem.has(itemId)) {
-        addedItems.push({ itemId, name: itemMap.get(itemId)?.name, amount: newAmount });
+        addedItems.push({ itemId, name: nameByItem.get(itemId), amount: newAmount });
       } else {
         const orig = originalByItem.get(itemId)!;
         if (orig !== newAmount) {
-          changedItems.push({ itemId, name: itemMap.get(itemId)?.name, from: orig, to: newAmount });
+          changedItems.push({ itemId, name: nameByItem.get(itemId), from: orig, to: newAmount });
         }
       }
     }

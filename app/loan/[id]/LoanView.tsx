@@ -68,6 +68,7 @@ export default function LoanView({
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const [startLoanOpen, setStartLoanOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const { data: session } = useSession();
 
@@ -109,6 +110,53 @@ export default function LoanView({
         }
         toast.success('Laina peruttu', { description: 'Laina peruttiin onnistuneesti' });
         router.push('/loan');
+      } catch (err) {
+        toast.error('Virhe', {
+          description: err instanceof Error ? err.message : 'Tuntematon virhe',
+        });
+      }
+    });
+
+  // Soft delete: the loan drops out of every listing but keeps its history, and
+  // an admin can bring it back from this same page.
+  const deleteLoan = () =>
+    guard(async () => {
+      try {
+        const res = await fetch('/api/loan/deleteLoan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: loan.id }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Lainan poisto epäonnistui');
+        }
+        toast.success('Laina poistettu', {
+          description: 'Löydät sen Lainat-sivun "Poistetut"-suodattimesta, jos haluat palauttaa sen.',
+        });
+        setDeleteOpen(false);
+        router.push('/loan');
+      } catch (err) {
+        toast.error('Virhe', {
+          description: err instanceof Error ? err.message : 'Tuntematon virhe',
+        });
+      }
+    });
+
+  const restoreLoan = () =>
+    guard(async () => {
+      try {
+        const res = await fetch('/api/loan/restoreLoan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: loan.id }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Lainan palautus epäonnistui');
+        }
+        toast.success('Laina palautettu');
+        router.refresh();
       } catch (err) {
         toast.error('Virhe', {
           description: err instanceof Error ? err.message : 'Tuntematon virhe',
@@ -181,12 +229,17 @@ export default function LoanView({
 
   const isOwner = session?.user?.id === loan.user.id;
 
+  // A soft-deleted loan is frozen: only an admin can see it at all, and the one
+  // thing left to do with it is put it back.
+  const isDeleted = Boolean(loan.deletedAt);
+
   // The owner withdraws their own not-yet-picked-up loan: "Peru laina".
-  const canCancel = isOwner && derivedStatus === 'ACCEPTED';
+  const canCancel = !isDeleted && isOwner && derivedStatus === 'ACCEPTED';
 
   // An admin rejects someone else's loan request: "Hylkää". The owner uses
   // cancel instead, so reject is reserved for admins acting on others' loans.
   const canReject =
+    !isDeleted &&
     isAdmin &&
     !isOwner &&
     derivedStatus !== 'REJECTED' &&
@@ -200,13 +253,16 @@ export default function LoanView({
   // that would clash with someone else's booking is rejected server-side.
   // PARTIALLY_RETURNED is excluded: its reservations have mixed statuses that
   // updateLoan's recreate-all logic would flatten and corrupt.
-  const canEdit = isAdmin
-    ? derivedStatus !== 'CANCELLED' &&
-      derivedStatus !== 'PARTIALLY_RETURNED' &&
-      derivedStatus !== 'RETURNED'
-    : isOwner && !loanStarted && derivedStatus === 'ACCEPTED';
+  const canEdit =
+    !isDeleted &&
+    (isAdmin
+      ? derivedStatus !== 'CANCELLED' &&
+        derivedStatus !== 'PARTIALLY_RETURNED' &&
+        derivedStatus !== 'RETURNED'
+      : isOwner && !loanStarted && derivedStatus === 'ACCEPTED');
 
   const canApprove =
+    !isDeleted &&
     isAdmin &&
     derivedStatus !== 'ACCEPTED' &&
     derivedStatus !== 'CANCELLED' &&
@@ -214,12 +270,24 @@ export default function LoanView({
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
-  const canStartUse = derivedStatus === 'ACCEPTED';
+  const canStartUse = !isDeleted && derivedStatus === 'ACCEPTED';
 
   const inBoxReservations = loan.reservations.filter(
     (r) => r.status === ReservationStatus.IN_BOX,
   );
-  const canMarkReturned = isAdmin && inBoxReservations.length > 0;
+  const canMarkReturned = !isDeleted && isAdmin && inBoxReservations.length > 0;
+
+  // Deleting is the admin's "this loan should never have existed" — a duplicate,
+  // a test, one entered on the wrong account. Unlike hylkääminen and peruminen
+  // it is not a decision about the loan, so it is offered in every state.
+  const canDelete = isAdmin && !isDeleted;
+
+  // The status buttons: hidden once the loan is finished, and while the Kamat
+  // card is still offering the check-back-in step.
+  const showStatusActions =
+    derivedStatus !== 'RETURNED' &&
+    !canMarkReturned &&
+    (canReject || canCancel || canEdit || canApprove || canStartUse);
 
   // The loaner is asked to write huomiot under a liability warning, so they get
   // to read their own back. Admins see them on every loan; a kiosk session is a
@@ -254,6 +322,24 @@ export default function LoanView({
             </>
           }
         />
+
+        {isDeleted && (
+          <Alert variant="destructive" title="Tämä laina on poistettu">
+            <p>
+              Laina ei näy listoilla eikä varaa kamoja, mutta sen tiedot ja historia ovat
+              tallessa. Poistettu{' '}
+              <DateTime value={loan.deletedAt!} format="numeric" className="font-medium" />.
+            </p>
+            <Button
+              variant="secondary"
+              className="mt-3 w-full md:w-auto"
+              onClick={restoreLoan}
+              isLoading={busy}
+            >
+              Palauta laina
+            </Button>
+          </Alert>
+        )}
 
         <Card>
           <CardTitle>Perustiedot</CardTitle>
@@ -360,24 +446,26 @@ export default function LoanView({
           />
         )}
 
-        {derivedStatus === 'RETURNED' ? (
+        {derivedStatus === 'RETURNED' && !isDeleted && (
           <Alert variant="success" title="Lainaustapahtuma suoritettu loppuun" />
-        ) : (
-          // While there is still something to check back in, the return step in
-          // the Kamat card is the only action offered — same as before it moved
-          // up there.
-          !canMarkReturned &&
-          (canReject || canCancel || canEdit || canApprove || canStartUse) && (
-            <Card>
-              <div className="flex flex-col gap-3">
-                <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
-                {canStartUse && (
-                  <Alert variant="warning" title="Oletko hakenut tavarat varastosta?">
-                    Laina on hyväksytty, mutta sitä ei ole vielä merkitty käyttöön. Kun olet
-                    noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
-                    silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
-                  </Alert>
-                )}
+        )}
+
+        {/* While there is still something to check back in, the return step in
+            the Kamat card is the only action offered — same as before it moved
+            up there. Poistaminen is the exception: it stands on its own and is
+            offered whatever else the loan allows. */}
+        {(showStatusActions || canDelete) && (
+          <Card>
+            <div className="flex flex-col gap-3">
+              <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
+              {showStatusActions && canStartUse && (
+                <Alert variant="warning" title="Oletko hakenut tavarat varastosta?">
+                  Laina on hyväksytty, mutta sitä ei ole vielä merkitty käyttöön. Kun olet
+                  noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
+                  silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
+                </Alert>
+              )}
+              {showStatusActions && (
                 <div className="flex flex-col gap-3 md:flex-row">
                   {canReject && (
                     <Button variant="destructive" onClick={() => setRejectOpen(true)} className="flex-1 md:max-w-[25%]" disabled={busy}>
@@ -412,9 +500,26 @@ export default function LoanView({
                     </Button>
                   )}
                 </div>
-              </div>
-            </Card>
-          )
+              )}
+              {canDelete && (
+                <div className="flex flex-col gap-2 border-t border-border pt-3">
+                  <p className="text-sm text-muted-foreground">
+                    Poistettu laina katoaa listoilta eikä varaa kamoja, mutta sen tiedot
+                    säilyvät: löydät sen Lainat-sivun &quot;Poistetut&quot;-suodattimesta ja
+                    voit palauttaa sen.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setDeleteOpen(true)}
+                    className="w-full md:w-auto md:self-start"
+                    disabled={busy}
+                  >
+                    Poista laina
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
         )}
 
         {/* Collapsed by default: the audit trail matters when something is being
@@ -486,6 +591,17 @@ export default function LoanView({
           confirmLabel="Peru laina"
           cancelLabel="Älä peru"
           onConfirm={cancelLoan}
+          isLoading={busy}
+        />
+
+        <ConfirmDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          title="Poistetaanko laina?"
+          description="Laina piilotetaan listoilta ja sen varaamat kamat vapautuvat. Tiedot ja historia säilyvät, ja voit palauttaa lainan tältä sivulta. Oletko varma?"
+          confirmLabel="Poista laina"
+          cancelLabel="Älä poista"
+          onConfirm={deleteLoan}
           isLoading={busy}
         />
 

@@ -9,6 +9,7 @@ import {
 import { shouldSendEmail } from '@/utils/emailLogHelpers';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import prisma from '@/utils/prisma';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 export async function GET(request: Request) {
   // Verify the request is from Vercel Cron or has authorization
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
     // 2. Reservations are NOT in IN_BOX or RETURNED state (meaning items haven't been returned)
     const overdueLoans = await prisma.loan.findMany({
       where: {
+        ...activeLoansWhere,
         endTime: {
           lt: now,
         },

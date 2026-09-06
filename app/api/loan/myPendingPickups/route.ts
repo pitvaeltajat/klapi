@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { LoanStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { auth } from '@/lib/auth';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 // Returns the signed-in user's loans that have been approved and whose pickup
 // time has already arrived, but which have not yet been marked in use. These
@@ -15,6 +16,7 @@ export async function GET() {
 
   const loans = await prisma.loan.findMany({
     where: {
+      ...activeLoansWhere,
       userId: session.user.id,
       status: LoanStatus.ACCEPTED,
       startTime: { lte: new Date() },

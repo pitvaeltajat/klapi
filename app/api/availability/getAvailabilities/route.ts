@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
+import { activeLoanReservationWhere } from '@/utils/loanQueries';
 
 export async function POST(request: Request) {
   const { StartDate, EndDate } = await request.json();
@@ -44,6 +45,10 @@ export async function POST(request: Request) {
     where: { deletedAt: null },
     include: {
       reservations: {
+        // A soft-deleted loan holds nothing: its reservations keep their
+        // statuses so a restore is exact, so they have to be skipped here
+        // rather than relied on to look returned.
+        where: activeLoanReservationWhere,
         include: {
           loan: true,
           item: true,

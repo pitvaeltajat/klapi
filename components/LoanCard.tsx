@@ -16,6 +16,8 @@ export interface LoanType {
   loaner: string | null;
   startTime: Date | string;
   endTime: Date | string;
+  /** Set on a soft-deleted loan. Only an admin is ever handed one. */
+  deletedAt?: Date | string | null;
   user: {
     name: string | null;
     email: string | null;
@@ -48,6 +50,7 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
       ? 0
       : loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).length;
   const isOverdue =
+    !loan.deletedAt &&
     (derivedStatus === LoanStatus.INUSE || derivedStatus === LoanStatus.ACCEPTED) &&
     new Date(loan.endTime) < new Date();
 
@@ -70,9 +73,15 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
             Lainaaja: {loan.loaner || loan.user.name || loan.user.email}
           </p>
         </div>
-        <Badge variant={getLoanStatusColor(derivedStatus)} className="shrink-0">
-          {getLoanStatusLabel(derivedStatus)}
-        </Badge>
+        {loan.deletedAt ? (
+          <Badge variant="destructive" className="shrink-0">
+            Poistettu
+          </Badge>
+        ) : (
+          <Badge variant={getLoanStatusColor(derivedStatus)} className="shrink-0">
+            {getLoanStatusLabel(derivedStatus)}
+          </Badge>
+        )}
         {inBoxCount > 0 && (
           <Badge variant="secondary" className="shrink-0">
             Laatikossa: {inBoxCount}

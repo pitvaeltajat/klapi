@@ -156,6 +156,7 @@ export async function syncLoanCalendar(
     select: {
       id: true,
       status: true,
+      deletedAt: true,
       startTime: true,
       endTime: true,
       description: true,
@@ -175,7 +176,9 @@ export async function syncLoanCalendar(
   });
   if (!loan) return 'skipped';
 
-  if (OFF_CALENDAR.includes(loan.status)) {
+  // A soft-deleted loan is off the calendar for the same reason a cancelled one
+  // is: as far as the troop is concerned it isn't happening.
+  if (loan.deletedAt || OFF_CALENDAR.includes(loan.status)) {
     if (!loan.calendarEventId) return 'skipped';
     await calendar.deleteEvent(loan.calendarEventId);
     await prisma.loan.update({ where: { id: loan.id }, data: { calendarEventId: null } });

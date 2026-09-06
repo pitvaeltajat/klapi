@@ -4,6 +4,7 @@ import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
 import { auth } from '@/lib/auth';
 import NoticesView from './NoticesView';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Huomiot | Klapi' };
 
@@ -27,7 +28,7 @@ export default async function NoticesPage() {
     // out of the non-admin payload entirely.
     isAdmin
       ? prisma.report.findMany({
-          where: { status: { not: 'RESOLVED' } },
+          where: { status: { not: 'RESOLVED' }, loan: activeLoansWhere },
           orderBy: { createdAt: 'desc' },
           include: {
             loan: {

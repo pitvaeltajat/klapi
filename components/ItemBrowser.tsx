@@ -231,7 +231,11 @@ export default function ItemBrowser({
         </div>
       </div>
       {showCustomItemLink && (
-        <CustomItemDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
+        <CustomItemDialog
+          isOpen={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          onAdd={addToCart}
+        />
       )}
 
       <Drawer open={filtersOpen} onOpenChange={setFiltersOpen}>

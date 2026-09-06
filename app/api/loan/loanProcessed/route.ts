@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     },
   });
 
-  if (!loan) {
+  if (!loan || loan.deletedAt) {
     return NextResponse.json({ message: 'Loan not found' }, { status: 404 });
   }
 

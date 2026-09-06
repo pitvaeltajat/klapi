@@ -233,6 +233,13 @@ model Loan {
   // it has none — not configured, not created yet, or removed because the loan
   // was cancelled. `utils/loanCalendar` owns it; nothing else reads it.
   calendarEventId String?
+  // Soft delete: an admin removing a loan stamps this instead of dropping the
+  // row, so the reservations, huomiot, email log and audit trail survive and
+  // the loan can be brought back. A deleted loan is filtered out of every
+  // listing, availability calculation and cron sweep, and comes off the shared
+  // calendar — but it is still reachable at /loan/<id> for an admin, which is
+  // where it is restored from.
+  deletedAt       DateTime?
   boxId           String?
   box             Box?          @relation(fields: [boxId], references: [id])
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -240,6 +247,8 @@ model Loan {
   reports         Report[]
   emailLogs       EmailLog[]
   history         LoanHistory[]
+
+  @@index([deletedAt])
 }
 
 model LoanHistory {
@@ -264,6 +273,8 @@ enum LoanHistoryAction {
   STARTED
   RETURNED_TO_BOX
   PROCESSED_FROM_BOX
+  DELETED
+  RESTORED
 }
 
 /// An *unpublished* huomio: what a loaner wrote when picking up or returning a

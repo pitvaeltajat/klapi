@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useCart } from '@/contexts/CartContext';
-import { ImagePlus, ShoppingCart, X } from 'lucide-react';
+import { ImagePlus, ShoppingCart, X, type LucideIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import {
@@ -21,19 +20,35 @@ import { newCustomItemId } from '@/utils/customItems';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Where the typed-in kama goes. The catalogue passes `addToCart`; the loan
+   * editors push a reservation row onto the loan being edited. Either way the
+   * `Item` row itself is only created server-side when the loan is saved.
+   */
+  onAdd: (item: { id: string; name: string; amount: number }) => void;
+  title?: string;
+  /** What the toast says once it has landed wherever `onAdd` puts it. */
+  successMessage?: string;
+  submitIcon?: LucideIcon;
 }
 
 /** The presigned upload caps the object at 10 MB; checked here for a real error. */
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
-export default function CustomItemDialog({ isOpen, onClose }: Props) {
+export default function CustomItemDialog({
+  isOpen,
+  onClose,
+  onAdd,
+  title = 'Lisää oma kama lainaan',
+  successMessage = 'Lisätty koriin',
+  submitIcon: SubmitIcon = ShoppingCart,
+}: Props) {
   const [name, setName] = React.useState('');
   const [amount, setAmount] = React.useState<number>(1);
   const [image, setImage] = React.useState<File | null>(null);
   const [preview, setPreview] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const { addToCart } = useCart();
   const { data: session } = useSession();
 
   // The kiosk is a shared terminal standing in the storage room — there's no
@@ -111,8 +126,8 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
           });
         }
       }
-      addToCart({ id, name: name.trim(), amount });
-      toast.success('Lisätty koriin', { description: name });
+      onAdd({ id, name: name.trim(), amount });
+      toast.success(successMessage, { description: name });
       resetForm();
       onClose();
     } finally {
@@ -130,7 +145,7 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? handleClose() : null)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Lisää oma kama lainaan</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <Field label="Nimi" required htmlFor="custom-name">
@@ -193,7 +208,7 @@ export default function CustomItemDialog({ isOpen, onClose }: Props) {
           </Button>
           <Button onClick={handleSubmit} className="gap-2" disabled={submitting}>
             {submitting ? 'Lisätään…' : 'Lisää'}
-            <ShoppingCart className="h-4 w-4" />
+            <SubmitIcon className="h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>

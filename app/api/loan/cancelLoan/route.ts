@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   const loan = await prisma.loan.findUnique({ where: { id } });
 
-  if (!loan) {
+  if (!loan || loan.deletedAt) {
     return NextResponse.json({ message: 'Lainaa ei löydy' }, { status: 404 });
   }
 

@@ -3,6 +3,7 @@ import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { requireAdmin } from '@/utils/apiAuth';
+import { activeLoansWhere } from '@/utils/loanQueries';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 
 export async function POST(request: Request) {
@@ -10,6 +11,15 @@ export async function POST(request: Request) {
   if (denied) return denied;
 
   const { id } = await request.json();
+
+  // A soft-deleted loan is off the board entirely — restore it first.
+  const existing = await prisma.loan.findFirst({
+    where: { id, ...activeLoansWhere },
+    select: { id: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ message: 'Lainaa ei löydy' }, { status: 404 });
+  }
 
   // Update loan status and all reservation statuses to INUSE
   const result = await prisma.loan.update({

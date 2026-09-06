@@ -32,8 +32,9 @@ Tests create their own test data and clean up after themselves. Each test suite:
 The suites in this directory cover: loan submission and updates (including the
 before-start path), approve/reject, starting a loan, returns, availability
 calculation, inventory, the kiosk password, email-log dedup, the `startDueLoans`
-cron, the Google Workspace user sync, duplicate-account merging, and the
-email-preference route's own-vs-admin authorization. `__tests__/` one level up holds the unit tests (auth
+cron, the Google Workspace user sync, duplicate-account merging, the
+email-preference route's own-vs-admin authorization, loan soft-delete/restore,
+and the "omat kamat" an edit can add to a loan. `__tests__/` one level up holds the unit tests (auth
 elevation, loan status derivation, email helpers, serialization).
 
 Deliberately not enumerated per file — that list rots faster than it helps. Run

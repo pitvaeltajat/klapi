@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { requireAdmin } from '@/utils/apiAuth';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 /** How many handled huomiot the archive returns at once. */
 const LIMIT = 100;
@@ -21,7 +22,7 @@ export async function GET() {
     if (denied) return denied;
 
     const reports = await prisma.report.findMany({
-      where: { status: 'RESOLVED' },
+      where: { status: 'RESOLVED', loan: activeLoansWhere },
       orderBy: { createdAt: 'desc' },
       take: LIMIT + 1,
       include: {

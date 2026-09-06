@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 import { serialize } from '@/utils/serialize';
 import { LoanType } from '@/components/LoanCard';
 import LoanListClient from './LoanListClient';
-import { reportSummarySelect } from '@/utils/loanQueries';
+import { activeLoansWhere, reportSummarySelect } from '@/utils/loanQueries';
 
 export const metadata = { title: 'Lainat | Klapi' };
 
@@ -16,10 +16,18 @@ export default async function LoanListPage() {
     redirect('/login?from=' + encodeURIComponent('/loan'));
   }
 
-  const isAdminOrKiosk = session.user.group === 'ADMIN' || session.user.group === 'KIOSK';
+  const isAdmin = session.user.group === 'ADMIN';
+  const isAdminOrKiosk = isAdmin || session.user.group === 'KIOSK';
 
+  // Admins get the soft-deleted loans too — hidden behind the "Poistetut" chip,
+  // which is the only way back to one that was removed by mistake. Nobody else
+  // is told they exist, the kiosk included: it is a shared terminal.
   const loans = await prisma.loan.findMany({
-    where: isAdminOrKiosk ? {} : { userId: session.user.id },
+    where: isAdmin
+      ? {}
+      : isAdminOrKiosk
+        ? activeLoansWhere
+        : { ...activeLoansWhere, userId: session.user.id },
     select: {
       id: true,
       userId: true,
@@ -28,6 +36,7 @@ export default async function LoanListPage() {
       loaner: true,
       startTime: true,
       endTime: true,
+      deletedAt: true,
       user: { select: { name: true, email: true } },
       reservations: {
         select: {

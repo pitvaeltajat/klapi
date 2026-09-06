@@ -10,6 +10,7 @@ import {
 import { shouldSendEmail } from '@/utils/emailLogHelpers';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import prisma from '@/utils/prisma';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 export async function GET(request: Request) {
   // Verify the request is from Vercel Cron or has authorization
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
     // A loan hasn't been picked up if all reservations are still ACCEPTED (none are INUSE)
     const allLoansStartingTomorrow = await prisma.loan.findMany({
       where: {
+        ...activeLoansWhere,
         startTime: {
           gte: tomorrow,
           lte: dayAfterTomorrow,
@@ -102,6 +104,7 @@ export async function GET(request: Request) {
     // Find loans that expire in the next 24-25 hours and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
       where: {
+        ...activeLoansWhere,
         endTime: {
           gte: tomorrow,
           lte: dayAfterTomorrow,
@@ -160,6 +163,7 @@ export async function GET(request: Request) {
     // Find loans that have IN_BOX reservations for over a week
     const oldBoxLoans = await prisma.loan.findMany({
       where: {
+        ...activeLoansWhere,
         startTime: {
           lte: oneWeekAgo,
         },

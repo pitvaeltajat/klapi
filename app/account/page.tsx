@@ -4,7 +4,11 @@ import prisma from '@/utils/prisma';
 import { serialize } from '@/utils/serialize';
 import { auth } from '@/lib/auth';
 import AccountView from './AccountView';
-import { notificationPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
+import {
+  activeLoansWhere,
+  notificationPreferenceSelect,
+  reportSummarySelect,
+} from '@/utils/loanQueries';
 import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 
@@ -32,7 +36,7 @@ export default async function AccountPage() {
 
   const [rawLoans, user] = await Promise.all([
     prisma.loan.findMany({
-      where: { user: { id: session.user.id } },
+      where: { ...activeLoansWhere, user: { id: session.user.id } },
       include: {
         user: true,
         reservations: {

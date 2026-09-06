@@ -34,6 +34,11 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
     ]),
   );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Poistetut is an archive, not another status: it swaps the list over to the
+  // soft-deleted loans rather than adding them to the live ones. Only an admin
+  // is ever handed any, so the chip appears only when there are some.
+  const [showDeleted, setShowDeleted] = useState(false);
+  const hasDeleted = loans.some((loan) => loan.deletedAt);
 
   const allChecked = selectedStatuses.size === allStatuses.length;
   const isIndeterminate = selectedStatuses.size > 0 && !allChecked;
@@ -69,6 +74,7 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   };
 
   const filteredLoans = loans.filter((loan) => {
+    if (Boolean(loan.deletedAt) !== showDeleted) return false;
     if (selectedStatuses.size === 0) return true;
     const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
     if (selectedStatuses.has(derivedStatus)) return true;
@@ -105,14 +111,32 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
                   {getStatusFilterLabel(status)}
                 </FilterChip>
               ))}
+              {hasDeleted && (
+                <FilterChip
+                  active={showDeleted}
+                  onClick={() => {
+                    setVisibleCount(PAGE_SIZE);
+                    setShowDeleted((shown) => !shown);
+                  }}
+                >
+                  Poistetut
+                </FilterChip>
+              )}
             </>
           }
         />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {filteredLoans.slice(0, visibleCount).map((loan) => (
-            <LoanCard key={loan.id} loan={loan} />
-          ))}
-        </div>
+        {filteredLoans.length === 0 ? (
+          <EmptyState
+            variant="card"
+            title={showDeleted ? 'Ei poistettuja lainoja' : 'Ei lainoja valituilla suodattimilla'}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {filteredLoans.slice(0, visibleCount).map((loan) => (
+              <LoanCard key={loan.id} loan={loan} />
+            ))}
+          </div>
+        )}
         {filteredLoans.length > visibleCount && (
           <div className="flex flex-col items-center gap-2">
             <p className="text-sm text-muted-foreground">

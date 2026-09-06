@@ -1,6 +1,7 @@
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { logLoanHistory } from '@/utils/loanHistory';
+import { activeLoansWhere } from '@/utils/loanQueries';
 
 /**
  * Promotes every ACCEPTED loan whose booking window has begun
@@ -30,6 +31,7 @@ export async function startDueLoans(
 ): Promise<string[]> {
   const due = await prisma.loan.findMany({
     where: {
+      ...activeLoansWhere,
       status: LoanStatus.ACCEPTED,
       startTime: { lte: now },
       ...(options.userIds ? { userId: { in: options.userIds } } : {}),

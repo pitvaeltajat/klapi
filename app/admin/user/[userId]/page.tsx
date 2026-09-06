@@ -5,7 +5,11 @@ import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import NotAuthenticated from '@/components/NotAuthenticated';
-import { notificationPreferenceSelect, reportSummarySelect } from '@/utils/loanQueries';
+import {
+  activeLoansWhere,
+  notificationPreferenceSelect,
+  reportSummarySelect,
+} from '@/utils/loanQueries';
 import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 import AdminUserView from './AdminUserView';
@@ -50,7 +54,7 @@ export default async function AdminUserPage({
   if (!user) notFound();
 
   const rawLoans = await prisma.loan.findMany({
-    where: { userId },
+    where: { ...activeLoansWhere, userId },
     include: {
       user: true,
       reservations: { include: { item: { select: { id: true, name: true } } } },

@@ -132,18 +132,23 @@ the entity's detail page:
 | `expireAnnouncement` | POST | unpublish one (stamps `expiresAt`) |
 
 Items are **soft-deleted** (`deletedAt`), so reservations + history survive.
-Temporary items ("omat kamat") are auto-created during `loan/submitLoan` and are
-**not** history-logged. Their id is minted in the browser by
-`utils/customItems.ts` (`custom-<uuid>`) so an optional photo can be uploaded to
-S3 under that key before the row exists; `submitLoan` reuses the id verbatim
-when it's free, which is what makes the picture line up.
+Temporary items ("omat kamat") are auto-created during `loan/submitLoan` **and
+`loan/updateLoan`** — a kama can be typed into a loan while editing it, not only
+while filling the cart — and are **not** history-logged. Their id is minted in
+the browser by `utils/customItems.ts` (`custom-<uuid>`) so an optional photo can
+be uploaded to S3 under that key before the row exists; the row is created by
+`utils/temporaryItems.ts` (`createTemporaryItems`, the one place both routes go
+through), which reuses that id verbatim when it's free — that is what makes the
+picture line up. `updateLoan` creates them only after the availability check has
+passed, so a rejected edit leaves no orphan items behind.
 
 ### `loan/*` — loans
 | Route | Method | Purpose |
 |---|---|---|
 | `submitLoan` | POST | create a loan (+ temporary items); logs `CREATED` |
-| `updateLoan` | POST | edit reservations/details; logs `UPDATED` diff |
+| `updateLoan` | POST | edit reservations/details (+ temporary items); logs `UPDATED` diff |
 | `approveLoan` / `rejectLoan` / `cancelLoan` | POST | status transitions |
+| `deleteLoan` / `restoreLoan` | POST | soft-delete a loan / undo it (admin only); log `DELETED` / `RESTORED` |
 | `startLoan` | POST | mark in use |
 | `loanReturned` | POST | returned to box |
 | `loanProcessed` | POST | process returned-from-box |
@@ -151,6 +156,19 @@ when it's free, which is what makes the picture line up.
 | `handledReports` | GET | the huomiot archive: RESOLVED reports, newest 100 (admin only) |
 | `myPendingPickups` | GET | current user's pending pickups |
 | `syncCalendar` | POST | force one loan's calendar event back in sync (admin only); repair tool, no UI |
+
+Loans are **soft-deleted** too (`Loan.deletedAt`, `loan/deleteLoan`): an admin
+removing a duplicate or a mis-entered loan hides it rather than dropping the row,
+so its reservations, huomiot, email log and history survive and `restoreLoan`
+puts it back exactly as it was. Everything that reads loans therefore has to
+exclude them — use `activeLoansWhere` / `activeLoanReservationWhere` from
+`utils/loanQueries.ts`, never a bare `prisma.loan.findMany({})`. Reservations of
+a deleted loan keep their statuses (that is what makes the restore exact), so
+availability, the box lookups and `reservation/checkInBox` filter on the *loan*,
+not on the reservation status. The one place a deleted loan is still visible is
+its own `/loan/[id]` for an admin — the restore button lives there — and the
+"Poistetut" chip on `/loan`, which is how they find it again. Every mutation
+route refuses one (404/409).
 
 `submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when a kiosk
 session makes it) — there is no approval queue. `approveLoan` therefore only
@@ -258,7 +276,7 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
 | `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
 | `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
-| `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list / detail (+ history) / edit |
+| `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list (status chips + admin-only "Poistetut" archive) / detail (+ history, admin delete & restore) / edit |
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/editLoan/[id]` | admin loan edit |
@@ -287,8 +305,8 @@ elevation, and email recipients so `Loan.user` history survives; the
 `email*Notification` toggles plus `calendarLoanEvents`) ·
 `Account`/`Session` (Auth.js) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
-line) · `Loan` (status enum, optional `Box`, `calendarEventId` for the shared
-calendar) · `Box` · `Location` · `Category` ·
+line) · `Loan` (status enum, soft-delete via `deletedAt`, optional `Box`,
+`calendarEventId` for the shared calendar) · `Box` · `Location` · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` (both are "huomiot" — see above) · `LoanHistory` /
 `ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
 templates; **no** back-reference from `Loan` — a loan doesn't record whether it
@@ -305,6 +323,11 @@ came from one). Migrations in `prisma/migrations/`; seed in
 - `utils/loanHelpers.ts` / `itemHelpers.ts` — **client-safe** badge variants +
   history labels (no Prisma import).
 - `utils/itemQueries.ts` — shared item query builders.
+- `utils/loanQueries.ts` — the loan equivalent: `activeLoansWhere` /
+  `activeLoanReservationWhere` (skip soft-deleted loans), the report summary
+  select, and the include the kiosk return/start flows need.
+- `utils/temporaryItems.ts` — creates the `type: temporary` Item rows behind a
+  loan's "omat kamat"; shared by `submitLoan` and `updateLoan`.
 - `utils/templateQueries.ts` — server-side template helpers (read include,
   payload validation, loan→template aggregation). Template reads filter out
   archived items rather than deleting the join row, so restoring an item brings
