@@ -42,7 +42,8 @@
     "sonner": "^2.0.8",
     "swr": "^2.5.0",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@auth/core": "0.41.3",

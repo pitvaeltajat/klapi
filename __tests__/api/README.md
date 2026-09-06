@@ -34,7 +34,9 @@ before-start path), approve/reject, starting a loan, returns, availability
 calculation, inventory, the kiosk password, email-log dedup, the `startDueLoans`
 cron, the Google Workspace user sync, duplicate-account merging, the
 email-preference route's own-vs-admin authorization, loan soft-delete/restore,
-and the "omat kamat" an edit can add to a loan. `__tests__/` one level up holds the unit tests (auth
+the "omat kamat" an edit can add to a loan, and the kalusto .xlsx export (the
+workbook is unzipped and its XML read, so a file Excel would refuse fails the
+suite). `__tests__/` one level up holds the unit tests (auth
 elevation, loan status derivation, email helpers, serialization).
 
 Deliberately not enumerated per file — that list rots faster than it helps. Run

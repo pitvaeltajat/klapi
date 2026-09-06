@@ -32,6 +32,63 @@ export const itemsWithRelationsInclude = {
 } as const;
 
 /**
+ * The admin inventory listing's filters and ordering, read off the query
+ * string. Shared by `item/getInventory` (which pages on top of it) and
+ * `item/exportInventory` (which doesn't), so the spreadsheet always contains
+ * exactly the rows the table was showing.
+ *
+ * Query params:
+ *   search    case-insensitive match on name/description
+ *   type      'normal' | 'temporary' (omitted = both)
+ *   category  category id to filter by
+ *   archived  'all' to include soft-archived items (default: active only)
+ *   sort      column id: name | description | amount | type | location
+ *   dir       'asc' | 'desc' (default asc)
+ */
+export function inventoryQuery(params: URLSearchParams): {
+  where: Prisma.ItemWhereInput;
+  orderBy: Prisma.ItemOrderByWithRelationInput[];
+} {
+  const search = params.get('search')?.trim() ?? '';
+  const typeParam = params.get('type');
+  const category = params.get('category')?.trim() ?? '';
+  const includeArchived = params.get('archived') === 'all';
+  const sortDir: Prisma.SortOrder = params.get('dir') === 'desc' ? 'desc' : 'asc';
+  const sortId = params.get('sort') ?? 'name';
+
+  const where: Prisma.ItemWhereInput = {
+    ...(includeArchived ? {} : { deletedAt: null }),
+    ...(typeParam === 'normal' || typeParam === 'temporary' ? { type: typeParam } : {}),
+    ...(category ? { categories: { some: { id: category } } } : {}),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {}),
+  };
+
+  const primarySort: Prisma.ItemOrderByWithRelationInput =
+    sortId === 'location'
+      ? { location: { name: sortDir } }
+      : sortId === 'description'
+        ? { description: sortDir }
+        : sortId === 'amount'
+          ? { amount: sortDir }
+          : sortId === 'type'
+            ? { type: sortDir }
+            : { name: sortDir };
+
+  // Tiebreak on name so pagination stays stable for non-name sorts.
+  const orderBy: Prisma.ItemOrderByWithRelationInput[] =
+    sortId === 'name' ? [primarySort] : [primarySort, { name: 'asc' }];
+
+  return { where, orderBy };
+}
+
+/**
  * Rolling window (in days) for the "most loaned" ranking. ~12 months so a full
  * seasonal year of loans counts toward an item's popularity, while older loans
  * eventually age out and stop skewing the order.

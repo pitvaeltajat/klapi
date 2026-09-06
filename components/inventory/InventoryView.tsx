@@ -48,7 +48,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, RotateCcw } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, RotateCcw, Sheet as SheetIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ItemThumb from '@/components/ItemThumb';
 import { cn } from '@/lib/utils';
@@ -391,6 +391,18 @@ export default function InventoryView() {
     if (showArchived) q.set('archived', 'all');
     return `/api/item/getInventory?${q.toString()}`;
   }, [pagination, sortId, sortDir, search, typeFilter, categoryFilter, showArchived]);
+
+  // The spreadsheet is the same view without the paging: whatever the filters,
+  // the search box and the sort order are showing, all of it — not the fifty
+  // rows on screen. The route reads these params exactly as getInventory does.
+  const exportUrl = useMemo(() => {
+    const q = new URLSearchParams({ sort: sortId, dir: sortDir });
+    if (search) q.set('search', search);
+    if (typeFilter !== 'all') q.set('type', typeFilter);
+    if (categoryFilter) q.set('category', categoryFilter);
+    if (showArchived) q.set('archived', 'all');
+    return `/api/item/exportInventory?${q.toString()}`;
+  }, [sortId, sortDir, search, typeFilter, categoryFilter, showArchived]);
 
   const { data, mutate: mutateItems, isLoading: itemsLoading } =
     useSWR<InventoryListResponse>(inventoryUrl, fetcher, { keepPreviousData: true });
@@ -804,10 +816,18 @@ export default function InventoryView() {
   return (
     <EditCellContext.Provider value={editCellValue}>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <span className="text-sm text-muted-foreground">
             {total} kamaa
           </span>
+          {/* A plain link, not a fetch: the browser owns the download, so a
+              big kalusto doesn't block the page while the sheet is built. */}
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <a href={exportUrl} download>
+              <SheetIcon className="h-4 w-4" />
+              Vie Exceliin
+            </a>
+          </Button>
         </div>
 
         {/* Filters */}
