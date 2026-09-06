@@ -83,7 +83,17 @@ They only answer "may this caller call this route at all". Per-resource checks
 `session.user` carries `id`, `group`, `email`, and — for a PIN-elevated kiosk
 session — `elevatedById`, `elevatedByName` and `adminExpiry`. `adminExpiry` is
 load-bearing, not decoration: `isElevationInvalid` in `lib/auth.ts` demotes the
-session back to KIOSK once it passes. The Auth.js config + the credentials
+session back to KIOSK once it passes.
+
+**Elevation flips `group` to ADMIN but not `session.user.id`**, which stays the
+kiosk account. So `group === 'KIOSK'` is the wrong test for "is this the kaluston
+kone" — for those 30 minutes the shared wall screen would answer no. Use
+`isKioskMachine` (`utils/kioskSession.ts`) instead wherever the *machine*
+matters rather than the privilege: the whole loan flow (the kiosk mode/date
+selectors, the cart's Lainaaja field and free-text loaner, the cart reset after
+submitting, and `submitLoan` creating the loan already INUSE) branches on it, as
+does the TopBar's kiosk chrome. `resolveLoanActor` and `/account` read
+`elevatedById` directly for the same reason. The Auth.js config + the credentials
 provider live in `lib/auth.ts`, which also exports `auth()` — v5's replacement
 for `getServerSession(authOptions)`, taking no arguments because it reads the
 request out of `next/headers` itself.
@@ -171,8 +181,10 @@ its own `/loan/[id]` for an admin — the restore button lives there — and the
 "Poistetut" chip on `/loan`, which is how they find it again. Every mutation
 route refuses one (404/409).
 
-`submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when a kiosk
-session makes it) — there is no approval queue. `approveLoan` therefore only
+`submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when it is made
+at the kaluston kone — `isKioskMachine`, so an elevated admin counts — *and*
+starts now; a booking for a later date stays a reservation whatever machine it
+was made on) — there is no approval queue. `approveLoan` therefore only
 exists to bring a rejected loan back, which is why the "Hyväksy" button is
 hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 
@@ -340,6 +352,9 @@ came from one). Migrations in `prisma/migrations/`; seed in
   only the rows the admin could see. Client components take `TemplateView` from
   `@/types` instead — that module imports Prisma.
 - `hooks/useItemImage.ts` — item image with theme-aware placeholder + SSR guard.
+- `utils/kioskSession.ts` — `isKioskMachine` (kiosk login *or* an admin
+  PIN-elevated on one) and `loanStartsNow`; client-safe, so the cart and
+  `loan/submitLoan` branch on the same rule.
 - `utils/customItems.ts` — the `custom-<uuid>` id for a loaner's own item: minted
   client-side, recognised by the cart, and accepted as an upload key / explicit
   `Item.id` only in its strict UUID form.

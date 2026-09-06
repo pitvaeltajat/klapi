@@ -9,6 +9,7 @@ import KioskDateSelector from '@/components/KioskDateSelector';
 import { Item, Category, ItemType, Announcement } from '@prisma/client';
 import { useDates } from '@/contexts/DatesContext';
 import { useSession } from 'next-auth/react';
+import { isKioskMachine } from '@/utils/kioskSession';
 import ItemBrowser from '@/components/ItemBrowser';
 import BrowseItemCard from '@/components/BrowseItemCard';
 import InventoryView from '@/components/inventory/InventoryView';
@@ -109,8 +110,22 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   const { state: dates, setBrowseMode, setStartDate, setEndDate, setDatesSet } = useDates();
   const { data: session } = useSession();
 
-  const isKioskMode = session?.user?.group === 'KIOSK';
+  // The kaluston kone gets the kiosk flow even while an admin is elevated on
+  // it: they are standing at the store room lending to whoever is in front of
+  // them, which is what that flow is for — it asks for the Lainaaja up front and
+  // starts the loan now. Browse mode is checked first, so the admin's inventory
+  // table is untouched by this.
+  const onKioskMachine = isKioskMachine(session?.user);
   const isAdmin = session?.user?.group === 'ADMIN';
+  const isElevatedAdmin = isAdmin && onKioskMachine;
+
+  // The one thing the kiosk flow cannot do is book a *later* date, and an
+  // elevated admin could before. This drops them into the ordinary date picker,
+  // and only for as long as they stay elevated: the moment the PIN lapses (or
+  // they flip the switch back) the wall screen is a kiosk again, so the next
+  // person in the queue can't inherit the admin's date picker.
+  const [planAhead, setPlanAhead] = useState(false);
+  const isKioskMode = onKioskMachine && !(planAhead && isElevatedAdmin);
 
   const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('table');
   const [createOpen, setCreateOpen] = useState(false);
@@ -165,7 +180,16 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
       ) : isKioskMode ? (
         <>
           {!dates.datesSet ? (
-            <KioskModeSelector />
+            <KioskModeSelector
+              onPlanAhead={
+                isElevatedAdmin
+                  ? () => {
+                      setPlanAhead(true);
+                      setDatesSet(false);
+                    }
+                  : undefined
+              }
+            />
           ) : (
             <>
               <KioskDateSelector />

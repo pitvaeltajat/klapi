@@ -7,7 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { defaultKioskRange } from '@/utils/dateRange';
 
-export default function KioskModeSelector() {
+/**
+ * `onPlanAhead` is offered only to an elevated admin: the kiosk flow always
+ * starts the loan now, so this is their way into the ordinary date picker for a
+ * booking that starts later. Absent for an ordinary kiosk visitor, who has no
+ * business reserving the store room for next month from the wall screen.
+ */
+export default function KioskModeSelector({ onPlanAhead }: { onPlanAhead?: () => void }) {
   const { setStartDate, setEndDate, setDatesSet } = useDates();
   const router = useRouter();
 
@@ -50,6 +56,11 @@ export default function KioskModeSelector() {
         <Button variant="outline" onClick={() => router.push('/kiosk/startloan')}>
           Merkkaa ennakkoon tehty laina noudetuksi
         </Button>
+        {onPlanAhead && (
+          <Button variant="secondary" onClick={onPlanAhead}>
+            Tee varaus toiselle päivälle
+          </Button>
+        )}
       </div>
     </div>
   );

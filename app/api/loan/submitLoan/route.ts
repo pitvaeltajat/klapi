@@ -3,6 +3,7 @@ import prisma from '@/utils/prisma';
 import { auth } from '@/lib/auth';
 import { ReservationStatus } from '@prisma/client';
 import { createTemporaryItems } from '@/utils/temporaryItems';
+import { isKioskMachine, loanStartsNow } from '@/utils/kioskSession';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { sendCreatedEmail, sendNewLoanEmail } from '@/utils/emails';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
@@ -27,11 +28,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
     }
 
-    // If made by kiosk, set status to INUSE immediately. The loan starts from the moment it is made.
-    // Check the session user's group (who is creating the loan), not the target user's group
-    const loanStatus = session.user.group === 'KIOSK' ? 'INUSE' : 'ACCEPTED';
-    const reservationStatus: ReservationStatus =
-      session.user.group === 'KIOSK' ? ReservationStatus.INUSE : ReservationStatus.ACCEPTED;
+    // A loan made at the kaluston kone is one somebody is walking away with, so
+    // it starts INUSE rather than waiting to be marked picked up. What matters is
+    // the machine it was made on — the session creating the loan, not the target
+    // user's group — and that covers an admin PIN-elevated on the kiosk too: the
+    // gear leaves the store room either way.
+    //
+    // Except when the start time says otherwise. An elevated admin can book a
+    // later date from the kiosk, and nothing that starts next week is in use
+    // today; those wait for `cron/startDueLoans` like any other reservation.
+    const startedAtKiosk = isKioskMachine(session.user) && loanStartsNow(startTime);
+    const loanStatus = startedAtKiosk ? 'INUSE' : 'ACCEPTED';
+    const reservationStatus: ReservationStatus = startedAtKiosk
+      ? ReservationStatus.INUSE
+      : ReservationStatus.ACCEPTED;
 
     // Ensure referenced items exist; for custom items (client-generated ids)
     // create temporary Item records and replace itemId accordingly.
@@ -151,7 +161,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (loanStatus === 'INUSE' && session.user.group === 'KIOSK') {
+    if (startedAtKiosk) {
       // Kiosk loans are attributed to whoever the operator picked in the
       // "Lainaaja" field. When that's a real user account (not a free-text name,
       // which falls back to the kiosk's own account), the loan lands in their

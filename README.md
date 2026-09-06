@@ -474,6 +474,13 @@ the bounce to `/login` in the first place.
 
 Admins can elevate a kiosk session to ADMIN temporarily via a 4-digit PIN (set in `/admin`). The elevated session auto-expires after 30 minutes.
 
+Elevating adds admin powers to the kiosk; it does not turn the wall screen into
+a personal browser. The loan flow stays kiosk-style throughout — the Lainaaja is
+asked for up front and may be any account *or* a free-typed name, the loan
+starts in use immediately, and the basket is emptied for the next person the
+moment it is sent. An elevated admin additionally gets "Tee varaus toiselle
+päivälle", the one thing the kiosk flow can't do on its own.
+
 ### Google Workspace user sync
 
 The troop's roster lives in Google Workspace, so Klapi follows it rather than

@@ -25,6 +25,7 @@ import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { isCustomItemId } from '@/utils/customItems';
+import { isKioskMachine } from '@/utils/kioskSession';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +55,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const { availabilities } = useAvailabilities();
 
   const isAdmin = session?.user?.group === 'ADMIN';
-  const isKiosk = session?.user?.group === 'KIOSK';
+  // The kaluston kone, whether or not an admin is currently elevated on it:
+  // whoever is standing there is lending to the person in front of them, not to
+  // themselves. See `utils/kioskSession.ts`.
+  const isKiosk = isKioskMachine(session?.user);
 
   const hasInitializedLoaner = useRef(false);
   const [localDescription, setLocalDescription] = useState(cart.description);

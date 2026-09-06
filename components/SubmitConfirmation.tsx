@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { useInBoxItems } from '@/hooks/useInBoxItems';
 import { isCustomItemId } from '@/utils/customItems';
+import { isKioskMachine } from '@/utils/kioskSession';
 
 export default function SubmitConfirmation({
   isOpen,
@@ -90,7 +91,9 @@ export default function SubmitConfirmation({
           : 'Laina rekisteröitiin onnistuneesti.',
         duration: 9000,
       });
-      if (session?.user?.group === 'KIOSK') {
+      // On the kaluston kone the next person in the queue is already waiting:
+      // hand them an empty basket and the front page, not this loaner's account.
+      if (isKioskMachine(session?.user)) {
         resetCart();
         setDatesSet(false);
         router.push('/');

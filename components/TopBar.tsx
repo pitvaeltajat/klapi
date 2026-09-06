@@ -22,6 +22,7 @@ import {
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { CountBadge } from '@/components/ui/count-badge';
 import { PitvaMark } from '@/components/PitvaLogo';
+import { isKioskMachine } from '@/utils/kioskSession';
 
 // "Eero Sahlberg" -> "ES", "Eero" -> "EE". Used to label the elevated admin
 // in the top bar without showing their full name on a shared kiosk screen.
@@ -59,10 +60,10 @@ export default function TopBar({ children }: { children: ReactNode }) {
    *
    * `group` flips to ADMIN while an admin is elevated, so checking it alone
    * would put the link back on the kiosk for those fifteen minutes;
-   * `adminExpiry` is what marks that as a temporary elevation on top of a kiosk
-   * rather than a real admin login. Same pair the admin switch below tests.
+   * `isKioskMachine` is what tells a temporary elevation on top of a kiosk
+   * apart from a real admin login. Same test the admin switch below uses.
    */
-  const isKiosk = role === 'KIOSK' || (role === 'ADMIN' && !!session?.user?.adminExpiry);
+  const isKiosk = isKioskMachine(session?.user);
   const adminInitials = getInitials(session?.user?.elevatedByName);
   const [adminSwitchLoading, setAdminSwitchLoading] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -270,7 +271,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   ← ATK
                 </a>
               )}
-              {session && (role === 'KIOSK' || (role === 'ADMIN' && session.user.adminExpiry)) && (
+              {session && isKiosk && (
                 <div className="ml-4 flex items-center gap-2">
                   <span className="text-sm">
                     {effectiveGroup === 'ADMIN' && adminInitials
