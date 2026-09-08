@@ -6,6 +6,9 @@ import {
   getLoanStatusColor,
   getReservationStatusLabel,
   getReservationStatusColor,
+  MANUAL_LOAN_STATUSES,
+  isManualLoanStatus,
+  type ManualLoanStatus,
 } from '../utils/loanHelpers';
 
 describe('deriveLoanStatus', () => {
@@ -173,5 +176,23 @@ describe('getReservationStatusColor', () => {
     expect(getReservationStatusColor(ReservationStatus.INUSE)).toBe('default');
     expect(getReservationStatusColor(ReservationStatus.IN_BOX)).toBe('secondary');
     expect(getReservationStatusColor(ReservationStatus.RETURNED)).toBe('gray');
+  });
+});
+
+describe('MANUAL_LOAN_STATUSES', () => {
+  // The map is what an admin's hand-set status flattens every reservation to.
+  // If it ever disagrees with deriveLoanStatus, the loan page would show a
+  // different status than the one the admin just picked.
+  it('round-trips through deriveLoanStatus', () => {
+    for (const [loanStatus, reservationStatus] of Object.entries(MANUAL_LOAN_STATUSES)) {
+      const lines = [{ status: reservationStatus }, { status: reservationStatus }];
+      expect(deriveLoanStatus(lines, loanStatus as ManualLoanStatus)).toBe(loanStatus);
+    }
+  });
+
+  it('excludes the derived PARTIALLY_RETURNED status', () => {
+    expect(isManualLoanStatus(LoanStatus.PARTIALLY_RETURNED)).toBe(false);
+    expect(isManualLoanStatus(LoanStatus.ACCEPTED)).toBe(true);
+    expect(isManualLoanStatus('NOPE')).toBe(false);
   });
 });

@@ -11,7 +11,12 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import CustomItemDialog from '@/components/CustomItemDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loan, Item, User, Reservation, ReservationStatus, LoanStatus } from '@prisma/client';
-import { deriveLoanStatus } from '@/utils/loanHelpers';
+import {
+  deriveLoanStatus,
+  getLoanStatusLabel,
+  MANUAL_LOAN_STATUSES,
+  type ManualLoanStatus,
+} from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -43,6 +48,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
   const [selectedItem, setSelectedItem] = useState(items[0]?.id || '');
   const [selectedItemAmount, setSelectedItemAmount] = useState(0);
   const [reservations, setReservations] = useState(loan.reservations);
+  const [status, setStatus] = useState(deriveLoanStatus(loan.reservations, loan.status));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
 
@@ -139,6 +145,11 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
     loan.reservations.map((r) => ({ status: r.status as ReservationStatus })),
     loan.status as LoanStatus,
   );
+  // PARTIALLY_RETURNED has no single reservation status behind it, so it can
+  // neither be picked nor flattened — the card is hidden for such a loan.
+  const canSetStatus = isAdmin && derivedStatus !== 'PARTIALLY_RETURNED';
+  const isStatusModified = status !== derivedStatus;
+
   const statusAllowsEdit =
     derivedStatus !== 'INUSE' &&
     derivedStatus !== 'IN_BOX' &&
@@ -165,6 +176,7 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
             // temporary item from.
             ...(isCustomItemId(r.item.id) ? { name: r.item.name } : {}),
           })),
+          ...(canSetStatus && isStatusModified ? { status } : {}),
         }),
       });
 
@@ -287,6 +299,43 @@ export default function EditLoanView({ loan, items }: { loan: LoanWithRelations;
             </div>
           </div>
         </Card>
+
+        {canSetStatus && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle>Tila</CardTitle>
+                {isStatusModified && <Badge variant="warning">Muokattu</Badge>}
+              </div>
+              <Button
+                aria-label="Palauta alkuperäinen"
+                size="icon-sm"
+                variant="ghost"
+                onClick={() => setStatus(derivedStatus)}
+                disabled={!isStatusModified}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <NativeSelect
+              className={cn(dirty(isStatusModified))}
+              value={status}
+              onChange={(e) => setStatus(e.target.value as ManualLoanStatus)}
+            >
+              {Object.keys(MANUAL_LOAN_STATUSES).map((s) => (
+                <option key={s} value={s}>
+                  {getLoanStatusLabel(s as ManualLoanStatus)}
+                </option>
+              ))}
+            </NativeSelect>
+            {isStatusModified && (
+              <Alert variant="warning" className="mt-3">
+                Kaikkien kamojen tila asetetaan lainan uuden tilan mukaiseksi. Saatavuus
+                tarkistetaan silti — jos kamat eivät ole vapaana, tallennus estetään.
+              </Alert>
+            )}
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

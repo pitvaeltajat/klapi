@@ -213,3 +213,24 @@ export const deriveLoanStatus = (
 
   return loanStatus;
 };
+
+/**
+ * The statuses an admin may set on a loan by hand (`loan/updateLoan`), and the
+ * reservation status every line of the loan takes when they do.
+ *
+ * PARTIALLY_RETURNED is absent on purpose: it is *derived* from a mix of
+ * reservation statuses, so there is no single value to flatten the lines to.
+ */
+export const MANUAL_LOAN_STATUSES = {
+  [LoanStatus.ACCEPTED]: ReservationStatus.ACCEPTED,
+  [LoanStatus.REJECTED]: ReservationStatus.REJECTED,
+  [LoanStatus.CANCELLED]: ReservationStatus.REJECTED,
+  [LoanStatus.INUSE]: ReservationStatus.INUSE,
+  [LoanStatus.IN_BOX]: ReservationStatus.IN_BOX,
+  [LoanStatus.RETURNED]: ReservationStatus.RETURNED,
+} as const;
+
+export type ManualLoanStatus = keyof typeof MANUAL_LOAN_STATUSES;
+
+export const isManualLoanStatus = (value: unknown): value is ManualLoanStatus =>
+  typeof value === 'string' && value in MANUAL_LOAN_STATUSES;

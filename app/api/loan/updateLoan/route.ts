@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { activeItemsWhere } from '@/utils/itemQueries';
-import { ReservationStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
+import { MANUAL_LOAN_STATUSES, isManualLoanStatus } from '@/utils/loanHelpers';
 import { requireUser } from '@/utils/apiAuth';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 import { activeLoansWhere } from '@/utils/loanQueries';
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     const { session, denied } = await requireUser();
     if (denied) return denied;
 
-    const { id, reservations, startTime, endTime, description } = await request.json();
+    const { id, reservations, startTime, endTime, description, status } = await request.json();
 
     // Check that user is admin or owns this loan
     const existingLoan = await prisma.loan.findUnique({
@@ -47,6 +48,23 @@ export async function POST(request: Request) {
 
     if (!isAdmin && !isKiosk && !isOwner) {
       return NextResponse.json({ message: 'Sinulla ei ole oikeutta muokata tätä lainaa' }, { status: 403 });
+    }
+
+    // An admin may set the loan's status by hand (e.g. an item handed back
+    // early: käytössä → hyväksytty). Everything else about the edit — the
+    // availability/overlap check below included — still applies.
+    let manualStatus: keyof typeof MANUAL_LOAN_STATUSES | undefined;
+    if (status !== undefined && status !== null) {
+      if (!isAdmin) {
+        return NextResponse.json(
+          { message: 'Vain ylläpitäjä voi vaihtaa lainan tilaa' },
+          { status: 403 },
+        );
+      }
+      if (!isManualLoanStatus(status)) {
+        return NextResponse.json({ message: `Tuntematon tila: ${status}` }, { status: 400 });
+      }
+      manualStatus = status;
     }
 
     // Non-admin owners can only edit before the loan has started.
@@ -185,12 +203,14 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Determine the status for new reservations
-    // If any existing reservation is INUSE, new ones should be INUSE too
-    // Otherwise, use ACCEPTED as default
+    // Determine the status for new reservations.
+    // An admin-set loan status wins and is flattened onto every line; otherwise
+    // if any existing reservation is INUSE, new ones should be INUSE too, and
+    // ACCEPTED is the default.
     const existingStatus = existingLoan.reservations[0]?.status || ReservationStatus.ACCEPTED;
-    const reservationStatus =
-      existingStatus === ReservationStatus.INUSE
+    const reservationStatus = manualStatus
+      ? MANUAL_LOAN_STATUSES[manualStatus]
+      : existingStatus === ReservationStatus.INUSE
         ? ReservationStatus.INUSE
         : ReservationStatus.ACCEPTED;
 
@@ -256,6 +276,14 @@ export async function POST(request: Request) {
         startTime: startTime,
         endTime: endTime,
         description: description,
+        // Only a loan sitting in a box keeps its box; any other manual status
+        // means the kamat are no longer there, so the box is freed.
+        ...(manualStatus
+          ? {
+              status: manualStatus,
+              ...(manualStatus === LoanStatus.IN_BOX ? {} : { boxId: null }),
+            }
+          : {}),
       },
     });
 
@@ -271,6 +299,8 @@ export async function POST(request: Request) {
         }
       : undefined;
 
+    const statusChanged = manualStatus !== undefined && manualStatus !== existingLoan.status;
+
     await logLoanHistory({
       loanId: id,
       action: 'UPDATED',
@@ -280,6 +310,7 @@ export async function POST(request: Request) {
         changed: changedItems,
         removed: removedItems,
         ...(dates ? { dates } : {}),
+        ...(statusChanged ? { status: { from: existingLoan.status, to: manualStatus } } : {}),
       },
     });
 

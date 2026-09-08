@@ -157,7 +157,7 @@ passed, so a rejected edit leaves no orphan items behind.
 | Route | Method | Purpose |
 |---|---|---|
 | `submitLoan` | POST | create a loan (+ temporary items); logs `CREATED` |
-| `updateLoan` | POST | edit reservations/details (+ temporary items); logs `UPDATED` diff |
+| `updateLoan` | POST | edit reservations/details (+ temporary items); logs `UPDATED` diff. An **admin** may also pass `status` to set the loan's status by hand (`MANUAL_LOAN_STATUSES` in `utils/loanHelpers.ts` — every status but the derived `PARTIALLY_RETURNED`); it is flattened onto every reservation, frees the box unless it is `IN_BOX`, and still goes through the availability/overlap check |
 | `approveLoan` / `rejectLoan` / `cancelLoan` | POST | status transitions |
 | `deleteLoan` / `restoreLoan` | POST | soft-delete a loan / undo it (admin only); log `DELETED` / `RESTORED` |
 | `startLoan` | POST | mark in use |
