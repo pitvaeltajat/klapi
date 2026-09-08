@@ -263,7 +263,6 @@ export default function ItemView({
               onSave={(next) => patchField('name', next)}
             />
           }
-          actionsAlign="inline"
           actions={
             isAdmin && (
               <>

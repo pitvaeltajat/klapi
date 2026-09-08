@@ -314,8 +314,8 @@ export default function LoanView({
         ]}
       />
       <div className="flex flex-col gap-6">
-        {/* The status is what you check the page for, so it sits in the page's
-            top-right corner rather than buried at the bottom of Perustiedot. */}
+        {/* The status is what you check the page for, so it sits right under the
+            title rather than buried at the bottom of Perustiedot. */}
         <PageHeader
           className="mb-0"
           title={`Laina: ${loan.description || 'Ei kuvausta'}`}

@@ -93,6 +93,10 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   const filteredLoans = loans.filter((loan) => {
     if (Boolean(loan.deletedAt) !== showDeleted) return false;
     if (!matchesSearch(loan)) return false;
+    // A search is a lookup, not another filter: "missä sirkkeli on" has to find
+    // the loan even when its status chip is unticked, or the answer is an empty
+    // list and no hint why.
+    if (needle) return true;
     if (selectedStatuses.size === 0) return true;
     const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
     if (selectedStatuses.has(derivedStatus)) return true;
@@ -114,7 +118,6 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
         <PageHeader
           className="mb-0"
           title="Lainat"
-          actionsAlign="inline"
           actions={
             <>
               <SearchInput
