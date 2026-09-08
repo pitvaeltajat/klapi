@@ -8,6 +8,7 @@ export const initialDatesState: DatesState = {
   datesSet: false,
   selectedUserId: null,
   browseMode: false,
+  planAhead: false,
 };
 
 export type DatesAction =
@@ -16,6 +17,7 @@ export type DatesAction =
   | { type: 'SET_DATES_SET'; payload: boolean }
   | { type: 'SET_SELECTED_USER_ID'; payload: string | null }
   | { type: 'SET_BROWSE_MODE'; payload: boolean }
+  | { type: 'SET_PLAN_AHEAD'; payload: boolean }
   | { type: 'RESTORE_DATES'; payload: DatesState };
 
 export function datesReducer(state: DatesState, action: DatesAction): DatesState {
@@ -25,11 +27,19 @@ export function datesReducer(state: DatesState, action: DatesAction): DatesState
     case 'SET_END_DATE':
       return { ...state, endDate: action.payload };
     case 'SET_DATES_SET':
-      return { ...state, datesSet: action.payload };
+      // Clearing the dates is what "start over" means on the kaluston kone: the
+      // post-submit reset and the cart's "Nollaa päivät" both go through here.
+      // `planAhead` has to come down with them, or the next person at the wall
+      // screen inherits the previous one's date picker instead of the welcome
+      // screen — and a visitor who tapped "Tee varaus toiselle päivälle" by
+      // mistake would have no way back to it.
+      return { ...state, datesSet: action.payload, planAhead: action.payload && state.planAhead };
     case 'SET_SELECTED_USER_ID':
       return { ...state, selectedUserId: action.payload };
     case 'SET_BROWSE_MODE':
       return { ...state, browseMode: action.payload };
+    case 'SET_PLAN_AHEAD':
+      return { ...state, planAhead: action.payload };
     case 'RESTORE_DATES':
       return { ...initialDatesState, ...action.payload };
     default:
@@ -44,6 +54,7 @@ type DatesContextType = {
   setDatesSet: (set: boolean) => void;
   setSelectedUserId: (id: string | null) => void;
   setBrowseMode: (browse: boolean) => void;
+  setPlanAhead: (plan: boolean) => void;
 };
 
 const DatesContext = createContext<DatesContextType | undefined>(undefined);
@@ -84,6 +95,7 @@ export function DatesProvider({ children }: { children: React.ReactNode }) {
     setSelectedUserId: (id: string | null) =>
       dispatch({ type: 'SET_SELECTED_USER_ID', payload: id }),
     setBrowseMode: (browse: boolean) => dispatch({ type: 'SET_BROWSE_MODE', payload: browse }),
+    setPlanAhead: (plan: boolean) => dispatch({ type: 'SET_PLAN_AHEAD', payload: plan }),
   };
 
   return <DatesContext.Provider value={value}>{children}</DatesContext.Provider>;

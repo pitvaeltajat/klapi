@@ -34,9 +34,10 @@ export async function POST(request: Request) {
     // user's group — and that covers an admin PIN-elevated on the kiosk too: the
     // gear leaves the store room either way.
     //
-    // Except when the start time says otherwise. An elevated admin can book a
-    // later date from the kiosk, and nothing that starts next week is in use
-    // today; those wait for `cron/startDueLoans` like any other reservation.
+    // Except when the start time says otherwise. The kiosk's "Tee varaus
+    // toiselle päivälle" leads to the ordinary date picker, and nothing that
+    // starts next week is in use today; those wait for `cron/startDueLoans`
+    // like any other reservation.
     const startedAtKiosk = isKioskMachine(session.user) && loanStartsNow(startTime);
     const loanStatus = startedAtKiosk ? 'INUSE' : 'ACCEPTED';
     const reservationStatus: ReservationStatus = startedAtKiosk

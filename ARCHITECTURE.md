@@ -93,7 +93,17 @@ matters rather than the privilege: the whole loan flow (the kiosk mode/date
 selectors, the cart's Lainaaja field and free-text loaner, the cart reset after
 submitting, and `submitLoan` creating the loan already INUSE) branches on it, as
 does the TopBar's kiosk chrome. `resolveLoanActor` and `/account` read
-`elevatedById` directly for the same reason. The Auth.js config + the credentials
+`elevatedById` directly for the same reason.
+
+The kiosk flow's default is "starts now", but it is not the only thing the wall
+screen can do: **"Tee varaus toiselle päivälle"** on the welcome screen sets
+`DatesState.planAhead` and hands the visitor the ordinary date picker, so a
+booking for next weekend can be made at the kiosk like anywhere else
+(`submitLoan` leaves anything not starting now as a plain ACCEPTED reservation —
+`loanStartsNow`). It is a detour, not a mode: `datesReducer` clears `planAhead`
+whenever `datesSet` goes false, which is what both the post-submit kiosk reset
+and the cart's "Nollaa päivät" do — so the next person at the screen always
+starts on the kiosk flow. The Auth.js config + the credentials
 provider live in `lib/auth.ts`, which also exports `auth()` — v5's replacement
 for `getServerSession(authOptions)`, taking no arguments because it reads the
 request out of `next/headers` itself.
@@ -184,7 +194,7 @@ route refuses one (404/409).
 `submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when it is made
 at the kaluston kone — `isKioskMachine`, so an elevated admin counts — *and*
 starts now; a booking for a later date stays a reservation whatever machine it
-was made on) — there is no approval queue. `approveLoan` therefore only
+was made on — that is what "Tee varaus toiselle päivälle" makes) — there is no approval queue. `approveLoan` therefore only
 exists to bring a rejected loan back, which is why the "Hyväksy" button is
 hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 

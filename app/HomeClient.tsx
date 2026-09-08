@@ -107,7 +107,8 @@ function WithCatalogue({
 }
 
 export default function HomeClient({ cataloguePromise }: HomeClientProps) {
-  const { state: dates, setBrowseMode, setStartDate, setEndDate, setDatesSet } = useDates();
+  const { state: dates, setBrowseMode, setStartDate, setEndDate, setDatesSet, setPlanAhead } =
+    useDates();
   const { data: session } = useSession();
 
   // The kaluston kone gets the kiosk flow even while an admin is elevated on
@@ -117,15 +118,14 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   // table is untouched by this.
   const onKioskMachine = isKioskMachine(session?.user);
   const isAdmin = session?.user?.group === 'ADMIN';
-  const isElevatedAdmin = isAdmin && onKioskMachine;
 
-  // The one thing the kiosk flow cannot do is book a *later* date, and an
-  // elevated admin could before. This drops them into the ordinary date picker,
-  // and only for as long as they stay elevated: the moment the PIN lapses (or
-  // they flip the switch back) the wall screen is a kiosk again, so the next
-  // person in the queue can't inherit the admin's date picker.
-  const [planAhead, setPlanAhead] = useState(false);
-  const isKioskMode = onKioskMachine && !(planAhead && isElevatedAdmin);
+  // The kiosk flow always starts the loan now, so booking a *later* date needs
+  // its own way in — the "Tee varaus toiselle päivälle" button on the welcome
+  // screen, which drops into the ordinary date picker. It is a detour from the
+  // default path, not a mode: clearing the dates (submitting, or "Nollaa
+  // päivät") ends it and the wall screen is a kiosk again, so the next person
+  // in the queue can't inherit the previous one's picker. See `datesReducer`.
+  const isKioskMode = onKioskMachine && !dates.planAhead;
 
   const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('table');
   const [createOpen, setCreateOpen] = useState(false);
@@ -180,16 +180,7 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
       ) : isKioskMode ? (
         <>
           {!dates.datesSet ? (
-            <KioskModeSelector
-              onPlanAhead={
-                isElevatedAdmin
-                  ? () => {
-                      setPlanAhead(true);
-                      setDatesSet(false);
-                    }
-                  : undefined
-              }
-            />
+            <KioskModeSelector onPlanAhead={() => setPlanAhead(true)} />
           ) : (
             <>
               <KioskDateSelector />

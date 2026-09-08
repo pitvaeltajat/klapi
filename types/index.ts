@@ -28,6 +28,12 @@ export interface DatesState {
   datesSet: boolean;
   selectedUserId: string | null;
   browseMode: boolean;
+  /**
+   * Kiosk only: the visitor asked for the ordinary date picker instead of the
+   * "starts now" flow. Lasts exactly as long as the date selection it belongs
+   * to — see `datesReducer`.
+   */
+  planAhead: boolean;
 }
 
 export interface CartItem {
