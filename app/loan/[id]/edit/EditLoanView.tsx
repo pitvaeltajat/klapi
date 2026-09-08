@@ -261,10 +261,9 @@ export default function EditLoanView({
         />
 
         {loanStarted && isAdmin && (
-          <Alert variant="warning" title="Tämä laina on jo käynnissä">
-            Nouto on tapahtunut, joten sitä ei voi enää siirtää — palautuspäivää voit muuttaa.
-            Saatavuus tarkistetaan muiden lainojen suhteen, joten päällekkäinen jatko estetään
-            tallennuksessa.
+          <Alert variant="warning" title="Noutoaika on jo mennyt">
+            Noutoa ei voi enää siirtää — palautuspäivää voit muuttaa. Saatavuus tarkistetaan
+            muiden lainojen suhteen, joten päällekkäinen jatko estetään tallennuksessa.
           </Alert>
         )}
 
@@ -327,7 +326,7 @@ export default function EditLoanView({
           {loanStarted ? (
             <>
               <dl className="mb-3 flex flex-wrap items-baseline gap-x-2 text-sm sm:text-base">
-                <dt className="text-muted-foreground">Noudettu</dt>
+                <dt className="text-muted-foreground">Nouto</dt>
                 <dd className="font-medium">
                   <DateTime value={loan.startTime} format="klo" />
                 </dd>
@@ -391,7 +390,7 @@ export default function EditLoanView({
           {rows.length === 0 ? (
             <EmptyState variant="inline" title="Ei kamoja" />
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
               {rows.map((row) => {
                 const original = originalAmounts.get(row.itemId);
                 const max = headroom(row.itemId);
@@ -483,7 +482,7 @@ export default function EditLoanView({
         <Button
           variant="success"
           size="lg"
-          className="w-full md:w-auto"
+          className="w-full md:w-auto md:self-start"
           disabled={!isDirty || overBooked.length > 0 || !startDate || !endDate}
           onClick={() => setConfirmOpen(true)}
         >
