@@ -299,10 +299,10 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
 | `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
 | `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
-| `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list (status chips + admin-only "Poistetut" archive) / detail (+ history, admin delete & restore) / edit |
+| `/admin/editLoan/[id]` | permanent redirect to `/loan/[id]/edit` (kept for old links) |
+| `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list (status chips + admin-only "Poistetut" archive) / detail (+ history, admin delete & restore) / **the one** edit page — admin and loaner alike, with the admin extras (loan id, the Tila picker, editing a running loan) gated inside it on `isAdmin`. Gated server-side, before the loan is queried |
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
-| `/admin/editLoan/[id]` | admin loan edit |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
 | `/kiosk/startloan` | kiosk pickup queue |

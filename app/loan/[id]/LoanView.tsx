@@ -484,7 +484,7 @@ export default function LoanView({
                   )}
                   {canEdit && (
                     <Button asChild variant="warning" className="flex-1 md:max-w-[25%]">
-                      <NextLink href={isAdmin ? `/admin/editLoan/${loan.id}` : `/loan/${loan.id}/edit`}>
+                      <NextLink href={`/loan/${loan.id}/edit`}>
                         Muokkaa
                       </NextLink>
                     </Button>
@@ -587,7 +587,7 @@ export default function LoanView({
           open={cancelOpen}
           onOpenChange={setCancelOpen}
           title="Perutaanko laina?"
-          description="Laina perutaan ja varatut tavarat vapautuvat muille. Et voi enää noutaa tavaroita tällä varauksella. Oletko varma?"
+          description="Laina perutaan ja varatut tavarat vapautuvat muille. Et voi enää noutaa tavaroita tällä lainalla. Oletko varma?"
           confirmLabel="Peru laina"
           cancelLabel="Älä peru"
           onConfirm={cancelLoan}
