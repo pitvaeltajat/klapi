@@ -9,6 +9,8 @@ import {
   MANUAL_LOAN_STATUSES,
   isManualLoanStatus,
   getLoanerName,
+  getLoanCreator,
+  type LoanCreatorEntry,
   type ManualLoanStatus,
 } from '../utils/loanHelpers';
 
@@ -219,5 +221,59 @@ describe('getLoanerName', () => {
       'Tuntematon lainaaja',
     );
     expect(getLoanerName({})).toBe('Tuntematon lainaaja');
+  });
+});
+
+describe('getLoanCreator', () => {
+  const OWNER = 'user-owner';
+  const created = (
+    actedBy: LoanCreatorEntry['actedBy'],
+    details: unknown = null,
+  ): LoanCreatorEntry[] => [
+    { action: 'UPDATED', details: null, actedBy: null },
+    { action: 'CREATED', details, actedBy },
+  ];
+
+  const admin = { id: 'admin-1', name: 'Eero S', email: 'e@x.fi', group: 'ADMIN' };
+  const kiosk = { id: 'kiosk-1', name: 'Kiosk User', email: null, group: 'KIOSK' };
+  const owner = { id: OWNER, name: 'Matti V', email: 'm@x.fi', group: 'USER' };
+
+  it('says nothing when you made your own loan', () => {
+    expect(getLoanCreator(created(owner), OWNER)).toBeNull();
+  });
+
+  it('names the machine, not its account, for a plain kiosk loan', () => {
+    // "Kiosk User" is a machine with a login, and reads like a person.
+    expect(getLoanCreator(created(kiosk), OWNER)).toEqual({ name: null, viaKiosk: true });
+  });
+
+  it('names the admin behind a PIN elevation, and where they were', () => {
+    // resolveLoanActor already unwrapped the elevation into the admin id.
+    expect(getLoanCreator(created(admin, { viaKiosk: true }), OWNER)).toEqual({
+      name: 'Eero S',
+      viaKiosk: true,
+    });
+  });
+
+  it('names an admin who entered the loan on their own machine', () => {
+    expect(getLoanCreator(created(admin), OWNER)).toEqual({ name: 'Eero S', viaKiosk: false });
+  });
+
+  it('falls back to an email when the actor has no name', () => {
+    const nameless = { id: 'admin-2', name: null, email: 'a@x.fi', group: 'ADMIN' };
+    expect(getLoanCreator(created(nameless), OWNER)?.name).toBe('a@x.fi');
+  });
+
+  it('says nothing for a loan with no CREATED entry', () => {
+    // Loans predating the history table, and any future action-only sweep.
+    expect(getLoanCreator([{ action: 'STARTED', details: null, actedBy: admin }], OWNER)).toBeNull();
+  });
+
+  it('still reports the kiosk when the actor was not recorded', () => {
+    expect(getLoanCreator(created(null, { viaKiosk: true }), OWNER)).toEqual({
+      name: null,
+      viaKiosk: true,
+    });
+    expect(getLoanCreator(created(null), OWNER)).toBeNull();
   });
 });

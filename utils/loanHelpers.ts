@@ -78,6 +78,48 @@ export const getLoanerName = (loan: {
 }): string =>
   loan.loaner?.trim() || loan.user?.name || loan.user?.email || 'Tuntematon lainaaja';
 
+/**
+ * Who actually entered a loan, when that is not simply its owner.
+ *
+ * A loan made at the kaluston kone belongs to whoever the operator named in the
+ * Lainaaja field, so a page can always say *whose* loan it is — but not who was
+ * standing at the machine. That only exists on the CREATED history entry, where
+ * `resolveLoanActor` has already unwrapped a PIN elevation into the admin
+ * behind it. Surfacing it saves opening the history to answer "who booked this
+ * for me?".
+ *
+ * Returns null for the ordinary case: you made your own loan.
+ */
+export interface LoanCreatorEntry {
+  action: LoanHistoryAction;
+  details: unknown;
+  actedBy: { id: string; name: string | null; email: string | null; group?: string } | null;
+}
+
+export const hasDetailFlag = (details: unknown, key: string): boolean =>
+  typeof details === 'object' &&
+  details !== null &&
+  key in details &&
+  (details as Record<string, unknown>)[key] === true;
+
+export function getLoanCreator(
+  history: LoanCreatorEntry[],
+  ownerId: string,
+): { name: string | null; viaKiosk: boolean } | null {
+  const created = history.find((entry) => entry.action === 'CREATED');
+  if (!created) return null;
+
+  const viaKiosk = hasDetailFlag(created.details, 'viaKiosk');
+  const actor = created.actedBy;
+
+  // The kiosk's own account is a machine, not a person — name the machine.
+  if (actor?.group === 'KIOSK') return { name: null, viaKiosk: true };
+  if (!actor) return viaKiosk ? { name: null, viaKiosk: true } : null;
+  if (actor.id === ownerId && !viaKiosk) return null;
+
+  return { name: actor.name || actor.email, viaKiosk };
+}
+
 export type BadgeVariant =
   | 'default'
   | 'secondary'

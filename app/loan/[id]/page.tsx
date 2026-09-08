@@ -46,7 +46,10 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
       where: { loanId: id },
       orderBy: { createdAt: 'desc' },
       include: {
-        actedBy: { select: { id: true, name: true, email: true } },
+        // `group` is what lets the page tell the kaluston kone's own account
+        // apart from a person, so a loan booked there reads "kaluston koneella"
+        // rather than "Kiosk User".
+        actedBy: { select: { id: true, name: true, email: true, group: true } },
       },
     }),
   ]);

@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import NotAuthenticated from '@/components/NotAuthenticated';
 import NextLink from 'next/link';
-import { CalendarRange, Inbox, MoveRight, UserRound } from 'lucide-react';
+import { CalendarRange, Inbox, MoveRight, PenLine, UserRound } from 'lucide-react';
 import LoanItemList from '@/components/LoanItemList';
 import LoanNotices from '@/components/LoanNotices';
 import { type NoticeReport } from '@/components/HandleNoticeDialog';
@@ -27,6 +27,8 @@ import {
   deriveLoanStatus,
   getLoanHistoryActionLabel,
   getLoanerName,
+  getLoanCreator,
+  hasDetailFlag,
 } from '@/utils/loanHelpers';
 import { LoanHistoryAction } from '@prisma/client';
 import { templateDraftItemsFromLoan } from '@/utils/templateDraft';
@@ -53,7 +55,12 @@ interface HistoryEntry {
   action: LoanHistoryAction;
   createdAt: Date | string;
   details: unknown;
-  actedBy: { id: string; name: string | null; email: string | null } | null;
+  actedBy: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    group?: 'ADMIN' | 'USER' | 'KIOSK';
+  } | null;
 }
 
 export default function LoanView({
@@ -294,6 +301,8 @@ export default function LoanView({
   // to read their own back. Admins see them on every loan; a kiosk session is a
   // shared terminal, so it doesn't.
   const canSeeNotices = (isAdmin || isOwner) && reports.length > 0;
+
+  const creator = getLoanCreator(history, loan.user.id);
   const unresolvedReports = reports.filter((r) => r.status !== 'RESOLVED').length;
 
   return (
@@ -376,6 +385,20 @@ export default function LoanView({
                 )}
               </dd>
             </div>
+            {creator && (
+              <div className="flex items-center gap-3">
+                <dt className="shrink-0 text-muted-foreground">
+                  <PenLine aria-hidden className="h-5 w-5" />
+                  <span className="sr-only">Lainan kirjasi</span>
+                </dt>
+                <dd className="flex flex-wrap items-baseline gap-x-2 text-muted-foreground">
+                  {creator.name ?? 'Kaluston kone'}
+                  {creator.name && creator.viaKiosk && (
+                    <span className="text-sm">kaluston koneella</span>
+                  )}
+                </dd>
+              </div>
+            )}
             {loan.box && (
               <div className="flex items-center gap-3">
                 <dt className="shrink-0 text-muted-foreground">
@@ -541,16 +564,8 @@ export default function LoanView({
             <div className="flex flex-col gap-3">
               {history.map((entry) => {
                 const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
-                const viaKiosk =
-                  typeof entry.details === 'object' &&
-                  entry.details !== null &&
-                  'viaKiosk' in entry.details &&
-                  (entry.details as { viaKiosk?: boolean }).viaKiosk === true;
-                const auto =
-                  typeof entry.details === 'object' &&
-                  entry.details !== null &&
-                  'auto' in entry.details &&
-                  (entry.details as { auto?: boolean }).auto === true;
+                const viaKiosk = hasDetailFlag(entry.details, 'viaKiosk');
+                const auto = hasDetailFlag(entry.details, 'auto');
                 return (
                   <Card key={entry.id} variant="inset" padding="sm">
                     <div className="flex flex-wrap items-start justify-between gap-2">
