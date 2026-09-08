@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useDates } from '@/contexts/DatesContext';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import LoanRangeCalendar from '@/components/LoanRangeCalendar';
@@ -12,7 +11,7 @@ import type { DateRange } from '@/utils/dateRange';
 // this out for the catalogue (ItemBrowser) with a compact DateSummaryBar; this
 // component is only mounted while no range has been chosen yet.
 export default function DateSelector() {
-  const { setStartDate, setEndDate, setDatesSet, setBrowseMode } = useDates();
+  const { setStartDate, setEndDate, setDatesSet } = useDates();
 
   const [dateRange, setDateRange] = useState<DateRange>([null, null]);
 
@@ -41,15 +40,15 @@ export default function DateSelector() {
 
       <Card padding="md">
         <Label size="section">Valitse lainausaika</Label>
+        {/* No "selaa katalogia" escape hatch here: the top bar's Kamat entry is
+            the way into browse mode, and a second door on the one screen whose
+            job is picking the dates only made that job look optional. */}
         <LoanRangeCalendar
           className="mt-2"
           value={dateRange}
           onChange={handleRangeChange}
           minDate={new Date()}
         />
-        <Button variant="outline" className="mt-4 w-full" onClick={() => setBrowseMode(true)}>
-          Selaa katalogia ilman lainaa
-        </Button>
       </Card>
     </div>
   );
