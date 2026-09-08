@@ -26,6 +26,14 @@ pnpm prisma migrate deploy
 pnpm prisma db seed
 ```
 
+Add `ENABLE_DEV_LOGIN="true"` to `.env.local` if you want the password-free
+sign-in on `/login` (one-click ylläpitäjä / kioski / jäsen, plus a field for any
+other username or email). It is how you drive the app without typing the seeded
+passwords, and how an agent that may not type passwords into forms gets a
+signed-in page at all. `/login` doubles as the account switcher while it is on,
+so you can change roles without signing out. Both `NODE_ENV !== 'production'`
+and the flag must hold — see `utils/devLogin.ts`.
+
 If `pnpm dev` was started before the env files existed, **kill and restart it** —
 Next caches the env at boot and will keep failing with `ECONNREFUSED` / SASL errors
 even after the files appear.

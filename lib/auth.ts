@@ -3,6 +3,7 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import prisma from '@/utils/prisma';
 import bcrypt from 'bcrypt';
+import { DEV_LOGIN_PROVIDER_ID, isDevLoginEnabled } from '@/utils/devLogin';
 
 // Augmented on `@auth/core/jwt`, not `next-auth/jwt`. The latter is a bare
 // `export * from '@auth/core/jwt'` re-export, and TypeScript refuses to augment
@@ -112,6 +113,42 @@ async function verifyElevationPin(
   if (!(await bcrypt.compare(pin, admin.kioskElevatePin))) return null;
 
   return { id: admin.id, name: admin.name };
+}
+
+/**
+ * The local, password-free sign-in — see `utils/devLogin.ts` for the two
+ * conditions that gate it. Registered as its own provider id so the real
+ * `credentials` one keeps checking passwords exactly as before, and re-checks
+ * the gate inside `authorize`: registration happens once at module load, but
+ * minting a session is the thing that actually matters.
+ */
+const devLoginProvider = Credentials({
+  id: DEV_LOGIN_PROVIDER_ID,
+  name: 'Kehityskirjautuminen',
+  credentials: { username: { label: 'Username or email', type: 'text' } },
+  async authorize(credentials) {
+    if (!isDevLoginEnabled()) return null;
+
+    const { username } = credentials ?? {};
+    if (typeof username !== 'string' || !username.trim()) return null;
+    const identifier = username.trim();
+
+    // Username or email, because the seeded accounts have both and it is
+    // tedious to remember which is which.
+    const user = await prisma.user.findFirst({
+      where: { deletedAt: null, OR: [{ username: identifier }, { email: identifier }] },
+    });
+    if (!user) return null;
+
+    return { id: user.id, name: user.name, email: user.email, group: user.group };
+  },
+});
+
+if (isDevLoginEnabled()) {
+  console.warn(
+    '[klapi] Kehityskirjautuminen on päällä: kuka tahansa voi kirjautua ilman salasanaa. ' +
+      'ENABLE_DEV_LOGIN ei kuulu mihinkään julkaistuun ympäristöön.',
+  );
 }
 
 /**
@@ -242,6 +279,7 @@ export const authConfig: NextAuthConfig = {
         };
       },
     }),
+    ...(isDevLoginEnabled() ? [devLoginProvider] : []),
   ],
   callbacks: {
     async signIn({ user, account }) {
