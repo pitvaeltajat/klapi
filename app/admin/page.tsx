@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { PinInput } from '@/components/ui/pin-input';
+import { SearchInput } from '@/components/ui/search-input';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableBody,
@@ -119,10 +121,20 @@ export default function AdminPage() {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinValue, setPinValue] = useState('');
 
-  const sortedUsers = useMemo(
-    () => (users ? [...users].sort(compareUsers) : undefined),
-    [users],
-  );
+  const [userSearch, setUserSearch] = useState('');
+
+  const sortedUsers = useMemo(() => {
+    if (!users) return undefined;
+    const needle = userSearch.trim().toLowerCase();
+    const matching = needle
+      ? users.filter((user) =>
+          [user.name, user.email, user.username].some((value) =>
+            value?.toLowerCase().includes(needle),
+          ),
+        )
+      : users;
+    return [...matching].sort(compareUsers);
+  }, [users, userSearch]);
 
   if (session?.user?.group !== 'ADMIN') {
     return <NotAuthenticated />;
@@ -343,9 +355,26 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Käyttäjien hallinta</CardTitle>
-            <p className="text-sm text-muted-foreground">Yhteensä {users.length} käyttäjää</p>
+            <div>
+              <CardTitle>Käyttäjien hallinta</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {sortedUsers.length === users.length
+                  ? `Yhteensä ${users.length} käyttäjää`
+                  : `${sortedUsers.length} / ${users.length} käyttäjää`}
+              </p>
+            </div>
+            <SearchInput
+              value={userSearch}
+              onValueChange={setUserSearch}
+              placeholder="Hae käyttäjiä"
+              aria-label="Hae käyttäjiä"
+              className="w-full sm:w-56"
+            />
           </CardHeader>
+
+          {sortedUsers.length === 0 && (
+            <EmptyState variant="inline" title={`Ei osumia haulle "${userSearch.trim()}"`} />
+          )}
 
           {/* Mobile: stacked cards — the 5-column table does not fit a phone. */}
           <div className="flex flex-col gap-3 md:hidden">

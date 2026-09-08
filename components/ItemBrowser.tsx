@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Info, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Info, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
@@ -9,7 +9,7 @@ import CustomItemDialog from './CustomItemDialog';
 import CatalogueFilters, { type SortMode } from './CatalogueFilters';
 import FilterFlyout from './FilterFlyout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { CountBadge } from '@/components/ui/count-badge';
 import { useCart } from '@/contexts/CartContext';
@@ -87,10 +87,6 @@ export default function ItemBrowser({
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-  };
 
   const toggleCategory = (name: string) => {
     setCategoryFilter(({ selected, remembered }) => {
@@ -179,28 +175,14 @@ export default function ItemBrowser({
           {/* Search stays out here at every width; sort and categories live in
               the hover flyout on `lg`+ and in the "Suodata" sheet below it. */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:w-56 sm:flex-none">
-              <Input
-                ref={searchRef}
-                placeholder="Hae kamoja"
-                value={search}
-                onChange={handleChange}
-                onKeyDown={handleSearchKeyDown}
-                className="h-9 pr-9"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                {search ? (
-                  <X
-                    role="button"
-                    className="h-4 w-4 cursor-pointer"
-                    onClick={() => setSearch('')}
-                    aria-label="Tyhjennä haku"
-                  />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-              </div>
-            </div>
+            <SearchInput
+              ref={searchRef}
+              placeholder="Hae kamoja"
+              value={search}
+              onValueChange={setSearch}
+              onKeyDown={handleSearchKeyDown}
+              className="flex-1 sm:w-56 sm:flex-none"
+            />
             <Button
               variant="outline"
               size="sm"

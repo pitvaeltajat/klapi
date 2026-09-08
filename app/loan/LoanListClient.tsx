@@ -8,6 +8,7 @@ import LoanCard, { LoanType } from '@/components/LoanCard';
 import { getLoanStatusLabel, deriveLoanStatus } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/filter-chip';
+import { SearchInput } from '@/components/ui/search-input';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -33,6 +34,7 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
       LoanStatus.PARTIALLY_RETURNED,
     ]),
   );
+  const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Poistetut is an archive, not another status: it swaps the list over to the
   // soft-deleted loans rather than adding them to the live ones. Only an admin
@@ -73,8 +75,24 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
     setSelectedStatuses(newStatuses);
   };
 
+  // Description, borrower and the kamat themselves: "kuka on ottanut sirkkelin"
+  // is as common a question here as looking up a loan by name.
+  const needle = search.trim().toLowerCase();
+  const matchesSearch = (loan: LoanType) => {
+    if (!needle) return true;
+    const haystack = [
+      loan.description,
+      loan.loaner,
+      loan.user.name,
+      loan.user.email,
+      ...loan.reservations.map((r) => r.item.name),
+    ];
+    return haystack.some((value) => value?.toLowerCase().includes(needle));
+  };
+
   const filteredLoans = loans.filter((loan) => {
     if (Boolean(loan.deletedAt) !== showDeleted) return false;
+    if (!matchesSearch(loan)) return false;
     if (selectedStatuses.size === 0) return true;
     const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
     if (selectedStatuses.has(derivedStatus)) return true;
@@ -99,6 +117,16 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
           actionsAlign="inline"
           actions={
             <>
+              <SearchInput
+                value={search}
+                onValueChange={(value) => {
+                  setSearch(value);
+                  setVisibleCount(PAGE_SIZE);
+                }}
+                placeholder="Hae lainoja"
+                aria-label="Hae lainoja"
+                className="w-full sm:w-56"
+              />
               <FilterChip active={allChecked} onClick={toggleAllStatuses}>
                 Kaikki
               </FilterChip>
@@ -128,7 +156,13 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
         {filteredLoans.length === 0 ? (
           <EmptyState
             variant="card"
-            title={showDeleted ? 'Ei poistettuja lainoja' : 'Ei lainoja valituilla suodattimilla'}
+            title={
+              needle
+                ? `Ei osumia haulle "${search.trim()}"`
+                : showDeleted
+                  ? 'Ei poistettuja lainoja'
+                  : 'Ei lainoja valituilla suodattimilla'
+            }
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

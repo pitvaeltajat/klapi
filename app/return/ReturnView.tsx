@@ -432,12 +432,6 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
                   />
                 ))}
               </div>
-              {/* The kiosk browser has no back button — always leave a way out. */}
-              <div className="mt-6 flex justify-center">
-                <Button variant="outline" size="lg" onClick={() => router.push('/')}>
-                  Takaisin alkuun
-                </Button>
-              </div>
             </>
           )}
         </div>
