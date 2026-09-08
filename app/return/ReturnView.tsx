@@ -9,7 +9,12 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/utils/loanHelpers';
+import {
+  deriveLoanStatus,
+  getLoanStatusLabel,
+  getLoanStatusColor,
+  getLoanerName,
+} from '@/utils/loanHelpers';
 import ItemThumb from '@/components/ItemThumb';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,7 +135,7 @@ const LoanReturnCard = ({
       <Card padding="md" className="flex h-full flex-col gap-3 overflow-hidden">
         <div className="flex items-start justify-between gap-3">
           <h3 className="min-w-0 flex-1 text-lg font-semibold">
-            {loan.description || loan.loaner}
+            {loan.description || getLoanerName(loan)}
           </h3>
           <Badge variant={getLoanStatusColor(derivedStatus)} className="shrink-0">
             {getLoanStatusLabel(derivedStatus)}
@@ -139,7 +144,7 @@ const LoanReturnCard = ({
 
         <div className="flex flex-col gap-2 text-sm text-muted-foreground">
           <p>
-            <span className="font-medium">Lainaaja:</span> {loan.loaner}
+            <span className="font-medium">Lainaaja:</span> {getLoanerName(loan)}
           </p>
           <p>
             <span className="font-medium">Laina-aika:</span> {formatDateOnly(loan.startTime)} –{' '}
@@ -396,8 +401,8 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
             title="Palauta lainoja"
             description={
               seesAllLoans
-                ? 'Kaikki käytössä olevat lainat. Etsi oma lainasi listalta ja paina Palauta.'
-                : 'Omat käytössä olevat lainasi.'
+                ? 'Kaikki noudetut ja noutamattomat lainat. Etsi oma lainasi listalta ja paina Palauta.'
+                : 'Omat lainasi, joita ei ole vielä palautettu.'
             }
           />
           {loans.length === 0 ? (

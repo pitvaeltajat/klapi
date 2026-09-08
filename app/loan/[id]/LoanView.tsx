@@ -26,6 +26,7 @@ import {
   getLoanStatusColor,
   deriveLoanStatus,
   getLoanHistoryActionLabel,
+  getLoanerName,
 } from '@/utils/loanHelpers';
 import { LoanHistoryAction } from '@prisma/client';
 import { templateDraftItemsFromLoan } from '@/utils/templateDraft';
@@ -366,7 +367,7 @@ export default function LoanView({
                 <span className="sr-only">Lainaaja</span>
               </dt>
               <dd className="flex flex-wrap items-baseline gap-x-2 break-all">
-                {loan.loaner || loan.user.name || loan.user.email}
+                {getLoanerName(loan)}
                 {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
                   <span className="text-sm text-muted-foreground">
                     <span className="sr-only">Tili: </span>

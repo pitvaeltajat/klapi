@@ -8,6 +8,7 @@ import {
   getReservationStatusColor,
   MANUAL_LOAN_STATUSES,
   isManualLoanStatus,
+  getLoanerName,
   type ManualLoanStatus,
 } from '../utils/loanHelpers';
 
@@ -194,5 +195,29 @@ describe('MANUAL_LOAN_STATUSES', () => {
     expect(isManualLoanStatus(LoanStatus.PARTIALLY_RETURNED)).toBe(false);
     expect(isManualLoanStatus(LoanStatus.ACCEPTED)).toBe(true);
     expect(isManualLoanStatus('NOPE')).toBe(false);
+  });
+});
+
+describe('getLoanerName', () => {
+  // The free-text name wins, because it is who actually walked off with the
+  // kamat; the account is the fallback for a loan somebody made themselves.
+  it('prefers the typed loaner over the account', () => {
+    const loan = { loaner: 'Matti Virtanen', user: { name: 'Liisa Korhonen', email: 'l@x.fi' } };
+    expect(getLoanerName(loan)).toBe('Matti Virtanen');
+  });
+
+  it('falls through to the account when nobody typed a name', () => {
+    // /return rendered a blank "Lainaaja:" for exactly this shape.
+    expect(getLoanerName({ loaner: null, user: { name: 'Laura Mäki', email: 'l@x.fi' } })).toBe(
+      'Laura Mäki',
+    );
+    expect(getLoanerName({ loaner: '   ', user: { name: null, email: 'l@x.fi' } })).toBe('l@x.fi');
+  });
+
+  it('never renders as empty', () => {
+    expect(getLoanerName({ loaner: null, user: { name: null, email: null } })).toBe(
+      'Tuntematon lainaaja',
+    );
+    expect(getLoanerName({})).toBe('Tuntematon lainaaja');
   });
 });

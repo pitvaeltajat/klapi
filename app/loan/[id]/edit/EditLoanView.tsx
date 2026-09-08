@@ -31,6 +31,7 @@ import { isCustomItemId } from '@/utils/customItems';
 import {
   deriveLoanStatus,
   getLoanStatusLabel,
+  getLoanerName,
   MANUAL_LOAN_STATUSES,
   type ManualLoanStatus,
 } from '@/utils/loanHelpers';
@@ -273,7 +274,7 @@ export default function EditLoanView({
             <div className="flex flex-wrap items-baseline gap-x-2">
               <dt className="text-muted-foreground">Lainaaja</dt>
               <dd className="font-medium break-all">
-                {loan.loaner || loan.user.name || loan.user.email}
+                {getLoanerName(loan)}
               </dd>
             </div>
             {isAdmin && (

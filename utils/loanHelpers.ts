@@ -63,6 +63,21 @@ export const getLoanStatusLabel = (status: LoanStatus): string => {
   }
 };
 
+/**
+ * Who a loan is labelled by, everywhere it is shown.
+ *
+ * `loaner` is the free-text name a kiosk operator or an admin typed in, so it
+ * is empty on a loan somebody made for themselves — there the account is the
+ * answer. Every surface naming a borrower has to fall through the same three,
+ * or a loan renders with a blank "Lainaaja:" (which `/return` did until this
+ * existed, for exactly the loans nobody typed a name into).
+ */
+export const getLoanerName = (loan: {
+  loaner?: string | null;
+  user?: { name?: string | null; email?: string | null } | null;
+}): string =>
+  loan.loaner?.trim() || loan.user?.name || loan.user?.email || 'Tuntematon lainaaja';
+
 export type BadgeVariant =
   | 'default'
   | 'secondary'

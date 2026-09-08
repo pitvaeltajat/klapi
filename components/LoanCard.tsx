@@ -2,7 +2,7 @@
 
 import { LoanStatus, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import NextLink from 'next/link';
-import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus } from '@/utils/loanHelpers';
+import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus, getLoanerName } from '@/utils/loanHelpers';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -70,7 +70,7 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
             </NextLink>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Lainaaja: {loan.loaner || loan.user.name || loan.user.email}
+            Lainaaja: {getLoanerName(loan)}
           </p>
         </div>
         {loan.deletedAt ? (
