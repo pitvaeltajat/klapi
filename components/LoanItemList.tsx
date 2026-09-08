@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
+import { cn } from '@/lib/utils';
 import ItemThumb from '@/components/ItemThumb';
 
 export interface LoanItemRow {
@@ -65,8 +66,14 @@ export default function LoanItemList({
     return <EmptyState variant="inline" title="Ei tavaroita." />;
   }
 
+  // A long kit list is mostly empty space to the right of each row, and it
+  // pushes the loan's actions off the screen. Past five rows the list goes
+  // two-up — but only from `md`, because a row is a thumbnail, a name, an
+  // amount and a status badge, and half a phone is not enough for that.
+  const twoColumns = reservations.length > 5;
+
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className={cn('grid gap-2', twoColumns && 'md:grid-cols-2')}>
       {reservations.map((r) => (
         <li key={r.id}>
           {selection?.isSelectable(r) ? (

@@ -196,7 +196,13 @@ const LoanReturnCard = ({
                 <p className="text-sm font-medium text-muted-foreground">
                   Palautettavat tavarat ({returnableReservations.length})
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-fr xl:grid-cols-3">
+                {/* `auto-rows-min` + `content-start`, not `auto-rows-fr`: the
+                    column still claims the height (so the partial-return note
+                    sits under the list rather than mid-panel), but the rows
+                    keep their own size and pack at the top. Equal-height rows
+                    read fine with a dozen kamaa and absurd with one, which
+                    stretched into a full-height empty box. */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-min lg:content-start xl:grid-cols-3">
                   {returnableReservations.map((reservation) => {
                     const checked = selectedIds.has(reservation.id);
                     return (

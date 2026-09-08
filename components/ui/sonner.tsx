@@ -11,8 +11,14 @@ export function Toaster({ ...props }: ToasterProps) {
     <Sonner
       theme={theme as ToasterProps['theme']}
       className="toaster group"
-      position="top-right"
-      offset={{ top: 72 }}
+      // Bottom-centre, not top-right. Every panel in this app puts its first
+      // field at the top — the cart drawer's Kuvaus, a dialog's first input —
+      // and the drawer is a right-hand sidebar, so a top-right toast landed
+      // squarely on the field you had just been told to fix. The bottom strip
+      // is the one place nothing is anchored: the drawer's own footer is
+      // inside a `max-w-md` panel on the right, clear of centre.
+      position="bottom-center"
+      offset={{ bottom: 24 }}
       closeButton
       duration={5000}
       toastOptions={{
