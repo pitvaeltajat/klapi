@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, MouseEvent, ReactNode, useCallback } from 'react';
+import { memo, MouseEvent, ReactNode, useCallback, useState } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 import { useItemImageState } from '../hooks/useItemImage';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,12 @@ interface ItemAmountCardProps {
   decrementDisabled?: boolean;
   onIncrement: () => void;
   onDecrement: () => void;
+  /**
+   * Typing the amount instead of tapping. The value handed over is whatever
+   * parsed out of the field — the caller clamps it, exactly as it already does
+   * in its own increment handler.
+   */
+  onAmountChange: (amount: number) => void;
   /** When given, a remove button appears in the top-right corner. */
   onRemove?: () => void;
   /** aria-label for the corner button — say what removing means in context. */
@@ -40,12 +46,35 @@ const ItemAmountCard = memo(function ItemAmountCard({
   decrementDisabled = false,
   onIncrement,
   onDecrement,
+  onAmountChange,
   onRemove,
   removeLabel,
   dimmed = false,
 }: ItemAmountCardProps) {
   const image = useItemImageState(itemId);
   const stopPropagation = useCallback((e: MouseEvent) => e.stopPropagation(), []);
+
+  // While the field has focus it holds whatever has been typed, including the
+  // empty string on the way to a new number. Without that, a controlled input
+  // snaps back to the old value the moment you backspace it away, and there is
+  // no way to replace "12" with "3" other than selecting it first.
+  const [draft, setDraft] = useState<string | null>(null);
+
+  // ...but only for as long as the draft is the truth. The caller clamps to
+  // what is actually free, so typing 99 against a stock of 25 must show 25 —
+  // the same refusal the disabled + gives — rather than leaving a number on
+  // screen that is not the one in the basket.
+  const typed = draft === null ? null : Number.parseInt(draft, 10);
+  const shown = draft === '' || typed === amount ? (draft as string) : String(amount);
+
+  const handleTyped = (raw: string) => {
+    setDraft(raw);
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed)) onAmountChange(parsed);
+  };
+
+  // The buttons and blur both hand the field back to the caller's value.
+  const settle = useCallback(() => setDraft(null), []);
 
   const action = (
     <div className="flex h-9">
@@ -54,24 +83,36 @@ const ItemAmountCard = memo(function ItemAmountCard({
         variant="outline"
         size="icon"
         aria-label={`Vähennä ${name}`}
-        onClick={onDecrement}
+        onClick={() => {
+          settle();
+          onDecrement();
+        }}
         disabled={decrementDisabled}
         className="h-full w-10 shrink-0 rounded-r-none"
       >
         <Minus className="h-4 w-4" />
       </Button>
       <Input
-        value={amount}
-        readOnly
+        value={shown}
+        onChange={(e) => handleTyped(e.target.value)}
+        onBlur={settle}
+        onFocus={(e) => e.currentTarget.select()}
+        // `inputMode` rather than `type="number"`: the kiosk is a touchscreen,
+        // so this is what raises a number pad, and it keeps the spinners off.
+        inputMode="numeric"
+        pattern="[0-9]*"
         aria-label={`${name} määrä`}
-        className="pointer-events-none h-full min-w-0 select-none rounded-none border-x-0 px-1 text-center text-sm font-bold"
+        className="h-full min-w-0 rounded-none border-x-0 px-1 text-center text-sm font-bold"
       />
       <Button
         type="button"
         variant="outline"
         size="icon"
         aria-label={`Lisää ${name}`}
-        onClick={onIncrement}
+        onClick={() => {
+          settle();
+          onIncrement();
+        }}
         disabled={incrementDisabled}
         className="h-full w-10 shrink-0 rounded-l-none"
       >

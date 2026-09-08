@@ -419,6 +419,9 @@ export default function EditLoanView({
                     incrementDisabled={row.amount >= max}
                     onDecrement={() => setAmount(row.itemId, row.amount - 1)}
                     onIncrement={() => setAmount(row.itemId, row.amount + 1)}
+                    onAmountChange={(next) =>
+                      setAmount(row.itemId, Math.min(max, Math.max(1, next)))
+                    }
                     onRemove={() =>
                       setRows((current) => current.filter((r) => r.itemId !== row.itemId))
                     }

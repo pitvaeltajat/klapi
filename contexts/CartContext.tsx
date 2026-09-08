@@ -13,6 +13,7 @@ export type CartAction =
   | { type: 'ADD_TO_CART'; payload: CartItem }
   | { type: 'INCREMENT_AMOUNT'; payload: string }
   | { type: 'DECREMENT_AMOUNT'; payload: string }
+  | { type: 'SET_AMOUNT'; payload: { id: string; amount: number } }
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'CLEAR_CART' }
   | { type: 'SET_DESCRIPTION'; payload: string }
@@ -48,6 +49,19 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         items: state.items
           .map((item) => (item.id === action.payload ? { ...item, amount: item.amount - 1 } : item))
           .filter((item) => item.amount > 0),
+      };
+    // Typing an amount, as opposed to tapping + twenty times. Floored at 1:
+    // clearing the field is a half-finished edit, not "remove this" — that is
+    // what the row's own X is for, and dropping the row mid-keystroke would
+    // take the input out from under the cursor.
+    case 'SET_AMOUNT':
+      return {
+        ...state,
+        items: state.items.map((item) =>
+          item.id === action.payload.id
+            ? { ...item, amount: Math.max(1, Math.trunc(action.payload.amount)) }
+            : item,
+        ),
       };
     case 'REMOVE_FROM_CART':
       return {
@@ -109,6 +123,7 @@ type CartContextType = {
   addToCart: (item: CartItem) => void;
   incrementAmount: (id: string) => void;
   decrementAmount: (id: string) => void;
+  setAmount: (id: string, amount: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
   resetCart: () => void;
@@ -150,6 +165,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addToCart: (item: CartItem) => dispatch({ type: 'ADD_TO_CART', payload: item }),
       incrementAmount: (id: string) => dispatch({ type: 'INCREMENT_AMOUNT', payload: id }),
       decrementAmount: (id: string) => dispatch({ type: 'DECREMENT_AMOUNT', payload: id }),
+      setAmount: (id: string, amount: number) =>
+        dispatch({ type: 'SET_AMOUNT', payload: { id, amount } }),
       removeFromCart: (id: string) => dispatch({ type: 'REMOVE_FROM_CART', payload: id }),
       clearCart: () => dispatch({ type: 'CLEAR_CART' }),
       resetCart: () => dispatch({ type: 'RESET_CART' }),

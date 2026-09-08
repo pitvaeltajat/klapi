@@ -161,6 +161,9 @@ export default function TemplateDialog({ template, onClose }: TemplateDialogProp
                   incrementDisabled={amount >= row.headroom}
                   onDecrement={() => setAmount(row.itemId, Math.max(0, amount - 1))}
                   onIncrement={() => setAmount(row.itemId, Math.min(row.headroom, amount + 1))}
+                  onAmountChange={(next) =>
+                    setAmount(row.itemId, Math.min(row.headroom, Math.max(0, next)))
+                  }
                   onRemove={amount > 0 ? () => setAmount(row.itemId, 0) : undefined}
                   removeLabel={`Jätä ${row.name} pois setistä`}
                 />

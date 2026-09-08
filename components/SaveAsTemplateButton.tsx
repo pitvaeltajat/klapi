@@ -159,6 +159,9 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
                     incrementDisabled={row.amount >= row.stock}
                     onDecrement={() => setAmount(row.itemId, Math.max(1, row.amount - 1))}
                     onIncrement={() => setAmount(row.itemId, Math.min(row.stock, row.amount + 1))}
+                    onAmountChange={(next) =>
+                      setAmount(row.itemId, Math.min(row.stock, Math.max(1, next)))
+                    }
                     onRemove={() => removeRow(row.itemId)}
                     removeLabel={`Jätä ${row.name} pois pohjasta`}
                   />

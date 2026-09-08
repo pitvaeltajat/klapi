@@ -37,6 +37,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     addToCart,
     incrementAmount,
     decrementAmount,
+    setAmount: setCartAmount,
     removeFromCart,
     setDescription,
     setLoaner,
@@ -281,6 +282,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     }
                     onIncrement={() => incrementAmount(item.id)}
                     onDecrement={() => decrementAmount(item.id)}
+                    onAmountChange={(next) =>
+                      setCartAmount(
+                        item.id,
+                        isCustomItem ? Math.max(1, next) : Math.min(available, Math.max(1, next)),
+                      )
+                    }
                     onRemove={() => removeFromCart(item.id)}
                     removeLabel={`Poista ${item.name} ostoskorista`}
                   />

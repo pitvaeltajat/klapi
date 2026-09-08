@@ -70,4 +70,54 @@ describe('cartReducer scalar setters', () => {
     expect(next).not.toBe(state);
     expect(next.description).toBe('leiri');
   });
+
+  describe('SET_AMOUNT', () => {
+    const withItem = (amount: number) =>
+      cartReducer(initialCartState, {
+        type: 'ADD_TO_CART',
+        payload: { id: 'item-1', name: 'Trangia', amount },
+      });
+
+    it('replaces the amount outright, so a big number is typed once', () => {
+      const next = cartReducer(withItem(1), {
+        type: 'SET_AMOUNT',
+        payload: { id: 'item-1', amount: 25 },
+      });
+      expect(next.items[0].amount).toBe(25);
+    });
+
+    it('floors at 1 rather than dropping the row', () => {
+      // Clearing the field is a half-finished edit; removing is the row's X.
+      // Losing the row mid-keystroke takes the input out from under the cursor.
+      for (const typed of [0, -3]) {
+        const next = cartReducer(withItem(4), {
+          type: 'SET_AMOUNT',
+          payload: { id: 'item-1', amount: typed },
+        });
+        expect(next.items).toHaveLength(1);
+        expect(next.items[0].amount).toBe(1);
+      }
+    });
+
+    it('keeps amounts whole', () => {
+      const next = cartReducer(withItem(1), {
+        type: 'SET_AMOUNT',
+        payload: { id: 'item-1', amount: 3.7 },
+      });
+      expect(next.items[0].amount).toBe(3);
+    });
+
+    it('leaves the other rows alone', () => {
+      let state = withItem(1);
+      state = cartReducer(state, {
+        type: 'ADD_TO_CART',
+        payload: { id: 'item-2', name: 'Kirves', amount: 2 },
+      });
+      const next = cartReducer(state, {
+        type: 'SET_AMOUNT',
+        payload: { id: 'item-1', amount: 9 },
+      });
+      expect(next.items.map((i) => i.amount)).toEqual([9, 2]);
+    });
+  });
 });
