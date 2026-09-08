@@ -444,9 +444,9 @@ export default function ItemView({
         />
 
         <Card as="section">
-          <CardTitle>Lainat ja varaukset</CardTitle>
+          <CardTitle>Lainat</CardTitle>
           {item.reservations.length === 0 ? (
-            <EmptyState variant="inline" title="Ei lainoja eikä varauksia." />
+            <EmptyState variant="inline" title="Ei lainoja." />
           ) : (
             <ReservationTable reservations={item.reservations} isAdmin={isAdmin} />
           )}

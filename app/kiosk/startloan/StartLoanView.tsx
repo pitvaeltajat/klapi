@@ -154,7 +154,7 @@ const EditItemsDialog = ({
         toast.error(data.message || 'Virhe', { description });
         return;
       }
-      toast.success('Varaus päivitetty');
+      toast.success('Laina päivitetty');
       onSaved(reservations);
       onOpenChange(false);
     } catch {

@@ -135,7 +135,7 @@ describe('deriveLoanStatus', () => {
 
 describe('getLoanStatusLabel', () => {
   it('should return Finnish labels for all loan statuses', () => {
-    expect(getLoanStatusLabel(LoanStatus.ACCEPTED)).toBe('Hyväksytty');
+    expect(getLoanStatusLabel(LoanStatus.ACCEPTED)).toBe('Varattu');
     expect(getLoanStatusLabel(LoanStatus.REJECTED)).toBe('Hylätty');
     expect(getLoanStatusLabel(LoanStatus.INUSE)).toBe('Käytössä');
     expect(getLoanStatusLabel(LoanStatus.IN_BOX)).toBe('Laatikossa');
@@ -161,7 +161,7 @@ describe('getLoanStatusColor', () => {
 
 describe('getReservationStatusLabel', () => {
   it('should return Finnish labels for all reservation statuses', () => {
-    expect(getReservationStatusLabel(ReservationStatus.ACCEPTED)).toBe('Hyväksytty');
+    expect(getReservationStatusLabel(ReservationStatus.ACCEPTED)).toBe('Varattu');
     expect(getReservationStatusLabel(ReservationStatus.REJECTED)).toBe('Hylätty');
     expect(getReservationStatusLabel(ReservationStatus.INUSE)).toBe('Käytössä');
     expect(getReservationStatusLabel(ReservationStatus.IN_BOX)).toBe('Laatikossa');

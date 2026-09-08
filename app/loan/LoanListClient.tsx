@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 
 const getStatusFilterLabel = (status: LoanStatus): string => {
   const label = getLoanStatusLabel(status);
-  if (label === 'Hyväksytty') return 'Hyväksytyt';
+  if (label === 'Varattu') return 'Varatut';
   if (label === 'Hylätty') return 'Hylätyt';
   if (label === 'Peruttu') return 'Perutut';
   if (label === 'Palautettu') return 'Palautetut';

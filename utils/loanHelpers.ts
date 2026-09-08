@@ -34,10 +34,18 @@ export const getLoanHistoryActionLabel = (action: LoanHistoryAction): string => 
   }
 };
 
+/**
+ * ACCEPTED reads **Varattu**, not "Hyväksytty". `submitLoan` creates every loan
+ * ACCEPTED and there is no approval queue, so nobody ever approved it — the
+ * word promised a review that does not happen. "Varattu" is what the state
+ * actually is: the kamat are held for you and not yet picked up.
+ * (`LoanHistoryAction.APPROVED` keeps its "hyväksytty" wording — that one *is*
+ * an admin acting, un-rejecting a rejected loan.)
+ */
 export const getLoanStatusLabel = (status: LoanStatus): string => {
   switch (status) {
     case LoanStatus.ACCEPTED:
-      return 'Hyväksytty';
+      return 'Varattu';
     case LoanStatus.REJECTED:
       return 'Hylätty';
     case LoanStatus.CANCELLED:
@@ -88,7 +96,7 @@ export const getLoanStatusColor = (status: LoanStatus): BadgeVariant => {
 export const getReservationStatusLabel = (status: ReservationStatus): string => {
   switch (status) {
     case ReservationStatus.ACCEPTED:
-      return 'Hyväksytty';
+      return 'Varattu';
     case ReservationStatus.REJECTED:
       return 'Hylätty';
     case ReservationStatus.INUSE:

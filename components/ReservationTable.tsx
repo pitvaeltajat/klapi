@@ -130,7 +130,7 @@ export default function ReservationTable({
         ) : (
           <TableRow className="hover:bg-transparent">
             <TableCell colSpan={columnCount} className="text-sm text-muted-foreground">
-              Ei tulevia varauksia.
+              Ei tulevia lainoja.
             </TableCell>
           </TableRow>
         )}
