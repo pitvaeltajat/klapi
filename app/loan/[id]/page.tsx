@@ -5,6 +5,7 @@ import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import LoanView from './LoanView';
 import { auth } from '@/lib/auth';
+import { itemBoxContentsInclude } from '@/utils/loanQueries';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,7 +27,7 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
       include: {
         user: true,
         box: true,
-        reservations: { include: { item: true } },
+        reservations: { include: { item: { include: itemBoxContentsInclude } } },
       },
     }),
     prisma.report.findMany({

@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { cn } from '@/lib/utils';
 import ItemThumb from '@/components/ItemThumb';
+import BoxContents, { type BoxContent } from '@/components/BoxContents';
 
 export interface LoanItemRow {
   id: string;
@@ -17,6 +18,8 @@ export interface LoanItemRow {
   amount: number;
   status: ReservationStatus;
   item: { name: string };
+  /** What is inside it, when the kama is a säilytyspaikka. */
+  contents?: BoxContent[];
 }
 
 export interface LoanItemSelection {
@@ -28,7 +31,8 @@ export interface LoanItemSelection {
 
 function RowBody({ reservation }: { reservation: LoanItemRow }) {
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-3">
+    <div className="flex min-w-0 flex-1 flex-col gap-2">
+      <div className="flex min-w-0 items-center gap-3">
       <ItemThumb itemId={reservation.itemId} alt="" className="h-10 w-10 rounded border border-border" />
       <div className="min-w-0 flex-1">
         <NextLink
@@ -42,9 +46,11 @@ function RowBody({ reservation }: { reservation: LoanItemRow }) {
         </NextLink>
         <p className="text-sm text-muted-foreground">{reservation.amount} kpl</p>
       </div>
-      <Badge variant={getReservationStatusColor(reservation.status)}>
-        {getReservationStatusLabel(reservation.status)}
-      </Badge>
+        <Badge variant={getReservationStatusColor(reservation.status)}>
+          {getReservationStatusLabel(reservation.status)}
+        </Badge>
+      </div>
+      <BoxContents contents={reservation.contents ?? []} />
     </div>
   );
 }

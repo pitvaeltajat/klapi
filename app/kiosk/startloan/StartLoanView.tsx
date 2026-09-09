@@ -31,6 +31,7 @@ import { Alert } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
+import BoxContents, { type BoxContent } from '@/components/BoxContents';
 
 interface Reservation {
   id: string;
@@ -39,6 +40,8 @@ interface Reservation {
   item: {
     id: string;
     name: string;
+    /** Set when the kama is a säilytyspaikka — what goes out with it. */
+    asLocation?: { items: BoxContent[] } | null;
   };
 }
 
@@ -259,6 +262,14 @@ const EditItemsDialog = ({
                         </Button>
                       </div>
                     </div>
+                    {/* Handing over a säilytyspaikka is handing over what is in
+                        it — the list is right here rather than on the box's own
+                        page, because this is the moment it is being carried out
+                        of the varasto. */}
+                    <BoxContents
+                      contents={reservation.item.asLocation?.items ?? []}
+                      className="mt-2"
+                    />
                   </Card>
                 ))
               )}
@@ -388,6 +399,16 @@ const LoanStartCard = ({
                 </Badge>
               ))}
             </div>
+            {/* This is the counter: the kamat are being handed over right now,
+                so what is inside a säilytyspaikka is checked here rather than
+                on the box's own page. */}
+            {acceptedReservations.map((reservation) => (
+              <BoxContents
+                key={`contents-${reservation.id}`}
+                contents={reservation.item.asLocation?.items ?? []}
+                className="mt-2"
+              />
+            ))}
           </div>
           <Alert variant="info" title="Tarvitseeko kamoihin muutoksia?">
             <p>Voit lisätä, poistaa tai muuttaa määriä ennen lainauksen aloitusta.</p>

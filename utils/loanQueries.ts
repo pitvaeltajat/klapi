@@ -43,9 +43,27 @@ export const reportSummarySelect = {
  * to, and the full item record behind each reservation (those views show item
  * details inline, so `select`ing a subset here would not be enough).
  */
+/**
+ * What is stored inside a kama that is a säilytyspaikka. Carried on every
+ * reservation because the pickup and return screens both need it: handing over
+ * "Sininen työkalupakki" and checking it back in are both really about what is
+ * in it. It is the box's *current* contents rather than a snapshot taken when
+ * the loan was made — the question being asked is "what should be in here now".
+ */
+export const itemBoxContentsInclude = {
+  asLocation: {
+    select: {
+      items: {
+        where: { deletedAt: null },
+        select: { id: true, name: true, amount: true },
+      },
+    },
+  },
+} as const satisfies Prisma.ItemInclude;
+
 export const loanWithReservationsInclude = {
   user: true,
-  reservations: { include: { item: true } },
+  reservations: { include: { item: { include: itemBoxContentsInclude } } },
 } as const satisfies Prisma.LoanInclude;
 
 /**

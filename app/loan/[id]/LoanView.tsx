@@ -45,7 +45,7 @@ interface LoanWithRelations extends Loan {
   user: User;
   box: BoxType | null;
   reservations: (Reservation & {
-    item: Item;
+    item: Item & { asLocation: { items: { id: string; name: string; amount: number }[] } | null };
     status: ReservationStatus;
   })[];
 }
@@ -435,6 +435,7 @@ export default function LoanView({
               amount: r.amount,
               status: r.status,
               item: { name: r.item.name },
+              contents: r.item.asLocation?.items,
             }))}
             selection={
               canMarkReturned

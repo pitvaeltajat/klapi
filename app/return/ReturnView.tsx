@@ -34,6 +34,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
+import BoxContents, { type BoxContent } from '@/components/BoxContents';
 
 interface Reservation {
   id: string;
@@ -42,6 +43,8 @@ interface Reservation {
   item: {
     id: string;
     name: string;
+    /** Set when the kama is a säilytyspaikka — what should be back in the box. */
+    asLocation: { items: BoxContent[] } | null;
   };
 }
 
@@ -213,18 +216,24 @@ const LoanReturnCard = ({
                         size="lg"
                         className="bg-muted"
                       >
-                        <div className="flex items-center gap-3">
-                          <ItemThumb
-                            itemId={reservation.item.id}
-                            alt={reservation.item.name}
-                            className="h-20 w-20 rounded-md"
-                          />
-                          <div className="flex min-w-0 flex-1 flex-col">
-                            <p className="truncate text-base font-bold">{reservation.item.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Määrä: {reservation.amount} kpl
-                            </p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-3">
+                            <ItemThumb
+                              itemId={reservation.item.id}
+                              alt={reservation.item.name}
+                              className="h-20 w-20 rounded-md"
+                            />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <p className="truncate text-base font-bold">
+                                {reservation.item.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Määrä: {reservation.amount} kpl
+                              </p>
+                            </div>
                           </div>
+                          {/* Checking a box back in is checking its contents. */}
+                          <BoxContents contents={reservation.item.asLocation?.items ?? []} />
                         </div>
                       </SelectableRow>
                     );
