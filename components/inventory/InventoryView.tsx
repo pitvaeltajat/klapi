@@ -104,7 +104,13 @@ const EDITABLE_DISPLAY_CLASS =
 // The coordinates live in the DOM (`data-cell="row:col"` on the <td>) rather
 // than in React state: moving is then one querySelector, with no focus mirror
 // to keep in sync as rows sort, page or save.
-const NAV_COLUMN_IDS: EditableField[] = ['name', 'description', 'amount'];
+const NAV_COLUMN_IDS: NavColumnId[] = [
+  'name',
+  'description',
+  'amount',
+  'location',
+  'categories',
+];
 
 function focusCell(root: HTMLElement, row: number, col: number): boolean {
   const target = root.querySelector<HTMLElement>(`[data-cell="${row}:${col}"] [data-cell-focus]`);
@@ -134,7 +140,10 @@ function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
   return <ChevronsUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
 }
 
+/** The fields `patchItem` takes one at a time — the plain text/number cells. */
 type EditableField = 'name' | 'description' | 'amount';
+/** Every cell the keyboard cursor visits, in the order it walks them. */
+type NavColumnId = EditableField | 'location' | 'categories';
 
 interface CellEditState {
   rowId: string;
@@ -158,12 +167,59 @@ interface EditCellContextValue {
   commitEdit: (state: CellEditState) => void;
   scheduleAutoSave: (state: CellEditState) => void;
   editInputRef: RefObject<HTMLInputElement | null>;
+  // Sijainti and kategoriat are picked, not typed, so they carry their options
+  // down here and save through `saveRelations` (see its note at the call site).
+  locationOptions: SelectOption[];
+  categoryOptions: SelectOption[];
+  saveRelations: (item: InventoryItem, patch: RelationPatch) => void;
+}
+
+/** One picked field, in the shape `editItem` expects it. */
+interface RelationPatch {
+  /** `null` clears the sijainti; a typed-in option carries its name as `value`. */
+  locationId?: SelectOption | null;
+  categories?: InventoryCategory[];
 }
 const EditCellContext = createContext<EditCellContextValue | null>(null);
 function useEditCell() {
   const ctx = useContext(EditCellContext);
   if (!ctx) throw new Error('EditCellContext provider missing');
   return ctx;
+}
+
+/**
+ * The resting face of every editable cell: plain text until you point at it,
+ * and a stop on the keyboard cursor's route (`data-cell-focus`) that opens
+ * with Enter or F2.
+ */
+function CellDisplay({
+  ref,
+  className,
+  onOpen,
+  children,
+}: {
+  ref?: React.Ref<HTMLSpanElement>;
+  className?: string;
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      ref={ref}
+      tabIndex={0}
+      data-cell-focus
+      className={cn(EDITABLE_DISPLAY_CLASS, className)}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === 'F2') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+    >
+      {children}
+    </span>
+  );
 }
 
 interface EditableCellConfig<T> {
@@ -220,20 +276,12 @@ function makeEditableCell<T>({
     }
 
     return (
-      <span
-        tabIndex={0}
-        data-cell-focus
-        className={cn(EDITABLE_DISPLAY_CLASS, displayClassName)}
-        onClick={() => startEdit(id, field, toEditValue(value))}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === 'F2') {
-            e.preventDefault();
-            startEdit(id, field, toEditValue(value));
-          }
-        }}
+      <CellDisplay
+        className={displayClassName}
+        onOpen={() => startEdit(id, field, toEditValue(value))}
       >
         {renderDisplay(value)}
-      </span>
+      </CellDisplay>
     );
   };
 }
@@ -262,6 +310,120 @@ const AmountCell = makeEditableCell<number>({
   toEditValue: (value) => String(value),
   renderDisplay: (value) => value,
 });
+
+/**
+ * Sijainti and kategoriat are picked from a list rather than typed, so they get
+ * a select where the text cells get an input. Both keep their open/closed state
+ * locally — the component type is stable (module scope, see the context note
+ * above), so the picker survives its own re-renders — and hand focus back to
+ * the cell when they close, so the keyboard cursor never falls out of the grid.
+ */
+function LocationCell({ row }: CellContext<typeof features, InventoryItem, InventoryLocation | null>) {
+  const { locationOptions, saveRelations } = useEditCell();
+  const item = row.original;
+  const [open, setOpen] = useState(false);
+  const displayRef = useRef<HTMLSpanElement>(null);
+
+  const current = item.location ? { value: item.location.id, label: item.location.name } : null;
+  const close = () => {
+    setOpen(false);
+    requestAnimationFrame(() => displayRef.current?.focus());
+  };
+
+  if (open) {
+    return (
+      <div data-cell-picker className="min-w-44">
+        <CreatableSelect
+          autoFocus
+          defaultMenuIsOpen
+          isClearable
+          options={locationOptions}
+          value={current}
+          placeholder="Ei sijaintia"
+          formatCreateLabel={(input) => `Luo sijainti "${input}"`}
+          onChange={(option) => {
+            close();
+            if ((option?.value ?? null) !== (current?.value ?? null)) {
+              saveRelations(item, { locationId: option ?? null });
+            }
+          }}
+          onBlur={close}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') close();
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <CellDisplay ref={displayRef} onOpen={() => setOpen(true)}>
+      <Truncated text={item.location?.name} />
+    </CellDisplay>
+  );
+}
+
+function CategoriesCell({ row }: CellContext<typeof features, InventoryItem, InventoryCategory[]>) {
+  const { categoryOptions, saveRelations } = useEditCell();
+  const item = row.original;
+  // `null` is "not editing"; an empty array is a set the admin has cleared.
+  const [draft, setDraft] = useState<SelectOption[] | null>(null);
+  const displayRef = useRef<HTMLSpanElement>(null);
+
+  const current = item.categories.map((c) => ({ value: c.id, label: c.name }));
+  // A set is only finished when the menu is: every tick would otherwise be its
+  // own save, and picking three kategoriat would cost three round trips.
+  const close = (next: SelectOption[] | null) => {
+    setDraft(null);
+    requestAnimationFrame(() => displayRef.current?.focus());
+    if (!next) return;
+    const unchanged =
+      next.length === current.length && next.every((o, i) => o.value === current[i].value);
+    if (unchanged) return;
+    saveRelations(item, {
+      categories: next.map((o) => ({ id: o.value, name: o.label, description: null })),
+    });
+  };
+
+  if (draft) {
+    return (
+      <div data-cell-picker className="min-w-52">
+        <CreatableSelect
+          isMulti
+          autoFocus
+          defaultMenuIsOpen
+          options={categoryOptions}
+          value={draft}
+          placeholder="Ei kategorioita"
+          formatCreateLabel={(input) => `Luo kategoria "${input}"`}
+          onChange={(options) => setDraft([...options])}
+          onBlur={() => close(draft)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') close(null);
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <CellDisplay
+      ref={displayRef}
+      className="inline-flex flex-wrap gap-1"
+      onOpen={() => setDraft(current)}
+    >
+      {current.length === 0 ? (
+        <span className="text-muted-foreground">—</span>
+      ) : (
+        current.map((c) => (
+          <Badge key={c.value} variant="secondary">
+            {c.label}
+          </Badge>
+        ))
+      )}
+    </CellDisplay>
+  );
+}
 
 /** Ghost icon button with a tooltip — the shape of every row action. */
 function IconAction({
@@ -727,24 +889,12 @@ export default function InventoryView() {
     colHelper.accessor((row) => row.location, {
       id: 'location',
       header: 'Sijainti',
-      cell: ({ getValue }) => <Truncated text={getValue()?.name} />,
+      cell: LocationCell,
     }),
     colHelper.accessor((row) => row.categories, {
       id: 'categories',
       header: 'Kategoriat',
-      cell: ({ getValue }) => {
-        const cats = getValue();
-        if (!cats.length) return <span className="text-muted-foreground">—</span>;
-        return (
-          <div className="flex flex-wrap gap-1">
-            {cats.map((c) => (
-              <Badge key={c.id} variant="secondary">
-                {c.name}
-              </Badge>
-            ))}
-          </div>
-        );
-      },
+      cell: CategoriesCell,
       enableSorting: false,
     }),
     colHelper.display({
@@ -798,12 +948,29 @@ export default function InventoryView() {
     }),
   ]), [handleRestoreRow]);
 
+  const categoryOptions = useMemo(
+    () => categories.map((c) => ({ value: c.id, label: c.name })),
+    [categories],
+  );
+  const categoryFilterOptions = useMemo(
+    () => [{ value: '', label: 'Kaikki kategoriat' }, ...categoryOptions],
+    [categoryOptions],
+  );
+  const locationOptions = useMemo(
+    () => locations.map((l) => ({ value: l.id, label: l.name })),
+    [locations],
+  );
+
   const handleGridKeyDown = (e: React.KeyboardEvent<HTMLTableSectionElement>) => {
-    const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+    const el = e.target as HTMLElement;
+    const cell = el.closest<HTMLElement>('[data-cell]');
     if (!cell) return;
+    // An open sijainti/kategoria picker owns every key it is given — Enter
+    // picks an option, Escape closes the menu — and hands focus back itself.
+    if (el.closest('[data-cell-picker]')) return;
     const [row, col] = cell.dataset.cell!.split(':').map(Number);
     const root = e.currentTarget;
-    const editing = (e.target as HTMLElement).tagName === 'INPUT';
+    const editing = el.tagName === 'INPUT';
 
     // The input's own handler saves on Enter and abandons on Escape; either
     // way it unmounts, so the landing cell can only be focused once React has
@@ -829,9 +996,70 @@ export default function InventoryView() {
     if (delta && focusCell(root, row + delta[0], col + delta[1])) e.preventDefault();
   };
 
+  // Sijainti and kategoriat go through `editItem` rather than `patchItem`: that
+  // route already mints a sijainti/kategoria the admin typed instead of picked,
+  // and diffs the whole kama for the history log — so it is sent the whole kama
+  // (which the table is holding anyway) with the one picked field swapped in.
+  // Sending a partial would make the log claim the fields left out were cleared.
+  const saveRelations = useCallback(
+    async (item: InventoryItem, patch: RelationPatch) => {
+      addPending(item.id);
+      try {
+        const res = await fetch('/api/item/editItem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            amount: item.amount,
+            categories: patch.categories ?? item.categories,
+            locationId:
+              'locationId' in patch
+                ? patch.locationId
+                : item.location && { value: item.location.id, label: item.location.name },
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error((data as { message?: string } | null)?.message ?? 'Virhe');
+        }
+        toast.success('Tallennettu');
+      } catch (err) {
+        toast.error('Tallennus epäonnistui', {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        removePending(item.id);
+        // `editItem` answers with a message, not the row — and a brand-new
+        // sijainti/kategoria only has an id once it is saved, so refetch.
+        mutateItems();
+      }
+    },
+    [mutateItems],
+  );
+
   const editCellValue = useMemo<EditCellContextValue>(
-    () => ({ editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef }),
-    [editState, startEdit, commitEdit, scheduleAutoSave],
+    () => ({
+      editState,
+      setEditState,
+      startEdit,
+      commitEdit,
+      scheduleAutoSave,
+      editInputRef,
+      locationOptions,
+      categoryOptions,
+      saveRelations,
+    }),
+    [
+      editState,
+      startEdit,
+      commitEdit,
+      scheduleAutoSave,
+      locationOptions,
+      categoryOptions,
+      saveRelations,
+    ],
   );
 
   const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize));
@@ -854,19 +1082,6 @@ export default function InventoryView() {
     onRowSelectionChange: setRowSelection,
     getRowId: (row) => row.id,
   });
-
-  const categoryOptions = useMemo(
-    () => categories.map((c) => ({ value: c.id, label: c.name })),
-    [categories],
-  );
-  const categoryFilterOptions = useMemo(
-    () => [{ value: '', label: 'Kaikki kategoriat' }, ...categoryOptions],
-    [categoryOptions],
-  );
-  const locationOptions = useMemo(
-    () => locations.map((l) => ({ value: l.id, label: l.name })),
-    [locations],
-  );
 
   const { pageIndex, pageSize } = pagination;
 
@@ -1009,7 +1224,7 @@ export default function InventoryView() {
                     {/* getAllCells, not getVisibleCells: no column is ever
                         hidden, so this saves registering columnVisibilityFeature. */}
                     {row.getAllCells().map((cell) => {
-                      const navCol = NAV_COLUMN_IDS.indexOf(cell.column.id as EditableField);
+                      const navCol = NAV_COLUMN_IDS.indexOf(cell.column.id as NavColumnId);
                       return (
                         <TableCell
                           key={cell.id}
