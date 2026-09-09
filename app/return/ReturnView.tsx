@@ -34,7 +34,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
-import BoxContents, { type BoxContent } from '@/components/BoxContents';
+import BoxContents from '@/components/BoxContents';
+import { boxContents, type ContentRow } from '@/utils/boxContents';
 
 interface Reservation {
   id: string;
@@ -44,7 +45,7 @@ interface Reservation {
     id: string;
     name: string;
     /** Set when the kama is a säilytyspaikka — what should be back in the box. */
-    asLocation: { items: BoxContent[] } | null;
+    asLocation: { items: ContentRow[] } | null;
   };
 }
 
@@ -130,8 +131,9 @@ const LoanReturnCard = ({
   const missingNote = returnableReservations
     .filter((reservation) => selectedIds.has(reservation.id))
     .map((reservation) => {
-      const gone = (reservation.item.asLocation?.items ?? []).filter((content) =>
-        missingContents.has(missingKey(reservation.id, content.id)),
+      const gone = boxContents(reservation.item.asLocation?.items, loan.id).filter(
+        (content) =>
+          !content.outOnLoan && missingContents.has(missingKey(reservation.id, content.id)),
       );
       if (gone.length === 0) return null;
       return `Puuttuu laatikosta "${reservation.item.name}": ${gone
@@ -272,7 +274,7 @@ const LoanReturnCard = ({
                           </div>
                           {/* Checking a box back in is checking its contents. */}
                           <BoxContents
-                            contents={reservation.item.asLocation?.items ?? []}
+                            contents={boxContents(reservation.item.asLocation?.items, loan.id)}
                             checklist={{
                               // The component speaks content ids; the keys are
                               // per reservation, so narrow to this box's own.

@@ -31,7 +31,8 @@ import { Alert } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import BoxContents, { type BoxContent } from '@/components/BoxContents';
+import BoxContents from '@/components/BoxContents';
+import { boxContents, type ContentRow } from '@/utils/boxContents';
 
 interface Reservation {
   id: string;
@@ -41,7 +42,7 @@ interface Reservation {
     id: string;
     name: string;
     /** Set when the kama is a säilytyspaikka — what goes out with it. */
-    asLocation?: { items: BoxContent[] } | null;
+    asLocation?: { items: ContentRow[] } | null;
   };
 }
 
@@ -267,7 +268,7 @@ const EditItemsDialog = ({
                         page, because this is the moment it is being carried out
                         of the varasto. */}
                     <BoxContents
-                      contents={reservation.item.asLocation?.items ?? []}
+                      contents={boxContents(reservation.item.asLocation?.items, loan.id)}
                       className="mt-2"
                     />
                   </Card>
@@ -405,7 +406,7 @@ const LoanStartCard = ({
             {acceptedReservations.map((reservation) => (
               <BoxContents
                 key={`contents-${reservation.id}`}
-                contents={reservation.item.asLocation?.items ?? []}
+                contents={boxContents(reservation.item.asLocation?.items, loan.id)}
                 className="mt-2"
               />
             ))}

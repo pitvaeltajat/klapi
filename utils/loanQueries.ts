@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, ReservationStatus } from '@prisma/client';
 
 /**
  * Reusable Prisma fragments for loan queries — the loan equivalent of
@@ -55,7 +55,23 @@ export const itemBoxContentsInclude = {
     select: {
       items: {
         where: { deletedAt: null },
-        select: { id: true, name: true, amount: true },
+        select: {
+          id: true,
+          name: true,
+          amount: true,
+          // A kama inside a box can be out on a loan of its own: lending the
+          // box does not take what somebody had already borrowed out of it, so
+          // the box left the varasto one vasara short. Neither the pickup nor
+          // the return should expect that vasara to be inside — see
+          // `utils/boxContents.ts`, which turns these rows into that answer.
+          reservations: {
+            where: {
+              status: { in: [ReservationStatus.ACCEPTED, ReservationStatus.INUSE] },
+              loan: activeLoansWhere,
+            },
+            select: { loan: { select: { id: true, startTime: true, endTime: true } } },
+          },
+        },
       },
     },
   },
