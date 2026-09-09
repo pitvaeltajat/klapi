@@ -26,6 +26,10 @@ interface Props {
    * `Item` row itself is only created server-side when the loan is saved.
    */
   onAdd: (item: { id: string; name: string; amount: number }) => void;
+  /** Seeds the name field — what was typed into the kama picker before it
+   *  offered to make the name an oma kama. It is the initial value only, so
+   *  pass it together with a matching `key` to re-seed the form. */
+  initialName?: string;
   title?: string;
   /** What the toast says once it has landed wherever `onAdd` puts it. */
   successMessage?: string;
@@ -39,11 +43,12 @@ export default function CustomItemDialog({
   isOpen,
   onClose,
   onAdd,
+  initialName = '',
   title = 'Lisää oma kama lainaan',
   successMessage = 'Lisätty koriin',
   submitIcon: SubmitIcon = ShoppingCart,
 }: Props) {
-  const [name, setName] = React.useState('');
+  const [name, setName] = React.useState(initialName);
   const [amount, setAmount] = React.useState<number>(1);
   const [image, setImage] = React.useState<File | null>(null);
   const [preview, setPreview] = React.useState<string | null>(null);
@@ -101,7 +106,7 @@ export default function CustomItemDialog({
   };
 
   const resetForm = () => {
-    setName('');
+    setName(initialName);
     setAmount(1);
     pickImage(null);
   };

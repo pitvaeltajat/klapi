@@ -18,11 +18,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Select } from '@/components/ui/creatable-select';
+import { CreatableSelect } from '@/components/ui/creatable-select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
-import { NumberInput } from '@/components/ui/number-input';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -91,20 +90,20 @@ export default function EditLoanView({
     new Date(loan.endTime),
   ]);
   const [status, setStatus] = useState(deriveLoanStatus(loan.reservations, loan.status));
-  const [selectedItemId, setSelectedItemId] = useState(items[0]?.id ?? '');
-  const [selectedAmount, setSelectedAmount] = useState(1);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [startDate, endDate] = range;
 
-  // The start time is only editable while it is still in the future. Once the
-  // loan is running, re-picking a range would snap the start to 18:00 and
-  // rewrite when the kamat were actually collected — so an ongoing loan gets a
-  // return-day picker and keeps the start it has. That is the admin's usual
-  // edit here anyway: extending a loan that is already out.
+  // Once the loan is running, re-picking a range rewrites when the kamat were
+  // collected — so a non-admin gets a return-day picker and keeps the start it
+  // has (`updateLoan` blocks their edit at that point anyway). An admin may
+  // move a start that has already passed: a loan handed over a day early is
+  // corrected here.
   const loanStarted = new Date(loan.startTime) <= new Date();
+  const startLocked = loanStarted && !isAdmin;
 
   const { availabilities, loading: loadingAvailability } = useAvailabilities({
     start: startDate ?? new Date(loan.startTime),
@@ -225,11 +224,9 @@ export default function EditLoanView({
   }
 
   const selectableItems = items.map((i) => ({ value: i.id, label: i.name }));
-  const selectedOption = selectableItems.find((o) => o.value === selectedItemId) ?? null;
-  const addHeadroom = Math.max(
-    0,
-    headroom(selectedItemId) - (rows.find((r) => r.itemId === selectedItemId)?.amount ?? 0),
-  );
+  /** What's still free to add on top of what the loan already holds. */
+  const remaining = (itemId: string) =>
+    headroom(itemId) - (rows.find((r) => r.itemId === itemId)?.amount ?? 0);
 
   return (
     <>
@@ -247,8 +244,10 @@ export default function EditLoanView({
         />
 
         <CustomItemDialog
+          key={customName}
           isOpen={customOpen}
           onClose={() => setCustomOpen(false)}
+          initialName={customName}
           onAdd={({ id, name, amount }) => addRow({ itemId: id, name, amount })}
           title="Lisää oma kama lainaan"
           successMessage="Lisätty lainaan"
@@ -262,9 +261,10 @@ export default function EditLoanView({
         />
 
         {loanStarted && isAdmin && (
-          <Alert variant="warning" title="Noutoaika on jo mennyt">
-            Noutoa ei voi enää siirtää — palautuspäivää voit muuttaa. Saatavuus tarkistetaan
-            muiden lainojen suhteen, joten päällekkäinen jatko estetään tallennuksessa.
+          <Alert variant="warning" title="Laina on jo alkanut">
+            Noutoaikaa siirtämällä muutat merkintää siitä, milloin kamat noudettiin.
+            Saatavuus tarkistetaan muiden lainojen suhteen, joten päällekkäinen aika
+            estetään tallennuksessa.
           </Alert>
         )}
 
@@ -324,7 +324,7 @@ export default function EditLoanView({
 
         <Card>
           <CardTitle>Laina-aika</CardTitle>
-          {loanStarted ? (
+          {startLocked ? (
             <>
               <dl className="mb-3 flex flex-wrap items-baseline gap-x-2 text-sm sm:text-base">
                 <dt className="text-muted-foreground">Nouto</dt>
@@ -353,7 +353,11 @@ export default function EditLoanView({
               </div>
             </>
           ) : (
-            <LoanRangeCalendar value={range} onChange={setRange} minDate={new Date()} />
+            <LoanRangeCalendar
+              value={range}
+              onChange={setRange}
+              minDate={loanStarted ? undefined : new Date()}
+            />
           )}
         </Card>
 
@@ -434,53 +438,31 @@ export default function EditLoanView({
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Lisää kama</CardTitle>
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setCustomOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Oma kama
-            </Button>
-          </CardHeader>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex-2">
-              <Label>Kama</Label>
-              {/* Searchable: the catalogue is long enough that a native select
-                  means scrolling past a hundred kamaa to find one. */}
-              <Select
-                value={selectedOption}
-                options={selectableItems}
-                onChange={(option) => {
-                  setSelectedItemId((option as { value: string } | null)?.value ?? '');
-                  setSelectedAmount(1);
-                }}
-                placeholder="Hae kamaa nimellä"
-                noOptionsMessage={() => 'Ei osumia'}
-              />
-            </div>
-
-            <div className="flex-1">
-              <Label>Määrä (vapaana: {addHeadroom})</Label>
-              <NumberInput
-                value={selectedAmount}
-                onChange={setSelectedAmount}
-                min={1}
-                max={addHeadroom}
-              />
-            </div>
-
-            <Button
-              className="w-full md:w-auto"
-              disabled={!selectedItemId || selectedAmount < 1 || selectedAmount > addHeadroom}
-              onClick={() => {
-                const item = items.find((i) => i.id === selectedItemId);
-                if (!item) return;
-                addRow({ itemId: item.id, name: item.name, amount: selectedAmount });
-                setSelectedAmount(1);
-              }}
-            >
-              Lisää
-            </Button>
-          </div>
+          <CardTitle>Lisää kama</CardTitle>
+          {/* Searchable: the catalogue is long enough that a native select
+              means scrolling past a hundred kamaa to find one. A name with no
+              match isn't a dead end — it offers to become an oma kama. The
+              amount isn't asked for here; the row above adjusts it. */}
+          <CreatableSelect<{ value: string; label: string }>
+            value={null}
+            options={selectableItems}
+            // A kama the loan already holds every one of can't be added again.
+            // The "create" row isn't a catalogue kama, so it is never blocked.
+            isOptionDisabled={(option) =>
+              items.some((i) => i.id === option.value) && remaining(option.value) < 1
+            }
+            onChange={(option) => {
+              const item = items.find((i) => i.id === option?.value);
+              if (item) addRow({ itemId: item.id, name: item.name, amount: 1 });
+            }}
+            onCreateOption={(name) => {
+              setCustomName(name);
+              setCustomOpen(true);
+            }}
+            formatCreateLabel={(input) => `Lisää oma kama "${input}"`}
+            placeholder="Hae kamaa nimellä"
+            noOptionsMessage={() => 'Ei osumia'}
+          />
         </Card>
 
         <Button

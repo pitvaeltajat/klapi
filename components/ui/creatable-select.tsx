@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import SelectBase from 'react-select';
-import CreatableSelectBase from 'react-select/creatable';
+import CreatableSelectBase, { type CreatableProps } from 'react-select/creatable';
 import type { ClassNamesConfig, GroupBase, Props as SelectProps } from 'react-select';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,10 @@ import { cn } from '@/lib/utils';
 // CSS variables and dark mode without runtime theme juggling. Shared by both
 // exports below so the creatable and pick-only variants can't drift apart.
 const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
+  // `unstyled` strips react-select's own positioning too, so the menu has to be
+  // taken out of flow here — otherwise opening one grows the page instead of
+  // floating over it, and a long list has nothing to scroll.
+  container: () => 'relative',
   control: ({ isFocused }) =>
     cn(
       'flex min-h-10 w-full rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background',
@@ -26,14 +30,18 @@ const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
   dropdownIndicator: () => 'text-muted-foreground p-1 hover:text-foreground',
   clearIndicator: () => 'text-muted-foreground p-1 hover:text-foreground',
   indicatorSeparator: () => 'bg-border',
-  menu: () =>
-    'mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
-  menuList: () => 'p-1',
-  option: ({ isFocused, isSelected }) =>
+  menu: ({ placement }) =>
+    cn(
+      'absolute z-50 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
+      placement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
+    ),
+  menuList: () => 'max-h-[18rem] overflow-y-auto p-1',
+  option: ({ isFocused, isSelected, isDisabled }) =>
     cn(
       'rounded-sm px-2 py-1.5 text-sm cursor-pointer',
       isFocused && 'bg-accent text-accent-foreground',
       isSelected && 'bg-primary text-primary-foreground',
+      isDisabled && 'cursor-not-allowed opacity-50',
     ),
   noOptionsMessage: () => 'p-2 text-sm text-muted-foreground',
   loadingMessage: () => 'p-2 text-sm text-muted-foreground',
@@ -45,6 +53,8 @@ const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
 function styledProps<Option, IsMulti extends boolean, Group extends GroupBase<Option>>() {
   return {
     unstyled: true as const,
+    // Flip the menu up when there's no room below it.
+    menuPlacement: 'auto' as const,
     classNamePrefix: 'shadcn-select',
     classNames: classNames as unknown as ClassNamesConfig<Option, IsMulti, Group>,
   };
@@ -55,7 +65,7 @@ export function CreatableSelect<
   Option = unknown,
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>,
->(props: SelectProps<Option, IsMulti, Group> & { className?: string }) {
+>(props: CreatableProps<Option, IsMulti, Group> & { className?: string }) {
   return (
     <CreatableSelectBase<Option, IsMulti, Group>
       {...styledProps<Option, IsMulti, Group>()}
