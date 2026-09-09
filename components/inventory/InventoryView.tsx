@@ -92,7 +92,25 @@ const TRUNCATE_LEN = 40;
 // then reveals a text-field outline (matching the editing input's box model) so it
 // is obvious the value is click-to-edit, with no layout jump once editing starts.
 const EDITABLE_DISPLAY_CLASS =
-  'cursor-text rounded border border-transparent px-2 py-1 transition-colors hover:border-input hover:bg-background';
+  'cursor-text rounded border border-transparent px-2 py-1 transition-colors hover:border-input hover:bg-background ' +
+  'focus:border-input focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring';
+
+// The editable columns form a little spreadsheet inside the table, and it is
+// navigated like one: arrows step between cells, Enter (or F2) opens the cell
+// under the cursor, Enter again saves and drops to the row below. Tab and
+// shift-Tab need no code — the cells are in the tab order, so the browser
+// already walks them in reading order.
+//
+// The coordinates live in the DOM (`data-cell="row:col"` on the <td>) rather
+// than in React state: moving is then one querySelector, with no focus mirror
+// to keep in sync as rows sort, page or save.
+const NAV_COLUMN_IDS: EditableField[] = ['name', 'description', 'amount'];
+
+function focusCell(root: HTMLElement, row: number, col: number): boolean {
+  const target = root.querySelector<HTMLElement>(`[data-cell="${row}:${col}"] [data-cell-focus]`);
+  target?.focus();
+  return !!target;
+}
 // Box model shared by the resting display and the active input so they line up.
 const EDITABLE_INPUT_CLASS =
   'rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none';
@@ -203,8 +221,16 @@ function makeEditableCell<T>({
 
     return (
       <span
+        tabIndex={0}
+        data-cell-focus
         className={cn(EDITABLE_DISPLAY_CLASS, displayClassName)}
         onClick={() => startEdit(id, field, toEditValue(value))}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'F2') {
+            e.preventDefault();
+            startEdit(id, field, toEditValue(value));
+          }
+        }}
       >
         {renderDisplay(value)}
       </span>
@@ -772,6 +798,37 @@ export default function InventoryView() {
     }),
   ]), [handleRestoreRow]);
 
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLTableSectionElement>) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+    if (!cell) return;
+    const [row, col] = cell.dataset.cell!.split(':').map(Number);
+    const root = e.currentTarget;
+    const editing = (e.target as HTMLElement).tagName === 'INPUT';
+
+    // The input's own handler saves on Enter and abandons on Escape; either
+    // way it unmounts, so the landing cell can only be focused once React has
+    // swapped the display back in. Enter drops a row, Escape stays put.
+    if (editing) {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        const nextRow = e.key === 'Enter' ? row + 1 : row;
+        requestAnimationFrame(() => {
+          if (!focusCell(root, nextRow, col)) focusCell(root, row, col);
+        });
+      }
+      // Arrows belong to the caret (and to the number stepper) while typing.
+      return;
+    }
+
+    const step: Record<string, [number, number]> = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    };
+    const delta = step[e.key];
+    if (delta && focusCell(root, row + delta[0], col + delta[1])) e.preventDefault();
+  };
+
   const editCellValue = useMemo<EditCellContextValue>(
     () => ({ editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef }),
     [editState, startEdit, commitEdit, scheduleAutoSave],
@@ -917,7 +974,7 @@ export default function InventoryView() {
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
+            <TableBody onKeyDown={handleGridKeyDown}>
               {itemsLoading && items.length === 0 ? (
                 Array.from({ length: 8 }).map((_, rowIdx) => (
                   <TableRow key={`skeleton-${rowIdx}`}>
@@ -935,7 +992,7 @@ export default function InventoryView() {
                   </TableCell>
                 </TableRow>
               ) : (
-                table.getRowModel().rows.map((row) => {
+                table.getRowModel().rows.map((row, rowIndex) => {
                   const isArchived = !!row.original.deletedAt;
                   const classes = [
                     pendingRows.has(row.id) ? 'border-l-2 border-l-warning opacity-70' : '',
@@ -951,11 +1008,17 @@ export default function InventoryView() {
                   >
                     {/* getAllCells, not getVisibleCells: no column is ever
                         hidden, so this saves registering columnVisibilityFeature. */}
-                    {row.getAllCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
+                    {row.getAllCells().map((cell) => {
+                      const navCol = NAV_COLUMN_IDS.indexOf(cell.column.id as EditableField);
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          data-cell={navCol < 0 ? undefined : `${rowIndex}:${navCol}`}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                   );
                 })
