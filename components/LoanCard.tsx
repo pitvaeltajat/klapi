@@ -2,7 +2,14 @@
 
 import { LoanStatus, ReportCreated, ReportStatus, ReservationStatus } from '@prisma/client';
 import NextLink from 'next/link';
-import { getLoanStatusLabel, getLoanStatusColor, deriveLoanStatus, getLoanerName } from '@/utils/loanHelpers';
+import {
+  getLoanStatusLabel,
+  getLoanStatusColor,
+  deriveLoanStatus,
+  getLoanerName,
+  isLoanOverdue,
+  daysOverdue,
+} from '@/utils/loanHelpers';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -49,10 +56,8 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
     derivedStatus === LoanStatus.IN_BOX
       ? 0
       : loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).length;
-  const isOverdue =
-    !loan.deletedAt &&
-    (derivedStatus === LoanStatus.INUSE || derivedStatus === LoanStatus.ACCEPTED) &&
-    new Date(loan.endTime) < new Date();
+  const isOverdue = isLoanOverdue(loan);
+  const lateDays = isOverdue ? daysOverdue(loan.endTime) : 0;
 
   return (
     <Card
@@ -80,6 +85,11 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
         ) : (
           <Badge variant={getLoanStatusColor(derivedStatus)} className="shrink-0">
             {getLoanStatusLabel(derivedStatus)}
+          </Badge>
+        )}
+        {isOverdue && (
+          <Badge variant="destructive" className="shrink-0">
+            {lateDays > 0 ? `Myöhässä ${lateDays} pv` : 'Myöhässä'}
           </Badge>
         )}
         {inBoxCount > 0 && (

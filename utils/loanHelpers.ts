@@ -279,6 +279,28 @@ export const deriveLoanStatus = (
   return loanStatus;
 };
 
+/** Whole days past the return date. 0 while the loan is still due today. */
+export const daysOverdue = (endTime: Date | string): number =>
+  Math.max(0, Math.floor((Date.now() - new Date(endTime).getTime()) / 86_400_000));
+
+/**
+ * A loan whose kamat are still out after its return date. Only the two statuses
+ * that mean "not back yet" count — a loan sitting in the palautuslaatikko has
+ * been brought back, it just hasn't been checked in, and nobody should be
+ * chased for it.
+ */
+export const isLoanOverdue = (loan: {
+  status: LoanStatus;
+  endTime: Date | string;
+  deletedAt?: Date | string | null;
+  reservations: { status: ReservationStatus }[];
+}): boolean => {
+  if (loan.deletedAt) return false;
+  const derived = deriveLoanStatus(loan.reservations, loan.status);
+  if (derived !== LoanStatus.INUSE && derived !== LoanStatus.ACCEPTED) return false;
+  return new Date(loan.endTime) < new Date();
+};
+
 /**
  * The statuses an admin may set on a loan by hand (`loan/updateLoan`), and the
  * reservation status every line of the loan takes when they do.

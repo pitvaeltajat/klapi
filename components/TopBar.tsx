@@ -4,7 +4,7 @@ import { Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import { Button } from '@/components/ui/button';
@@ -180,6 +180,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
 
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Navigating from the top menu should just hide the mobile nav drawer — close
   // it on every route change, without touching cart/dates/browse state.
@@ -193,21 +194,24 @@ export default function TopBar({ children }: { children: ReactNode }) {
   const { state: dates, setBrowseMode, setDatesSet } = useDates();
   const totalItems = items.reduce((sum, item) => sum + item.amount, 0);
 
+  // `?browse=1` is what keeps the kalusto table (and its filters) across a
+  // reload — see the note in HomeClient.
   const handleBrowseClick = () => {
     setBrowseMode(true);
     setDatesSet(false);
-    if (pathname !== '/') {
-      router.push('/');
-    }
+    if (pathname !== '/') router.push('/?browse=1');
+    else router.replace('/?browse=1');
   };
 
   const handleReserveClick = () => {
     setBrowseMode(false);
+    if (pathname === '/') router.replace('/');
   };
 
   const isOnRoot = pathname === '/';
-  const isLainaaActive = isOnRoot && !dates.browseMode;
-  const isKamatActive = isOnRoot && dates.browseMode;
+  const inBrowseMode = dates.browseMode || searchParams.get('browse') === '1';
+  const isLainaaActive = isOnRoot && !inBrowseMode;
+  const isKamatActive = isOnRoot && inBrowseMode;
   const isPathActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
   const linkClass = (active: boolean) =>

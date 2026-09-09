@@ -16,6 +16,7 @@ import {
 } from '@tanstack/react-table';
 import { createContext, useContext, useState, useCallback, useRef, useMemo, useEffect, type RefObject } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
@@ -541,13 +542,28 @@ export default function InventoryView() {
   // Filtering, sorting, and pagination all happen server-side: the Item table
   // is unbounded (every custom loan leaves a permanent temporary item behind),
   // so the editor only ever fetches and renders a single page of rows.
-  const [showArchived, setShowArchived] = useState(false);
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
-  const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'temporary'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  // The whole view — filters, sort and page — is seeded from the query string
+  // and written back to it, so a reload (or coming back from a kama) lands on
+  // the same rows and a filtered list can be pasted to somebody. The params are
+  // read once, by these initialisers: after that the URL follows the state.
+  const searchParams = useSearchParams();
+  const [showArchived, setShowArchived] = useState(() => searchParams.get('archived') === 'all');
+  const [sorting, setSorting] = useState<SortingState>(() => [
+    { id: searchParams.get('sort') ?? 'name', desc: searchParams.get('dir') === 'desc' },
+  ]);
+  const [pagination, setPagination] = useState<PaginationState>(() => ({
+    pageIndex: Math.max(0, (Number(searchParams.get('page')) || 1) - 1),
+    pageSize: 50,
+  }));
+  const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'temporary'>(() => {
+    const type = searchParams.get('type');
+    return type === 'normal' || type === 'temporary' ? type : 'all';
+  });
+  const [categoryFilter, setCategoryFilter] = useState<string>(
+    () => searchParams.get('category') ?? '',
+  );
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const toFirstPage = useCallback(
@@ -591,6 +607,24 @@ export default function InventoryView() {
     if (showArchived) q.set('archived', 'all');
     return `/api/item/exportInventory?${q.toString()}`;
   }, [sortId, sortDir, search, typeFilter, categoryFilter, showArchived]);
+
+  // `history.replaceState`, not `router.replace`: the address bar is all that
+  // needs to change. Routing to the same page would re-run the (force-dynamic)
+  // server component and refetch the catalogue on every keystroke.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const set = (key: string, value: string | null) =>
+      value ? q.set(key, value) : q.delete(key);
+    set('search', search || null);
+    set('category', categoryFilter || null);
+    set('type', typeFilter === 'all' ? null : typeFilter);
+    set('archived', showArchived ? 'all' : null);
+    set('page', pagination.pageIndex > 0 ? String(pagination.pageIndex + 1) : null);
+    set('sort', sortId === 'name' ? null : sortId);
+    set('dir', sortDir === 'asc' ? null : sortDir);
+    const query = q.toString();
+    window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
+  }, [search, categoryFilter, typeFilter, showArchived, pagination.pageIndex, sortId, sortDir]);
 
   const { data, mutate: mutateItems, isLoading: itemsLoading } =
     useSWR<InventoryListResponse>(inventoryUrl, fetcher, { keepPreviousData: true });
@@ -728,7 +762,15 @@ export default function InventoryView() {
   // leaves (or stays muted when the archive toggle is on) and the page
   // backfills from the server.
   const runRowAction = useCallback(
-    async (item: InventoryItem, url: string, successMessage: string, errorMessage: string) => {
+    async (
+      item: InventoryItem,
+      url: string,
+      successMessage: string,
+      errorMessage: string,
+      /** Offered in the toast — archiving is undone from there rather than by
+       *  hunting the row down under "Näytä arkistoidut". */
+      undo?: () => void,
+    ) => {
       addPending(item.id);
       try {
         const res = await fetch(url, {
@@ -737,7 +779,7 @@ export default function InventoryView() {
           body: JSON.stringify(item.id),
         });
         if (!res.ok) throw new Error(errorMessage);
-        toast.success(successMessage);
+        toast.success(successMessage, undo && { action: { label: 'Kumoa', onClick: undo } });
       } catch {
         toast.error(errorMessage);
       } finally {
@@ -748,11 +790,6 @@ export default function InventoryView() {
     [mutateItems],
   );
 
-  const handleDeleteRow = (item: InventoryItem) => {
-    setDeleteTarget(null);
-    void runRowAction(item, '/api/item/deleteItem', 'Kama arkistoitu', 'Arkistointi epäonnistui');
-  };
-
   const handleRestoreRow = useCallback(
     (item: InventoryItem) => {
       void runRowAction(item, '/api/item/restoreItem', 'Kama palautettu', 'Palautus epäonnistui');
@@ -760,7 +797,24 @@ export default function InventoryView() {
     [runRowAction],
   );
 
+  const handleDeleteRow = (item: InventoryItem) => {
+    setDeleteTarget(null);
+    void runRowAction(
+      item,
+      '/api/item/deleteItem',
+      'Kama arkistoitu',
+      'Arkistointi epäonnistui',
+      () => handleRestoreRow(item),
+    );
+  };
+
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
+  // Only väliaikaiset can be moved into the kirjasto, and the selection is
+  // usually a mix — so the button counts what it would actually act on and
+  // stays hidden when that is none.
+  const selectedTemporaryCount = items.filter(
+    (i) => rowSelection[i.id] && i.type === 'temporary',
+  ).length;
 
   /** Every bulk action posts to the same endpoint and clears the selection. */
   const runBulkAction = async (
@@ -768,6 +822,8 @@ export default function InventoryView() {
     successMessage: (count: number) => string,
     errorMessage: string,
     onSuccess?: () => void,
+    /** Same offer as the single-row archive, over the ids that just moved. */
+    undoBody?: Record<string, unknown>,
   ) => {
     const ids = selectedIds;
     ids.forEach(addPending);
@@ -780,7 +836,21 @@ export default function InventoryView() {
       if (!res.ok) throw new Error('Virhe');
       setRowSelection({});
       onSuccess?.();
-      toast.success(successMessage(ids.length));
+      toast.success(
+        successMessage(ids.length),
+        undoBody && {
+          action: {
+            label: 'Kumoa',
+            onClick: () => {
+              void fetch('/api/item/bulkItems', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...undoBody, ids }),
+              }).then(() => mutateItems());
+            },
+          },
+        },
+      );
     } catch {
       toast.error(errorMessage);
     } finally {
@@ -795,6 +865,16 @@ export default function InventoryView() {
       { action: 'delete' },
       (n) => `${n} kamaa arkistoitu`,
       'Massapoisto epäonnistui',
+      undefined,
+      { action: 'restore' },
+    );
+  };
+
+  const handleBulkPromote = () => {
+    void runBulkAction(
+      { action: 'promote' },
+      (n) => `${n} kamaa siirretty kirjastoon`,
+      'Siirto kirjastoon epäonnistui',
     );
   };
 
@@ -961,41 +1041,6 @@ export default function InventoryView() {
     [locations],
   );
 
-  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLTableSectionElement>) => {
-    const el = e.target as HTMLElement;
-    const cell = el.closest<HTMLElement>('[data-cell]');
-    if (!cell) return;
-    // An open sijainti/kategoria picker owns every key it is given — Enter
-    // picks an option, Escape closes the menu — and hands focus back itself.
-    if (el.closest('[data-cell-picker]')) return;
-    const [row, col] = cell.dataset.cell!.split(':').map(Number);
-    const root = e.currentTarget;
-    const editing = el.tagName === 'INPUT';
-
-    // The input's own handler saves on Enter and abandons on Escape; either
-    // way it unmounts, so the landing cell can only be focused once React has
-    // swapped the display back in. Enter drops a row, Escape stays put.
-    if (editing) {
-      if (e.key === 'Enter' || e.key === 'Escape') {
-        const nextRow = e.key === 'Enter' ? row + 1 : row;
-        requestAnimationFrame(() => {
-          if (!focusCell(root, nextRow, col)) focusCell(root, row, col);
-        });
-      }
-      // Arrows belong to the caret (and to the number stepper) while typing.
-      return;
-    }
-
-    const step: Record<string, [number, number]> = {
-      ArrowUp: [-1, 0],
-      ArrowDown: [1, 0],
-      ArrowLeft: [0, -1],
-      ArrowRight: [0, 1],
-    };
-    const delta = step[e.key];
-    if (delta && focusCell(root, row + delta[0], col + delta[1])) e.preventDefault();
-  };
-
   // Sijainti and kategoriat go through `editItem` rather than `patchItem`: that
   // route already mints a sijainti/kategoria the admin typed instead of picked,
   // and diffs the whole kama for the history log — so it is sent the whole kama
@@ -1083,6 +1128,49 @@ export default function InventoryView() {
     getRowId: (row) => row.id,
   });
 
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLTableSectionElement>) => {
+    const el = e.target as HTMLElement;
+    const cell = el.closest<HTMLElement>('[data-cell]');
+    if (!cell) return;
+    // An open sijainti/kategoria picker owns every key it is given — Enter
+    // picks an option, Escape closes the menu — and hands focus back itself.
+    if (el.closest('[data-cell-picker]')) return;
+    const [row, col] = cell.dataset.cell!.split(':').map(Number);
+    const root = e.currentTarget;
+    const editing = el.tagName === 'INPUT';
+
+    // The input's own handler saves on Enter and abandons on Escape; either
+    // way it unmounts, so the landing cell can only be focused once React has
+    // swapped the display back in. Enter drops a row, Escape stays put.
+    if (editing) {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        const nextRow = e.key === 'Enter' ? row + 1 : row;
+        requestAnimationFrame(() => {
+          if (!focusCell(root, nextRow, col)) focusCell(root, row, col);
+        });
+      }
+      // Arrows belong to the caret (and to the number stepper) while typing.
+      return;
+    }
+
+    if (e.key === ' ') {
+      // Ticking the row is part of moving around the table: the checkbox
+      // column is not one of the cursor's stops, so Space stands in for it.
+      e.preventDefault();
+      table.getRowModel().rows[row]?.toggleSelected();
+      return;
+    }
+
+    const step: Record<string, [number, number]> = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    };
+    const delta = step[e.key];
+    if (delta && focusCell(root, row + delta[0], col + delta[1])) e.preventDefault();
+  };
+
   const { pageIndex, pageSize } = pagination;
 
   return (
@@ -1160,6 +1248,12 @@ export default function InventoryView() {
             <Button size="sm" variant="outline" onClick={() => setBulkLocationOpen(true)}>
               Aseta sijainti
             </Button>
+            {selectedTemporaryCount > 0 && (
+              <Button size="sm" variant="outline" className="gap-2" onClick={handleBulkPromote}>
+                <ArrowUpCircle className="h-4 w-4" />
+                Siirrä kirjastoon ({selectedTemporaryCount})
+              </Button>
+            )}
           </Card>
         )}
 

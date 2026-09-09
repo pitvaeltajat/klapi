@@ -78,6 +78,11 @@ export default function ItemCardShell({
       'transition-all sm:flex-col sm:shadow-lg sm:hover:z-10 sm:hover:scale-[1.01] sm:hover:shadow-2xl',
     className,
   );
+  // Which src 404'd, rather than a "it failed" flag: comparing it against the
+  // current src makes the fallback reset by itself when the photo changes.
+  const [failedSrc, setFailedSrc] = React.useState<string | undefined>(undefined);
+  const showingPlaceholder = !!placeholder && (imageSrc === placeholder || failedSrc === imageSrc);
+
   // Removed huomiot shouldn't surface on the card — only live ones.
   const activeAnnouncements = Array.isArray(announcements)
     ? announcements.filter((a) => !a.expiresAt || new Date(a.expiresAt) > new Date())
@@ -104,9 +109,18 @@ export default function ItemCardShell({
               src={imageSrc}
               alt={`Picture of ${name}`}
               onError={(e) => {
-                if (placeholder) (e.currentTarget as HTMLImageElement).src = placeholder;
+                if (placeholder) {
+                  (e.currentTarget as HTMLImageElement).src = placeholder;
+                  setFailedSrc(imageSrc);
+                }
               }}
-              className="h-full w-full object-cover object-center"
+              // A real photo fills the box; the "Ei kuvaa" placeholder is a
+              // fixed 5:3 picture of a word, so cropping it to the compact
+              // card's square box cut the word in half — it gets contained.
+              className={cn(
+                'h-full w-full object-center',
+                showingPlaceholder ? 'object-contain' : 'object-cover',
+              )}
             />
           ))}
       </div>

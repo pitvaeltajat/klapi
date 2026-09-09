@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { action, ids, categoryName, locationName } = body as {
-    action: 'delete' | 'restore' | 'setCategory' | 'setLocation';
+    action: 'delete' | 'restore' | 'promote' | 'setCategory' | 'setLocation';
     ids: string[];
     categoryName?: string;
     locationName?: string;
@@ -69,6 +69,35 @@ export async function POST(request: Request) {
         ),
     );
     return NextResponse.json({ message: `${ids.length} kamaa palautettu` });
+  }
+
+  // Bulk "siirrä kirjastoon" only flips the type. The single-item flow
+  // (promoteItem) doubles as an edit form — nimi, määrä, kategoriat — which is
+  // exactly what you don't want to fill in twenty times; the fields stay
+  // editable in the table afterwards.
+  if (action === 'promote') {
+    const affected = await prisma.item.findMany({
+      where: { id: { in: ids }, type: 'temporary' },
+      select: { id: true, name: true },
+    });
+    if (affected.length === 0) {
+      return NextResponse.json({ message: 'Ei väliaikaisia kamoja valittuna' }, { status: 400 });
+    }
+    await prisma.item.updateMany({
+      where: { id: { in: affected.map((i) => i.id) } },
+      data: { type: 'normal' },
+    });
+    await Promise.all(
+      affected.map((i) =>
+        logItemHistory({
+          itemId: i.id,
+          action: 'PROMOTED',
+          actedById,
+          details: { name: i.name, bulk: true },
+        }),
+      ),
+    );
+    return NextResponse.json({ message: `${affected.length} kamaa siirretty kirjastoon` });
   }
 
   if (action === 'setCategory') {

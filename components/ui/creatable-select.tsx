@@ -50,8 +50,15 @@ const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
 
 // The config above never touches the option type, but react-select's generics
 // insist it does — hence the one cast, kept here rather than at each call site.
-function styledProps<Option, IsMulti extends boolean, Group extends GroupBase<Option>>() {
+function styledProps<Option, IsMulti extends boolean, Group extends GroupBase<Option>>(
+  instanceId: string,
+) {
   return {
+    // react-select numbers its instances from a module counter, which counts
+    // differently on the server than in the browser — the ids it puts on the
+    // input and the live region then mismatch on hydration. A `useId` is stable
+    // across both.
+    instanceId,
     unstyled: true as const,
     // Flip the menu up when there's no room below it.
     menuPlacement: 'auto' as const,
@@ -66,9 +73,10 @@ export function CreatableSelect<
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>,
 >(props: CreatableProps<Option, IsMulti, Group> & { className?: string }) {
+  const instanceId = React.useId();
   return (
     <CreatableSelectBase<Option, IsMulti, Group>
-      {...styledProps<Option, IsMulti, Group>()}
+      {...styledProps<Option, IsMulti, Group>(instanceId)}
       className={props.className}
       {...props}
     />
@@ -81,9 +89,10 @@ export function Select<
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>,
 >(props: SelectProps<Option, IsMulti, Group> & { className?: string }) {
+  const instanceId = React.useId();
   return (
     <SelectBase<Option, IsMulti, Group>
-      {...styledProps<Option, IsMulti, Group>()}
+      {...styledProps<Option, IsMulti, Group>(instanceId)}
       className={props.className}
       {...props}
     />

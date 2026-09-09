@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, use, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LayoutGrid, Plus, Table as TableIcon } from 'lucide-react';
 import DateSelector from '@/components/DateSelector';
 import DateSummaryBar from '@/components/DateSummaryBar';
@@ -119,6 +120,15 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   const onKioskMachine = isKioskMachine(session?.user);
   const isAdmin = session?.user?.group === 'ADMIN';
 
+  // Browse mode is where the admin's kalusto table lives, so it is in the URL
+  // alongside that table's own filters: without it a reload — or coming back
+  // from a kama — drops you on the date picker and the filters in the address
+  // bar have nothing to show them in. Derived rather than synced into the
+  // context, so there is no state to keep in step with the query string.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const browseMode = dates.browseMode || searchParams.get('browse') === '1';
+
   // The kiosk flow always starts the loan now, so booking a *later* date needs
   // its own way in — the "Tee varaus toiselle päivälle" button on the welcome
   // screen, which drops into the ordinary date picker. It is a detour from the
@@ -132,6 +142,7 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
 
   const handleExitBrowseMode = () => {
     setBrowseMode(false);
+    router.replace('/');
     if (isKioskMode) {
       const [start, end] = defaultKioskRange();
       setStartDate(start);
@@ -143,7 +154,7 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   return (
     <>
       <PendingPickupBanner />
-      {dates.browseMode ? (
+      {browseMode ? (
         <>
           <BrowseModeHeader
             onExitBrowseMode={handleExitBrowseMode}

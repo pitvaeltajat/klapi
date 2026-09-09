@@ -5,7 +5,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import LoanCard, { LoanType } from '@/components/LoanCard';
-import { getLoanStatusLabel, deriveLoanStatus } from '@/utils/loanHelpers';
+import { getLoanStatusLabel, deriveLoanStatus, isLoanOverdue } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { SearchInput } from '@/components/ui/search-input';
@@ -41,6 +41,11 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
   // is ever handed any, so the chip appears only when there are some.
   const [showDeleted, setShowDeleted] = useState(false);
   const hasDeleted = loans.some((loan) => loan.deletedAt);
+  // Myöhässä narrows the list rather than widening it: it is the one question
+  // an admin comes to this page to answer, and it cuts across the statuses
+  // instead of being another one of them.
+  const [onlyOverdue, setOnlyOverdue] = useState(false);
+  const overdueCount = loans.filter(isLoanOverdue).length;
 
   const allChecked = selectedStatuses.size === allStatuses.length;
   const isIndeterminate = selectedStatuses.size > 0 && !allChecked;
@@ -92,6 +97,7 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
 
   const filteredLoans = loans.filter((loan) => {
     if (Boolean(loan.deletedAt) !== showDeleted) return false;
+    if (onlyOverdue && !isLoanOverdue(loan)) return false;
     if (!matchesSearch(loan)) return false;
     // A search is a lookup, not another filter: "missä sirkkeli on" has to find
     // the loan even when its status chip is unticked, or the answer is an empty
@@ -142,6 +148,17 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
                   {getStatusFilterLabel(status)}
                 </FilterChip>
               ))}
+              {overdueCount > 0 && (
+                <FilterChip
+                  active={onlyOverdue}
+                  onClick={() => {
+                    setVisibleCount(PAGE_SIZE);
+                    setOnlyOverdue((on) => !on);
+                  }}
+                >
+                  Myöhässä ({overdueCount})
+                </FilterChip>
+              )}
               {hasDeleted && (
                 <FilterChip
                   active={showDeleted}
@@ -162,7 +179,9 @@ export default function LoanListClient({ loans }: { loans: LoanType[] }) {
             title={
               needle
                 ? `Ei osumia haulle "${search.trim()}"`
-                : showDeleted
+                : onlyOverdue
+                  ? 'Ei myöhässä olevia lainoja'
+                  : showDeleted
                   ? 'Ei poistettuja lainoja'
                   : 'Ei lainoja valituilla suodattimilla'
             }
