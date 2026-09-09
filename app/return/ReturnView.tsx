@@ -274,6 +274,7 @@ const LoanReturnCard = ({
                           </div>
                           {/* Checking a box back in is checking its contents. */}
                           <BoxContents
+                            defaultOpen
                             contents={boxContents(reservation.item.asLocation?.items, loan.id)}
                             checklist={{
                               // The component speaks content ids; the keys are

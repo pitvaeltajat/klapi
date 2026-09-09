@@ -268,6 +268,7 @@ const EditItemsDialog = ({
                         page, because this is the moment it is being carried out
                         of the varasto. */}
                     <BoxContents
+                      defaultOpen
                       contents={boxContents(reservation.item.asLocation?.items, loan.id)}
                       className="mt-2"
                     />
@@ -406,6 +407,7 @@ const LoanStartCard = ({
             {acceptedReservations.map((reservation) => (
               <BoxContents
                 key={`contents-${reservation.id}`}
+                defaultOpen
                 contents={boxContents(reservation.item.asLocation?.items, loan.id)}
                 className="mt-2"
               />

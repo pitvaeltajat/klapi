@@ -44,10 +44,22 @@ const fiCollator = new Intl.Collator('fi');
 export default function BoxContents({
   contents,
   checklist,
+  defaultOpen = false,
   className,
 }: {
   contents: BoxContent[];
   checklist?: BoxChecklist;
+  /**
+   * Start unfolded. The screens where the box is physically in someone's hands
+   * pass this: at the counter and at the palautus the list is the job, and one
+   * more tap before you can start counting is one too many. Elsewhere it stays
+   * folded — the loan page is for reading, and several boxes' worth of contents
+   * would bury the loan itself.
+   *
+   * Only the initial state: `<details>` owns it after that, so opening or
+   * closing one sticks while the rest of the screen re-renders.
+   */
+  defaultOpen?: boolean;
   className?: string;
 }) {
   if (contents.length === 0) return null;
@@ -59,7 +71,7 @@ export default function BoxContents({
   const elsewhereCount = sorted.filter((content) => content.outOnLoan).length;
 
   return (
-    <Card as="details" variant="inset" padding="sm" className={className}>
+    <Card as="details" variant="inset" padding="sm" open={defaultOpen} className={className}>
       <summary
         onClick={(e) => e.stopPropagation()}
         // The counts wrap as whole phrases: this sits in a narrow column on the
