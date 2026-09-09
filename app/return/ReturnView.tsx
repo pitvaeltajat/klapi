@@ -98,6 +98,22 @@ const LoanReturnCard = ({
     () => new Set(returnableReservations.map((r) => r.id)),
   );
 
+  // Which contents of which box were *not* found, keyed per reservation so two
+  // boxes holding a kama of the same name can't tick each other's.
+  const [missingContents, setMissingContents] = useState<Set<string>>(new Set());
+  const missingKey = (reservationId: string, contentId: string) =>
+    `${reservationId}:${contentId}`;
+
+  const toggleMissing = (reservationId: string, contentId: string) => {
+    setMissingContents((prev) => {
+      const next = new Set(prev);
+      const key = missingKey(reservationId, contentId);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -107,6 +123,24 @@ const LoanReturnCard = ({
     });
   };
 
+  // Anything left unticked inside a box that is being returned becomes a line
+  // of the huomio — the contents are not reservations, so this note is the only
+  // place a missing vasara can be recorded. Boxes that aren't being returned
+  // are left out: their contents are still out with them.
+  const missingNote = returnableReservations
+    .filter((reservation) => selectedIds.has(reservation.id))
+    .map((reservation) => {
+      const gone = (reservation.item.asLocation?.items ?? []).filter((content) =>
+        missingContents.has(missingKey(reservation.id, content.id)),
+      );
+      if (gone.length === 0) return null;
+      return `Puuttuu laatikosta "${reservation.item.name}": ${gone
+        .map((content) => content.name)
+        .join(', ')}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
   const allSelected = selectedIds.size === returnableReservations.length;
   const isPartialReturn =
     selectedIds.size > 0 && selectedIds.size < returnableReservations.length;
@@ -115,7 +149,11 @@ const LoanReturnCard = ({
     if (isLoading) return;
     setIsLoading(true);
     try {
-      const box = await onReturn(loan.id, Array.from(selectedIds), reportContent);
+      const box = await onReturn(
+        loan.id,
+        Array.from(selectedIds),
+        [missingNote, reportContent.trim()].filter(Boolean).join('\n\n'),
+      );
       if (box) {
         setBoxInfo(box);
         setReturnOpen(false);
@@ -233,7 +271,21 @@ const LoanReturnCard = ({
                             </div>
                           </div>
                           {/* Checking a box back in is checking its contents. */}
-                          <BoxContents contents={reservation.item.asLocation?.items ?? []} />
+                          <BoxContents
+                            contents={reservation.item.asLocation?.items ?? []}
+                            checklist={{
+                              // The component speaks content ids; the keys are
+                              // per reservation, so narrow to this box's own.
+                              missing: new Set(
+                                (reservation.item.asLocation?.items ?? [])
+                                  .filter((content) =>
+                                    missingContents.has(missingKey(reservation.id, content.id)),
+                                  )
+                                  .map((content) => content.id),
+                              ),
+                              onToggle: (contentId) => toggleMissing(reservation.id, contentId),
+                            }}
+                          />
                         </div>
                       </SelectableRow>
                     );
@@ -277,6 +329,15 @@ const LoanReturnCard = ({
                     lainauskieltoon sekä korvausvastuuseen vahingoittuneen kaluston koko arvoon
                     asti.
                   </p>
+                  {/* Shown rather than written into the field: the field is
+                      the palauttaja's own words, and typing over them as they
+                      tick boxes would be maddening. It is prepended to the
+                      huomio on submit. */}
+                  {missingNote && (
+                    <Alert variant="warning" className="mt-2" title="Lisätään huomioon">
+                      <p className="whitespace-pre-line">{missingNote}</p>
+                    </Alert>
+                  )}
                   <Textarea
                     id="return-notice"
                     placeholder="Esim. kattilan kahva irtosi"

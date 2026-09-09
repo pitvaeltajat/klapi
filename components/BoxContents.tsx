@@ -3,11 +3,19 @@
 import React from 'react';
 import { Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { CheckboxIndicator } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 export interface BoxContent {
   id: string;
   name: string;
   amount: number;
+}
+
+export interface BoxChecklist {
+  /** Contents that were *not* found — everything starts present. */
+  missing: Set<string>;
+  onToggle: (contentId: string) => void;
 }
 
 const fiCollator = new Intl.Collator('fi');
@@ -20,20 +28,32 @@ const fiCollator = new Intl.Collator('fi');
  * question both times is the same — is everything that belongs in this box
  * actually in it — and the answer is otherwise a trip to the box's own page.
  *
+ * With a `checklist` it becomes tickable, which is what the return screen wants:
+ * the contents are not reservations of their own, so unticking one records
+ * nothing by itself — the caller turns what is left unticked into the huomio
+ * the return already collects.
+ *
  * A native `<details>`, so it needs no state, no library and no JavaScript to
- * open. Inside a tickable row the summary is also a click target, hence the
- * `stopPropagation`: opening the list must not tick the row.
+ * open. Inside a tickable row every click is a click on that row's `<label>`,
+ * so the summary stops propagation and each content is a `<button>` — clicking
+ * interactive content doesn't activate a label, which a nested `<input>` under
+ * one wouldn't manage.
  */
 export default function BoxContents({
   contents,
+  checklist,
   className,
 }: {
   contents: BoxContent[];
+  checklist?: BoxChecklist;
   className?: string;
 }) {
   if (contents.length === 0) return null;
 
   const sorted = [...contents].sort((a, b) => fiCollator.compare(a.name, b.name));
+  const missingCount = checklist
+    ? sorted.filter((content) => checklist.missing.has(content.id)).length
+    : 0;
 
   return (
     <Card as="details" variant="inset" padding="sm" className={className}>
@@ -43,14 +63,50 @@ export default function BoxContents({
       >
         <Package className="h-4 w-4 shrink-0" aria-hidden />
         Sisältää {sorted.length} kamaa
+        {missingCount > 0 && (
+          <span className="font-semibold text-destructive">· {missingCount} puuttuu</span>
+        )}
       </summary>
       <ul className="mt-2 flex flex-col gap-1 text-sm">
-        {sorted.map((content) => (
-          <li key={content.id} className="flex justify-between gap-2">
-            <span className="min-w-0 break-words">{content.name}</span>
-            <span className="shrink-0 text-muted-foreground">{content.amount} kpl</span>
-          </li>
-        ))}
+        {sorted.map((content) => {
+          const isMissing = checklist?.missing.has(content.id) ?? false;
+          const row = (
+            <>
+              <span className={cn('min-w-0 break-words', isMissing && 'line-through')}>
+                {content.name}
+              </span>
+              <span className="shrink-0 text-muted-foreground">{content.amount} kpl</span>
+            </>
+          );
+
+          if (!checklist) {
+            return (
+              <li key={content.id} className="flex justify-between gap-2">
+                {row}
+              </li>
+            );
+          }
+
+          return (
+            <li key={content.id}>
+              <button
+                type="button"
+                aria-pressed={!isMissing}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  checklist.onToggle(content.id);
+                }}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded px-1 py-1 text-left transition-colors hover:bg-muted',
+                  isMissing && 'text-destructive',
+                )}
+              >
+                <CheckboxIndicator checked={!isMissing} />
+                <span className="flex min-w-0 flex-1 justify-between gap-2">{row}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
