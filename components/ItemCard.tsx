@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 const ItemCard = memo(function ItemCard({
   item,
   availableAmount,
+  blockedBy,
   availabilityLoading = false,
   availabilityKnown = true,
 }: ItemCardProps) {
@@ -63,7 +64,9 @@ const ItemCard = memo(function ItemCard({
           {Math.max(0, amountLeft)} / {item.amount} kpl
         </span>
       </TooltipTrigger>
-      <TooltipContent>Vapaana</TooltipContent>
+      <TooltipContent>
+        {blockedBy ? `Sisältyy lainattuun kamaan: ${blockedBy.name}` : 'Vapaana'}
+      </TooltipContent>
     </Tooltip>
   ) : (
     <Skeleton className="h-4 w-32" />

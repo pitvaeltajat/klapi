@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { diffItemFields, logItemHistory, type ItemFieldValue } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
+import { syncContainerName } from '@/utils/containers';
 
 export async function PATCH(request: Request) {
   const { session, denied } = await requireAdmin();
@@ -51,6 +52,8 @@ export async function PATCH(request: Request) {
     data,
     include: { categories: true, location: true },
   });
+
+  if (field === 'name') await syncContainerName(id, updated.name);
 
   if (before) {
     const fieldKey = field === 'locationId' ? 'location' : field;

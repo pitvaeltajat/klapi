@@ -7,7 +7,10 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 interface AvailabilityResponse {
-  availabilities: Record<string, { byDate: Record<string, number>; available: number }>;
+  availabilities: Record<
+    string,
+    { available: number; blockedBy?: { id: string; name: string } }
+  >;
 }
 
 async function createTestUser(
@@ -459,6 +462,144 @@ describe('getAvailabilities API integration tests', () => {
       const result = await getAvailabilities(startDate, endDate);
 
       expect(result.availabilities[testItem1.id].available).toBe(3);
+    });
+  });
+
+  // "Sininen työkalupakki" is both a kama you can borrow and a sijainti other
+  // kamat live in. Lending the box lends what is inside it; lending what is
+  // inside it does not lend the box.
+  describe('A kama that is also a säilytyspaikka', () => {
+    let box: Awaited<ReturnType<typeof createTestItem>>;
+    let hammer: Awaited<ReturnType<typeof createTestItem>>;
+    let boxLocationId: string;
+
+    const start = new Date('2024-03-01T18:00:00Z');
+    const end = new Date('2024-03-05T18:00:00Z');
+
+    beforeAll(async () => {
+      box = await createTestItem({ name: 'Sininen työkalupakki', amount: 1 });
+      const location = await prisma.location.create({
+        data: { name: box.name, itemId: box.id },
+      });
+      boxLocationId = location.id;
+      hammer = await createTestItem({ name: 'Vasara', amount: 3 });
+      await prisma.item.update({
+        where: { id: hammer.id },
+        data: { locationId: boxLocationId },
+      });
+    });
+
+    afterAll(async () => {
+      await prisma.item.updateMany({
+        where: { id: hammer.id },
+        data: { locationId: null },
+      });
+      await prisma.location.deleteMany({ where: { id: boxLocationId } });
+      await prisma.item.deleteMany({ where: { id: { in: [box.id, hammer.id] } } });
+    });
+
+    it('takes its contents with it when it is loaned', async () => {
+      await createTestLoan(testUser.id, [{ itemId: box.id, amount: 1 }], {
+        startTime: start,
+        endTime: end,
+      });
+
+      const result = await getAvailabilities(start, end);
+
+      expect(result.availabilities[box.id].available).toBe(0);
+      expect(result.availabilities[hammer.id].available).toBe(0);
+      expect(result.availabilities[hammer.id].blockedBy).toEqual({
+        id: box.id,
+        name: box.name,
+      });
+    });
+
+    it('leaves the contents alone outside the loan window', async () => {
+      await createTestLoan(testUser.id, [{ itemId: box.id, amount: 1 }], {
+        startTime: start,
+        endTime: end,
+      });
+
+      const later = await getAvailabilities(
+        new Date('2024-03-10T18:00:00Z'),
+        new Date('2024-03-12T18:00:00Z'),
+      );
+
+      expect(later.availabilities[hammer.id].available).toBe(3);
+      expect(later.availabilities[hammer.id].blockedBy).toBeUndefined();
+    });
+
+    it('stays loanable when something inside it is out on its own', async () => {
+      await createTestLoan(testUser.id, [{ itemId: hammer.id, amount: 1 }], {
+        startTime: start,
+        endTime: end,
+      });
+
+      const result = await getAvailabilities(start, end);
+
+      // The box goes out one vasara short — which is the point of being able to
+      // borrow a single kama out of it.
+      expect(result.availabilities[box.id].available).toBe(1);
+      expect(result.availabilities[hammer.id].available).toBe(2);
+    });
+
+    it('cascades through a box inside a box', async () => {
+      const trailer = await createTestItem({ name: 'Peräkärry', amount: 1 });
+      const trailerLocation = await prisma.location.create({
+        data: { name: trailer.name, itemId: trailer.id },
+      });
+      await prisma.item.update({
+        where: { id: box.id },
+        data: { locationId: trailerLocation.id },
+      });
+
+      try {
+        await createTestLoan(testUser.id, [{ itemId: trailer.id, amount: 1 }], {
+          startTime: start,
+          endTime: end,
+        });
+
+        const result = await getAvailabilities(start, end);
+
+        expect(result.availabilities[box.id].available).toBe(0);
+        expect(result.availabilities[hammer.id].available).toBe(0);
+        expect(result.availabilities[hammer.id].blockedBy).toEqual({
+          id: trailer.id,
+          name: trailer.name,
+        });
+      } finally {
+        await prisma.item.update({ where: { id: box.id }, data: { locationId: null } });
+        await prisma.location.deleteMany({ where: { id: trailerLocation.id } });
+        await prisma.item.deleteMany({ where: { id: trailer.id } });
+      }
+    });
+
+    it('does not hang when two boxes are stored inside each other', async () => {
+      const other = await createTestItem({ name: 'Punainen työkalupakki', amount: 1 });
+      const otherLocation = await prisma.location.create({
+        data: { name: other.name, itemId: other.id },
+      });
+      // Only reachable by hand-editing, but a cycle here used to be an infinite
+      // walk rather than a wrong number.
+      await prisma.item.update({
+        where: { id: other.id },
+        data: { locationId: boxLocationId },
+      });
+      await prisma.item.update({
+        where: { id: box.id },
+        data: { locationId: otherLocation.id },
+      });
+
+      try {
+        const result = await getAvailabilities(start, end);
+        expect(result.availabilities[box.id].available).toBe(1);
+        expect(result.availabilities[other.id].available).toBe(1);
+      } finally {
+        await prisma.item.update({ where: { id: box.id }, data: { locationId: null } });
+        await prisma.item.update({ where: { id: other.id }, data: { locationId: null } });
+        await prisma.location.deleteMany({ where: { id: otherLocation.id } });
+        await prisma.item.deleteMany({ where: { id: other.id } });
+      }
     });
   });
 });

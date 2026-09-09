@@ -6,6 +6,8 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 interface Availability {
   available: number;
+  /** Set when a kama is unavailable because the kama it is stored *in* is out. */
+  blockedBy?: { id: string; name: string };
 }
 
 interface AvailabilityResponse {

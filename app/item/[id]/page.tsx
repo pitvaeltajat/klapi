@@ -24,6 +24,17 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     include: {
       categories: true,
       location: true,
+      // Set when this kama is itself a säilytyspaikka — what is stored in it
+      // travels with it, so the page says what that is.
+      asLocation: {
+        select: {
+          id: true,
+          items: {
+            where: { deletedAt: null },
+            select: { id: true, name: true, amount: true },
+          },
+        },
+      },
       announcements: { orderBy: { createdAt: 'desc' } },
       reservations: {
         // Reservations of a deleted loan are still on the row (a restore has to

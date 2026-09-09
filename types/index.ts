@@ -80,6 +80,9 @@ export interface ItemCardProps {
     announcements: Announcement[];
   };
   availableAmount: number;
+  /** Names the kama this one is stored in, when that kama being out is why
+   *  there is none of this one free. */
+  blockedBy?: { id: string; name: string };
   availabilityLoading?: boolean;
   availabilityKnown?: boolean;
 }

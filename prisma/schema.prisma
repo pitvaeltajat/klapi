@@ -107,7 +107,10 @@ model Item {
   locationId          String?
   type                ItemType             @default(normal)
   deletedAt           DateTime?
-  location            Location?            @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  location            Location?            @relation("ItemLocation", fields: [locationId], references: [id], onDelete: Cascade)
+  /// Set when this kama is also a säilytyspaikka — the sijainti row other
+  /// kamat point at. Loaning this kama takes everything inside it with it.
+  asLocation          Location?            @relation("ItemAsLocation")
   reservations        Reservation[]
   categories          Category[]           @relation("CategoryToItem")
   announcements       Announcement[]
@@ -188,11 +191,17 @@ enum AnnouncementKind {
   TIEDOKSI
 }
 
+/// Where a kama lives. Usually just a shelf ("Ulkovarasto"), but a sijainti can
+/// *be* a kama: "Sininen työkalupakki" is both something you can borrow and a
+/// place other kamat are kept in. `itemId` is what makes it the latter — see
+/// `utils/availability.ts` for what that does to what is free when.
 model Location {
   name        String
   description String?
   id          String  @id @default(cuid())
-  items       Item[]
+  items       Item[]  @relation("ItemLocation")
+  itemId      String? @unique
+  item        Item?   @relation("ItemAsLocation", fields: [itemId], references: [id], onDelete: Cascade)
 }
 
 model Box {

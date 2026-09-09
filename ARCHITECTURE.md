@@ -329,12 +329,35 @@ elevation, and email recipients so `Loan.user` history survives; the
 `Account`/`Session` (Auth.js) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, soft-delete via `deletedAt`, optional `Box`,
-`calendarEventId` for the shared calendar) · `Box` · `Location` · `Category` ·
+`calendarEventId` for the shared calendar) · `Box` ·
+`Location` (`itemId` set = this sijainti **is** a kama — see "Säilytyspaikat"
+below) · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` (both are "huomiot" — see above) · `LoanHistory` /
 `ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
 templates; **no** back-reference from `Loan` — a loan doesn't record whether it
 came from one). Migrations in `prisma/migrations/`; seed in
 `prisma/seed.ts`.
+
+## Säilytyspaikat (a kama that is also a sijainti)
+
+`Location.itemId` makes one sijainti stand for one kama: "Sininen työkalupakki"
+is both something you can borrow and the place other kamat are kept in. Nothing
+else about sijainnit changes — contents keep pointing at it through
+`Item.locationId` — but it changes what is free when:
+
+```
+loan the box   →  everything inside it is unavailable too  (blockedBy names the box)
+loan a hammer  →  the box stays loanable, one hammer short
+```
+
+The cascade runs downwards only, and follows a box-inside-a-box chain (cycle- and
+depth-guarded). It is decided in **one** place, `utils/availability.ts`
+(`computeAvailabilities`), which both `availability/getAvailabilities` and
+`loan/updateLoan`'s save-time guard call — the browser can't be shown a number
+the save then disagrees with. `utils/containers.ts` is the only place the
+Item↔Location pair is made, broken (refused while the box still holds anything:
+`Item.locationId` cascades on delete) or renamed. The toggle is in
+`EditItemDialog`; `/item/[id]` lists what a box contains.
 
 ## Cross-cutting helpers
 
@@ -345,6 +368,8 @@ came from one). Migrations in `prisma/migrations/`; seed in
 - `utils/dateFormat.ts` / `dateRange.ts` + `components/DateTime` — date display.
 - `utils/loanHelpers.ts` / `itemHelpers.ts` — **client-safe** badge variants +
   history labels (no Prisma import).
+- `utils/availability.ts` — **the** availability computation (see
+  "Säilytyspaikat"); `utils/containers.ts` — the kama↔sijainti pair.
 - `utils/itemQueries.ts` — shared item query builders, including
   `inventoryQuery` (the admin table's filters/sort read off a query string,
   shared by `item/getInventory` and `item/exportInventory`).

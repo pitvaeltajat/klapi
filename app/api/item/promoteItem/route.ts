@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { diffItemFields, logItemHistory } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
+import { syncContainerName } from '@/utils/containers';
 
 export async function POST(request: Request) {
   const { session, denied } = await requireAdmin();
@@ -60,6 +61,10 @@ export async function POST(request: Request) {
     },
     include: { categories: true, location: true },
   });
+
+  // A promotion is also a rename, so a säilytyspaikka-kama keeps its sijainti
+  // row in step (see utils/containers).
+  await syncContainerName(id, updated.name);
 
   console.log(
     `[promoteItem] Admin ${session.user.email ?? session.user.id} promoted item ${id} ("${item.name}" → "${name}") from temporary to normal`,

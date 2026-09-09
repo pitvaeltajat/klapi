@@ -3,6 +3,7 @@
 import { Item, Category, Reservation, LoanStatus, ItemHistoryAction } from '@prisma/client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import NextLink from 'next/link';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
@@ -30,6 +31,8 @@ import PromoteItemDialog from '@/components/PromoteItemDialog';
 import { ApiError, readJson } from '@/utils/apiError';
 import ItemNotices, { type ItemAnnouncement, type ItemReport } from './ItemNotices';
 
+const fiCollator = new Intl.Collator('fi');
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface ItemHistoryEntry {
@@ -43,6 +46,8 @@ interface ItemHistoryEntry {
 interface ItemWithRelations extends Item {
   categories: Category[];
   location: { id: string; name: string } | null;
+  /** Present when this kama is also a säilytyspaikka, with what is in it. */
+  asLocation: { id: string; items: { id: string; name: string; amount: number }[] } | null;
   announcements: ItemAnnouncement[];
   reservations: (Reservation & {
     loan: {
@@ -91,6 +96,12 @@ export default function ItemView({
 
   // Only an admin can open the pickers, and both endpoints are admin-only —
   // fetch them lazily so a plain item page never pays for the requests.
+  const contents = React.useMemo(
+    () =>
+      [...(item.asLocation?.items ?? [])].sort((a, b) => fiCollator.compare(a.name, b.name)),
+    [item.asLocation],
+  );
+
   const [locationEditing, setLocationEditing] = useState(false);
   const [categoriesEditing, setCategoriesEditing] = useState(false);
   const pickersOpen = locationEditing || categoriesEditing;
@@ -433,6 +444,39 @@ export default function ItemView({
               Poista
             </Button>
           </div>
+        )}
+
+        {item.asLocation && (
+          <Card as="section">
+            <CardTitle>Sisältää</CardTitle>
+            {contents.length === 0 ? (
+              <EmptyState
+                variant="inline"
+                title="Ei kamoja"
+                description={`Aseta toisen kaman sijainniksi "${item.name}", niin se näkyy täällä.`}
+              />
+            ) : (
+              <>
+                <Alert variant="info" className="mb-3">
+                  Näiden kamojen sijainti on tämä kama, joten ne lähtevät mukana: kun tämä on
+                  lainassa, ne eivät ole vapaana. Yksittäisen kaman voi silti lainata erikseen,
+                  kun tämä on paikalla.
+                </Alert>
+                <ul className="flex flex-col gap-2">
+                  {contents.map((content) => (
+                    <Card key={content.id} as="li" variant="inset" padding="sm">
+                      <NextLink href={`/item/${content.id}`} className="hover:underline">
+                        {content.name}
+                      </NextLink>
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        {content.amount} kpl
+                      </span>
+                    </Card>
+                  ))}
+                </ul>
+              </>
+            )}
+          </Card>
         )}
 
         <ItemNotices

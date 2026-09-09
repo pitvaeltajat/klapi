@@ -6,9 +6,9 @@ import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { MANUAL_LOAN_STATUSES, isManualLoanStatus } from '@/utils/loanHelpers';
 import { requireUser } from '@/utils/apiAuth';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
-import { activeLoansWhere } from '@/utils/loanQueries';
 import { isCustomItemId } from '@/utils/customItems';
 import { createTemporaryItems } from '@/utils/temporaryItems';
+import { computeAvailabilities } from '@/utils/availability';
 
 export async function POST(request: Request) {
   try {
@@ -113,59 +113,17 @@ export async function POST(request: Request) {
     }
     const customIds = new Set(customReservations.map((r) => r.item.connect.id));
 
-    // Get all other reservations that overlap with the requested date range
     const requestedStart = new Date(startTime);
     const requestedEnd = new Date(endTime);
 
-    // Only ACCEPTED and INUSE reservations block availability
-    // IN_BOX items are available for new loans
-    const overlappingReservations = await prisma.reservation.findMany({
-      where: {
-        loan: {
-          ...activeLoansWhere,
-          id: { not: id }, // Exclude current loan
-          startTime: { lte: requestedEnd },
-          endTime: { gte: requestedStart },
-        },
-        status: { notIn: [ReservationStatus.REJECTED, ReservationStatus.RETURNED, ReservationStatus.IN_BOX] },
-      },
-      include: { loan: true },
-    });
-
-    // Calculate availability for each item, accounting for date overlaps
-    const calculateAvailability = (itemId: string): number => {
-      const item = itemMap.get(itemId);
-      if (!item) return 0;
-
-      const totalAmount = item.amount;
-
-      // For each day in the range, find the maximum reserved amount
-      let maxReserved = 0;
-      const currentDate = new Date(requestedStart);
-      currentDate.setHours(0, 0, 0, 0);
-      const endDateNorm = new Date(requestedEnd);
-      endDateNorm.setHours(23, 59, 59, 999);
-
-      while (currentDate <= endDateNorm) {
-        const dayStart = new Date(currentDate);
-        const dayEnd = new Date(currentDate);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        // Sum reservations that overlap with this day
-        const dayReserved = overlappingReservations
-          .filter((r) => {
-            const loanStart = new Date(r.loan.startTime);
-            const loanEnd = new Date(r.loan.endTime);
-            return r.itemId === itemId && loanStart <= dayEnd && loanEnd >= dayStart;
-          })
-          .reduce((sum, r) => sum + r.amount, 0);
-
-        maxReserved = Math.max(maxReserved, dayReserved);
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      return totalAmount - maxReserved;
-    };
+    // The same sums the browser was shown — including "the box is out, so what
+    // is in it is out" — rather than a second copy of the arithmetic that can
+    // drift from it. The loan's own lines are excluded: it is already holding
+    // some of what it is asking for.
+    const availabilities = await computeAvailabilities(
+      { start: requestedStart, end: requestedEnd },
+      { excludeLoanId: id },
+    );
 
     // Aggregate requested amounts by item
     // Custom kamat are the loaner's own gear, not the troop's, so there is
@@ -187,11 +145,14 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const available = calculateAvailability(itemId);
+      const availability = availabilities[itemId];
+      const available = availability?.available ?? 0;
 
       if (requestedAmount > available) {
         unavailableItems.push(
-          `${item.name}: pyydetty ${requestedAmount}, vapaana ${available}`,
+          availability?.blockedBy
+            ? `${item.name}: on lainatun kaman "${availability.blockedBy.name}" sisällä`
+            : `${item.name}: pyydetty ${requestedAmount}, vapaana ${available}`,
         );
       }
     }

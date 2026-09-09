@@ -3,16 +3,18 @@
 import * as React from 'react';
 import SelectBase from 'react-select';
 import CreatableSelectBase, { type CreatableProps } from 'react-select/creatable';
-import type { ClassNamesConfig, GroupBase, Props as SelectProps } from 'react-select';
+import type {
+  ClassNamesConfig,
+  GroupBase,
+  Props as SelectProps,
+  StylesConfig,
+} from 'react-select';
 import { cn } from '@/lib/utils';
 
 // Shadcn styling for react-select. Uses the classNames API so it respects our
 // CSS variables and dark mode without runtime theme juggling. Shared by both
 // exports below so the creatable and pick-only variants can't drift apart.
 const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
-  // `unstyled` strips react-select's own positioning too, so the menu has to be
-  // taken out of flow here — otherwise opening one grows the page instead of
-  // floating over it, and a long list has nothing to scroll.
   container: () => 'relative',
   control: ({ isFocused }) =>
     cn(
@@ -30,11 +32,8 @@ const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
   dropdownIndicator: () => 'text-muted-foreground p-1 hover:text-foreground',
   clearIndicator: () => 'text-muted-foreground p-1 hover:text-foreground',
   indicatorSeparator: () => 'bg-border',
-  menu: ({ placement }) =>
-    cn(
-      'absolute z-50 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
-      placement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
-    ),
+  menu: () =>
+    'overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
   menuList: () => 'max-h-[18rem] overflow-y-auto p-1',
   option: ({ isFocused, isSelected, isDisabled }) =>
     cn(
@@ -50,10 +49,31 @@ const classNames: ClassNamesConfig<never, boolean, GroupBase<never>> = {
 
 // The config above never touches the option type, but react-select's generics
 // insist it does — hence the one cast, kept here rather than at each call site.
+// `unstyled` strips react-select's own positioning along with its colours, so
+// the menu has to be placed by hand — otherwise opening one grows the page
+// instead of floating over it. It goes in a portal on `document.body` rather
+// than inside the control: the pickers live in an inventory table and in
+// dialogs, both of which scroll behind `overflow`, and an in-flow menu is
+// clipped the moment it reaches the edge of one. `menuPortal` rebuilds the
+// offsets react-select would have applied itself.
+const portalStyles: StylesConfig<never, boolean, GroupBase<never>> = {
+  menuPortal: (base, { rect, offset, position }) => ({
+    ...base,
+    position,
+    top: offset,
+    left: rect.left,
+    width: rect.width,
+    // Above the dialog (z-1100), which is where several of these live.
+    zIndex: 1200,
+  }),
+};
+
 function styledProps<Option, IsMulti extends boolean, Group extends GroupBase<Option>>(
   instanceId: string,
 ) {
   return {
+    menuPortalTarget: typeof document === 'undefined' ? undefined : document.body,
+    styles: portalStyles as unknown as StylesConfig<Option, IsMulti, Group>,
     // react-select numbers its instances from a module counter, which counts
     // differently on the server than in the browser — the ids it puts on the
     // input and the live region then mismatch on hydration. A `useId` is stable

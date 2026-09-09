@@ -4,6 +4,7 @@ import { Category } from '@prisma/client';
 import { diffItemFields, logItemHistory } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
 import { badRequest, failed } from '@/utils/apiResponse';
+import { ContainerNotEmptyError, setItemAsContainer, syncContainerName } from '@/utils/containers';
 
 /** What CreatableSelect hands back for a sijainti — `value` is the id, or the
  *  typed text when the option is brand new. */
@@ -90,6 +91,15 @@ export async function POST(request: Request) {
       },
     });
 
+    // A kama that is also a säilytyspaikka carries a sijainti row of its own.
+    // Absent key = leave it as it is; either way the name has to follow the
+    // kama's, or every other kama's Sijainti keeps showing the old one.
+    if (typeof body.container === 'boolean') {
+      await setItemAsContainer(body.id, name, body.container);
+    } else {
+      await syncContainerName(body.id, name);
+    }
+
     const changed = diffItemFields(
       {
         name: before.name,
@@ -122,6 +132,15 @@ export async function POST(request: Request) {
       message: 'Item edited',
     });
   } catch (err) {
+    if (err instanceof ContainerNotEmptyError) {
+      return NextResponse.json(
+        {
+          message: 'Säilytyspaikkaa ei voi poistaa',
+          detail: `${err.message}. Siirrä ne muualle ensin.`,
+        },
+        { status: 409 },
+      );
+    }
     return failed('Kaman päivitys epäonnistui', err, 'editItem');
   }
 }

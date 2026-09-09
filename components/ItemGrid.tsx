@@ -45,6 +45,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
               announcements: item.announcements || null,
             }}
             availableAmount={availabilities?.[item.id]?.available ?? 0}
+            blockedBy={availabilities?.[item.id]?.blockedBy}
             availabilityLoading={loading}
             availabilityKnown={known}
           />
