@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
-import { inventoryQuery } from '@/utils/itemQueries';
+import { inventoryQuery, visibleItemsWhere } from '@/utils/itemQueries';
+import { findSimilarItem } from '@/utils/similarItems';
 import { requireAdmin } from '@/utils/apiAuth';
 
 const PAGE_SIZE_MAX = 200;
@@ -17,6 +18,9 @@ const PAGE_SIZE_MAX = 200;
  * Query params: those of `inventoryQuery`, plus
  *   page      1-based page number (default 1)
  *   pageSize  rows per page (default 50, capped at 200)
+ *
+ * Every `temporary` row on the page also carries `similar`: the kalusto kama it
+ * looks like a duplicate of, or null (see `utils/similarItems.ts`).
  */
 export async function GET(request: Request) {
   const { denied } = await requireAdmin();
@@ -42,5 +46,24 @@ export async function GET(request: Request) {
     prisma.item.count({ where }),
   ]);
 
-  return NextResponse.json({ items, total });
+  // A väliaikainen row is an oma kama somebody typed by hand, so the kalusto
+  // often already has it under a slightly different name. Flag those, so an
+  // admin doesn't promote a duplicate. Only the names are fetched, and only
+  // when the page actually shows väliaikaisia.
+  if (!items.some((i) => i.type === 'temporary')) {
+    return NextResponse.json({ items, total });
+  }
+  const catalogue = await prisma.item.findMany({
+    where: visibleItemsWhere,
+    select: { id: true, name: true },
+  });
+
+  return NextResponse.json({
+    items: items.map((item) =>
+      item.type === 'temporary'
+        ? { ...item, similar: findSimilarItem(item.name, catalogue) }
+        : item,
+    ),
+    total,
+  });
 }

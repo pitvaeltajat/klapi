@@ -145,7 +145,7 @@ the entity's detail page:
 | `restoreItem` | POST | clear `deletedAt`; logs `RESTORED` |
 | `promoteItem` | POST | temporary → normal item (`locationId` takes the `{ value, label }` sijainti shape, same as createItem/editItem); logs `PROMOTED` |
 | `bulkItems` | POST | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item |
-| `getInventory` | GET | inventory listing (admin table source) |
+| `getInventory` | GET | inventory listing (admin table source); each `temporary` row carries `similar` — the kalusto kama it looks like a duplicate of (`utils/similarItems.ts`) |
 | `exportInventory` | GET | the same view as an .xlsx download ("Vie Exceliin"); shares `inventoryQuery` with `getInventory`, minus the paging |
 | `uploadImage` | POST | S3 presigned URL for the item image (admin; any non-kiosk user for a `custom-<uuid>` key, or for a real kama that has **no** photo yet — HEADs the public bucket to check) |
 | `deleteImage` | POST | drop a kama's photo without replacing it (admin; deletes the raw key plus the `original/` and `compressed/` renditions); logs `UPDATED` with a note |
@@ -375,6 +375,8 @@ Item↔Location pair is made, broken (refused while the box still holds anything
 - `utils/itemQueries.ts` — shared item query builders, including
   `inventoryQuery` (the admin table's filters/sort read off a query string,
   shared by `item/getInventory` and `item/exportInventory`).
+- `utils/similarItems.ts` — "onko tämä jo kalustossa?": the crude name match
+  behind the duplicate hint on a väliaikainen row in the admin table.
 - `utils/inventoryExport.ts` — the kalusto spreadsheet: the row mapping and the
   column definitions behind `item/exportInventory` (`write-excel-file`).
 - `utils/loanQueries.ts` — the loan equivalent: `activeLoansWhere` /

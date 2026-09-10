@@ -49,7 +49,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, RotateCcw, Sheet as SheetIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, ArrowUpCircle, Pencil, RotateCcw, Sheet as SheetIcon, TriangleAlert } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ItemThumb from '@/components/ItemThumb';
 import { cn } from '@/lib/utils';
@@ -79,6 +79,12 @@ export interface InventoryItem {
   deletedAt: string | null;
   location: InventoryLocation | null;
   categories: InventoryCategory[];
+  /**
+   * Only on `temporary` rows: the kalusto kama this oma kama looks like a
+   * duplicate of, as `getInventory` guessed it. Absent after an inline rename
+   * until the page refetches — the guess is the server's to make.
+   */
+  similar?: { id: string; name: string } | null;
 }
 
 export interface InventoryListResponse {
@@ -233,6 +239,8 @@ interface EditableCellConfig<T> {
   /** Cell value -> the string the editor starts from. */
   toEditValue: (value: T) => string;
   renderDisplay: (value: T) => React.ReactNode;
+  /** Extra line under the resting value, given the whole row. */
+  renderBelow?: (item: InventoryItem) => React.ReactNode;
 }
 
 /**
@@ -247,6 +255,7 @@ function makeEditableCell<T>({
   inputProps,
   toEditValue,
   renderDisplay,
+  renderBelow,
 }: EditableCellConfig<T>) {
   return function EditableCell({ row, getValue }: CellContext<typeof features, InventoryItem, T>) {
     const { editState, setEditState, startEdit, commitEdit, scheduleAutoSave, editInputRef } =
@@ -277,14 +286,37 @@ function makeEditableCell<T>({
     }
 
     return (
-      <CellDisplay
-        className={displayClassName}
-        onOpen={() => startEdit(id, field, toEditValue(value))}
-      >
-        {renderDisplay(value)}
-      </CellDisplay>
+      <>
+        <CellDisplay
+          className={displayClassName}
+          onOpen={() => startEdit(id, field, toEditValue(value))}
+        >
+          {renderDisplay(value)}
+        </CellDisplay>
+        {renderBelow?.(row.original)}
+      </>
     );
   };
+}
+
+/**
+ * "This oma kama is probably already in the kalusto" — shown under the name of
+ * a väliaikainen row whose name resembles a real kama's (the guess comes from
+ * `getInventory`). A link, because the point is to go and look at that kama:
+ * either the loan should have used it, or this one is worth promoting after all.
+ */
+function SimilarItemHint({ item }: { item: InventoryItem }) {
+  if (!item.similar) return null;
+  return (
+    <Link
+      href={`/item/${item.similar.id}`}
+      className="mt-0.5 flex items-center gap-1 px-2 text-xs text-warning hover:underline"
+      title={`Kalustossa on jo samanniminen kama: ${item.similar.name}`}
+    >
+      <TriangleAlert className="h-3 w-3 shrink-0" />
+      <span className="truncate">Jo kalustossa: {item.similar.name}</span>
+    </Link>
+  );
 }
 
 const NameCell = makeEditableCell<string>({
@@ -293,6 +325,7 @@ const NameCell = makeEditableCell<string>({
   displayClassName: 'block w-full',
   toEditValue: (value) => value,
   renderDisplay: (value) => <Truncated text={value} />,
+  renderBelow: (item) => <SimilarItemHint item={item} />,
 });
 
 const DescriptionCell = makeEditableCell<string | null>({
