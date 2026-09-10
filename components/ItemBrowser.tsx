@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Info, SlidersHorizontal } from 'lucide-react';
+import { Info, Plus, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import AllItems from './ItemGrid';
 import { Item, Category, Loan, Reservation, Announcement } from '@prisma/client';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { CountBadge } from '@/components/ui/count-badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useCart } from '@/contexts/CartContext';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 import TemplateSection from './TemplateSection';
@@ -58,6 +59,9 @@ export default function ItemBrowser({
     useState<{ selected: string[]; remembered: string[] }>({ selected: [], remembered: [] });
   const [sortBy, setSortBy] = useState<SortMode>('popular');
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Seeds the oma kama dialog's name field: the search that found nothing, or
+  // empty when it is opened from the "klikkaa tästä" line.
+  const [customName, setCustomName] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const {
@@ -87,6 +91,11 @@ export default function ItemBrowser({
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  const openCustomItem = (name: string) => {
+    setCustomName(name);
+    setDialogOpen(true);
+  };
 
   const toggleCategory = (name: string) => {
     setCategoryFilter(({ selected, remembered }) => {
@@ -131,7 +140,14 @@ export default function ItemBrowser({
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
-    if (!search.trim()) return;
+    const query = search.trim();
+    if (!query) return;
+    // Nothing in the kalusto answers to that name, so Enter means "then it's
+    // one of my own": the dialog opens with what was typed as the name.
+    if (filteredItems.length === 0) {
+      if (showCustomItemLink) openCustomItem(query);
+      return;
+    }
     if (filteredItems.length !== 1) return;
     const only = filteredItems[0];
     const current = cartItems.find((c) => c.id === only.id)?.amount ?? 0;
@@ -151,7 +167,13 @@ export default function ItemBrowser({
     });
   };
 
-  const showSets = showTemplates && !search.trim() && selectedCategories.length === 0;
+  const query = search.trim();
+  // The empty state quotes the query back; keep that quote short so a long one
+  // can't turn into a wall of text. The dialog still gets the whole thing as
+  // the kama's name.
+  const shownQuery = query.length > 40 ? `${query.slice(0, 40)}…` : query;
+
+  const showSets = showTemplates && !query && selectedCategories.length === 0;
 
   const filters = (
     <CatalogueFilters
@@ -202,7 +224,7 @@ export default function ItemBrowser({
                 <button
                   type="button"
                   className="cursor-pointer font-semibold text-primary underline hover:text-primary/80"
-                  onClick={() => setDialogOpen(true)}
+                  onClick={() => openCustomItem('')}
                 >
                   klikkaa tästä
                 </button>
@@ -214,6 +236,8 @@ export default function ItemBrowser({
       </div>
       {showCustomItemLink && (
         <CustomItemDialog
+          key={customName}
+          initialName={customName}
           isOpen={dialogOpen}
           onClose={() => setDialogOpen(false)}
           onAdd={addToCart}
@@ -247,7 +271,20 @@ export default function ItemBrowser({
             <AllItems items={filteredItems} categories={categories} />
           )
         ) : (
-          <h2 className="mt-4 text-center text-2xl font-semibold">Ei hakutuloksia :(</h2>
+          <EmptyState
+            className="mt-4"
+            title="Ei hakutuloksia :("
+            description={query ? `Kalustosta ei löydy kamaa nimellä "${shownQuery}".` : undefined}
+            action={
+              showCustomItemLink &&
+              query && (
+                <Button className="gap-2" onClick={() => openCustomItem(query)}>
+                  <Plus className="h-4 w-4" />
+                  Lisää omana kamana
+                </Button>
+              )
+            }
+          />
         )}
       </div>
     </>

@@ -160,7 +160,9 @@ the browser by `utils/customItems.ts` (`custom-<uuid>`) so an optional photo can
 be uploaded to S3 under that key before the row exists; the row is created by
 `utils/temporaryItems.ts` (`createTemporaryItems`, the one place both routes go
 through), which reuses that id verbatim when it's free — that is what makes the
-picture line up. `updateLoan` creates them only after the availability check has
+picture line up. The catalogue offers one wherever a search comes up empty:
+`ItemBrowser`'s empty state has the button, and Enter in the search box opens
+`CustomItemDialog` with the query as the name. `updateLoan` creates them only after the availability check has
 passed, so a rejected edit leaves no orphan items behind.
 
 ### `loan/*` — loans
