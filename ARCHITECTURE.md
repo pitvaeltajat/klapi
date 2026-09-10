@@ -306,7 +306,7 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
-| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here |
+| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
 | `/kiosk/startloan` | kiosk pickup queue |
 | `/account`, `/login` | account settings / sign-in |
 

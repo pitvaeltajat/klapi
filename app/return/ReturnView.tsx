@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { CircleAlert } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
@@ -64,6 +64,56 @@ interface LoanType {
   reservations: Reservation[];
 }
 
+/**
+ * How small the kama grid may be squeezed before scrolling is the friendlier
+ * answer. At 0.55 a card is still legible across the room from the kiosk.
+ */
+const MIN_FIT = 0.55;
+
+/**
+ * Keeps the palautus dialog on one screen: a loan of a dozen kamaa pushed the
+ * "Vahvista palautus" button below the fold, so the palauttaja had to scroll a
+ * full-screen dialog to finish. The kama grid is shrunk by exactly the overflow
+ * instead — `zoom`, not `transform: scale`, because a scaled grid keeps its
+ * full-size layout box and the hole underneath it stays. A zoomed block still
+ * fills its column on its own — its width resolves in the zoomed coordinate
+ * space — so only the height needs any help.
+ *
+ * Desktop only: on a phone the cards are already one per row and scrolling
+ * through them is how a phone works.
+ */
+function useFitToScreen(
+  area: HTMLDivElement | null,
+  /** Anything whose change resizes the dialog; `null` while it is closed. */
+  layout: string | null,
+) {
+  // The scroll area arrives through a callback ref rather than `useRef`: Radix
+  // mounts the dialog's contents in a commit of its own, *after* this
+  // component's layout effect has already run, so a plain ref is still null
+  // when it matters.
+  useLayoutEffect(() => {
+    const grid = area?.querySelector<HTMLElement>('[data-fit-grid]');
+    if (layout === null || !area || !grid) return;
+
+    const fit = () => {
+      // Measure unshrunken, or every pass would compound the last one.
+      grid.style.zoom = '1';
+      if (!window.matchMedia('(min-width: 1024px)').matches) return;
+      const overflow = area.scrollHeight - area.clientHeight;
+      if (overflow <= 0) return;
+      const natural = grid.getBoundingClientRect().height;
+      grid.style.zoom = String(Math.max(MIN_FIT, (natural - overflow) / natural));
+    };
+
+    fit();
+    // The dialog is the size of the window, so this fires on a resize, an
+    // orientation flip and the on-screen keyboard — not on our own zoom.
+    const observer = new ResizeObserver(fit);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, [area, layout]);
+}
+
 const LoanReturnCard = ({
   loan,
   onReturn,
@@ -79,6 +129,7 @@ const LoanReturnCard = ({
 }) => {
   const [returnOpen, setReturnOpen] = useState(false);
   const [boxOpen, setBoxOpen] = useState(false);
+  const [scrollArea, setScrollArea] = useState<HTMLDivElement | null>(null);
   const [boxInfo, setBoxInfo] = useState<{ name: string; description: string | null } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [reportContent, setReportContent] = useState('');
@@ -171,6 +222,15 @@ const LoanReturnCard = ({
     onReturnComplete();
   };
 
+  useFitToScreen(
+    scrollArea,
+    // Re-fit whenever the dialog grows or shrinks under its own steam: the two
+    // alerts below the grid come and go as kamaa are ticked off.
+    returnOpen
+      ? `${returnableReservations.length}|${isPartialReturn}|${missingNote}`
+      : null,
+  );
+
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
   return (
@@ -232,7 +292,7 @@ const LoanReturnCard = ({
             </p>
           </DialogHeader>
 
-          <div className="overflow-y-auto">
+          <div ref={setScrollArea} className="overflow-y-auto">
             <div className="mx-auto grid min-h-full w-full max-w-[1600px] items-stretch gap-6 px-6 py-6 lg:grid-cols-[1.7fr_1fr]">
               {/* Left: item selection */}
               <div className="flex flex-col gap-4">
@@ -245,7 +305,10 @@ const LoanReturnCard = ({
                     keep their own size and pack at the top. Equal-height rows
                     read fine with a dozen kamaa and absurd with one, which
                     stretched into a full-height empty box. */}
-                <div className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-min lg:content-start xl:grid-cols-3">
+                <div
+                  data-fit-grid
+                  className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-min lg:content-start xl:grid-cols-3"
+                >
                   {returnableReservations.map((reservation) => {
                     const checked = selectedIds.has(reservation.id);
                     return (
