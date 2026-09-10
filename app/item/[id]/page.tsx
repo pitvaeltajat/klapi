@@ -49,7 +49,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     },
   });
 
-  if (!item || item.deletedAt) notFound();
+  // A poistettu kama keeps its page: old loans link to it and the säilytyspaikka
+  // it sat in still names it. It is only gone from the listings — ItemView says
+  // so, and offers the restore.
+  if (!item) notFound();
 
   // Edit history and condition reports are admin-only info — only pay for those
   // queries when an admin is viewing (item pages are part of the public

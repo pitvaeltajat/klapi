@@ -8,7 +8,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import { ArrowUpCircle, TriangleAlert } from 'lucide-react';
+import { ArrowUpCircle, RotateCcw, TriangleAlert } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -130,6 +130,10 @@ export default function ItemView({
   ).length;
 
   const isTemporary = item.type === 'temporary';
+  // Soft-deleted: the page still renders (a loan may link here), it just says so
+  // and puts the admin's buttons on restoring rather than on editing.
+  const isArchived = Boolean(item.deletedAt);
+  const canEdit = isAdmin && !isArchived;
 
   const reportSaveError = (err: unknown, fallback: string) => {
     toast.error(err instanceof Error ? err.message : fallback, {
@@ -247,6 +251,21 @@ export default function ItemView({
     }
   };
 
+  const restoreItem = async () => {
+    try {
+      const response = await fetch('/api/item/restoreItem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.id),
+      });
+      await readJson(response, 'Palautus epäonnistui');
+      toast.success('Kama palautettu');
+      router.refresh();
+    } catch (err) {
+      reportSaveError(err, 'Palautus epäonnistui');
+    }
+  };
+
   const categoryBadges =
     item.categories.length > 0 ? (
       <span className="flex flex-wrap gap-2">
@@ -267,7 +286,7 @@ export default function ItemView({
           title={
             <InlineEdit
               value={item.name}
-              disabled={!isAdmin}
+              disabled={!canEdit}
               label="nimeä"
               inputClassName="h-auto py-1 text-2xl font-semibold sm:text-3xl"
               validate={(next) => (next ? null : 'Nimi on pakollinen')}
@@ -297,7 +316,14 @@ export default function ItemView({
           }
         />
 
-        {isAdmin && isTemporary && (
+        {isArchived && (
+          <Alert variant="warning" title="Kama on poistettu kalustosta">
+            Poistettu <DateTime value={item.deletedAt!} format="numeric" />. Se ei näy kaluston
+            listauksessa eikä sitä voi lainata, mutta vanhat lainat viittaavat siihen edelleen.
+          </Alert>
+        )}
+
+        {isAdmin && !isArchived && isTemporary && (
           <Alert variant="info" title="Väliaikainen kama">
             Lainaaja lisäsi tämän itse omaan koriinsa, joten se ei näy kaluston listauksessa.
             Siirrä se kirjastoon, jos kama jää pysyvästi kalustoon.
@@ -308,7 +334,7 @@ export default function ItemView({
           <p className="text-base text-foreground/90 md:text-lg">
             <InlineEdit
               value={item.description ?? ''}
-              disabled={!isAdmin}
+              disabled={!canEdit}
               label="kuvausta"
               multiline
               emptyLabel="Ei kuvausta"
@@ -327,7 +353,7 @@ export default function ItemView({
             <p className="text-sm font-semibold text-muted-foreground">Määrä:</p>
             <InlineEdit
               value={String(item.amount)}
-              disabled={!isAdmin}
+              disabled={!canEdit}
               label="määrää"
               type="number"
               min={1}
@@ -348,7 +374,7 @@ export default function ItemView({
               <p className="text-sm font-semibold text-muted-foreground">Sijainti:</p>
               <InlineEditShell
                 label="sijaintia"
-                disabled={!isAdmin}
+                disabled={!canEdit}
                 editing={locationEditing}
                 saving={relationSaving}
                 display={
@@ -390,7 +416,7 @@ export default function ItemView({
               <p className="mb-2 text-sm font-semibold text-muted-foreground">Kategoriat:</p>
               <InlineEditShell
                 label="kategorioita"
-                disabled={!isAdmin}
+                disabled={!canEdit}
                 editing={categoriesEditing}
                 saving={relationSaving}
                 display={categoryBadges}
@@ -433,16 +459,29 @@ export default function ItemView({
 
         {isAdmin && (
           <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setEditOpen(true)}>Muokkaa</Button>
-            {isTemporary && (
-              <Button variant="success" className="gap-2" onClick={() => setPromoteOpen(true)}>
-                <ArrowUpCircle className="h-4 w-4" />
-                Siirrä kirjastoon
+            {isArchived ? (
+              <Button variant="success" className="gap-2" onClick={restoreItem}>
+                <RotateCcw className="h-4 w-4" />
+                Palauta kalustoon
               </Button>
+            ) : (
+              <>
+                <Button onClick={() => setEditOpen(true)}>Muokkaa</Button>
+                {isTemporary && (
+                  <Button
+                    variant="success"
+                    className="gap-2"
+                    onClick={() => setPromoteOpen(true)}
+                  >
+                    <ArrowUpCircle className="h-4 w-4" />
+                    Siirrä kirjastoon
+                  </Button>
+                )}
+                <Button variant="destructive" onClick={() => setOpen(true)}>
+                  Poista
+                </Button>
+              </>
             )}
-            <Button variant="destructive" onClick={() => setOpen(true)}>
-              Poista
-            </Button>
           </div>
         )}
 

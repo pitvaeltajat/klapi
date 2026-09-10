@@ -295,7 +295,7 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | Path | Purpose |
 |---|---|
 | `/` | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own) |
-| `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**). Admins edit nimi/kuvaus/määrä/sijainti/kategoriat inline on the page (`components/ui/inline-edit.tsx`); the photo and a batch edit stay in `EditItemDialog`, and a väliaikainen kama gets "Siirrä kirjastoon" (`components/PromoteItemDialog.tsx`, shared with the inventory table) |
+| `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**). Admins edit nimi/kuvaus/määrä/sijainti/kategoriat inline on the page (`components/ui/inline-edit.tsx`); the photo and a batch edit stay in `EditItemDialog`, and a väliaikainen kama gets "Siirrä kirjastoon" (`components/PromoteItemDialog.tsx`, shared with the inventory table). A poistettu (soft-deleted) kama still has a page — old loans link to it — but it says so, the inline editors are off and the admin's buttons become "Palauta kalustoon" |
 | `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
 | `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
 | `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
