@@ -572,13 +572,19 @@ export default function InventoryView() {
   );
 
   // Debounce the search box so typing doesn't fire a request per keystroke.
+  // Only a *changed* search runs it: on mount the box and `search` both hold
+  // the seeded value, and firing anyway made `toFirstPage()` throw away the
+  // `?page=N` seeded beside it — opening a kama from page 2 and coming back
+  // landed on page 1, with the param wiped from the address bar by the writer
+  // below.
   useEffect(() => {
+    if (searchInput === search) return;
     const t = setTimeout(() => {
       setSearch(searchInput);
       toFirstPage();
     }, 300);
     return () => clearTimeout(t);
-  }, [searchInput, toFirstPage]);
+  }, [searchInput, search, toFirstPage]);
 
   const sortId = sorting[0]?.id ?? 'name';
   const sortDir = sorting[0]?.desc ? 'desc' : 'asc';
