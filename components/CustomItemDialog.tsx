@@ -152,70 +152,81 @@ export default function CustomItemDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
-          <Field label="Nimi" required htmlFor="custom-name">
-            <Input
-              id="custom-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Kaman nimi"
-            />
-          </Field>
-
-          <Field label="Määrä" required htmlFor="custom-amount">
-            <NumberInput id="custom-amount" min={1} value={amount} onChange={setAmount} />
-          </Field>
-
-          {canAddImage && (
-            <Field
-              label="Kuva (valinnainen)"
-              htmlFor="custom-image"
-              helper="Kuvan voi jättää lisäämättä. Se auttaa tunnistamaan kaman palautuksessa."
-            >
-              {/* Fixed box, `object-contain` inside it: sizing the box off the
-                  photo reflowed the dialog differently for every file, and a
-                  sliver of an image left no corner to pin the remove button to. */}
-              {preview ? (
-                <div className="relative aspect-5/3 w-full max-w-sm overflow-hidden rounded-md bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
-                  <img src={preview} alt="Esikatselu" className="h-full w-full object-contain" />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon-sm"
-                    className="absolute right-1.5 top-1.5"
-                    aria-label="Poista kuva"
-                    onClick={() => pickImage(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <ImagePlus className="h-4 w-4 shrink-0" aria-hidden />
-                  Ei kuvaa valittuna
-                </p>
-              )}
+        {/* A real form so Enter in a field saves, the way every other little
+            "name it and go" box does. `display: contents` keeps it out of the
+            dialog's own grid, so nothing about the layout changes. */}
+        <form
+          className="contents"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSubmit();
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            <Field label="Nimi" required htmlFor="custom-name">
               <Input
-                ref={fileInputRef}
-                id="custom-image"
-                type="file"
-                accept="image/*"
-                className="mt-2"
-                onChange={handleImageChange}
+                id="custom-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Kaman nimi"
               />
             </Field>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={submitting}>
-            Peruuta
-          </Button>
-          <Button onClick={handleSubmit} className="gap-2" disabled={submitting}>
-            {submitting ? 'Lisätään…' : 'Lisää'}
-            <SubmitIcon className="h-4 w-4" />
-          </Button>
-        </DialogFooter>
+
+            <Field label="Määrä" required htmlFor="custom-amount">
+              <NumberInput id="custom-amount" min={1} value={amount} onChange={setAmount} />
+            </Field>
+
+            {canAddImage && (
+              <Field
+                label="Kuva (valinnainen)"
+                htmlFor="custom-image"
+                helper="Kuvan voi jättää lisäämättä. Se auttaa tunnistamaan kaman palautuksessa."
+              >
+                {/* Fixed box, `object-contain` inside it: sizing the box off the
+                  photo reflowed the dialog differently for every file, and a
+                  sliver of an image left no corner to pin the remove button to. */}
+                {preview ? (
+                  <div className="relative aspect-5/3 w-full max-w-sm overflow-hidden rounded-md bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
+                    <img src={preview} alt="Esikatselu" className="h-full w-full object-contain" />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon-sm"
+                      className="absolute right-1.5 top-1.5"
+                      aria-label="Poista kuva"
+                      onClick={() => pickImage(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <ImagePlus className="h-4 w-4 shrink-0" aria-hidden />
+                    Ei kuvaa valittuna
+                  </p>
+                )}
+                <Input
+                  ref={fileInputRef}
+                  id="custom-image"
+                  type="file"
+                  accept="image/*"
+                  className="mt-2"
+                  onChange={handleImageChange}
+                />
+              </Field>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={submitting}>
+              Peruuta
+            </Button>
+            <Button type="submit" className="gap-2" disabled={submitting}>
+              {submitting ? 'Lisätään…' : 'Lisää'}
+              <SubmitIcon className="h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

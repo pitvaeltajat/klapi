@@ -144,8 +144,14 @@ export default function ItemBrowser({
     if (!query) return;
     // Nothing in the kalusto answers to that name, so Enter means "then it's
     // one of my own": the dialog opens with what was typed as the name.
+    // preventDefault, or the keypress that follows this keydown lands on the
+    // dialog's freshly focused name field and submits the form straight away —
+    // one Enter would fill the cart without ever showing the dialog.
     if (filteredItems.length === 0) {
-      if (showCustomItemLink) openCustomItem(query);
+      if (showCustomItemLink) {
+        e.preventDefault();
+        openCustomItem(query);
+      }
       return;
     }
     if (filteredItems.length !== 1) return;
