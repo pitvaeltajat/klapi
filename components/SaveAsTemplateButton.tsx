@@ -99,7 +99,7 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
             <DialogTitle>Tallenna laina pohjaksi</DialogTitle>
             <DialogDescription>
               Tämän lainan kamoista tulee valmis setti, jonka lainaajat saavat yhdellä
-              klikkauksella koriin. Säädä määriä tai pudota kamoja pois jo tässä — pohjaa voi
+              klikkauksella koriin. Säädä määriä tai pudota kamoja pois jo tässä. Pohjaa voi
               muokata myöhemminkin{' '}
               <NextLink href="/admin/templates" className="font-medium text-primary underline">
                 lainapohjissa
@@ -140,7 +140,7 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
               <span className="font-normal text-muted-foreground">({rows.length})</span>
             </p>
             {rows.length === 0 ? (
-              <EmptyState variant="inline" title="Ei kamoja — pohjassa pitää olla vähintään yksi." />
+              <EmptyState variant="inline" title="Ei kamoja, pohjassa pitää olla vähintään yksi." />
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 {rows.map((row) => (

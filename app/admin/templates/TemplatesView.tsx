@@ -160,7 +160,7 @@ export default function TemplatesView({
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Lainapohjat' }]} />
       <PageHeader
         title="Lainapohjat"
-        description="Valmiit kamasetit, jotka lainaaja saa yhdellä klikkauksella koriin. Lainaaja voi aina säätää määriä — pohja on ehdotus, ei pakkopaketti."
+        description="Valmiit kamasetit, jotka lainaaja saa yhdellä klikkauksella koriin. Lainaaja voi aina säätää määriä: pohja on ehdotus, ei pakkopaketti."
         actions={
           <Button onClick={startCreate} className="gap-2">
             <Plus className="h-4 w-4" /> Uusi pohja

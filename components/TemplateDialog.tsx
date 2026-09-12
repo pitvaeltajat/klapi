@@ -110,7 +110,7 @@ export default function TemplateDialog({ template, onClose }: TemplateDialogProp
               <span className="block text-foreground">{template.description}</span>
             )}
             <span className="block">
-              Tämä on ehdotus, ei pakkopaketti — säädä määriä tai pudota kamoja pois nollaan ennen
+              Tämä on ehdotus, ei pakkopaketti. Säädä määriä tai pudota kamoja pois nollaan ennen
               kuin lisäät ne koriin.
             </span>
           </DialogDescription>

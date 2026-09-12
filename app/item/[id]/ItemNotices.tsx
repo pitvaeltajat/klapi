@@ -191,7 +191,7 @@ export default function ItemNotices({
                   className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
                 >
                   Avaa laina
-                  {report.loan.user.name ? ` — ${report.loan.user.name}` : ''}
+                  {report.loan.user.name ? `: ${report.loan.user.name}` : ''}
                 </Link>
               </Card>
             ))}

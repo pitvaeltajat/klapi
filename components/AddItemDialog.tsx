@@ -172,7 +172,7 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
         <DialogHeader>
           <DialogTitle>Luo uusi kama</DialogTitle>
           <DialogDescription>
-            Vain nimi on pakollinen — muut kentät voi täyttää myöhemmin muokkaamalla kamaa.
+            Vain nimi on pakollinen, muut kentät voi täyttää myöhemmin muokkaamalla kamaa.
           </DialogDescription>
         </DialogHeader>
 

@@ -173,7 +173,7 @@ export default function AdminUserView({
             <p className="text-sm">
               {user.mergedInto ? (
                 <>
-                  Tili yhdistettiin toiseen tiliin — lainat ja historia löytyvät nyt täältä:{' '}
+                  Tili yhdistettiin toiseen tiliin. Lainat ja historia löytyvät nyt täältä:{' '}
                   <NextLink
                     href={`/admin/user/${user.mergedInto.id}`}
                     className="underline underline-offset-2"

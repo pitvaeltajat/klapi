@@ -102,7 +102,7 @@ export async function syncWorkspaceUsers(
   // everyone. `fetchWorkspaceRoster` already throws on an empty API response;
   // this covers a roster that is non-empty but has no *active* member.
   if (active.size === 0) {
-    throw new UserSyncAbort('Workspace roster contains no active members — refusing to sync');
+    throw new UserSyncAbort('Workspace roster contains no active members, refusing to sync');
   }
 
   // Governed rows, soft-deleted ones included: a returning member is matched

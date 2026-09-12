@@ -40,7 +40,7 @@ function Endpoint({ label, date, pending }: EndpointProps) {
           pending ? 'text-muted-foreground' : 'text-foreground',
         )}
       >
-        {date ? formatDateShortWeekday(date) : '—'}
+        {date ? formatDateShortWeekday(date) : '-'}
       </div>
       <div className="text-xs text-muted-foreground">
         {date ? `klo ${formatTimeOnly(date)}` : 'Valitse päivä'}

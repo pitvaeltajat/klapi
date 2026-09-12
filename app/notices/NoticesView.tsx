@@ -87,7 +87,7 @@ function ReportCard({
           className="text-sm text-primary hover:underline"
         >
           {getLoanerName(report.loan)}
-          {report.loan.description ? ` — ${report.loan.description}` : ''}
+          {report.loan.description ? `: ${report.loan.description}` : ''}
         </NextLink>
         <Button size="sm" variant={dimmed ? 'outline' : 'default'} onClick={onHandle}>
           {dimmed ? 'Avaa' : 'Käsittele'}
@@ -148,11 +148,11 @@ export default function NoticesView({ announcements, reports, isAdmin }: Notices
       <PageHeader title="Huomiot" />
 
       <Alert variant="info" title="Mikä on huomio?" className="mb-6">
-        Huomio kertoo jotain kaman kunnosta tai käytöstä — esimerkiksi puutteesta,
+        Huomio kertoo jotain kaman kunnosta tai käytöstä, esimerkiksi puutteesta,
         rikkoutumisesta tai siitä, missä kama nykyään on. Kirjoita oma huomiosi silloin, kun
         noudat tai palautat kamat: löydät kentän noudon ja palautuksen vahvistuksesta.
         {isAdmin
-          ? ' Lainaajien kirjoittamat huomiot odottavat käsittelyä alla — julkaise niistä ne, jotka koskevat myös seuraavia lainaajia.'
+          ? ' Lainaajien kirjoittamat huomiot odottavat käsittelyä alla. Julkaise niistä ne, jotka koskevat myös seuraavia lainaajia.'
           : ' Ylläpito käy huomiot läpi ja julkaisee tälle sivulle ne, jotka on hyvä tietää ennen lainaamista.'}
       </Alert>
 

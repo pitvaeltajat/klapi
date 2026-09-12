@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     // Kiosk is exempt — they edit at the checkout moment, when the start time has typically passed.
     if (!isAdmin && !isKiosk && existingLoan.startTime <= new Date()) {
       return NextResponse.json(
-        { message: 'Lainaa ei voi enää muokata — lainaus on jo alkanut' },
+        { message: 'Lainaa ei voi enää muokata: lainaus on jo alkanut' },
         { status: 403 },
       );
     }

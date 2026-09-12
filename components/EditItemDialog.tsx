@@ -238,7 +238,7 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
 
           <Field
             label="Säilytyspaikka"
-            helper="Työkalupakki, laatikko tai muu kama jonka sisällä muita kamoja säilytetään. Kun tämä on lainassa, sisältö ei ole vapaana — yksittäisen kaman voi silti lainata erikseen."
+            helper="Työkalupakki, laatikko tai muu kama jonka sisällä muita kamoja säilytetään. Kun tämä on lainassa, sisältö ei ole vapaana, mutta yksittäisen kaman voi silti lainata erikseen."
           >
             <label className="flex items-center gap-2 text-sm">
               <Checkbox

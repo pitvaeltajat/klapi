@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       }
       if (await hasPhoto(item.id)) {
         return NextResponse.json(
-          { message: 'Kamalla on jo kuva — vain ylläpitäjä voi vaihtaa sen' },
+          { message: 'Kamalla on jo kuva, vain ylläpitäjä voi vaihtaa sen' },
           { status: 403 },
         );
       }

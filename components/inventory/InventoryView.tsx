@@ -129,7 +129,7 @@ const EDITABLE_INPUT_CLASS =
   'rounded border border-ring bg-background px-2 py-1 text-sm focus:outline-none';
 
 function Truncated({ text }: { text: string | null | undefined }) {
-  if (!text) return <span className="text-muted-foreground">—</span>;
+  if (!text) return <span className="text-muted-foreground">-</span>;
   if (text.length <= TRUNCATE_LEN) return <span>{text}</span>;
   return (
     <Tooltip>
@@ -447,7 +447,7 @@ function CategoriesCell({ row }: CellContext<typeof features, InventoryItem, Inv
       onOpen={() => setDraft(current)}
     >
       {current.length === 0 ? (
-        <span className="text-muted-foreground">—</span>
+        <span className="text-muted-foreground">-</span>
       ) : (
         current.map((c) => (
           <Badge key={c.value} variant="secondary">

@@ -162,7 +162,7 @@ const EditItemsDialog = ({
       onSaved(reservations);
       onOpenChange(false);
     } catch {
-      toast.error('Virhe', { description: 'Yhteysvirhe — yritä uudelleen' });
+      toast.error('Virhe', { description: 'Yhteysvirhe, yritä uudelleen' });
     } finally {
       setSaving(false);
     }
@@ -453,7 +453,7 @@ const LoanStartCard = ({
             <Alert variant="info" title="💡 Vinkki: Ota kuva kamoista puhelimellasi" className="mb-4">
               Suosittelemme ottamaan kuvan kamoista ennen lainauksen aloitusta. Jos palautuksessa
               tulee hämminkiä, kuva puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse
-              lähettää mihinkään — säilytä se omassa puhelimessasi.
+              lähettää mihinkään, säilytä se omassa puhelimessasi.
             </Alert>
             <Card variant="muted" padding="sm" className="mb-4">
               <Label htmlFor="pickup-notice" className="text-base">
@@ -512,7 +512,7 @@ export default function StartLoanView({ loans, items }: { loans: LoanType[]; ite
       if (response.ok) {
         toast.success('Lainaus aloitettu!', {
           description: reportContent.trim()
-            ? 'Huomiosi kirjattiin — ylläpito käy sen läpi.'
+            ? 'Huomiosi kirjattiin, ylläpito käy sen läpi.'
             : undefined,
         });
       } else {

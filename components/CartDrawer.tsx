@@ -240,7 +240,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                Voit vaihtaa päiviä katalogin yläpalkista — ostoskori säilyy
+                Voit vaihtaa päiviä katalogin yläpalkista, ostoskori säilyy
               </TooltipContent>
             </Tooltip>
           </div>

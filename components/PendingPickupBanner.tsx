@@ -44,7 +44,7 @@ export default function PendingPickupBanner() {
         <p className="flex-1">
           {single ? (
             <>
-              {single.description ? `"${single.description}" — ` : ''}
+              {single.description ? `"${single.description}": ` : ''}
               noutoaika alkoi {formatDateOnly(single.startTime)}. Jos olet hakenut tavarat
               varastosta, merkitse laina käyttöön.
             </>

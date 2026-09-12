@@ -177,7 +177,7 @@ export default function HandleNoticeDialog({
         <Card variant="inset" padding="md">
           <p className="font-semibold">Mitä kamoja tämä koskee?</p>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">
-            Merkintä näkyy kaman sivulla ylläpidolle. Se ei estä lainaamista — jos kamaa ei
+            Merkintä näkyy kaman sivulla ylläpidolle. Se ei estä lainaamista. Jos kamaa ei
             pidä lainata sellaisenaan, julkaise siitä huomio lainaajille alla.
           </p>
           <div className="flex flex-col gap-2">
@@ -201,7 +201,7 @@ export default function HandleNoticeDialog({
                         onChange={(value) =>
                           setAffectedItems((prev) => ({ ...prev, [reservation.item.id]: value }))
                         }
-                        aria-label={`${reservation.item.name} — määrä`}
+                        aria-label={`${reservation.item.name}, määrä`}
                       />
                       <span className="text-sm text-muted-foreground">kpl</span>
                     </div>
@@ -267,7 +267,7 @@ export default function HandleNoticeDialog({
                   onChange={(e) => setPublishMessage(e.target.value)}
                 />
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  Esitäytetty lainaajan tekstillä — muokkaa se muille sopivaksi.
+                  Esitäytetty lainaajan tekstillä, muokkaa se muille sopivaksi.
                 </p>
 
                 <Button

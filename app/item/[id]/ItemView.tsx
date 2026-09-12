@@ -275,7 +275,7 @@ export default function ItemView({
         ))}
       </span>
     ) : (
-      <span className="text-lg font-bold text-muted-foreground">—</span>
+      <span className="text-lg font-bold text-muted-foreground">-</span>
     );
 
   return (
@@ -382,7 +382,7 @@ export default function ItemView({
                   item.location ? (
                     <span className="text-lg font-bold">{item.location.name}</span>
                   ) : (
-                    <span className="text-lg font-bold text-muted-foreground">—</span>
+                    <span className="text-lg font-bold text-muted-foreground">-</span>
                   )
                 }
                 onStart={() => {

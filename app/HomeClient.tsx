@@ -37,12 +37,7 @@ function BrowseModeHeader({
 }) {
   return (
     <div className="mb-4 flex flex-col gap-4">
-      <div>
-        <h2 className="mb-2 text-xl font-semibold">Selaa katalogia</h2>
-        <p className="text-muted-foreground">
-          Selaat katalogia ilman lainatoimintoa. Voit tarkastella saatavilla olevia kamoja.
-        </p>
-      </div>
+      <h2 className="text-xl font-semibold">Selaa katalogia</h2>
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
         {isAdmin && (

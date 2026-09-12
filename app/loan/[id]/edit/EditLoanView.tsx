@@ -189,7 +189,7 @@ export default function EditLoanView({
       toast.success('Laina päivitetty');
       router.push(`/loan/${loan.id}`);
     } catch {
-      toast.error('Virhe', { description: 'Yhteysvirhe — yritä uudelleen' });
+      toast.error('Virhe', { description: 'Yhteysvirhe, yritä uudelleen' });
     } finally {
       setSaving(false);
       setConfirmOpen(false);
@@ -316,7 +316,7 @@ export default function EditLoanView({
             {status !== derivedStatus && (
               <Alert variant="warning" className="mt-3">
                 Kaikkien kamojen tila asetetaan lainan uuden tilan mukaiseksi. Saatavuus
-                tarkistetaan silti — jos kamat eivät ole vapaana, tallennus estetään.
+                tarkistetaan silti, ja jos kamat eivät ole vapaana, tallennus estetään.
               </Alert>
             )}
           </Card>
@@ -388,7 +388,7 @@ export default function EditLoanView({
 
           {overBooked.length > 0 && (
             <Alert variant="warning" title="Osa kamoista ei mahdu valitulle ajalle" className="mb-3">
-              Pienennä alla merkittyjen kamojen määriä — muuten tallennus estetään.
+              Pienennä alla merkittyjen kamojen määriä, muuten tallennus estetään.
             </Alert>
           )}
 

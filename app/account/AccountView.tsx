@@ -196,7 +196,7 @@ export default function AccountView({
             {elevated && (
               <p className="mt-1 text-xs text-success">
                 ADMIN-oikeudet käytössä (tähän sessioon)
-                {session.user.elevatedByName ? ` — ${session.user.elevatedByName}` : ''}
+                {session.user.elevatedByName ? `: ${session.user.elevatedByName}` : ''}
               </p>
             )}
           </div>

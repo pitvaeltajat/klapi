@@ -324,7 +324,7 @@ export default function AdminPage() {
               <DialogTitle>Aseta oma admin-PIN</DialogTitle>
             </DialogHeader>
             <p className="mb-2">
-              PIN on henkilökohtainen — se toimii kioskilla vain sinun admin-tiliisi
+              PIN on henkilökohtainen: se toimii kioskilla vain sinun admin-tiliisi
               korottautumiseen eikä vaikuta muihin admineihin.
             </p>
             <p className="mb-2">Syötä uusi 4-merkkinen PIN-koodi:</p>
@@ -481,7 +481,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold tracking-wider">{kioskPassword}</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Salasana on pysyvä — voit käyttää sitä uudelleen. Luo uusi vain jos haluat
+                Salasana on pysyvä, voit käyttää sitä uudelleen. Luo uusi vain jos haluat
                 mitätöidä vanhan.
               </p>
             </div>

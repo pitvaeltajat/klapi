@@ -81,7 +81,7 @@ export async function mergeUsers(
   if (!duplicate) throw new MergeUsersError(`Duplicate user ${duplicateId} not found`);
 
   if (primary.deletedAt) {
-    throw new MergeUsersError(`Primary user ${primary.email} is deleted — merge into a live account`);
+    throw new MergeUsersError(`Primary user ${primary.email} is deleted, merge into a live account`);
   }
   if (duplicate.deletedAt) {
     throw new MergeUsersError(`Duplicate user ${duplicate.email} is already deleted`);

@@ -30,8 +30,8 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const formatValue = (value: unknown): string => {
-  if (value === null || value === undefined || value === '') return '—';
-  if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
+  if (value === null || value === undefined || value === '') return '-';
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
   return String(value);
 };
 

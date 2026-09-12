@@ -488,7 +488,7 @@ export default function LoanView({
               {showStatusActions && canStartUse && (
                 <Alert variant="warning" title="Oletko hakenut tavarat varastosta?">
                   Kamat on varattu sinulle, mutta lainaa ei ole vielä merkitty käyttöön. Kun olet
-                  noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong> — vasta
+                  noutanut tavarat, paina <strong>&quot;Aloita lainaus&quot;</strong>. Vasta
                   silloin laina on virallisesti käynnissä ja voit myöhemmin palauttaa tavarat.
                 </Alert>
               )}

@@ -376,7 +376,7 @@ const LoanReturnCard = ({
                 <Alert variant="info" title="💡 Vinkki: Ota kuva palautettavista kamoista">
                   Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
                   laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva
-                  puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään —
+                  puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään,
                   säilytä se omassa puhelimessasi.
                 </Alert>
 
@@ -541,11 +541,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
         <div>
           <PageHeader
             title="Palauta lainoja"
-            description={
-              seesAllLoans
-                ? 'Kaikki noudetut ja noutamattomat lainat. Etsi oma lainasi listalta ja paina Palauta.'
-                : 'Omat lainasi, joita ei ole vielä palautettu.'
-            }
+            description={seesAllLoans ? undefined : 'Omat lainasi, joita ei ole vielä palautettu.'}
           />
           {loans.length === 0 ? (
             <EmptyState
