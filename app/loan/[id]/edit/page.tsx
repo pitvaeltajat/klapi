@@ -27,7 +27,9 @@ export default async function EditLoanPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const session = await auth();
 
-  if (!session?.user) redirect('/api/auth/signin');
+  // `user.id` — the same admission test as everywhere else; a session Klapi
+  // refused carries a `user` but no id.
+  if (!session?.user?.id) redirect('/api/auth/signin');
 
   const loan = await prisma.loan.findUnique({
     where: { id },

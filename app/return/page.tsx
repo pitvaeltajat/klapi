@@ -20,7 +20,10 @@ export default async function ReturnPage() {
   // pickup time but never marked in use. The borrower has those items
   // physically, so they must be returnable too — otherwise the loan can never
   // be closed through the kiosk.
-  const loans = session?.user
+  // `user.id` for the same reason as `/loan`: a session Klapi refused still has
+  // a `user`, and `userId: undefined` below would widen the query to everyone's
+  // loans rather than narrowing it to this person's.
+  const loans = session?.user?.id
     ? await prisma.loan.findMany({
         where: {
           ...activeLoansWhere,

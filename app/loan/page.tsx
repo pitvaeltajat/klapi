@@ -12,7 +12,14 @@ export const metadata = { title: 'Lainat | Klapi' };
 
 export default async function LoanListPage() {
   const session = await auth();
-  if (!session?.user) {
+  // `user.id`, not merely `user`. With the cookie shared across pitva.fi, a
+  // session minted by Budu — or one belonging to a member soft-deleted here —
+  // still carries a name and an email, and the `session` callback marks the
+  // refusal by withholding `klapiUserId`. Gating on `user` alone let such a
+  // session through with `user.id` undefined, and Prisma DROPS an `undefined`
+  // filter: `userId: undefined` stopped scoping the query and handed back
+  // every active loan in the association instead of that person's own.
+  if (!session?.user?.id) {
     redirect('/login?from=' + encodeURIComponent('/loan'));
   }
 
