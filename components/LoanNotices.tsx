@@ -49,7 +49,7 @@ const LoanNotices: React.FC<LoanNoticesProps> = ({ reports, reservations, isAdmi
       <p className="mb-3 text-sm text-muted-foreground">
         {isAdmin
           ? 'Lainaajan kirjaamat huomiot kamojen kunnosta. Käsittele ne ja julkaise tarvittaessa lainaajille näkyväksi.'
-          : 'Kirjaamasi huomiot kamojen kunnosta. Ylläpito käy ne läpi.'}
+          : 'Kirjaamasi huomiot kamojen kunnosta.'}
       </p>
 
       <div className="flex flex-col gap-3">

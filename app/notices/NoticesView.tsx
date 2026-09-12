@@ -153,7 +153,7 @@ export default function NoticesView({ announcements, reports, isAdmin }: Notices
         noudat tai palautat kamat: löydät kentän noudon ja palautuksen vahvistuksesta.
         {isAdmin
           ? ' Lainaajien kirjoittamat huomiot odottavat käsittelyä alla. Julkaise niistä ne, jotka koskevat myös seuraavia lainaajia.'
-          : ' Ylläpito käy huomiot läpi ja julkaisee tälle sivulle ne, jotka on hyvä tietää ennen lainaamista.'}
+          : ' Ylläpito julkaisee tälle sivulle ne huomiot, jotka on hyvä tietää ennen lainaamista.'}
       </Alert>
 
       {isAdmin && (

@@ -310,7 +310,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               </Label>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa, ja kirjaa
-                puutteet tähän (esim. puuttuvat kiilat, reikä laavussa). Ylläpito käy huomiot läpi.
+                puutteet tähän (esim. puuttuvat kiilat, reikä laavussa).
               </p>
               <p className="mt-2 text-sm leading-relaxed text-destructive">
                 <CircleAlert className="mr-2 inline h-4 w-4" />

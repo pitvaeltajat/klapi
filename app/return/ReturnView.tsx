@@ -376,8 +376,7 @@ const LoanReturnCard = ({
                 <Alert variant="info" title="💡 Vinkki: Ota kuva palautettavista kamoista">
                   Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
                   laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva
-                  puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse lähettää mihinkään,
-                  säilytä se omassa puhelimessasi.
+                  puhelimessasi toimii omana todisteenasi.
                 </Alert>
 
                 <Card variant="muted" padding="md" className="lg:flex lg:flex-1 lg:flex-col">
@@ -387,7 +386,7 @@ const LoanReturnCard = ({
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Jos jokin tavara puuttuu tai vahingoittui lainauksen aikana, kirjaa se tähän.
                     Tavanomaisesta käytöstä johtuneista vahingoista et ole lähtökohtaisesti
-                    korvausvastuussa, kunhan kirjaat ne. Ylläpito käy huomiot läpi.
+                    korvausvastuussa, kunhan kirjaat ne.
                   </p>
                   <p className="mt-2 text-sm font-bold leading-relaxed text-destructive">
                     <CircleAlert className="mr-2 inline h-4 w-4" />

@@ -130,9 +130,8 @@ export default function StartLoanConfirmation({
           <Card variant="muted" padding="md" className="mt-4">
             <Label htmlFor="web-pickup-notice">Huomasitko kamoissa jotain?</Label>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Kirjaa puutteet tai vahingot tähän ennen kuin aloitat lainauksen. Ylläpito käy
-              huomiot läpi. Ilman kirjausta voit joutua korvausvastuuseen jo olemassa olevista
-              vioista.
+              Kirjaa puutteet tai vahingot tähän ennen kuin aloitat lainauksen. Ilman kirjausta
+              voit joutua korvausvastuuseen jo olemassa olevista vioista.
             </p>
             <Textarea
               id="web-pickup-notice"

@@ -451,8 +451,7 @@ const LoanStartCard = ({
             </p>
             <Alert variant="info" title="💡 Vinkki: Ota kuva kamoista puhelimellasi" className="mb-4">
               Suosittelemme ottamaan kuvan kamoista ennen lainauksen aloitusta. Jos palautuksessa
-              tulee hämminkiä, kuva puhelimessasi toimii omana todisteenasi. Kuvaa ei tarvitse
-              lähettää mihinkään, säilytä se omassa puhelimessasi.
+              tulee hämminkiä, kuva puhelimessasi toimii omana todisteenasi.
             </Alert>
             <Card variant="muted" padding="sm" className="mb-4">
               <Label htmlFor="pickup-notice" className="text-base">
@@ -460,7 +459,7 @@ const LoanStartCard = ({
               </Label>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Tarkista ennen lainan vahvistamista, että kaikki kamat ovat kunnossa, ja kirjaa
-                puutteet tähän (esim. puuttuvat kiilat, reikä laavussa). Ylläpito käy huomiot läpi.
+                puutteet tähän (esim. puuttuvat kiilat, reikä laavussa).
               </p>
               <p className="mt-2 text-sm leading-relaxed text-destructive">
                 <CircleAlert className="mr-2 inline h-4 w-4" />
@@ -511,7 +510,7 @@ export default function StartLoanView({ loans, items }: { loans: LoanType[]; ite
       if (response.ok) {
         toast.success('Lainaus aloitettu!', {
           description: reportContent.trim()
-            ? 'Huomiosi kirjattiin, ylläpito käy sen läpi.'
+            ? 'Huomiosi kirjattiin.'
             : undefined,
         });
       } else {
