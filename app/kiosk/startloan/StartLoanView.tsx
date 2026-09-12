@@ -414,7 +414,6 @@ const LoanStartCard = ({
             ))}
           </div>
           <Alert variant="info" title="Tarvitseeko kamoihin muutoksia?">
-            <p>Voit lisätä, poistaa tai muuttaa määriä ennen lainauksen aloitusta.</p>
             <Button
               variant="outline"
               size="sm"

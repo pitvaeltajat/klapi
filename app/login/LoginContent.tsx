@@ -252,9 +252,6 @@ export default function LoginContent({ devLoginEnabled }: { devLoginEnabled: boo
             className="mx-auto mb-4 h-28 w-28 text-foreground"
           />
           <h1 className="text-3xl font-semibold">Kirjaudu sisään</h1>
-          <p className="text-sm text-muted-foreground">
-            Käyttääksesi Klapia sinun tulee kirjautua palveluun.
-          </p>
         </div>
         <Button
           variant="outline"

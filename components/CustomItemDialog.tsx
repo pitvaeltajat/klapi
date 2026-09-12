@@ -180,7 +180,7 @@ export default function CustomItemDialog({
               <Field
                 label="Kuva (valinnainen)"
                 htmlFor="custom-image"
-                helper="Kuvan voi jättää lisäämättä. Se auttaa tunnistamaan kaman palautuksessa."
+                helper="Auttaa tunnistamaan kaman palautuksessa."
               >
                 {/* Fixed box, `object-contain` inside it: sizing the box off the
                   photo reflowed the dialog differently for every file, and a

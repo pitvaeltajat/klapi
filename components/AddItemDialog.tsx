@@ -8,7 +8,6 @@ import type { Category, Location } from '@prisma/client';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -171,9 +170,6 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Luo uusi kama</DialogTitle>
-          <DialogDescription>
-            Vain nimi on pakollinen, muut kentät voi täyttää myöhemmin muokkaamalla kamaa.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">

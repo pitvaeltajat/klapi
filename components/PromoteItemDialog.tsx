@@ -129,7 +129,7 @@ export default function PromoteItemDialog({ item, onOpenChange, onSuccess }: Pro
         <DialogHeader>
           <DialogTitle>Siirrä kirjastoon</DialogTitle>
           <DialogDescription>
-            Kamasta tulee pysyvä osa kalustoa. Täydennä tai korjaa tiedot ennen siirtoa.
+            Kamasta tulee pysyvä osa kalustoa.
           </DialogDescription>
         </DialogHeader>
 

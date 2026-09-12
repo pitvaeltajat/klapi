@@ -109,9 +109,6 @@ export default function TemplateSection() {
           <Layers className="size-5 shrink-0 text-primary" aria-hidden />
           Valmiit setit
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Valmiiksi kasattu kamalista, jota voit muokata ennen lisäystä
-        </p>
       </div>
 
       <div className={ITEM_GRID_CLASSES} aria-busy={showSkeleton}>

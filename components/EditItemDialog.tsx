@@ -174,7 +174,7 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
         <DialogHeader>
           <DialogTitle>Muokkaa kamaa</DialogTitle>
           <DialogDescription>
-            Muutetut kentät on korostettu. Tallennus päivittää kaman heti.
+            Muutetut kentät on korostettu.
           </DialogDescription>
         </DialogHeader>
 

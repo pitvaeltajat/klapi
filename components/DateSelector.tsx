@@ -31,12 +31,7 @@ export default function DateSelector() {
     // Centred rather than left-aligned: the catalogue route runs full width, so
     // a left-hugging card would sit alone in a very wide page.
     <div className="mx-auto mb-4 flex max-w-3xl flex-col gap-4">
-      <div>
-        <h2 className="mb-2 text-xl font-semibold">Aloitus</h2>
-        <p className="text-muted-foreground">
-          Aloita valitsemalla kamojen nouto- ja palautusajankohdat.
-        </p>
-      </div>
+      <h2 className="text-xl font-semibold">Aloitus</h2>
 
       <Card padding="md">
         <Label size="section">Valitse lainausaika</Label>

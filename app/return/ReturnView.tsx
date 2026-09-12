@@ -468,7 +468,7 @@ const LoanReturnCard = ({
             )}
             <Alert variant="success" icon={false} className="justify-center text-center">
               <p className="font-medium text-success">
-                Kiitos palauttamisesta! Muista laittaa kaikki tavarat oikeaan lokeroon.
+                Kiitos palauttamisesta!
               </p>
             </Alert>
           </div>

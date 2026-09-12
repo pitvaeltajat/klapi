@@ -99,8 +99,7 @@ export default function SaveAsTemplateButton({ defaultName, items }: SaveAsTempl
             <DialogTitle>Tallenna laina pohjaksi</DialogTitle>
             <DialogDescription>
               Tämän lainan kamoista tulee valmis setti, jonka lainaajat saavat yhdellä
-              klikkauksella koriin. Säädä määriä tai pudota kamoja pois jo tässä. Pohjaa voi
-              muokata myöhemminkin{' '}
+              klikkauksella koriin. Pohjaa voi muokata myöhemminkin{' '}
               <NextLink href="/admin/templates" className="font-medium text-primary underline">
                 lainapohjissa
               </NextLink>
