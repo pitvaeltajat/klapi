@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    Klapi's mark: the kirves, in the same navy tile Budu uses, so the two
+    PitVa apps sit side by side in a tab strip as one family. Brand palette
+    only, and flat: the old icon was an outlined cartoon axe in orange and
+    brown that belonged to no other screen in the app, and turned to mush
+    below 32px. Blade in the light blue, varsi in the cream.
+
+    The PNGs in public/ (favicon.ico, the two chrome icons, apple-touch-icon)
+    are rendered from this file with rsvg-convert. Redraw here, then regenerate
+    them; do not edit a PNG by hand.
+  -->
+  <rect width="32" height="32" rx="7" fill="#221e5d"/>
+  <g transform="rotate(36 16 16)">
+    <rect x="17.2" y="5.4" width="2.9" height="23" rx="1.45" fill="#fbe7b2"/>
+    <path d="M20.6 5.6 L15.4 4.2 L9.4 3.4 Q6.4 9.4 9.4 15.4 L15.4 12.8 L20.6 11.4 Z" fill="#bbd1fb"/>
+  </g>
+</svg>
