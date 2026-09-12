@@ -30,6 +30,7 @@ import ItemPhoto from '@/components/ItemPhoto';
 import PromoteItemDialog from '@/components/PromoteItemDialog';
 import { ApiError, readJson } from '@/utils/apiError';
 import ItemNotices, { type ItemAnnouncement, type ItemReport } from './ItemNotices';
+import { displayName } from '@/utils/userDisplay';
 
 const fiCollator = new Intl.Collator('fi');
 
@@ -542,7 +543,7 @@ export default function ItemView({
             ) : (
               <ul className="flex flex-col gap-3">
                 {history.map((entry) => {
-                  const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
+                  const who = displayName(entry.actedBy, 'Järjestelmä');
                   const changes = formatItemHistoryChanges(entry.details);
                   const bulk = isBulkItemHistory(entry.details);
                   return (

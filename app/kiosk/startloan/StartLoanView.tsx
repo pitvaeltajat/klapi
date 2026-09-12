@@ -8,7 +8,7 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor } from '@/utils/loanHelpers';
+import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor, getLoanerName } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -383,11 +383,11 @@ const LoanStartCard = ({
     <>
       <Card padding="md" className="mb-4 overflow-hidden">
         <div className="flex flex-col gap-3">
-          <h3 className="text-lg font-semibold">{loan.description || loan.loaner}</h3>
+          <h3 className="text-lg font-semibold">{loan.description || getLoanerName(loan)}</h3>
           <Badge variant={getLoanStatusColor(derivedStatus)} className="w-fit">
             {getLoanStatusLabel(derivedStatus)}
           </Badge>
-          <p>Lainaaja: {loan.loaner}</p>
+          <p>Lainaaja: {getLoanerName(loan)}</p>
           <p>
             Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
             {formatDateOnly(loan.endTime)}

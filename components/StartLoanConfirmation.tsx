@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DateTime } from '@/components/DateTime';
 import { useInBoxItems } from '@/hooks/useInBoxItems';
+import { getLoanerName } from '@/utils/loanHelpers';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -100,7 +101,7 @@ export default function StartLoanConfirmation({
 
           <p className="mb-2">
             <b>Lainaaja: </b>
-            {loan.loaner || loan.user.name || loan.user.email}
+            {getLoanerName(loan)}
           </p>
           <p className="mb-2">
             <b>Palautus: </b>

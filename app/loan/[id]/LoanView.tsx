@@ -41,6 +41,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DateTime } from '@/components/DateTime';
+import { displayName } from '@/utils/userDisplay';
 
 interface LoanWithRelations extends Loan {
   user: User;
@@ -565,7 +566,7 @@ export default function LoanView({
           ) : (
             <div className="flex flex-col gap-3">
               {history.map((entry) => {
-                const who = entry.actedBy?.name || entry.actedBy?.email || 'Järjestelmä';
+                const who = displayName(entry.actedBy, 'Järjestelmä');
                 const viaKiosk = hasDetailFlag(entry.details, 'viaKiosk');
                 const auto = hasDetailFlag(entry.details, 'auto');
                 return (

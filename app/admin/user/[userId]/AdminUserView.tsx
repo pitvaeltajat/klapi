@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Alert } from '@/components/ui/alert';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatDateNumeric } from '@/utils/dateFormat';
+import { displayName } from '@/utils/userDisplay';
 
 type Group = 'ADMIN' | 'USER' | 'KIOSK';
 
@@ -91,7 +92,7 @@ export default function AdminUserView({
 
   const isSelf = user.id === viewerId;
   const isDeleted = Boolean(user.deletedAt);
-  const displayName = user.name || user.email || 'Nimetön käyttäjä';
+  const shownName = displayName(user, 'Nimetön käyttäjä');
 
   const updatePreference = async (key: PrefKey, value: boolean) => {
     const previous = prefs[key];
@@ -121,7 +122,7 @@ export default function AdminUserView({
       });
       if (!response.ok) throw new Error('Roolin päivitys epäonnistui');
       toast.success('Rooli päivitetty', {
-        description: `${displayName}: ${GROUP_LABEL[next]}`,
+        description: `${shownName}: ${GROUP_LABEL[next]}`,
       });
     } catch {
       setGroup(previous);
@@ -134,7 +135,7 @@ export default function AdminUserView({
       const response = await fetch(`/api/user/${user.id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Poisto epäonnistui');
       toast.success('Käyttäjä poistettu', {
-        description: `${displayName} poistettu. Lainat ja historia säilyvät.`,
+        description: `${shownName} poistettu. Lainat ja historia säilyvät.`,
       });
       setDeleteOpen(false);
       router.push('/admin');
@@ -146,9 +147,9 @@ export default function AdminUserView({
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: displayName }]} />
+      <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: shownName }]} />
       <PageHeader
-        title={displayName}
+        title={shownName}
         actions={
           !isSelf &&
           !isDeleted && (
@@ -177,7 +178,7 @@ export default function AdminUserView({
                     href={`/admin/user/${user.mergedInto.id}`}
                     className="underline underline-offset-2"
                   >
-                    {user.mergedInto.name || user.mergedInto.email}
+                    {displayName(user.mergedInto)}
                   </NextLink>
                   .
                 </>
@@ -366,7 +367,7 @@ export default function AdminUserView({
         }
         onConfirm={handleDelete}
       >
-        Haluatko varmasti poistaa käyttäjän <span className="font-bold">{displayName}</span>?
+        Haluatko varmasti poistaa käyttäjän <span className="font-bold">{shownName}</span>?
         Lainat ja lainahistoria säilyvät, mutta hän ei voi enää kirjautua sisään.
       </ConfirmDialog>
     </>

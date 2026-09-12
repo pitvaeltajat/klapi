@@ -13,6 +13,7 @@ import {
   type LoanCreatorEntry,
   type ManualLoanStatus,
 } from '../utils/loanHelpers';
+import { displayName } from '../utils/userDisplay';
 
 describe('deriveLoanStatus', () => {
   it('should return ACCEPTED for empty reservations', () => {
@@ -221,6 +222,32 @@ describe('getLoanerName', () => {
       'Tuntematon lainaaja',
     );
     expect(getLoanerName({})).toBe('Tuntematon lainaaja');
+  });
+
+  // The kiosk writes the account's address into Lainaaja when the account has
+  // no name yet. Once a name exists it is the better label, and the loan should
+  // pick it up rather than keep showing the address it was created with.
+  it('prefers the account name over a Lainaaja holding only that account address', () => {
+    expect(
+      getLoanerName({ loaner: 'matti@x.fi', user: { name: 'Matti Virtanen', email: 'Matti@x.fi' } }),
+    ).toBe('Matti Virtanen');
+    // Someone else's address is a different person, so it stays.
+    expect(
+      getLoanerName({ loaner: 'liisa@x.fi', user: { name: 'Matti Virtanen', email: 'matti@x.fi' } }),
+    ).toBe('liisa@x.fi');
+    // And with no name to fall back to, the address is still all there is.
+    expect(getLoanerName({ loaner: 'matti@x.fi', user: { name: null, email: 'matti@x.fi' } })).toBe(
+      'matti@x.fi',
+    );
+  });
+});
+
+describe('displayName', () => {
+  it('uses the name, and the address only when there is none', () => {
+    expect(displayName({ name: 'Laura Mäki', email: 'l@x.fi' })).toBe('Laura Mäki');
+    expect(displayName({ name: '   ', email: 'l@x.fi' })).toBe('l@x.fi');
+    expect(displayName({ name: null, email: null }, '-')).toBe('-');
+    expect(displayName(null, 'Järjestelmä')).toBe('Järjestelmä');
   });
 });
 

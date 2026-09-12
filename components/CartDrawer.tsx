@@ -28,6 +28,7 @@ import { isCustomItemId } from '@/utils/customItems';
 import { isKioskMachine } from '@/utils/kioskSession';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { cn } from '@/lib/utils';
+import { displayName } from '@/utils/userDisplay';
 
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const firstField = useRef<HTMLInputElement>(null);
@@ -110,7 +111,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     // Name first: `loaner` is what the loan is labelled by everywhere it is
     // shown — the loan page, the return screen, the calendar event's title —
     // and an address reads like a mailbox rather than a person.
-    const userDisplayName = session.user.name || session.user.email || '';
+    const userDisplayName = displayName(session.user, '');
     // An admin may retype the field to lend on someone else's behalf, so seed
     // it once and then leave it alone. For an ordinary member it is read-only
     // and can only ever be their own account, so keep it in sync instead of

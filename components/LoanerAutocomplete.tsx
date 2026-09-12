@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { displayName } from '@/utils/userDisplay';
 
 interface User {
   id: string;
@@ -13,7 +14,7 @@ interface User {
 
 /** A name is what an admin recognises; the address is the disambiguator.
  *  `getUsers` already returns the rows in this label's Finnish order. */
-const loanerLabel = (user: User) => user.name || user.email;
+const loanerLabel = (user: User) => displayName(user);
 
 interface LoanerAutocompleteProps {
   value: string;

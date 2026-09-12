@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CountBadge } from '@/components/ui/count-badge';
 import { DateTime } from '@/components/DateTime';
 import HandleNoticeDialog from '@/components/HandleNoticeDialog';
+import { getLoanerName } from '@/utils/loanHelpers';
 import {
   getReportStatusLabel,
   getReportStatusColor,
@@ -36,7 +37,7 @@ type PendingNotice = {
   loanId: string;
   loan: Loan & {
     reservations: (Reservation & { item: Item })[];
-    user: { name: string | null };
+    user: { name: string | null; email: string | null };
   };
   affectedItems: (ReportAffectedItem & { item: Item })[];
   announcements: { id: string }[];
@@ -85,7 +86,7 @@ function ReportCard({
           href={`/loan/${report.loanId}`}
           className="text-sm text-primary hover:underline"
         >
-          {report.loan.loaner || report.loan.user.name}
+          {getLoanerName(report.loan)}
           {report.loan.description ? ` — ${report.loan.description}` : ''}
         </NextLink>
         <Button size="sm" variant={dimmed ? 'outline' : 'default'} onClick={onHandle}>

@@ -28,6 +28,7 @@ import {
 import { useInBoxItems } from '@/hooks/useInBoxItems';
 import { isCustomItemId } from '@/utils/customItems';
 import { isKioskMachine } from '@/utils/kioskSession';
+import { displayName } from '@/utils/userDisplay';
 
 export default function SubmitConfirmation({
   isOpen,
@@ -125,7 +126,7 @@ export default function SubmitConfirmation({
 
           <p>
             <b>Lainaaja: </b>
-            {cart.loaner || session?.user?.name || session?.user?.email || 'Ei määritelty'}
+            {cart.loaner || displayName(session?.user, 'Ei määritelty')}
             <br />
             <br />
             <b>Kamojen nouto: </b>

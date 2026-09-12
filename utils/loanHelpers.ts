@@ -6,6 +6,7 @@ import {
   ReportCreated,
   AnnouncementKind,
 } from '@prisma/client';
+import { displayName } from '@/utils/userDisplay';
 
 export const getLoanHistoryActionLabel = (action: LoanHistoryAction): string => {
   switch (action) {
@@ -75,8 +76,16 @@ export const getLoanStatusLabel = (status: LoanStatus): string => {
 export const getLoanerName = (loan: {
   loaner?: string | null;
   user?: { name?: string | null; email?: string | null } | null;
-}): string =>
-  loan.loaner?.trim() || loan.user?.name || loan.user?.email || 'Tuntematon lainaaja';
+}): string => {
+  const typed = loan.loaner?.trim();
+  // A Lainaaja field holding nothing but the account's own address says no more
+  // than the relation does, and the relation stays current: the kiosk writes
+  // that address when the account had no name yet, and it would otherwise go on
+  // being shown long after the name was filled in. Any other text is kept — it
+  // is how a loan made on someone else's behalf says whose it is.
+  if (typed && typed.toLowerCase() !== loan.user?.email?.trim().toLowerCase()) return typed;
+  return displayName(loan.user, 'Tuntematon lainaaja');
+};
 
 /**
  * Who actually entered a loan, when that is not simply its owner.

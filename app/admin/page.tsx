@@ -34,6 +34,7 @@ import {
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { displayName } from '@/utils/userDisplay';
 
 interface UserWithGroup extends User {
   group: 'ADMIN' | 'USER' | 'KIOSK';
@@ -150,7 +151,7 @@ export default function AdminPage() {
     try {
       await fetch(`/api/user/${userToDelete.id}`, { method: 'DELETE' });
       toast.success('Käyttäjä poistettu', {
-        description: `${userToDelete.name || userToDelete.email} poistettu onnistuneesti`,
+        description: `${displayName(userToDelete)} poistettu onnistuneesti`,
       });
       mutate('/api/user/getUsers');
       setDeleteOpen(false);
@@ -386,7 +387,7 @@ export default function AdminPage() {
                       href={`/admin/user/${user.id}`}
                       className="font-medium underline-offset-2 hover:underline"
                     >
-                      {user.name || user.email || '-'}
+                      {displayName(user, '-')}
                     </NextLink>
                     <p className="break-all text-sm text-muted-foreground">{user.email}</p>
                   </div>
@@ -437,7 +438,7 @@ export default function AdminPage() {
                         href={`/admin/user/${user.id}`}
                         className="underline-offset-2 hover:underline"
                       >
-                        {user.name || user.email || '-'}
+                        {displayName(user, '-')}
                       </NextLink>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -511,7 +512,7 @@ export default function AdminPage() {
           onConfirm={handleDeleteConfirm}
         >
           Haluatko varmasti poistaa käyttäjän{' '}
-          <span className="font-bold">{userToDelete?.name || userToDelete?.email}</span>? Tätä
+          <span className="font-bold">{displayName(userToDelete)}</span>? Tätä
           toimintoa ei voi perua.
         </ConfirmDialog>
       </div>

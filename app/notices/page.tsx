@@ -34,7 +34,7 @@ export default async function NoticesPage() {
             loan: {
               include: {
                 reservations: { include: { item: true } },
-                user: { select: { name: true } },
+                user: { select: { name: true, email: true } },
               },
             },
             affectedItems: { include: { item: true } },

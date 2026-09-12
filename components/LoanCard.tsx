@@ -71,7 +71,7 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h3 className="text-lg font-semibold">
             <NextLink href={`/loan/${loan.id}`} className="hover:underline">
-              {loan.description || loan.loaner || loan.user.name}
+              {loan.description || getLoanerName(loan)}
             </NextLink>
           </h3>
           <p className="text-sm text-muted-foreground">
