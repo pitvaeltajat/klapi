@@ -6,6 +6,10 @@ import Providers from './providers';
 
 export const metadata: Metadata = {
   title: 'Klapi',
+  // Nothing linked the manifest before, so the file sat in public/ unread and
+  // an "add to home screen" got the URL as its label. Next emits the <link>
+  // from here.
+  manifest: '/site.webmanifest',
   // The UI is Finnish; on a kiosk whose browser language isn't Finnish, Chrome
   // otherwise offers to translate the page on every load.
   other: { google: 'notranslate' },
