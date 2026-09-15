@@ -279,6 +279,32 @@
   button:hover {
     text-decoration: none;
   }
+  /* A tap or double-click on something clickable must not paint a text
+     selection — on the kiosk touchscreen a long press did exactly that.
+     `.cursor-pointer` catches the `<div onClick>` cards and rows. Fields keep
+     selection explicitly: Safari lets a `none` ancestor lock an input inside a
+     `<label>`. */
+  a,
+  button,
+  label,
+  summary,
+  select,
+  [role='button'],
+  [role='checkbox'],
+  [role='switch'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'],
+  .cursor-pointer {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
   main {
     padding-top: 100px;
   }
