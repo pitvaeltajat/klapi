@@ -379,7 +379,7 @@ export default function LoanView({
               </dt>
               <dd className="flex flex-wrap items-baseline gap-x-2 break-all">
                 {getLoanerName(loan)}
-                {loan.loaner && loan.user.name && loan.loaner !== loan.user.name && (
+                {loan.user.name && getLoanerName(loan) !== loan.user.name.trim() && (
                   <span className="text-sm text-muted-foreground">
                     <span className="sr-only">Tili: </span>
                     {loan.user.name}
