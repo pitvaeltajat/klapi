@@ -2,7 +2,8 @@
 
 import React, { Suspense, use, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { MapPin, Plus } from 'lucide-react';
+import NextLink from 'next/link';
 import DateSelector from '@/components/DateSelector';
 import DateSummaryBar from '@/components/DateSummaryBar';
 import KioskModeSelector from '@/components/KioskModeSelector';
@@ -37,6 +38,13 @@ function BrowseModeHeader({
         {isAdmin && (
           <Button variant="success" className="gap-2" onClick={onCreateItem}>
             <Plus className="h-4 w-4" /> Luo uusi kama
+          </Button>
+        )}
+        {isAdmin && (
+          <Button variant="outline" className="gap-2" asChild>
+            <NextLink href="/admin/locations">
+              <MapPin className="h-4 w-4" /> Sijainnit
+            </NextLink>
           </Button>
         )}
       </div>

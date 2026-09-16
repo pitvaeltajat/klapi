@@ -212,7 +212,9 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
 | `auth/[...nextauth]` | — | Auth.js handler (`export const { GET, POST } = handlers`) |
 | `availability/getAvailabilities` | POST | item availability over a date range |
-| `category/getCategories`, `location/getLocations` | GET | option lists |
+| `category/getCategories` | GET | option list |
+| `location/getLocations` | GET | every sijainti with `path` ("Kalusto / Hylly 3") and `depth`, in tree order — pickers label options with the path (admin) |
+| `location/createLocation`, `location/updateLocation`, `location/deleteLocation` | POST | the sijainti tree: name + `parentId`; loops, a säilytyspaikka as parent, editing a säilytyspaikka, and deleting a non-empty sijainti are refused (`utils/locationQueries.ts`). Deleting lifts its children one level (admin) |
 | `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
 | `template/createTemplate` | POST | create one from an item list (`items: [{ itemId, amount }]`) |
 | `template/updateTemplate` | POST | rename + replace its item list |
@@ -306,6 +308,7 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
+| `/admin/locations` | the sijainti tree — create, rename, move ("Sijaitsee"), delete empty ones. Linked from the Kamat view's header; säilytyspaikat appear under the sijainti their kama is in, read-only |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
 | `/kiosk/startloan` | kiosk pickup queue (the palautuspäivä and the kamat are edited on the card itself and saved on "Aloita lainaus", with the same `components/LoanItemsEditor.tsx` rows + picker as `/loan/[id]/edit`, oma kama included) |
 | `/account`, `/login` | account settings / sign-in |
@@ -332,7 +335,7 @@ elevation, and email recipients so `Loan.user` history survives; the
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, soft-delete via `deletedAt`, optional `Box`,
 `calendarEventId` for the shared calendar) · `Box` ·
-`Location` (`itemId` set = this sijainti **is** a kama — see "Säilytyspaikat"
+`Location` (`parentId` = the sijainti it sits in; `itemId` set = this sijainti **is** a kama — see "Säilytyspaikat"
 below) · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` (both are "huomiot" — see above) · `LoanHistory` /
 `ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
@@ -360,6 +363,14 @@ the save then disagrees with. `utils/containers.ts` is the only place the
 Item↔Location pair is made, broken (refused while the box still holds anything:
 `Item.locationId` cascades on delete) or renamed. The toggle is in
 `EditItemDialog`; `/item/[id]` lists what a box contains.
+
+### Sijaintipuu
+
+A plain sijainti nests through `Location.parentId`; a säilytyspaikka has no
+parent of its own and sits wherever its kama is stored (`Item.locationId`).
+`utils/locationTree.ts` reads both as one tree (`withPaths`, `canBeParent`,
+client-safe) — every picker, the item page, the Kamat table and the Excel export
+show the full path. Only boxes cascade availability; a hylly is just a label.
 
 ## Cross-cutting helpers
 

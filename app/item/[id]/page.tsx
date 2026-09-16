@@ -5,6 +5,7 @@ import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import ItemView from './ItemView';
+import { locationPaths } from '@/utils/locationQueries';
 import { activeLoanReservationWhere, activeLoansWhere } from '@/utils/loanQueries';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -82,9 +83,17 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       ])
     : [[], []];
 
+  // The page names the whole chain — "Kalusto / Hylly 3" — not just the last
+  // step. Carried in `name` so the inline editor seeds its picker with the same
+  // label the options use.
+  const location = item.location && {
+    ...item.location,
+    name: (await locationPaths()).get(item.location.id) ?? item.location.name,
+  };
+
   return (
     <ItemView
-      item={serialize(item)}
+      item={serialize({ ...item, location })}
       history={serialize(history)}
       reportAffectedItems={serialize(reportAffectedItems)}
     />

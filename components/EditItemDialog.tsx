@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import type { Category, Location } from '@prisma/client';
+
+type LocationWithPath = Location & { path: string };
 import {
   Dialog,
   DialogContent,
@@ -72,7 +74,7 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
     open ? '/api/category/getCategories' : null,
     fetcher,
   );
-  const { data: locations = [], isLoading: locationsLoading } = useSWR<Location[]>(
+  const { data: locations = [], isLoading: locationsLoading } = useSWR<LocationWithPath[]>(
     open ? '/api/location/getLocations' : null,
     fetcher,
   );
@@ -230,7 +232,7 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
               // guarded server-side.
               options={locations
                 .filter((loc) => loc.itemId !== item.id)
-                .map((loc) => ({ value: loc.id, label: loc.name }))}
+                .map((loc) => ({ value: loc.id, label: loc.path }))}
               onChange={(option) => setLocation(option as SelectOption | null)}
               isClearable
             />

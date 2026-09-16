@@ -202,6 +202,12 @@ model Location {
   items       Item[]  @relation("ItemLocation")
   itemId      String? @unique
   item        Item?   @relation("ItemAsLocation", fields: [itemId], references: [id], onDelete: Cascade)
+  /// The sijainti this one sits inside ("Hylly 3" in "Kalusto"). Unused on a
+  /// säilytyspaikka, whose place is wherever its kama is stored. SetNull: a
+  /// deleted parent lifts its children to the top rather than taking them along.
+  parentId    String?
+  parent      Location?  @relation("LocationTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Location[] @relation("LocationTree")
 }
 
 model Box {

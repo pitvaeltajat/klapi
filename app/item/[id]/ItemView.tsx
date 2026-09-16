@@ -110,7 +110,7 @@ export default function ItemView({
     pickersOpen ? '/api/category/getCategories' : null,
     fetcher,
   );
-  const { data: allLocations = [] } = useSWR<{ id: string; name: string }[]>(
+  const { data: allLocations = [] } = useSWR<{ id: string; path: string }[]>(
     pickersOpen ? '/api/location/getLocations' : null,
     fetcher,
   );
@@ -404,7 +404,7 @@ export default function ItemView({
                   aria-label="Sijainti"
                   placeholder="Kolon vessa"
                   value={locationDraft}
-                  options={allLocations.map((loc) => ({ value: loc.id, label: loc.name }))}
+                  options={allLocations.map((loc) => ({ value: loc.id, label: loc.path }))}
                   onChange={(option) => setLocationDraft(option as SelectOption | null)}
                   isClearable
                 />

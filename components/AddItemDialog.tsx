@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
-import type { Category, Location } from '@prisma/client';
+import type { Category } from '@prisma/client';
 import {
   Dialog,
   DialogContent,
@@ -58,7 +58,7 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
   const { data: categories = [] } = useSWR<Category[]>(
     open ? '/api/category/getCategories' : null,
   );
-  const { data: locations = [] } = useSWR<Location[]>(open ? '/api/location/getLocations' : null);
+  const { data: locations = [] } = useSWR<{ id: string; path: string }[]>(open ? '/api/location/getLocations' : null);
 
   const [name, setName] = useState(emptyDraft.name);
   const [description, setDescription] = useState(emptyDraft.description);
@@ -213,7 +213,7 @@ export default function AddItemDialog({ open, onOpenChange, onCreated }: AddItem
               inputId="add-item-location"
               placeholder="Kolon vessa"
               value={selectedLocation}
-              options={locations.map((loc) => ({ value: loc.id, label: loc.name }))}
+              options={locations.map((loc) => ({ value: loc.id, label: loc.path }))}
               onChange={(option) => setSelectedLocation(option as SelectOption | null)}
               isClearable
             />
