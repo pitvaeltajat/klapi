@@ -12,7 +12,11 @@ import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor, getLoanerName
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '@/utils/datepickerLocale';
 import { formatDateOnly } from '@/utils/dateFormat';
+import { isSameCalendarDay, setDefaultTime, setEndOfDay } from '@/utils/dateRange';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -89,19 +93,33 @@ const LoanStartCard = ({
   );
 
   const originalRows = useMemo(() => rowsFromReservations(loan.reservations), [loan]);
+  const [endDate, setEndDate] = useState(() => new Date(loan.endTime));
   const { availabilities, loading: loadingAvailability } = useAvailabilities({
     start: new Date(loan.startTime),
-    end: new Date(loan.endTime),
+    end: endDate,
   });
   const editor = useLoanItemRows(originalRows, availabilities);
+  const endChanged = endDate.getTime() !== new Date(loan.endTime).getTime();
+  const dirty = editor.dirty || endChanged;
+
+  // A loan picked up early still can't be returned before it starts, nor
+  // before today. Same rule as the kiosk loan flow: 18:00 on the return day,
+  // end of day for a loan that starts and ends on the same day.
+  const today = new Date();
+  const loanStart = new Date(loan.startTime);
+  const minReturn = loanStart > today ? loanStart : today;
+  const handleReturnDateChange = (date: Date | null) => {
+    if (!date) return;
+    setEndDate(isSameCalendarDay(date, loanStart) ? setEndOfDay(date) : setDefaultTime(date));
+  };
 
   /**
-   * The kamat are edited in place on the card, and what was changed is saved
+   * The kamat and the return day are edited in place on the card, and what was changed is saved
    * on the way to the start confirmation — one button, not a separate save
    * step to forget before handing the kamat over.
    */
   const saveItemsAndConfirm = async () => {
-    if (!editor.dirty) {
+    if (!dirty) {
       setOpen(true);
       return;
     }
@@ -114,7 +132,7 @@ const LoanStartCard = ({
           id: loan.id,
           description: loan.description,
           startTime: loan.startTime,
-          endTime: loan.endTime,
+          endTime: endDate,
           reservations: rowsToReservations(editor.rows),
         }),
       });
@@ -161,8 +179,33 @@ const LoanStartCard = ({
           <p>Lainaaja: {getLoanerName(loan)}</p>
           <p>
             Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
-            {formatDateOnly(loan.endTime)}
+            {formatDateOnly(endDate)}
           </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-bold">Palautuspäivä</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-2"
+                onClick={() => setEndDate(new Date(loan.endTime))}
+                disabled={!endChanged}
+              >
+                <History className="h-4 w-4" />
+                Palauta alkuperäinen
+              </Button>
+            </div>
+            <div className="flex justify-center overflow-x-auto">
+              <DatePicker
+                selected={endDate}
+                onChange={handleReturnDateChange}
+                inline
+                monthsShown={2}
+                minDate={minReturn}
+                dateFormat="dd.MM.yyyy"
+              />
+            </div>
+          </div>
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
               <p className="font-bold">Kamat</p>
@@ -212,9 +255,9 @@ const LoanStartCard = ({
           >
             Aloita lainaus
           </Button>
-          {editor.dirty && (
+          {dirty && (
             <p className="text-center text-sm text-muted-foreground">
-              Kamojen muutokset tallennetaan, kun aloitat lainauksen.
+              Muutokset tallennetaan, kun aloitat lainauksen.
             </p>
           )}
         </div>
