@@ -7,7 +7,7 @@ import ItemAmountCard from '@/components/ItemAmountCard';
 import { Alert } from '@/components/ui/alert';
 import { CreatableSelect } from '@/components/ui/creatable-select';
 import { EmptyState } from '@/components/ui/empty-state';
-import { isCustomItemId } from '@/utils/customItems';
+import { isCustomItemId, newCustomItemId } from '@/utils/customItems';
 import { cn } from '@/lib/utils';
 
 /**
@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
  * no meaning (`updateLoan` sums them by item anyway), so adding one that is
  * already in the list bumps its amount instead of starting a second row.
  *
- * Shared by the loan edit page and the kiosk's "Muokkaa kamoja" dialog, which
+ * Shared by the loan edit page and the kiosk pickup card, which
  * had drifted into two different editors for the same list.
  */
 export interface LoanItemRow {
@@ -149,9 +149,16 @@ export function LoanItemRows({ editor, className }: { editor: Editor; className?
 export function AddLoanItemPicker({
   editor,
   items,
+  askCustomDetails = true,
 }: {
   editor: Editor;
   items: { id: string; name: string }[];
+  /**
+   * Off on the kiosk counter: the oma kama dialog there asks only a name and an
+   * amount, both of which are already on screen — the typed name and the row's
+   * stepper — so the kama is added straight away instead of behind a popup.
+   */
+  askCustomDetails?: boolean;
 }) {
   const { rows, setRows, headroom } = editor;
   const [customOpen, setCustomOpen] = useState(false);
@@ -199,6 +206,10 @@ export function AddLoanItemPicker({
           if (item) addRow({ itemId: item.id, name: item.name, amount: 1 });
         }}
         onCreateOption={(name) => {
+          if (!askCustomDetails) {
+            addRow({ itemId: newCustomItemId(), name: name.trim(), amount: 1 });
+            return;
+          }
           setCustomName(name);
           setCustomOpen(true);
         }}

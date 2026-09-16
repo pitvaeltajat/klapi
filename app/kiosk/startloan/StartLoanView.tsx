@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, History } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Item, LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -65,26 +65,47 @@ interface LoanType {
   reservations: Reservation[];
 }
 
-const EditItemsDialog = ({
-  onOpenChange,
+const LoanStartCard = ({
   loan,
   items,
+  onStart,
+  onStartComplete,
 }: {
-  onOpenChange: (open: boolean) => void;
   loan: LoanType;
   items: Item[];
+  onStart: (id: string, reportContent: string) => Promise<void>;
+  onStartComplete: () => void;
 }) => {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [savingItems, setSavingItems] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [reportContent, setReportContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
+  const acceptedReservations = loan.reservations.filter(
+    (r) => r.status === ReservationStatus.ACCEPTED,
+  );
+
   const originalRows = useMemo(() => rowsFromReservations(loan.reservations), [loan]);
-  const { availabilities, loading } = useAvailabilities({
+  const { availabilities, loading: loadingAvailability } = useAvailabilities({
     start: new Date(loan.startTime),
     end: new Date(loan.endTime),
   });
   const editor = useLoanItemRows(originalRows, availabilities);
 
-  const handleSave = async () => {
-    setSaving(true);
+  /**
+   * The kamat are edited in place on the card, and what was changed is saved
+   * on the way to the start confirmation — one button, not a separate save
+   * step to forget before handing the kamat over.
+   */
+  const saveItemsAndConfirm = async () => {
+    if (!editor.dirty) {
+      setOpen(true);
+      return;
+    }
+    setSavingItems(true);
     try {
       const response = await fetch('/api/loan/updateLoan', {
         method: 'POST',
@@ -106,82 +127,16 @@ const EditItemsDialog = ({
         });
         return;
       }
-      toast.success('Laina päivitetty');
-      // The server's answer carries what the rows can't: the reservation
-      // statuses, an oma kama's real row, a säilytyspaikka's contents.
+      // The server's answer carries what the rows can't: an oma kama's real
+      // row and a säilytyspaikka's contents.
       router.refresh();
-      onOpenChange(false);
+      setOpen(true);
     } catch {
       toast.error('Virhe', { description: 'Yhteysvirhe, yritä uudelleen' });
     } finally {
-      setSaving(false);
+      setSavingItems(false);
     }
   };
-
-  return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Muokkaa lainan kamoja</DialogTitle>
-        </DialogHeader>
-
-        {loading ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div>
-              <LoanItemRows editor={editor} className="sm:grid-cols-2" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Lisää kama</Label>
-              <AddLoanItemPicker editor={editor} items={items} />
-            </div>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Peruuta
-          </Button>
-          <Button
-            variant="success"
-            onClick={handleSave}
-            isLoading={saving}
-            disabled={loading || !editor.dirty || editor.overBooked.length > 0}
-          >
-            Tallenna muutokset
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const LoanStartCard = ({
-  loan,
-  items,
-  onStart,
-  onStartComplete,
-}: {
-  loan: LoanType;
-  items: Item[];
-  onStart: (id: string, reportContent: string) => Promise<void>;
-  onStartComplete: () => void;
-}) => {
-  const [open, setOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [reportContent, setReportContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
-  const acceptedReservations = loan.reservations.filter(
-    (r) => r.status === ReservationStatus.ACCEPTED,
-  );
 
   const handleStartLoan = async () => {
     if (isLoading) return;
@@ -208,15 +163,29 @@ const LoanStartCard = ({
             Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
             {formatDateOnly(loan.endTime)}
           </p>
-          <div>
-            <p className="mb-2 font-bold">Tavarat:</p>
-            <div className="flex flex-wrap gap-2">
-              {acceptedReservations.map((reservation) => (
-                <Badge key={reservation.id}>
-                  {reservation.item.name} ({reservation.amount})
-                </Badge>
-              ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-bold">Kamat</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-2"
+                onClick={editor.reset}
+                disabled={!editor.dirty}
+              >
+                <History className="h-4 w-4" />
+                Palauta alkuperäiset
+              </Button>
             </div>
+            {loadingAvailability ? (
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                {loan.reservations.map((r) => (
+                  <Skeleton key={r.id} className="h-20 w-full" />
+                ))}
+              </div>
+            ) : (
+              <LoanItemRows editor={editor} className="lg:grid-cols-2" />
+            )}
             {/* This is the counter: the kamat are being handed over right now,
                 so what is inside a säilytyspaikka is checked here rather than
                 on the box's own page. */}
@@ -225,33 +194,31 @@ const LoanStartCard = ({
                 key={`contents-${reservation.id}`}
                 defaultOpen
                 contents={boxContents(reservation.item.asLocation?.items, loan.id)}
-                className="mt-2"
               />
             ))}
+            <div className="flex flex-col gap-2">
+              <Label>Lisää kama</Label>
+              <AddLoanItemPicker editor={editor} items={items} askCustomDetails={false} />
+            </div>
           </div>
-          <Alert variant="info" title="Tarvitseeko kamoihin muutoksia?">
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => setEditOpen(true)}
-            >
-              Muokkaa kamoja
-            </Button>
-          </Alert>
-          <Button variant="success" size="lg" onClick={() => setOpen(true)}>
+          <Button
+            variant="success"
+            size="lg"
+            onClick={saveItemsAndConfirm}
+            isLoading={savingItems}
+            disabled={
+              loadingAvailability || editor.rows.length === 0 || editor.overBooked.length > 0
+            }
+          >
             Aloita lainaus
           </Button>
+          {editor.dirty && (
+            <p className="text-center text-sm text-muted-foreground">
+              Kamojen muutokset tallennetaan, kun aloitat lainauksen.
+            </p>
+          )}
         </div>
       </Card>
-
-      {editOpen && (
-        <EditItemsDialog
-          onOpenChange={setEditOpen}
-          loan={loan}
-          items={items}
-        />
-      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
