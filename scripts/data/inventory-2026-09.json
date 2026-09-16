@@ -1,0 +1,1002 @@
+[
+ {
+  "name": "Kaarisaha pieni",
+  "amount": 5,
+  "box": "Työkaluseinä",
+  "guess": false,
+  "id": "cl4p94act00170ip7j24s3wa3",
+  "was": "Kaarisaha"
+ },
+ {
+  "name": "Kaarisaha iso",
+  "amount": 6,
+  "box": "Työkaluseinä",
+  "guess": false
+ },
+ {
+  "name": "Timpurinsaha pieni",
+  "amount": 2,
+  "box": "Työkaluseinä",
+  "guess": false
+ },
+ {
+  "name": "Timpurinsaha iso",
+  "amount": 10,
+  "box": "Työkaluseinä",
+  "guess": true,
+  "id": "cl4p94acu00410ip7gx8snxhk",
+  "was": "Käsisaha"
+ },
+ {
+  "name": "Japaninsaha",
+  "amount": 1,
+  "box": "Erikoissahat",
+  "guess": false,
+  "id": "cl4p94act00110ip7aevqrann",
+  "was": "Japaninsaha"
+ },
+ {
+  "name": "Pistosaha iso",
+  "amount": 1,
+  "box": "Erikoissahat",
+  "guess": false,
+  "id": "cl4p94acu00680ip7ml5qxm4s",
+  "was": "Pistosaha"
+ },
+ {
+  "name": "Pistosaha pieni",
+  "amount": 1,
+  "box": "Erikoissahat",
+  "guess": false
+ },
+ {
+  "name": "Taittosaha",
+  "amount": 4,
+  "box": "Erikoissahat",
+  "guess": true,
+  "id": "cl4p94acu00870ip7c9z9mkn4",
+  "was": "Retkisaha"
+ },
+ {
+  "name": "Rautasaha iso",
+  "amount": 2,
+  "box": "Erikoissahat",
+  "guess": false,
+  "id": "cl4p94acu00850ip70pk0we1r",
+  "was": "Rautasaha"
+ },
+ {
+  "name": "Rautasaha pieni",
+  "amount": 2,
+  "box": "Erikoissahat",
+  "guess": false
+ },
+ {
+  "name": "Lehtisaha",
+  "amount": 2,
+  "box": "Erikoissahat",
+  "guess": false,
+  "id": "custom-dff8418f-2b00-4f35-a745-aec5b127bbf1",
+  "was": "Lehtisaha"
+ },
+ {
+  "name": "Lehtisahan terä",
+  "amount": 8,
+  "box": "Erikoissahat",
+  "guess": false
+ },
+ {
+  "name": "Rullamitta",
+  "amount": 9,
+  "box": "Mitat",
+  "guess": false,
+  "id": "cmoablv38000304jy5cws6dta",
+  "was": "Rullamitta"
+ },
+ {
+  "name": "Vatupassi iso",
+  "amount": 1,
+  "box": "Työkaluseinä",
+  "guess": false
+ },
+ {
+  "name": "Vatupassi keskikoko",
+  "amount": 1,
+  "box": "Mitat",
+  "guess": false
+ },
+ {
+  "name": "Kelamitta 30 m",
+  "amount": 1,
+  "box": "Mitat",
+  "guess": false
+ },
+ {
+  "name": "Suorakulma",
+  "amount": 3,
+  "box": "Mitat",
+  "guess": false,
+  "id": "custom-b1949722-17bc-4d2e-bea0-7bcff3061af8",
+  "was": "Suorakulma"
+ },
+ {
+  "name": "Vasara",
+  "amount": 12,
+  "box": "Työkaluseinä",
+  "guess": false,
+  "id": "cl4p94acx01120ip7qt2iv43p",
+  "was": "Vasara"
+ },
+ {
+  "name": "Kumivasara",
+  "amount": 3,
+  "box": "Työkaluseinä",
+  "guess": false
+ },
+ {
+  "name": "Moska",
+  "amount": 3,
+  "box": "Työkaluseinä",
+  "guess": false
+ },
+ {
+  "name": "Jakoavain",
+  "amount": 2,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Torx-meisseli",
+  "amount": 3,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Ristipäämeisseli",
+  "amount": 4,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false,
+  "id": "custom-7b819349-3a5c-475d-b52b-e51e6c652b72",
+  "was": "Ristipäämeisseli"
+ },
+ {
+  "name": "Kivitaltta",
+  "amount": 1,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Siirtoleukapihdit",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Pyöreä viila/raspi",
+  "amount": 2,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Litteä viila/raspi",
+  "amount": 4,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Kourutaltta",
+  "amount": 3,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Tasataltta",
+  "amount": 6,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Nahkapaska",
+  "amount": 2,
+  "box": "Muut työkalut",
+  "guess": false
+ },
+ {
+  "name": "Tulppa-avain",
+  "amount": 3,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Puuhöylä iso",
+  "amount": 1,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Puuhöylä pieni",
+  "amount": 1,
+  "box": "Taltat, viilat, höylät",
+  "guess": false
+ },
+ {
+  "name": "Puristin puinen",
+  "amount": 2,
+  "box": "Muut työkalut",
+  "guess": false
+ },
+ {
+  "name": "Popniittipihdit",
+  "amount": 1,
+  "box": "Muut työkalut",
+  "guess": false
+ },
+ {
+  "name": "Niittipyssy",
+  "amount": 2,
+  "box": "Muut työkalut",
+  "guess": false
+ },
+ {
+  "name": "Työkalupakki sininen",
+  "amount": 1,
+  "box": "",
+  "guess": false,
+  "id": "cl4p94acx01080ip7yq8940il",
+  "was": "Työkalubox sininen"
+ },
+ {
+  "name": "Työkalupakki ruskea",
+  "amount": 1,
+  "box": "",
+  "guess": true,
+  "id": "cl4p94acx01070ip70sdap5ou",
+  "was": "Työkalubox punainen"
+ },
+ {
+  "name": "Poranteräpakki",
+  "amount": 1,
+  "box": "",
+  "guess": false
+ },
+ {
+  "name": "Hylsysarja",
+  "amount": 1,
+  "box": "",
+  "guess": false
+ },
+ {
+  "name": "Muoviputkileikkuri",
+  "amount": 1,
+  "box": "Puukot, leikkurit",
+  "guess": false
+ },
+ {
+  "name": "Metalliputkileikkuri",
+  "amount": 1,
+  "box": "Puukot, leikkurit",
+  "guess": false
+ },
+ {
+  "name": "Mattoveitsi",
+  "amount": 5,
+  "box": "Puukot, leikkurit",
+  "guess": false
+ },
+ {
+  "name": "Sorkkarauta",
+  "amount": 5,
+  "box": "Työkaluseinä",
+  "guess": false,
+  "id": "cl4p94acx00940ip765hxdk3d",
+  "was": "Sorkkarauta"
+ },
+ {
+  "name": "Kirves",
+  "amount": 10,
+  "box": "Kirveet",
+  "guess": false,
+  "id": "cl4p94acu00350ip707jwl0u1",
+  "was": "Kirves"
+ },
+ {
+  "name": "Puukko",
+  "amount": 9,
+  "box": "Puukot, leikkurit",
+  "guess": false,
+  "id": "cmno5fyyf0001l7044mlcg3nl",
+  "was": "Puukko"
+ },
+ {
+  "name": "Peltisakset",
+  "amount": 2,
+  "box": "Puukot, leikkurit",
+  "guess": false
+ },
+ {
+  "name": "Mattoveitsen varateriä",
+  "amount": 1,
+  "box": "Puukot, leikkurit",
+  "guess": false
+ },
+ {
+  "name": "Teroituskivi",
+  "amount": 6,
+  "box": "Puukot, leikkurit",
+  "guess": false,
+  "id": "cl4p94acx00980ip7i40f9tho",
+  "was": "Teroituskivi"
+ },
+ {
+  "name": "PitVa-polttomerkki",
+  "amount": 1,
+  "box": "Muut työkalut",
+  "guess": false
+ },
+ {
+  "name": "Kulmahiomakone Tamforce",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false
+ },
+ {
+  "name": "Kulmahiomakoneen katkaisulaikka",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false
+ },
+ {
+  "name": "Kulmahiomakoneen hiomalaikka",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false
+ },
+ {
+  "name": "Käsisirkkeli Bosch",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false,
+  "id": "cl4p94acx00930ip70se3mtas",
+  "was": "Sirkkeli Bosch, käsi"
+ },
+ {
+  "name": "Käsisirkkeli Matrix",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": true,
+  "id": "cm7xi6t4r00002ua93xwz6ka0",
+  "was": "Sirkkeli Star, käsi"
+ },
+ {
+  "name": "Porakone Makita",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false,
+  "id": "cl4p94acu00780ip7a4dm1fh4",
+  "was": "Porakone Makita"
+ },
+ {
+  "name": "Hydrometer",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false
+ },
+ {
+  "name": "Dremel",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false,
+  "id": "cl4p94act00060ip71i5xx7r6",
+  "was": "Dremel"
+ },
+ {
+  "name": "Kiintoavain 6 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 10 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 11/10 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 11 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 13/12 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 14/12 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 14 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 15 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 17 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 23 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 24 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 25 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 26 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 27 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 28 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 30 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kiintoavain 32 mm",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Kuusioavainsarja epätäydellinen",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false
+ },
+ {
+  "name": "Työmaavalaisin LED",
+  "amount": 3,
+  "box": "Valaisimet",
+  "guess": false,
+  "id": "cl4p94acx01110ip78tuzf5j1",
+  "was": "Valaisin, työmaa"
+ },
+ {
+  "name": "Työmaavalaisin halogen",
+  "amount": 3,
+  "box": "Valaisimet",
+  "guess": false
+ },
+ {
+  "name": "Kiipeilyvaljaat",
+  "amount": 6,
+  "box": "Kiipeilyvaljaat",
+  "guess": false,
+  "id": "cl4p94acu00340ip7885tlgla",
+  "was": "Kiipeilyvaljaat"
+ },
+ {
+  "name": "Turvavaljaat",
+  "amount": 2,
+  "box": "Kiipeilyvaljaat",
+  "guess": true,
+  "id": "cl4p94acu00450ip7t6hgulu5",
+  "was": "Laskeutumisvaljaat"
+ },
+ {
+  "name": "Kiipeilyslingit",
+  "amount": 17,
+  "box": "Kiipeilyvaljaat",
+  "guess": false
+ },
+ {
+  "name": "Karabiinihaka",
+  "amount": 3,
+  "box": "Tolppakengät",
+  "guess": false
+ },
+ {
+  "name": "Varmistuslaite Grigri",
+  "amount": 1,
+  "box": "Tolppakengät",
+  "guess": false
+ },
+ {
+  "name": "Köysipylpyrä",
+  "amount": 1,
+  "box": "Tolppakengät",
+  "guess": false
+ },
+ {
+  "name": "Kiipeilyköysi pitkä",
+  "amount": 1,
+  "box": "Kiipeilyköydet",
+  "guess": false,
+  "id": "cl4p94acu00330ip7lrcp1cbz",
+  "was": "Kiipeilyköysi"
+ },
+ {
+  "name": "Kiipeilyköysi keskipitkä",
+  "amount": 1,
+  "box": "Kiipeilyköydet",
+  "guess": false
+ },
+ {
+  "name": "Kiipeilyköysi lyhyt",
+  "amount": 1,
+  "box": "Kiipeilyköydet",
+  "guess": false
+ },
+ {
+  "name": "Tolppakengät",
+  "amount": 1,
+  "box": "Tolppakengät",
+  "guess": false,
+  "id": "cl4p94acx01020ip75hzkjtj8",
+  "was": "Tolppakengät"
+ },
+ {
+  "name": "Räätälinsakset",
+  "amount": 1,
+  "box": "Kalustonhoitajan pöytä",
+  "guess": false,
+  "id": "custom-1e92329f-4f1b-4f7e-8778-7c5183c8d0aa",
+  "was": "Räätälinsakset"
+ },
+ {
+  "name": "Y-haara sähkö",
+  "amount": 1,
+  "box": "Jatkojohdot",
+  "guess": false
+ },
+ {
+  "name": "Jatkojohto pitkä",
+  "amount": 1,
+  "box": "Jatkojohdot",
+  "guess": true,
+  "id": "cl4p94act00140ip7jfbz2sas",
+  "was": "Jatkokela"
+ },
+ {
+  "name": "Jatkojohto keskipitkä",
+  "amount": 2,
+  "box": "Jatkojohdot",
+  "guess": true,
+  "id": "cl4p94act00130ip74by2td9n",
+  "was": "Jatkojohtoja (iso)"
+ },
+ {
+  "name": "Jatkojohto lyhyt",
+  "amount": 2,
+  "box": "Jatkojohdot",
+  "guess": true,
+  "id": "cl4p94act00120ip7uljgjq6w",
+  "was": "Jatkojohto Pieni valkoinen"
+ },
+ {
+  "name": "Voimavirta-adapteri",
+  "amount": 1,
+  "box": "Jatkojohdot",
+  "guess": false
+ },
+ {
+  "name": "Poranteräsarja Makita",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false
+ },
+ {
+  "name": "Poranteräsarja Bosch",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false
+ },
+ {
+  "name": "Smirgeli Cotech",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": false,
+  "id": "cmkbedcql0008js04g2pprqzm",
+  "was": "Smirgel"
+ },
+ {
+  "name": "Kärkimeisseli",
+  "amount": 1,
+  "box": "Avaimet, pihdit, meisselit",
+  "guess": false,
+  "id": "custom-439dc8bd-278c-4511-8ffa-187be2a67a9a",
+  "was": "Kärkimeisseli"
+ },
+ {
+  "name": "Trangia",
+  "amount": 8,
+  "box": "Trangiat",
+  "guess": false,
+  "id": "cl4p94acx01030ip7uur26bs8",
+  "was": "Trangia"
+ },
+ {
+  "name": "Trangian multidisc",
+  "amount": 3,
+  "box": "Trangiat",
+  "guess": false,
+  "id": "cl4p94acx01040ip7k5fjiybq",
+  "was": "Trangian multidisc"
+ },
+ {
+  "name": "Trangian kahvipannu",
+  "amount": 1,
+  "box": "Trangiat",
+  "guess": false
+ },
+ {
+  "name": "Trangia pieni",
+  "amount": 1,
+  "box": "Trangiat",
+  "guess": false
+ },
+ {
+  "name": "Trangian sinolpoltin",
+  "amount": 9,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian hihna",
+  "amount": 5,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian elukat",
+  "amount": 5,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian kahvipannun kansi",
+  "amount": 1,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian pannu",
+  "amount": 3,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian kattila iso",
+  "amount": 7,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian runko 2 osaa + remmi",
+  "amount": 6,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Trangian pohja",
+  "amount": 1,
+  "box": "Trangian varaosat",
+  "guess": false
+ },
+ {
+  "name": "Myrskylyhty pieni",
+  "amount": 4,
+  "box": "Myrskylyhdyt",
+  "guess": false,
+  "id": "cl4p94acu00550ip7bm14s2mh",
+  "was": "Myrskylyhty"
+ },
+ {
+  "name": "Myrskylyhty iso",
+  "amount": 1,
+  "box": "Myrskylyhdyt",
+  "guess": false
+ },
+ {
+  "name": "Ulkotuli",
+  "amount": 6,
+  "box": "Myrskylyhdyt",
+  "guess": false
+ },
+ {
+  "name": "Valopetroli",
+  "amount": 1,
+  "box": "Myrskylyhdyt",
+  "guess": false
+ },
+ {
+  "name": "Primus Power Fuel",
+  "amount": 6,
+  "box": "Omnifuel + polttoaine",
+  "guess": false
+ },
+ {
+  "name": "Liesimusta",
+  "amount": 4,
+  "box": "",
+  "guess": false
+ },
+ {
+  "name": "Turvapullo Sinol",
+  "amount": 4,
+  "box": "Sinolit",
+  "guess": false
+ },
+ {
+  "name": "Marinol",
+  "amount": 1,
+  "box": "Sinolit",
+  "guess": false
+ },
+ {
+  "name": "Turvapullon korkki",
+  "amount": 2,
+  "box": "Sinolit",
+  "guess": false
+ },
+ {
+  "name": "Suppilo pieni",
+  "amount": 1,
+  "box": "Sinolit",
+  "guess": false
+ },
+ {
+  "name": "Painepullo",
+  "amount": 1,
+  "box": "Omnifuel + polttoaine",
+  "guess": false
+ },
+ {
+  "name": "Kaasupullo trangian",
+  "amount": 6,
+  "box": "Vajaat kaasut/Täydet kaasut",
+  "guess": false,
+  "id": "cmm4r0flf0002l204hmofpuy5",
+  "was": "Kaasupullo (retkikeitin)"
+ },
+ {
+  "name": "Omnifuel-keitin",
+  "amount": 1,
+  "box": "Omnifuel + polttoaine",
+  "guess": false,
+  "id": "cl4p94acu00790ip7g4pggyge",
+  "was": "Primus omnifuel"
+ },
+ {
+  "name": "Kattila monikäyttö",
+  "amount": 1,
+  "box": "Omnifuel + polttoaine",
+  "guess": false
+ },
+ {
+  "name": "Rastilippu",
+  "amount": 20,
+  "box": "Rastiliput",
+  "guess": false,
+  "id": "cl4p94acu00830ip7vdhq2s9r",
+  "was": "Rastilippu"
+ },
+ {
+  "name": "Rastileimasin",
+  "amount": 16,
+  "box": "Rastiliput",
+  "guess": false,
+  "id": "cl4p94acu00460ip7z1ihwsge",
+  "was": "Rastileimasin"
+ },
+ {
+  "name": "Nuotiopannu",
+  "amount": 17,
+  "box": "Nuotioastiat",
+  "guess": false,
+  "id": "cl4p94acu00610ip7pvmv39tg",
+  "was": "Nuotiopannu"
+ },
+ {
+  "name": "Nuotiopannun varsi",
+  "amount": 1,
+  "box": "Nuotioastiat",
+  "guess": false
+ },
+ {
+  "name": "Nuotiokattila \"Nuotio-Olli\"",
+  "amount": 1,
+  "box": "Nuotioastiat",
+  "guess": false,
+  "id": "cloprpl6o0000l8089ngp3fet",
+  "was": "Nuotiokattila 3.5l aka Nuotio-Olli"
+ },
+ {
+  "name": "Nuotiokattila",
+  "amount": 1,
+  "box": "Nuotioastiat",
+  "guess": false
+ },
+ {
+  "name": "Nuotiokahvipannu",
+  "amount": 1,
+  "box": "Nuotioastiat",
+  "guess": true,
+  "id": "cl4p94acu00600ip7vxkcurab",
+  "was": "Nokipannu"
+ },
+ {
+  "name": "Laavu",
+  "amount": 9,
+  "box": "Seinähylly vasen",
+  "guess": true,
+  "id": "cl4p94act00040ip7nwj4p60h",
+  "was": "Avotulimajoite"
+ },
+ {
+  "name": "Laavu mini",
+  "amount": 1,
+  "box": "Seinähylly vasen",
+  "guess": false
+ },
+ {
+  "name": "Laavun naru",
+  "amount": 2,
+  "box": "",
+  "guess": false
+ },
+ {
+  "name": "Laavun keppisarja",
+  "amount": 1,
+  "box": "Seinähylly vasen",
+  "guess": false
+ },
+ {
+  "name": "Nuuskateltta",
+  "amount": 1,
+  "box": "Seinähylly vasen",
+  "guess": false,
+  "id": "cl4p94acu00620ip7c9w49cgd",
+  "was": "Nuuskateltta"
+ },
+ {
+  "name": "Nuuskakatos",
+  "amount": 1,
+  "box": "Seinähylly vasen",
+  "guess": false
+ },
+ {
+  "name": "Laulukirja OEK uusi",
+  "amount": 35,
+  "box": "Laulukirjat",
+  "guess": true,
+  "id": "cmkbebmci0005js040f3iu0yx",
+  "was": "Laulukirjat"
+ },
+ {
+  "name": "Laulukirja OEK vanha",
+  "amount": 17,
+  "box": "Laulukirjat",
+  "guess": false
+ },
+ {
+  "name": "Vaellusteltta Hilleberg Nallo 3 GT",
+  "amount": 1,
+  "box": "Vaellusteltat",
+  "guess": false,
+  "id": "cl4p94act00080ip7yxlhnnm2",
+  "was": "Hilleberg Nallo 3 GT"
+ },
+ {
+  "name": "Vaellusteltta Hilleberg Nallo 4 GT",
+  "amount": 1,
+  "box": "Vaellusteltat",
+  "guess": false,
+  "id": "cma1alf5y0000l403wsgriozp",
+  "was": "Hilleberg Nallo 4 GT"
+ },
+ {
+  "name": "Varakaari Hilleberg",
+  "amount": 6,
+  "box": "Vaellusteltat",
+  "guess": false
+ },
+ {
+  "name": "Kaaren korjauspala Hilleberg",
+  "amount": 1,
+  "box": "Vaellusteltat",
+  "guess": false
+ },
+ {
+  "name": "Lämpöpuhallin",
+  "amount": 1,
+  "box": "Lukkokaappi",
+  "guess": true,
+  "id": "cl4p94acu00370ip7rxdmlfkw",
+  "was": "Kuumailmapuhallin"
+ },
+ {
+  "name": "Pelastusliivit",
+  "amount": 6,
+  "box": "Pelastusliivit",
+  "guess": false,
+  "id": "cl4p94acu00650ip7umld2g4h",
+  "was": "Pelastusliivit"
+ },
+ {
+  "name": "PJ-teltta",
+  "amount": 3,
+  "box": "Seinähylly vasen",
+  "guess": false,
+  "id": "cl4p94acu00730ip7sr2b0595",
+  "was": "PJ"
+ },
+ {
+  "name": "Kymppiteltta",
+  "amount": 1,
+  "box": "Seinähylly vasen",
+  "guess": false,
+  "id": "cl4p94acu00390ip7h1frrofq",
+  "was": "Kymppi"
+ },
+ {
+  "name": "Kalusto-pj",
+  "amount": 1,
+  "box": "Seinähylly vasen",
+  "guess": false,
+  "id": "cl4p94act00190ip7xtxkk486",
+  "was": "Kalusto PJ"
+ },
+ {
+  "name": "Naiger-teltta",
+  "amount": 10,
+  "box": "Seinähylly vasen",
+  "guess": false,
+  "id": "cl4p94acu00580ip7qto3k4zz",
+  "was": "Naiger teltta"
+ }
+]
