@@ -38,10 +38,7 @@ export async function POST(request: Request) {
 
     // A deleted loan is restored first, then edited — never edited in place.
     if (existingLoan.deletedAt) {
-      return NextResponse.json(
-        { message: 'Poistettua lainaa ei voi muokata' },
-        { status: 409 },
-      );
+      return NextResponse.json({ message: 'Poistettua lainaa ei voi muokata' }, { status: 409 });
     }
 
     const isAdmin = session.user.group === 'ADMIN';
@@ -49,7 +46,10 @@ export async function POST(request: Request) {
     const isOwner = session.user.id === existingLoan.userId;
 
     if (!isAdmin && !isKiosk && !isOwner) {
-      return NextResponse.json({ message: 'Sinulla ei ole oikeutta muokata tätä lainaa' }, { status: 403 });
+      return NextResponse.json(
+        { message: 'Sinulla ei ole oikeutta muokata tätä lainaa' },
+        { status: 403 },
+      );
     }
 
     // Only an admin may reassign the loan to another member or rewrite the
@@ -138,7 +138,10 @@ export async function POST(request: Request) {
     }
     for (const r of requestedReservations) {
       if (r.status !== undefined && !Object.values(ReservationStatus).includes(r.status)) {
-        return NextResponse.json({ message: `Tuntematon kaman tila: ${r.status}` }, { status: 400 });
+        return NextResponse.json(
+          { message: `Tuntematon kaman tila: ${r.status}` },
+          { status: 400 },
+        );
       }
     }
 
@@ -214,10 +217,13 @@ export async function POST(request: Request) {
       }
 
       if (unavailableItems.length > 0) {
-        return NextResponse.json({
-          message: 'Saatavuusvirhe: joitain tuotteita ei ole riittävästi vapaana',
-          details: unavailableItems,
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            message: 'Saatavuusvirhe: joitain tuotteita ei ole riittävästi vapaana',
+            details: unavailableItems,
+          },
+          { status: 400 },
+        );
       }
     }
 
@@ -226,9 +232,7 @@ export async function POST(request: Request) {
     // INUSE when the loan is in use, else ACCEPTED. An admin-set loan status
     // still wins and is flattened onto every line.
     const statusByItem = new Map(existingLoan.reservations.map((r) => [r.itemId, r.status]));
-    const hasInuse = existingLoan.reservations.some(
-      (r) => r.status === ReservationStatus.INUSE,
-    );
+    const hasInuse = existingLoan.reservations.some((r) => r.status === ReservationStatus.INUSE);
     const defaultNewStatus = hasInuse ? ReservationStatus.INUSE : ReservationStatus.ACCEPTED;
 
     // Only now — with availability settled — do the loaner's own kamat become
@@ -255,7 +259,7 @@ export async function POST(request: Request) {
       item: { connect: { id: r.itemId } },
       status: manualStatus
         ? MANUAL_LOAN_STATUSES[manualStatus]
-        : r.status ?? statusByItem.get(r.itemId) ?? defaultNewStatus,
+        : (r.status ?? statusByItem.get(r.itemId) ?? defaultNewStatus),
     }));
 
     // Build a diff of reservation changes for history. A kama created a moment
@@ -267,7 +271,12 @@ export async function POST(request: Request) {
     const newByItem = new Map(resolvedReservations.map((r) => [r.itemId, r.amount]));
 
     const addedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
-    const changedItems: Array<{ itemId: string; name: string | undefined; from: number; to: number }> = [];
+    const changedItems: Array<{
+      itemId: string;
+      name: string | undefined;
+      from: number;
+      to: number;
+    }> = [];
     const removedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
     // Per-item status changes (admin), for the audit trail. Only recorded when
     // the whole-loan status isn't being flattened over everything — in that

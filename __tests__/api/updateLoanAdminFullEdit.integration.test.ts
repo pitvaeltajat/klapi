@@ -46,7 +46,12 @@ const edit = (body: Record<string, unknown>) =>
   updateLoan(
     new Request('http://localhost/api/loan/updateLoan', {
       method: 'POST',
-      body: JSON.stringify({ startTime: PAST_START, endTime: PAST_END, description: 'Retki', ...body }),
+      body: JSON.stringify({
+        startTime: PAST_START,
+        endTime: PAST_END,
+        description: 'Retki',
+        ...body,
+      }),
     }),
   );
 
@@ -211,7 +216,10 @@ describe('updateLoan — admin full edit', () => {
       where: { loanId: loan.id, action: 'UPDATED' },
     });
     const details = entry?.details as {
-      loaner?: { userId: { from: string; to: string }; loaner: { from: string | null; to: string | null } };
+      loaner?: {
+        userId: { from: string; to: string };
+        loaner: { from: string | null; to: string | null };
+      };
     };
     expect(details.loaner).toEqual({
       userId: { from: userId, to: otherUserId },

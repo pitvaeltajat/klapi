@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const { session, denied } = await requireUser();
   if (denied) return denied;
 
-  const { id, reservationIds, returns, reportContent } = await request.json() as {
+  const { id, reservationIds, returns, reportContent } = (await request.json()) as {
     id: string;
     reservationIds?: string[];
     /**
@@ -52,9 +52,12 @@ export async function POST(request: Request) {
   const isAdmin = session.user.group === 'ADMIN';
 
   if (!isOwner && !isKiosk && !isAdmin) {
-    return NextResponse.json({
-      message: 'Sinulla ei ole oikeutta tähän toimintoon',
-    }, { status: 401 });
+    return NextResponse.json(
+      {
+        message: 'Sinulla ei ole oikeutta tähän toimintoon',
+      },
+      { status: 401 },
+    );
   }
 
   // Determine which reservations to mark as IN_BOX.
@@ -63,8 +66,7 @@ export async function POST(request: Request) {
   // still physically have them and must be able to return them.
   // Items already in a box (IN_BOX/RETURNED) cannot be re-returned.
   const eligible = loan.reservations.filter(
-    (r) =>
-      r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
+    (r) => r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
   );
 
   // The whole-reservation form: every eligible reservation named is returned
@@ -128,9 +130,7 @@ export async function POST(request: Request) {
       ...loan.reservations.filter((r) => fullReturnIds.has(r.id)),
       ...splitReturns.map((s) => s.reservation),
     ];
-    const loanItemIds = Array.from(
-      new Set(returningReservations.map((r) => r.itemId)),
-    );
+    const loanItemIds = Array.from(new Set(returningReservations.map((r) => r.itemId)));
 
     const [boxes, loanCounts, overlappingReservations] = await Promise.all([
       prisma.box.findMany({

@@ -141,8 +141,7 @@ const LoanReturnCard = ({
   const returnableReservations = React.useMemo(
     () =>
       loan.reservations.filter(
-        (r) =>
-          r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
+        (r) => r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
       ),
     [loan.reservations],
   );
@@ -161,8 +160,7 @@ const LoanReturnCard = ({
   // Which contents of which box were *not* found, keyed per reservation so two
   // boxes holding a kama of the same name can't tick each other's.
   const [missingContents, setMissingContents] = useState<Set<string>>(new Set());
-  const missingKey = (reservationId: string, contentId: string) =>
-    `${reservationId}:${contentId}`;
+  const missingKey = (reservationId: string, contentId: string) => `${reservationId}:${contentId}`;
 
   const toggleMissing = (reservationId: string, contentId: string) => {
     setMissingContents((prev) => {
@@ -271,9 +269,7 @@ const LoanReturnCard = ({
     scrollArea,
     // Re-fit whenever the dialog grows or shrinks under its own steam: the two
     // alerts below the grid come and go as kamaa are ticked off.
-    returnOpen
-      ? `${returnableReservations.length}|${isPartialReturn}|${missingNote}`
-      : null,
+    returnOpen ? `${returnableReservations.length}|${isPartialReturn}|${missingNote}` : null,
   );
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
@@ -317,11 +313,7 @@ const LoanReturnCard = ({
           </div>
         )}
 
-        <Button
-          variant="success"
-          onClick={() => setReturnOpen(true)}
-          className="mt-auto"
-        >
+        <Button variant="success" onClick={() => setReturnOpen(true)} className="mt-auto">
           Palauta
         </Button>
       </Card>
@@ -386,9 +378,7 @@ const LoanReturnCard = ({
                               rest stays out on the loan. */}
                           {multi && (
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">
-                                Palautetaan:
-                              </span>
+                              <span className="text-sm text-muted-foreground">Palautetaan:</span>
                               <div className="flex h-9 items-center">
                                 <Button
                                   type="button"
@@ -561,9 +551,7 @@ const LoanReturnCard = ({
               </Alert>
             )}
             <Alert variant="success" icon={false} className="justify-center text-center">
-              <p className="font-medium text-success">
-                Kiitos palauttamisesta!
-              </p>
+              <p className="font-medium text-success">Kiitos palauttamisesta!</p>
             </Alert>
           </div>
           <DialogFooter className="justify-center pb-2">
@@ -588,8 +576,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
   // Admins and the kiosk see everyone's loans here; a regular user only ever
   // sees their own (the page query scopes them). Say which, so nobody wonders
   // why the list is 40 long — or why theirs is the only one.
-  const seesAllLoans =
-    session?.user?.group === 'ADMIN' || session?.user?.group === 'KIOSK';
+  const seesAllLoans = session?.user?.group === 'ADMIN' || session?.user?.group === 'KIOSK';
 
   const handleReturn = async (
     loanId: string,

@@ -9,16 +9,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Item, Loan, LoanStatus, Reservation, ReservationStatus, User } from '@prisma/client';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import CustomItemDialog from '@/components/CustomItemDialog';
 import ItemAmountCard from '@/components/ItemAmountCard';
 import LoanerAutocomplete from '@/components/LoanerAutocomplete';
-import {
-  AddLoanItemPicker,
-  LoanItemRows,
-  rowsFromReservations,
-  rowsToReservations,
-  useLoanItemRows,
-} from '@/components/LoanItemsEditor';
+import { AddLoanItemPicker, rowsFromReservations, useLoanItemRows } from '@/components/LoanItemsEditor';
 import LoanRangeCalendar from '@/components/LoanRangeCalendar';
 import { DateTime } from '@/components/DateTime';
 import { Alert } from '@/components/ui/alert';
@@ -26,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { PageHeader } from '@/components/ui/page-header';
@@ -40,48 +34,13 @@ import {
   MANUAL_LOAN_STATUSES,
   type ManualLoanStatus,
 } from '@/utils/loanHelpers';
+import { isCustomItemId } from '@/utils/customItems';
 import { isSameCalendarDay, setDefaultTime, setEndOfDay, type DateRange } from '@/utils/dateRange';
 
 interface LoanWithRelations extends Loan {
   reservations: (Reservation & { item: Item })[];
   user: User;
 }
-
-/**
- * One row of the loan being edited — one kama, whatever it is made of. The
- * reservation rows the loan arrived with, the catalogue kamat added here and
- * the loaner's own kamat all reduce to this, so the list has a single shape.
- *
- * Keyed by `itemId` rather than reservation id: two rows of the same kama have
- * no meaning (`updateLoan` sums them by item anyway), so adding one that is
- * already in the list bumps its amount instead of starting a second row.
- *
- * `status` is the reservation status of the row. It is only editable by an
- * admin (per-item status); for everyone else it is carried along untouched so
- * a mixed-state loan survives the recreate-all.
- */
-interface Row {
-  itemId: string;
-  name: string;
-  amount: number;
-  status: ReservationStatus;
-}
-
-const rowsFromLoan = (loan: LoanWithRelations): Row[] => {
-  const byItem = new Map<string, Row>();
-  for (const r of loan.reservations) {
-    const existing = byItem.get(r.itemId);
-    if (existing) existing.amount += r.amount;
-    else
-      byItem.set(r.itemId, {
-        itemId: r.itemId,
-        name: r.item.name,
-        amount: r.amount,
-        status: r.status,
-      });
-  }
-  return Array.from(byItem.values());
-};
 
 export default function EditLoanView({
   loan,
@@ -97,10 +56,7 @@ export default function EditLoanView({
   const originalRows = useMemo(() => rowsFromReservations(loan.reservations), [loan]);
 
   const [description, setDescription] = useState(loan.description);
-  const [range, setRange] = useState<DateRange>([
-    new Date(loan.startTime),
-    new Date(loan.endTime),
-  ]);
+  const [range, setRange] = useState<DateRange>([new Date(loan.startTime), new Date(loan.endTime)]);
   const [status, setStatus] = useState(deriveLoanStatus(loan.reservations, loan.status));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -112,8 +68,7 @@ export default function EditLoanView({
   const originalLoanerName = getLoanerName(loan);
   const [loanerValue, setLoanerValue] = useState(originalLoanerName);
   const [loanerUserId, setLoanerUserId] = useState<string | undefined>(loan.userId);
-  const loanerChanged =
-    loanerValue !== originalLoanerName || loanerUserId !== loan.userId;
+  const loanerChanged = loanerValue !== originalLoanerName || loanerUserId !== loan.userId;
 
   const [startDate, endDate] = range;
 
@@ -135,49 +90,14 @@ export default function EditLoanView({
   // is no single value to flatten the lines to and it can't be picked.
   const canSetStatus = isAdmin && derivedStatus !== LoanStatus.PARTIALLY_RETURNED;
 
-  /**
-   * How many of a kama this loan may hold. `getAvailabilities` counts every
-   * overlapping reservation including this loan's own, so what the loan already
-   * booked has to be added back or editing a full loan would look impossible.
-   */
-  const headroom = (itemId: string): number => {
-    if (isCustomItemId(itemId)) return Number.MAX_SAFE_INTEGER;
-    const free = availabilities?.[itemId]?.available ?? 0;
-    return free + (originalAmounts.get(itemId) ?? 0);
-  };
+  const editor = useLoanItemRows(originalRows, availabilities);
+  const { rows, setRows, originalAmounts, headroom, overBooked } = editor;
 
   const setAmount = (itemId: string, amount: number) =>
-    setRows((current) =>
-      current.map((r) => (r.itemId === itemId ? { ...r, amount } : r)),
-    );
+    setRows((current) => current.map((r) => (r.itemId === itemId ? { ...r, amount } : r)));
 
   const setRowStatus = (itemId: string, status: ReservationStatus) =>
-    setRows((current) =>
-      current.map((r) => (r.itemId === itemId ? { ...r, status } : r)),
-    );
-
-  // A kama added to the loan mid-edit starts in the same state as the rest of
-  // the loan: in use if the loan is running, else reserved. The admin can then
-  // change it per row.
-  const defaultNewStatus = loan.reservations.some(
-    (r) => r.status === ReservationStatus.INUSE,
-  )
-    ? ReservationStatus.INUSE
-    : ReservationStatus.ACCEPTED;
-
-  const addRow = (row: Omit<Row, 'status'> & { status?: ReservationStatus }) =>
-    setRows((current) => {
-      const existing = current.find((r) => r.itemId === row.itemId);
-      if (!existing) return [...current, { ...row, status: row.status ?? defaultNewStatus }];
-      return current.map((r) =>
-        r.itemId === row.itemId ? { ...r, amount: r.amount + row.amount } : r,
-      );
-    });
-
-  const rowsDirty =
-    rows.length !== originalRows.length ||
-    rows.some((r) => originalAmounts.get(r.itemId) !== r.amount);
-  const editor = useLoanItemRows(originalRows, availabilities);
+    setRows((current) => current.map((r) => (r.itemId === itemId ? { ...r, status } : r)));
 
   // A per-item status change (admin) counts as a change worth saving.
   const statusesDirty =
@@ -188,9 +108,8 @@ export default function EditLoanView({
     });
 
   const isDirty =
-    rowsDirty ||
-    statusesDirty ||
     editor.dirty ||
+    statusesDirty ||
     description !== loan.description ||
     (canSetStatus && status !== derivedStatus) ||
     loanerChanged ||
@@ -299,9 +218,8 @@ export default function EditLoanView({
 
         {loanStarted && isAdmin && (
           <Alert variant="warning" title="Laina on jo alkanut">
-            Noutoaikaa siirtämällä muutat merkintää siitä, milloin kamat noudettiin.
-            Saatavuus tarkistetaan muiden lainojen suhteen, joten päällekkäinen aika
-            estetään tallennuksessa.
+            Noutoaikaa siirtämällä muutat merkintää siitä, milloin kamat noudettiin. Saatavuus
+            tarkistetaan muiden lainojen suhteen, joten päällekkäinen aika estetään tallennuksessa.
           </Alert>
         )}
 
@@ -326,9 +244,7 @@ export default function EditLoanView({
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <dt className="text-muted-foreground">Lainaaja</dt>
-                <dd className="font-medium break-all">
-                  {getLoanerName(loan)}
-                </dd>
+                <dd className="font-medium break-all">{getLoanerName(loan)}</dd>
               </div>
             )}
             {isAdmin && (
@@ -394,9 +310,7 @@ export default function EditLoanView({
                     if (!date || !startDate) return;
                     setRange([
                       startDate,
-                      isSameCalendarDay(date, startDate)
-                        ? setEndOfDay(date)
-                        : setDefaultTime(date),
+                      isSameCalendarDay(date, startDate) ? setEndOfDay(date) : setDefaultTime(date),
                     ]);
                   }}
                   inline
@@ -441,7 +355,11 @@ export default function EditLoanView({
           </CardHeader>
 
           {overBooked.length > 0 && (
-            <Alert variant="warning" title="Osa kamoista ei mahdu valitulle ajalle" className="mb-3">
+            <Alert
+              variant="warning"
+              title="Osa kamoista ei mahdu valitulle ajalle"
+              className="mb-3"
+            >
               Pienennä alla merkittyjen kamojen määriä, muuten tallennus estetään.
             </Alert>
           )}
