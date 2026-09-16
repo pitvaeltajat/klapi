@@ -43,33 +43,51 @@ export const reportSummarySelect = {
  * to, and the full item record behind each reservation (those views show item
  * details inline, so `select`ing a subset here would not be enough).
  */
+const contentItemsSelect = {
+  where: { deletedAt: null },
+  select: {
+    id: true,
+    name: true,
+    amount: true,
+    // A kama inside a box can be out on a loan of its own: lending the box does
+    // not take what somebody had already borrowed out of it, so the box left
+    // the varasto one vasara short. Neither the pickup nor the return should
+    // expect that vasara to be inside — see `utils/boxContents.ts`, which turns
+    // these rows into that answer.
+    reservations: {
+      where: {
+        status: { in: [ReservationStatus.ACCEPTED, ReservationStatus.INUSE] },
+        loan: activeLoansWhere,
+      },
+      select: { loan: { select: { id: true, startTime: true, endTime: true } } },
+    },
+  },
+} satisfies Prisma.Location$itemsArgs;
+
 /**
- * What is stored inside a kama that is a säilytyspaikka. Carried on every
- * reservation because the pickup and return screens both need it: handing over
- * "Sininen työkalupakki" and checking it back in are both really about what is
- * in it. It is the box's *current* contents rather than a snapshot taken when
- * the loan was made — the question being asked is "what should be in here now".
+ * What is inside a lainattava sijainti, for the kama that stands behind it.
+ * Carried on every reservation because the pickup and return screens both need
+ * it: handing over "Sininen työkalupakki" and checking it back in are both
+ * really about what is in it. It is the *current* contents rather than a
+ * snapshot taken when the loan was made — "what should be in here now".
+ *
+ * Its sub-sijainnit count too (a lokero in the pakki), since lending the pakki
+ * takes them along. `flattenContents` folds the levels into one list.
  */
+// ponytail: three levels of sub-sijainti; availability follows the whole tree,
+// so a deeper one would go out with the box without being listed here.
 export const itemBoxContentsInclude = {
   asLocation: {
     select: {
-      items: {
-        where: { deletedAt: null },
+      items: contentItemsSelect,
+      children: {
         select: {
-          id: true,
-          name: true,
-          amount: true,
-          // A kama inside a box can be out on a loan of its own: lending the
-          // box does not take what somebody had already borrowed out of it, so
-          // the box left the varasto one vasara short. Neither the pickup nor
-          // the return should expect that vasara to be inside — see
-          // `utils/boxContents.ts`, which turns these rows into that answer.
-          reservations: {
-            where: {
-              status: { in: [ReservationStatus.ACCEPTED, ReservationStatus.INUSE] },
-              loan: activeLoansWhere,
+          items: contentItemsSelect,
+          children: {
+            select: {
+              items: contentItemsSelect,
+              children: { select: { items: contentItemsSelect } },
             },
-            select: { loan: { select: { id: true, startTime: true, endTime: true } } },
           },
         },
       },

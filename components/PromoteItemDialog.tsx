@@ -30,6 +30,8 @@ interface NamedRow {
   id: string;
   name: string;
   description: string | null;
+  /** "Kalusto / Hylly 3" — set on the getLocations rows. */
+  path?: string;
 }
 
 /** Everything the form needs to seed from — an item page and an inventory row
@@ -170,7 +172,7 @@ export default function PromoteItemDialog({ item, onOpenChange, onSuccess }: Pro
           <Field label="Sijainti" htmlFor="promote-item-location">
             <CreatableSelect
               inputId="promote-item-location"
-              options={locations.map((l) => ({ value: l.id, label: l.name }))}
+              options={locations.map((l) => ({ value: l.id, label: l.path ?? l.name }))}
               value={selectedLocation}
               onChange={(opt) => setSelectedLocation(opt as SelectOption | null)}
               isClearable

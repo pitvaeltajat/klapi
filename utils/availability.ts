@@ -11,10 +11,10 @@ import { activeLoansWhere } from '@/utils/loanQueries';
  * A kama can be unavailable for two different reasons:
  *
  * 1. It is booked — some overlapping loan holds it.
- * 2. It is *inside* something that is booked. A sijainti may be a kama
- *    ("Sininen työkalupakki"), and lending the box lends what is in it: the
- *    hammer left the building in the box's boot and cannot be picked up
- *    separately. `blockedBy` names the box so the UI can say so.
+ * 2. It is *inside* something that is booked. A sijainti may be lainattava
+ *    ("Sininen työkalupakki", see `utils/containers.ts`), and lending it lends
+ *    everything in its subtree: the hammer left the building in the box's boot
+ *    and cannot be picked up separately. `blockedBy` names the box.
  *
  * The cascade runs downwards only. Lending the hammer on its own does **not**
  * take the box off the shelf — the box goes out one hammer short, which is
@@ -47,8 +47,8 @@ const BLOCKING_STATUSES = [
   ReservationStatus.INUSE,
 ] as const;
 
-/** How deep a box-inside-a-box chain is followed before we stop looking. */
-const MAX_NESTING = 10;
+/** How many sijainti levels up the tree are followed before we stop looking. */
+const MAX_NESTING = 20;
 
 interface DayRange {
   start: Date;
@@ -76,17 +76,12 @@ export async function computeAvailabilities(
   range: AvailabilityRange,
   { excludeLoanId }: AvailabilityOptions = {},
 ): Promise<Record<string, ItemAvailability>> {
-  const [items, reservations] = await Promise.all([
+  const [items, locations, reservations] = await Promise.all([
     prisma.item.findMany({
       where: activeItemsWhere,
-      select: {
-        id: true,
-        name: true,
-        amount: true,
-        locationId: true,
-        asLocation: { select: { id: true } },
-      },
+      select: { id: true, name: true, amount: true, locationId: true },
     }),
+    prisma.location.findMany({ select: { id: true, parentId: true, itemId: true } }),
     // Only the reservations that overlap the window are worth loading; the rest
     // can't affect any day in it.
     prisma.reservation.findMany({
@@ -107,29 +102,29 @@ export async function computeAvailabilities(
     }),
   ]);
 
-  // A sijainti that is a kama points back at it; that is the edge the cascade
-  // walks. Contents know their sijainti, so this maps that sijainti to the kama
-  // it stands for.
-  const itemByLocation = new Map<string, string>();
-  for (const item of items) {
-    if (item.asLocation) itemByLocation.set(item.asLocation.id, item.id);
-  }
-
   const byId = new Map(items.map((i) => [i.id, i]));
+  const locationById = new Map(locations.map((l) => [l.id, l]));
 
-  /** Every kama this one is inside, nearest first. */
+  /**
+   * Every lainattava sijainti this kama sits under, nearest first — walked up
+   * the sijainti tree from the kama's own sijainti. The kama behind a
+   * lainattava sijainti is stored in that sijainti's parent, so it never counts
+   * as inside itself.
+   */
   const containersAbove = (itemId: string): string[] => {
     const chain: string[] = [];
-    const seen = new Set([itemId]);
-    let current = byId.get(itemId);
-    // A box put inside itself (however that happened) would loop forever, and a
+    const seen = new Set<string>();
+    let locationId = byId.get(itemId)?.locationId ?? null;
+    // A loop in the tree (however that happened) would spin forever, and a
     // chain this long is a data-entry accident rather than a real shelf.
-    while (current?.locationId && chain.length < MAX_NESTING) {
-      const containerId = itemByLocation.get(current.locationId);
-      if (!containerId || seen.has(containerId)) break;
-      chain.push(containerId);
-      seen.add(containerId);
-      current = byId.get(containerId);
+    while (locationId && !seen.has(locationId) && seen.size < MAX_NESTING) {
+      seen.add(locationId);
+      const location = locationById.get(locationId);
+      if (!location) break;
+      if (location.itemId && location.itemId !== itemId && byId.has(location.itemId)) {
+        chain.push(location.itemId);
+      }
+      locationId = location.parentId;
     }
     return chain;
   };

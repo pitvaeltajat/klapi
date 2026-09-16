@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     include: { categories: true, location: true },
   });
 
-  // A promotion is also a rename, so a säilytyspaikka-kama keeps its sijainti
+  // A promotion is also a rename, so the kama behind a lainattava sijainti keeps its sijainti
   // row in step (see utils/containers).
   await syncContainerName(id, updated.name);
 

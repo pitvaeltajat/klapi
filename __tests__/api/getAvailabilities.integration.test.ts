@@ -465,10 +465,10 @@ describe('getAvailabilities API integration tests', () => {
     });
   });
 
-  // "Sininen työkalupakki" is both a kama you can borrow and a sijainti other
-  // kamat live in. Lending the box lends what is inside it; lending what is
-  // inside it does not lend the box.
-  describe('A kama that is also a säilytyspaikka', () => {
+  // "Sininen työkalupakki" is a lainattava sijainti: a sijainti in the tree with
+  // a kama behind it. Lending the box lends everything under it; lending what
+  // is inside it does not lend the box.
+  describe('A lainattava sijainti', () => {
     let box: Awaited<ReturnType<typeof createTestItem>>;
     let hammer: Awaited<ReturnType<typeof createTestItem>>;
     let boxLocationId: string;
@@ -548,6 +548,12 @@ describe('getAvailabilities API integration tests', () => {
       const trailerLocation = await prisma.location.create({
         data: { name: trailer.name, itemId: trailer.id },
       });
+      // The box sits in the trailer: the sijainti tree says so, and its kama
+      // mirrors that (utils/containers keeps the two in step).
+      await prisma.location.update({
+        where: { id: boxLocationId },
+        data: { parentId: trailerLocation.id },
+      });
       await prisma.item.update({
         where: { id: box.id },
         data: { locationId: trailerLocation.id },
@@ -568,9 +574,32 @@ describe('getAvailabilities API integration tests', () => {
           name: trailer.name,
         });
       } finally {
+        await prisma.location.update({ where: { id: boxLocationId }, data: { parentId: null } });
         await prisma.item.update({ where: { id: box.id }, data: { locationId: null } });
         await prisma.location.deleteMany({ where: { id: trailerLocation.id } });
         await prisma.item.deleteMany({ where: { id: trailer.id } });
+      }
+    });
+
+    it('takes kamat in its sub-sijainnit along too', async () => {
+      const lokero = await prisma.location.create({
+        data: { name: 'Lokero', parentId: boxLocationId },
+      });
+      const ruuvi = await createTestItem({ name: 'Ruuvi', amount: 50 });
+      await prisma.item.update({ where: { id: ruuvi.id }, data: { locationId: lokero.id } });
+
+      try {
+        await createTestLoan(testUser.id, [{ itemId: box.id, amount: 1 }], {
+          startTime: start,
+          endTime: end,
+        });
+        const result = await getAvailabilities(start, end);
+        expect(result.availabilities[ruuvi.id].available).toBe(0);
+        expect(result.availabilities[ruuvi.id].blockedBy).toEqual({ id: box.id, name: box.name });
+      } finally {
+        await prisma.item.update({ where: { id: ruuvi.id }, data: { locationId: null } });
+        await prisma.location.deleteMany({ where: { id: lokero.id } });
+        await prisma.item.deleteMany({ where: { id: ruuvi.id } });
       }
     });
 
@@ -581,6 +610,8 @@ describe('getAvailabilities API integration tests', () => {
       });
       // Only reachable by hand-editing, but a cycle here used to be an infinite
       // walk rather than a wrong number.
+      await prisma.location.update({ where: { id: otherLocation.id }, data: { parentId: boxLocationId } });
+      await prisma.location.update({ where: { id: boxLocationId }, data: { parentId: otherLocation.id } });
       await prisma.item.update({
         where: { id: other.id },
         data: { locationId: boxLocationId },
@@ -595,6 +626,7 @@ describe('getAvailabilities API integration tests', () => {
         expect(result.availabilities[box.id].available).toBe(1);
         expect(result.availabilities[other.id].available).toBe(1);
       } finally {
+        await prisma.location.update({ where: { id: boxLocationId }, data: { parentId: null } });
         await prisma.item.update({ where: { id: box.id }, data: { locationId: null } });
         await prisma.item.update({ where: { id: other.id }, data: { locationId: null } });
         await prisma.location.deleteMany({ where: { id: otherLocation.id } });

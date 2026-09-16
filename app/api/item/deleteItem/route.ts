@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { logItemHistory } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
+import { unlinkArchivedContainers } from '@/utils/containers';
 
 export async function POST(request: Request) {
   const { session, denied } = await requireAdmin();
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     where: { id: body },
     data: { deletedAt: new Date() },
   });
+  await unlinkArchivedContainers([body]);
 
   // Only record the live → archived transition, not re-archiving.
   if (before && !before.deletedAt) {

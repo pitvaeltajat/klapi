@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '@/utils/datepickerLocale';
-import { History, Plus } from 'lucide-react';
+import { History } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Item, Loan, LoanStatus, Reservation, ReservationStatus, User } from '@prisma/client';
@@ -12,6 +12,13 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import CustomItemDialog from '@/components/CustomItemDialog';
 import ItemAmountCard from '@/components/ItemAmountCard';
 import LoanerAutocomplete from '@/components/LoanerAutocomplete';
+import {
+  AddLoanItemPicker,
+  LoanItemRows,
+  rowsFromReservations,
+  rowsToReservations,
+  useLoanItemRows,
+} from '@/components/LoanItemsEditor';
 import LoanRangeCalendar from '@/components/LoanRangeCalendar';
 import { DateTime } from '@/components/DateTime';
 import { Alert } from '@/components/ui/alert';
@@ -19,15 +26,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { CreatableSelect } from '@/components/ui/creatable-select';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
-import { isCustomItemId } from '@/utils/customItems';
 import {
   deriveLoanStatus,
   getLoanStatusLabel,
@@ -90,22 +94,15 @@ export default function EditLoanView({
 }) {
   const router = useRouter();
 
-  const originalRows = useMemo(() => rowsFromLoan(loan), [loan]);
-  const originalAmounts = useMemo(
-    () => new Map(originalRows.map((r) => [r.itemId, r.amount])),
-    [originalRows],
-  );
+  const originalRows = useMemo(() => rowsFromReservations(loan.reservations), [loan]);
 
   const [description, setDescription] = useState(loan.description);
-  const [rows, setRows] = useState<Row[]>(originalRows);
   const [range, setRange] = useState<DateRange>([
     new Date(loan.startTime),
     new Date(loan.endTime),
   ]);
   const [status, setStatus] = useState(deriveLoanStatus(loan.reservations, loan.status));
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
 
   // The loaner picker (admin only). `loanerValue` is the free-text name or the
@@ -180,6 +177,7 @@ export default function EditLoanView({
   const rowsDirty =
     rows.length !== originalRows.length ||
     rows.some((r) => originalAmounts.get(r.itemId) !== r.amount);
+  const editor = useLoanItemRows(originalRows, availabilities);
 
   // A per-item status change (admin) counts as a change worth saving.
   const statusesDirty =
@@ -192,13 +190,12 @@ export default function EditLoanView({
   const isDirty =
     rowsDirty ||
     statusesDirty ||
+    editor.dirty ||
     description !== loan.description ||
     (canSetStatus && status !== derivedStatus) ||
     loanerChanged ||
     startDate?.getTime() !== new Date(loan.startTime).getTime() ||
     endDate?.getTime() !== new Date(loan.endTime).getTime();
-
-  const overBooked = rows.filter((r) => r.amount > headroom(r.itemId));
 
   async function save() {
     if (!startDate || !endDate) return;
@@ -279,11 +276,6 @@ export default function EditLoanView({
     );
   }
 
-  const selectableItems = items.map((i) => ({ value: i.id, label: i.name }));
-  /** What's still free to add on top of what the loan already holds. */
-  const remaining = (itemId: string) =>
-    headroom(itemId) - (rows.find((r) => r.itemId === itemId)?.amount ?? 0);
-
   return (
     <>
       {breadcrumbs}
@@ -297,17 +289,6 @@ export default function EditLoanView({
           confirmVariant="success"
           isLoading={saving}
           onConfirm={save}
-        />
-
-        <CustomItemDialog
-          key={customName}
-          isOpen={customOpen}
-          onClose={() => setCustomOpen(false)}
-          initialName={customName}
-          onAdd={({ id, name, amount }) => addRow({ itemId: id, name, amount })}
-          title="Lisää oma kama lainaan"
-          successMessage="Lisätty lainaan"
-          submitIcon={Plus}
         />
 
         <PageHeader
@@ -451,8 +432,8 @@ export default function EditLoanView({
               size="sm"
               variant="ghost"
               className="gap-2"
-              onClick={() => setRows(originalRows)}
-              disabled={!rowsDirty}
+              onClick={editor.reset}
+              disabled={!editor.dirty}
             >
               <History className="h-4 w-4" />
               Palauta alkuperäiset
@@ -540,37 +521,14 @@ export default function EditLoanView({
 
         <Card>
           <CardTitle>Lisää kama</CardTitle>
-          {/* Searchable: the catalogue is long enough that a native select
-              means scrolling past a hundred kamaa to find one. A name with no
-              match isn't a dead end — it offers to become an oma kama. The
-              amount isn't asked for here; the row above adjusts it. */}
-          <CreatableSelect<{ value: string; label: string }>
-            value={null}
-            options={selectableItems}
-            // A kama the loan already holds every one of can't be added again.
-            // The "create" row isn't a catalogue kama, so it is never blocked.
-            isOptionDisabled={(option) =>
-              items.some((i) => i.id === option.value) && remaining(option.value) < 1
-            }
-            onChange={(option) => {
-              const item = items.find((i) => i.id === option?.value);
-              if (item) addRow({ itemId: item.id, name: item.name, amount: 1 });
-            }}
-            onCreateOption={(name) => {
-              setCustomName(name);
-              setCustomOpen(true);
-            }}
-            formatCreateLabel={(input) => `Lisää oma kama "${input}"`}
-            placeholder="Hae kamaa nimellä"
-            noOptionsMessage={() => 'Ei osumia'}
-          />
+          <AddLoanItemPicker editor={editor} items={items} />
         </Card>
 
         <Button
           variant="success"
           size="lg"
           className="w-full md:w-auto md:self-start"
-          disabled={!isDirty || overBooked.length > 0 || !startDate || !endDate}
+          disabled={!isDirty || editor.overBooked.length > 0 || !startDate || !endDate}
           onClick={() => setConfirmOpen(true)}
         >
           Tallenna muutokset

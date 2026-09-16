@@ -2,7 +2,8 @@
 
 import React, { Suspense, use, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LayoutGrid, Plus, Table as TableIcon } from 'lucide-react';
+import { MapPin, Plus, Tags } from 'lucide-react';
+import NextLink from 'next/link';
 import DateSelector from '@/components/DateSelector';
 import DateSummaryBar from '@/components/DateSummaryBar';
 import KioskModeSelector from '@/components/KioskModeSelector';
@@ -20,52 +21,40 @@ import { Button } from '@/components/ui/button';
 import { ItemCardSkeletonGrid } from '@/components/ItemCardSkeleton';
 import { defaultKioskRange } from '@/utils/dateRange';
 
-type BrowseViewMode = 'grid' | 'table';
-
 function BrowseModeHeader({
   onExitBrowseMode,
   isAdmin,
-  viewMode,
-  onViewModeChange,
   onCreateItem,
 }: {
   onExitBrowseMode: () => void;
   isAdmin: boolean;
-  viewMode: BrowseViewMode;
-  onViewModeChange: (mode: BrowseViewMode) => void;
   onCreateItem: () => void;
 }) {
   return (
     <div className="mb-4 flex flex-col gap-4">
       <h2 className="text-xl font-semibold">Selaa katalogia</h2>
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
+        {/* An admin's Kamat is the kalusto table, not a detour from lending —
+            "Lainaa" in the top bar is the way back. */}
+        {!isAdmin && <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>}
         {isAdmin && (
           <Button variant="success" className="gap-2" onClick={onCreateItem}>
             <Plus className="h-4 w-4" /> Luo uusi kama
           </Button>
         )}
         {isAdmin && (
-          <div className="ml-auto flex gap-1">
-            <Button
-              size="sm"
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              onClick={() => onViewModeChange('grid')}
-              aria-label="Ruudukkonäkymä"
-              className="gap-2"
-            >
-              <LayoutGrid className="h-4 w-4" /> Ruudukko
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'table' ? 'default' : 'outline'}
-              onClick={() => onViewModeChange('table')}
-              aria-label="Taulukkonäkymä"
-              className="gap-2"
-            >
-              <TableIcon className="h-4 w-4" /> Taulukko
-            </Button>
-          </div>
+          <Button variant="outline" className="gap-2" asChild>
+            <NextLink href="/admin/locations">
+              <MapPin className="h-4 w-4" /> Sijainnit
+            </NextLink>
+          </Button>
+        )}
+        {isAdmin && (
+          <Button variant="outline" className="gap-2" asChild>
+            <NextLink href="/admin/categories">
+              <Tags className="h-4 w-4" /> Kategoriat
+            </NextLink>
+          </Button>
         )}
       </div>
     </div>
@@ -122,7 +111,12 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   // context, so there is no state to keep in step with the query string.
   const router = useRouter();
   const searchParams = useSearchParams();
-  const browseMode = dates.browseMode || searchParams.get('browse') === '1';
+  // A plain kiosk login has no Kamat view: the wall screen is for lending, and
+  // the catalogue is already there in the loan flow. An admin elevated on the
+  // kiosk is still an admin and keeps the kalusto table.
+  const browseMode =
+    session?.user?.group !== 'KIOSK' &&
+    (dates.browseMode || searchParams.get('browse') === '1');
 
   // The kiosk flow always starts the loan now, so booking a *later* date needs
   // its own way in — the "Tee varaus toiselle päivälle" button on the welcome
@@ -132,7 +126,6 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
   // in the queue can't inherit the previous one's picker. See `datesReducer`.
   const isKioskMode = onKioskMachine && !dates.planAhead;
 
-  const [browseViewMode, setBrowseViewMode] = useState<BrowseViewMode>('table');
   const [createOpen, setCreateOpen] = useState(false);
 
   const handleExitBrowseMode = () => {
@@ -154,13 +147,11 @@ export default function HomeClient({ cataloguePromise }: HomeClientProps) {
           <BrowseModeHeader
             onExitBrowseMode={handleExitBrowseMode}
             isAdmin={isAdmin}
-            viewMode={browseViewMode}
-            onViewModeChange={setBrowseViewMode}
             onCreateItem={() => setCreateOpen(true)}
           />
           {/* Mounted only while open so the draft always starts empty. */}
           {createOpen && <AddItemDialog open onOpenChange={setCreateOpen} />}
-          {isAdmin && browseViewMode === 'table' ? (
+          {isAdmin ? (
             <InventoryView />
           ) : (
             <Suspense fallback={<ItemCardSkeletonGrid />}>

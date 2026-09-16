@@ -1,54 +1,130 @@
 import prisma from '@/utils/prisma';
+import { canBeParent } from '@/utils/locationTree';
 
 /**
- * A kama that is also a säilytyspaikka — "Sininen työkalupakki" — is one `Item`
- * plus one `Location` row pointing back at it. This is the only place that pair
- * is made, broken or kept in step; what it means for availability lives in
- * `utils/availability.ts`.
+ * A lainattava sijainti — "Sininen työkalupakki" — is a sijainti in the tree
+ * like any other, which can also be lent out. Loans reserve kamat, so it has a
+ * kama of its own behind it (`Location.itemId`): that kama is what goes in the
+ * cart, and lending it takes everything in the sijainti's subtree with it (see
+ * `utils/availability.ts`).
+ *
+ * The sijainti is the source of truth; the kama mirrors it. Its name is the
+ * sijainti's name and its own sijainti is the sijainti's parent. This file is
+ * the only place that pair is made, broken or kept in step.
  */
 
-/** Thrown rather than returned so a route can answer 409 without inventing a
- *  second return shape for the ordinary case. */
-export class ContainerNotEmptyError extends Error {
-  constructor(public readonly count: number) {
-    super(`Säilytyspaikassa on vielä ${count} kamaa`);
-    this.name = 'ContainerNotEmptyError';
+/** Thrown when a kama edit would move a lainattava sijainti inside itself. */
+export class ContainerCycleError extends Error {
+  constructor() {
+    super('Sijaintia ei voi siirtää itsensä tai oman alasijaintinsa sisään');
+    this.name = 'ContainerCycleError';
   }
 }
 
 /**
- * Turn a kama into a säilytyspaikka, or stop it being one.
- *
- * Emptying is refused while anything is still stored inside: `Item.locationId`
- * cascades on delete, so dropping a sijainti that still has kamat in it would
- * take those kamat with it.
+ * Switch "lainattava" on or off. On creates the kama (one of it, named after
+ * the sijainti, stored in its parent). Off archives that kama and unlinks it —
+ * its loan history stays with the archived row, and the sijainti with its
+ * contents is untouched.
  */
-export async function setItemAsContainer(itemId: string, name: string, container: boolean) {
-  const existing = await prisma.location.findUnique({
-    where: { itemId },
-    select: { id: true, name: true, _count: { select: { items: true } } },
+export async function setLocationLoanable(locationId: string, loanable: boolean) {
+  const location = await prisma.location.findUniqueOrThrow({
+    where: { id: locationId },
+    select: { name: true, parentId: true, itemId: true },
   });
 
-  if (container) {
-    if (!existing) {
-      await prisma.location.create({ data: { name, itemId } });
-    } else if (existing.name !== name) {
-      await prisma.location.update({ where: { id: existing.id }, data: { name } });
-    }
+  if (loanable) {
+    if (location.itemId) return;
+    await prisma.$transaction(async (tx) => {
+      const item = await tx.item.create({
+        data: { name: location.name, amount: 1, locationId: location.parentId },
+      });
+      await tx.location.update({ where: { id: locationId }, data: { itemId: item.id } });
+    });
     return;
   }
 
-  if (!existing) return;
-  if (existing._count.items > 0) throw new ContainerNotEmptyError(existing._count.items);
-  await prisma.location.delete({ where: { id: existing.id } });
+  if (!location.itemId) return;
+  await prisma.$transaction([
+    prisma.location.update({ where: { id: locationId }, data: { itemId: null } }),
+    prisma.item.update({ where: { id: location.itemId }, data: { deletedAt: new Date() } }),
+  ]);
 }
 
 /**
- * A renamed kama leaves its sijainti row carrying the old name, which is the
- * name every *other* kama's Sijainti column then shows. `updateMany` so the
- * ordinary kama — which has no sijainti row of its own — costs one no-op write
- * rather than a lookup.
+ * Turn an existing kama into a lainattava sijainti — a toolbox that was
+ * catalogued as a plain kama. Unlike switching lainattava on for a sijainti,
+ * no new kama is made: this one stands behind the new sijainti, so its id,
+ * photo and loan history carry on. The sijainti takes the kama's name and sits
+ * where the kama is stored. Returns the new sijainti's id.
+ */
+export async function makeItemLoanableLocation(itemId: string): Promise<string> {
+  const item = await prisma.item.findUniqueOrThrow({
+    where: { id: itemId },
+    select: { name: true, locationId: true, deletedAt: true, type: true, asLocation: { select: { id: true } } },
+  });
+  if (item.asLocation) return item.asLocation.id;
+  if (item.deletedAt || item.type !== 'normal') {
+    throw new Error(`"${item.name}" ei ole elävä normaali kama`);
+  }
+  const location = await prisma.location.create({
+    data: { name: item.name, parentId: item.locationId, itemId },
+  });
+  return location.id;
+}
+
+/**
+ * After a lainattava sijainti is renamed or moved on the Sijainnit page, bring
+ * its kama along. A no-op for an ordinary sijainti.
+ */
+export async function syncLoanableItem(locationId: string) {
+  const location = await prisma.location.findUnique({
+    where: { id: locationId },
+    select: { name: true, parentId: true, itemId: true },
+  });
+  if (!location?.itemId) return;
+  await prisma.item.update({
+    where: { id: location.itemId },
+    data: { name: location.name, locationId: location.parentId },
+  });
+}
+
+/**
+ * The other direction: the kama behind a lainattava sijainti was renamed in the
+ * Kamat table. `updateMany` so an ordinary kama costs one no-op write.
  */
 export async function syncContainerName(itemId: string, name: string) {
   await prisma.location.updateMany({ where: { itemId }, data: { name } });
+}
+
+/**
+ * Call *before* writing a kama's new sijainti: refuses putting the kama behind
+ * a lainattava sijainti into that sijainti's own subtree. A no-op for an
+ * ordinary kama, and for an id that isn't a sijainti yet (a typed-in new one
+ * can't be underneath anything).
+ */
+export async function assertContainerPlace(itemId: string, locationId: string | null) {
+  if (!locationId) return;
+  const own = await prisma.location.findUnique({ where: { itemId }, select: { id: true } });
+  if (!own) return;
+  const all = await prisma.location.findMany({ select: { id: true, name: true, parentId: true } });
+  if (!all.some((l) => l.id === locationId)) return;
+  if (!canBeParent(all, own.id, locationId)) throw new ContainerCycleError();
+}
+
+/** Then, after the write: the sijainti follows its kama to the new place. */
+export async function syncContainerPlace(itemIds: string[], locationId: string | null) {
+  await prisma.location.updateMany({
+    where: { itemId: { in: itemIds } },
+    data: { parentId: locationId },
+  });
+}
+
+/**
+ * A kama archived from the Kamat table stops standing behind its sijainti: the
+ * sijainti simply is no longer lainattava. Restoring the kama does not relink
+ * it — switch lainattava back on from Sijainnit for a fresh one.
+ */
+export async function unlinkArchivedContainers(itemIds: string[]) {
+  await prisma.location.updateMany({ where: { itemId: { in: itemIds } }, data: { itemId: null } });
 }

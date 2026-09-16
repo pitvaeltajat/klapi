@@ -8,6 +8,7 @@ import {
   toInventoryExportRows,
 } from '@/utils/inventoryExport';
 import { requireAdmin } from '@/utils/apiAuth';
+import { locationPaths } from '@/utils/locationQueries';
 
 /**
  * The kalusto as a spreadsheet: the inventory table's current view, every row
@@ -37,12 +38,20 @@ export async function GET(request: Request) {
 
   const items = await prisma.item.findMany({
     where,
-    include: { categories: { select: { name: true } }, location: { select: { name: true } } },
+    include: { categories: { select: { name: true } }, location: { select: { id: true, name: true } } },
     orderBy,
     take: MAX_ROWS,
   });
 
-  const buffer = await buildInventoryWorkbook(toInventoryExportRows(items));
+  // The Sijainti column names the whole chain, as the table does.
+  const paths = await locationPaths();
+  const rows = toInventoryExportRows(
+    items.map((item) => ({
+      ...item,
+      location: item.location && { name: paths.get(item.location.id) ?? item.location.name },
+    })),
+  );
+  const buffer = await buildInventoryWorkbook(rows);
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

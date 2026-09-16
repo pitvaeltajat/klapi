@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { diffItemFields, logItemHistory, type ItemFieldValue } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
-import { syncContainerName } from '@/utils/containers';
+import {
+  assertContainerPlace,
+  ContainerCycleError,
+  syncContainerName,
+  syncContainerPlace,
+} from '@/utils/containers';
 
 export async function PATCH(request: Request) {
   const { session, denied } = await requireAdmin();
@@ -47,6 +52,17 @@ export async function PATCH(request: Request) {
     include: { location: true },
   });
 
+  if (field === 'locationId') {
+    try {
+      await assertContainerPlace(id, typeof value === 'string' ? value : null);
+    } catch (err) {
+      if (err instanceof ContainerCycleError) {
+        return NextResponse.json({ message: err.message }, { status: 400 });
+      }
+      throw err;
+    }
+  }
+
   const updated = await prisma.item.update({
     where: { id },
     data,
@@ -54,6 +70,7 @@ export async function PATCH(request: Request) {
   });
 
   if (field === 'name') await syncContainerName(id, updated.name);
+  if (field === 'locationId') await syncContainerPlace([id], updated.locationId);
 
   if (before) {
     const fieldKey = field === 'locationId' ? 'location' : field;

@@ -11,7 +11,11 @@ export async function GET() {
   const { denied } = await requireAdmin();
   if (denied) return denied;
 
-  const categories = await prisma.category.findMany();
+  // `_count.items` (live kamat only) is for the Kategoriat page; the pickers
+  // ignore it.
+  const categories = await prisma.category.findMany({
+    include: { _count: { select: { items: { where: { deletedAt: null } } } } },
+  });
   categories.sort((a, b) => fiCollator.compare(a.name, b.name));
   return NextResponse.json(categories);
 }

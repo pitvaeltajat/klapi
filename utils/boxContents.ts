@@ -24,14 +24,26 @@ export interface ContentRow {
   }[];
 }
 
+/** A lainattava sijainti's kamat, and its sub-sijainnit' in turn. */
+export interface ContentLocation {
+  items: ContentRow[];
+  children?: ContentLocation[];
+}
+
+/** Every kama anywhere under the sijainti, in one list. */
+export function flattenContents(location: ContentLocation | null | undefined): ContentRow[] {
+  if (!location) return [];
+  return [...location.items, ...(location.children ?? []).flatMap(flattenContents)];
+}
+
 export function boxContents(
-  items: ContentRow[] | undefined | null,
+  location: ContentLocation | undefined | null,
   /** The loan being handed over or taken back — its own lines are not "elsewhere". */
   loanId: string,
   at: Date = new Date(),
 ): BoxContent[] {
   const now = at.getTime();
-  return (items ?? []).map((item) => ({
+  return flattenContents(location).map((item) => ({
     id: item.id,
     name: item.name,
     amount: item.amount,

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { CircleAlert, Minus, Plus, Trash2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { CircleAlert, History } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Item, LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -11,13 +11,13 @@ import { toast } from 'sonner';
 import { deriveLoanStatus, getLoanStatusLabel, getLoanStatusColor, getLoanerName } from '@/utils/loanHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/native-select';
 import { Label } from '@/components/ui/label';
-import { NumberInput } from '@/components/ui/number-input';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '@/utils/datepickerLocale';
 import { formatDateOnly } from '@/utils/dateFormat';
+import { isSameCalendarDay, setDefaultTime, setEndOfDay } from '@/utils/dateRange';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -31,8 +31,16 @@ import { Alert } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
+import {
+  AddLoanItemPicker,
+  LoanItemRows,
+  rowsFromReservations,
+  rowsToReservations,
+  useLoanItemRows,
+} from '@/components/LoanItemsEditor';
+import { useAvailabilities } from '@/hooks/useAvailabilities';
 import BoxContents from '@/components/BoxContents';
-import { boxContents, type ContentRow } from '@/utils/boxContents';
+import { boxContents, type ContentLocation } from '@/utils/boxContents';
 
 interface Reservation {
   id: string;
@@ -41,8 +49,8 @@ interface Reservation {
   item: {
     id: string;
     name: string;
-    /** Set when the kama is a säilytyspaikka — what goes out with it. */
-    asLocation?: { items: ContentRow[] } | null;
+    /** Set when the kama stands behind a lainattava sijainti — what goes out with it. */
+    asLocation?: ContentLocation | null;
   };
 }
 
@@ -61,291 +69,8 @@ interface LoanType {
   reservations: Reservation[];
 }
 
-interface AvailabilityData {
-  availabilities: Record<string, { available: number }>;
-}
-
-const EditItemsDialog = ({
-  onOpenChange,
-  loan,
-  items,
-  onSaved,
-}: {
-  onOpenChange: (open: boolean) => void;
-  loan: LoanType;
-  items: Item[];
-  onSaved: (next: Reservation[]) => void;
-}) => {
-  const [reservations, setReservations] = useState<Reservation[]>(loan.reservations);
-  const [selectedItem, setSelectedItem] = useState(items[0]?.id || '');
-  const [selectedItemAmount, setSelectedItemAmount] = useState(0);
-  const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
-  const [loadingAvailability, setLoadingAvailability] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/availability/getAvailabilities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        StartDate: new Date(loan.startTime),
-        EndDate: new Date(loan.endTime),
-      }),
-    })
-      .then((r) => r.json())
-      .then((data) => setAvailabilityData(data))
-      .catch((e) => console.error('Failed to fetch availability:', e))
-      .finally(() => setLoadingAvailability(false));
-  }, [loan.startTime, loan.endTime]);
-
-  const getEffectiveAvailability = (itemId: string): number => {
-    if (!availabilityData?.availabilities?.[itemId]) return 0;
-    const baseAvailability = availabilityData.availabilities[itemId].available;
-    const originalReservation = loan.reservations.find((r) => r.item.id === itemId);
-    const originalAmount = originalReservation?.amount ?? 0;
-    return baseAvailability + originalAmount;
-  };
-
-  const getCurrentReservationAmount = (itemId: string): number =>
-    reservations.filter((r) => r.item.id === itemId).reduce((sum, r) => sum + r.amount, 0);
-
-  const getMaxForReservation = (reservation: Reservation): number => {
-    const effectiveAvail = getEffectiveAvailability(reservation.item.id);
-    const currentInOtherRows = reservations
-      .filter((r) => r.item.id === reservation.item.id && r.id !== reservation.id)
-      .reduce((sum, r) => sum + r.amount, 0);
-    return Math.max(0, effectiveAvail - currentInOtherRows);
-  };
-
-  const getMaxForNewItem = (itemId: string): number => {
-    const effectiveAvail = getEffectiveAvailability(itemId);
-    const currentTotal = getCurrentReservationAmount(itemId);
-    return Math.max(0, effectiveAvail - currentTotal);
-  };
-
-  const isNewReservation = (reservation: Reservation) =>
-    !loan.reservations.find((r) => r.id === reservation.id);
-
-  const isReservationModified = (reservation: Reservation) => {
-    const original = loan.reservations.find((r) => r.id === reservation.id);
-    if (!original) return true;
-    return reservation.amount !== original.amount;
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const response = await fetch('/api/loan/updateLoan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: loan.id,
-          description: loan.description,
-          startTime: loan.startTime,
-          endTime: loan.endTime,
-          reservations: reservations.map((r) => ({
-            amount: r.amount,
-            item: { connect: { id: r.item.id } },
-          })),
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        const description =
-          (data.details && Array.isArray(data.details) ? data.details.join('\n') : null) ||
-          data.message ||
-          'Virhe tallennettaessa';
-        toast.error(data.message || 'Virhe', { description });
-        return;
-      }
-      toast.success('Laina päivitetty');
-      onSaved(reservations);
-      onOpenChange(false);
-    } catch {
-      toast.error('Virhe', { description: 'Yhteysvirhe, yritä uudelleen' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Muokkaa lainan kamoja</DialogTitle>
-        </DialogHeader>
-
-        {loadingAvailability ? (
-          <div className="flex flex-col gap-3 py-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="ml-auto h-10 w-32" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              {reservations.length === 0 ? (
-                <EmptyState variant="inline" title="Ei kamoja" />
-              ) : (
-                reservations.map((reservation) => (
-                  <Card
-                    key={reservation.id}
-                    variant="inset"
-                    padding="sm"
-                    className={cn(
-                      isNewReservation(reservation)
-                        ? 'border-success bg-success/10'
-                        : isReservationModified(reservation)
-                          ? 'border-warning'
-                          : 'border-border',
-                    )}
-                  >
-                    <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                      <div className="flex flex-1 flex-wrap items-center gap-2">
-                        <p className="font-medium">{reservation.item.name}</p>
-                        <Badge variant="gray">max: {getMaxForReservation(reservation)}</Badge>
-                        {isNewReservation(reservation) && <Badge variant="success">Uusi</Badge>}
-                        {!isNewReservation(reservation) && isReservationModified(reservation) && (
-                          <Badge variant="warning">Muokattu</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="icon-sm"
-                          variant="outline"
-                          aria-label="Vähennä määrää"
-                          onClick={() => {
-                            if (reservation.amount > 1) {
-                              setReservations((rs) =>
-                                rs.map((r) =>
-                                  r.id === reservation.id ? { ...r, amount: r.amount - 1 } : r,
-                                ),
-                              );
-                            }
-                          }}
-                          disabled={reservation.amount <= 1}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Input
-                          value={reservation.amount}
-                          readOnly
-                          className="h-9 w-14 text-center"
-                        />
-                        <Button
-                          size="icon-sm"
-                          variant="outline"
-                          aria-label="Lisää määrää"
-                          onClick={() => {
-                            setReservations((rs) =>
-                              rs.map((r) =>
-                                r.id === reservation.id ? { ...r, amount: r.amount + 1 } : r,
-                              ),
-                            );
-                          }}
-                          disabled={reservation.amount >= getMaxForReservation(reservation)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          aria-label="Poista varaus"
-                          size="icon-sm"
-                          variant="ghost"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            setReservations((rs) => rs.filter((r) => r.id !== reservation.id));
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    {/* Handing over a säilytyspaikka is handing over what is in
-                        it — the list is right here rather than on the box's own
-                        page, because this is the moment it is being carried out
-                        of the varasto. */}
-                    <BoxContents
-                      defaultOpen
-                      contents={boxContents(reservation.item.asLocation?.items, loan.id)}
-                      className="mt-2"
-                    />
-                  </Card>
-                ))
-              )}
-            </div>
-
-            <Card variant="muted" padding="sm" className="bg-muted/40">
-              <p className="mb-2 font-semibold">Lisää kama</p>
-              <div className="flex flex-col gap-2 md:flex-row md:items-end">
-                <div className="flex-2">
-                  <Label>Kama</Label>
-                  <NativeSelect
-                    value={selectedItem}
-                    onChange={(e) => {
-                      setSelectedItem(e.target.value);
-                      setSelectedItemAmount(0);
-                    }}
-                  >
-                    {items.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </div>
-                <div className="flex-1">
-                  <Label>Määrä (vapaana: {getMaxForNewItem(selectedItem)})</Label>
-                  <NumberInput
-                    value={selectedItemAmount}
-                    onChange={setSelectedItemAmount}
-                    min={0}
-                    max={getMaxForNewItem(selectedItem)}
-                  />
-                </div>
-                <Button
-                  onClick={() => {
-                    const selectedItemObj = items.find((i) => i.id === selectedItem);
-                    if (!selectedItemObj) return;
-                    const existingStatus =
-                      loan.reservations[0]?.status || ReservationStatus.ACCEPTED;
-                    setReservations((rs) => [
-                      ...rs,
-                      {
-                        id: `new-${Math.random().toString(36).slice(2)}`,
-                        amount: selectedItemAmount,
-                        status: existingStatus,
-                        item: { id: selectedItemObj.id, name: selectedItemObj.name },
-                      },
-                    ]);
-                    setSelectedItemAmount(0);
-                  }}
-                  disabled={selectedItemAmount === 0}
-                >
-                  Lisää
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Peruuta
-          </Button>
-          <Button variant="success" onClick={handleSave} isLoading={saving}>
-            Tallenna muutokset
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
 const LoanStartCard = ({
-  loan: initialLoan,
+  loan,
   items,
   onStart,
   onStartComplete,
@@ -355,9 +80,9 @@ const LoanStartCard = ({
   onStart: (id: string, reportContent: string) => Promise<void>;
   onStartComplete: () => void;
 }) => {
-  const [loan, setLoan] = useState<LoanType>(initialLoan);
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  const [savingItems, setSavingItems] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [reportContent, setReportContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -366,6 +91,70 @@ const LoanStartCard = ({
   const acceptedReservations = loan.reservations.filter(
     (r) => r.status === ReservationStatus.ACCEPTED,
   );
+
+  const originalRows = useMemo(() => rowsFromReservations(loan.reservations), [loan]);
+  const [endDate, setEndDate] = useState(() => new Date(loan.endTime));
+  const { availabilities, loading: loadingAvailability } = useAvailabilities({
+    start: new Date(loan.startTime),
+    end: endDate,
+  });
+  const editor = useLoanItemRows(originalRows, availabilities);
+  const endChanged = endDate.getTime() !== new Date(loan.endTime).getTime();
+  const dirty = editor.dirty || endChanged;
+
+  // A loan picked up early still can't be returned before it starts, nor
+  // before today. Same rule as the kiosk loan flow: 18:00 on the return day,
+  // end of day for a loan that starts and ends on the same day.
+  const today = new Date();
+  const loanStart = new Date(loan.startTime);
+  const minReturn = loanStart > today ? loanStart : today;
+  const handleReturnDateChange = (date: Date | null) => {
+    if (!date) return;
+    setEndDate(isSameCalendarDay(date, loanStart) ? setEndOfDay(date) : setDefaultTime(date));
+  };
+
+  /**
+   * The kamat and the return day are edited in place on the card, and what was changed is saved
+   * on the way to the start confirmation — one button, not a separate save
+   * step to forget before handing the kamat over.
+   */
+  const saveItemsAndConfirm = async () => {
+    if (!dirty) {
+      setOpen(true);
+      return;
+    }
+    setSavingItems(true);
+    try {
+      const response = await fetch('/api/loan/updateLoan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: loan.id,
+          description: loan.description,
+          startTime: loan.startTime,
+          endTime: endDate,
+          reservations: rowsToReservations(editor.rows),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.message || 'Virhe', {
+          description: Array.isArray(data.details)
+            ? data.details.join('\n')
+            : data.message || 'Virhe tallennettaessa',
+        });
+        return;
+      }
+      // The server's answer carries what the rows can't: an oma kama's real
+      // row and a lainattava sijainti's contents.
+      router.refresh();
+      setOpen(true);
+    } catch {
+      toast.error('Virhe', { description: 'Yhteysvirhe, yritä uudelleen' });
+    } finally {
+      setSavingItems(false);
+    }
+  };
 
   const handleStartLoan = async () => {
     if (isLoading) return;
@@ -390,55 +179,89 @@ const LoanStartCard = ({
           <p>Lainaaja: {getLoanerName(loan)}</p>
           <p>
             Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
-            {formatDateOnly(loan.endTime)}
+            {formatDateOnly(endDate)}
           </p>
-          <div>
-            <p className="mb-2 font-bold">Tavarat:</p>
-            <div className="flex flex-wrap gap-2">
-              {acceptedReservations.map((reservation) => (
-                <Badge key={reservation.id}>
-                  {reservation.item.name} ({reservation.amount})
-                </Badge>
-              ))}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-bold">Palautuspäivä</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-2"
+                onClick={() => setEndDate(new Date(loan.endTime))}
+                disabled={!endChanged}
+              >
+                <History className="h-4 w-4" />
+                Palauta alkuperäinen
+              </Button>
             </div>
+            <div className="flex justify-center overflow-x-auto">
+              <DatePicker
+                selected={endDate}
+                onChange={handleReturnDateChange}
+                inline
+                monthsShown={2}
+                minDate={minReturn}
+                dateFormat="dd.MM.yyyy"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-bold">Kamat</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-2"
+                onClick={editor.reset}
+                disabled={!editor.dirty}
+              >
+                <History className="h-4 w-4" />
+                Palauta alkuperäiset
+              </Button>
+            </div>
+            {loadingAvailability ? (
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                {loan.reservations.map((r) => (
+                  <Skeleton key={r.id} className="h-20 w-full" />
+                ))}
+              </div>
+            ) : (
+              <LoanItemRows editor={editor} className="lg:grid-cols-2" />
+            )}
             {/* This is the counter: the kamat are being handed over right now,
-                so what is inside a säilytyspaikka is checked here rather than
+                so what is inside a lainattava sijainti is checked here rather than
                 on the box's own page. */}
             {acceptedReservations.map((reservation) => (
               <BoxContents
                 key={`contents-${reservation.id}`}
                 defaultOpen
-                contents={boxContents(reservation.item.asLocation?.items, loan.id)}
-                className="mt-2"
+                contents={boxContents(reservation.item.asLocation, loan.id)}
               />
             ))}
+            <div className="flex flex-col gap-2">
+              <Label>Lisää kama</Label>
+              <AddLoanItemPicker editor={editor} items={items} askCustomDetails={false} />
+            </div>
           </div>
-          <Alert variant="info" title="Tarvitseeko kamoihin muutoksia?">
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => setEditOpen(true)}
-            >
-              Muokkaa kamoja
-            </Button>
-          </Alert>
-          <Button variant="success" size="lg" onClick={() => setOpen(true)}>
+          <Button
+            variant="success"
+            size="lg"
+            onClick={saveItemsAndConfirm}
+            isLoading={savingItems}
+            disabled={
+              loadingAvailability || editor.rows.length === 0 || editor.overBooked.length > 0
+            }
+          >
             Aloita lainaus
           </Button>
+          {dirty && (
+            <p className="text-center text-sm text-muted-foreground">
+              Muutokset tallennetaan, kun aloitat lainauksen.
+            </p>
+          )}
         </div>
       </Card>
-
-      {editOpen && (
-        <EditItemsDialog
-          onOpenChange={setEditOpen}
-          loan={loan}
-          items={items}
-          onSaved={(nextReservations) => {
-            setLoan((prev) => ({ ...prev, reservations: nextReservations }));
-          }}
-        />
-      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

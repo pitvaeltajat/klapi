@@ -5,6 +5,8 @@ import { serialize } from '@/utils/serialize';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import ItemView from './ItemView';
+import { itemBoxContentsInclude } from '@/utils/loanQueries';
+import { locationPaths } from '@/utils/locationQueries';
 import { activeLoanReservationWhere, activeLoansWhere } from '@/utils/loanQueries';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -24,17 +26,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     include: {
       categories: true,
       location: true,
-      // Set when this kama is itself a säilytyspaikka — what is stored in it
-      // travels with it, so the page says what that is.
-      asLocation: {
-        select: {
-          id: true,
-          items: {
-            where: { deletedAt: null },
-            select: { id: true, name: true, amount: true },
-          },
-        },
-      },
+      // Set when this kama stands behind a lainattava sijainti — what is stored
+      // in it (sub-sijainnit included) travels with it, so the page says what.
+      asLocation: itemBoxContentsInclude.asLocation,
       announcements: { orderBy: { createdAt: 'desc' } },
       reservations: {
         // Reservations of a deleted loan are still on the row (a restore has to
@@ -49,7 +43,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     },
   });
 
-  // A poistettu kama keeps its page: old loans link to it and the säilytyspaikka
+  // A poistettu kama keeps its page: old loans link to it and the lainattava sijainti
   // it sat in still names it. It is only gone from the listings — ItemView says
   // so, and offers the restore.
   if (!item) notFound();
@@ -82,9 +76,17 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       ])
     : [[], []];
 
+  // The page names the whole chain — "Kalusto / Hylly 3" — not just the last
+  // step. Carried in `name` so the inline editor seeds its picker with the same
+  // label the options use.
+  const location = item.location && {
+    ...item.location,
+    name: (await locationPaths()).get(item.location.id) ?? item.location.name,
+  };
+
   return (
     <ItemView
-      item={serialize(item)}
+      item={serialize({ ...item, location })}
       history={serialize(history)}
       reportAffectedItems={serialize(reportAffectedItems)}
     />

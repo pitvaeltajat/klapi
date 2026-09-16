@@ -67,6 +67,8 @@ export interface InventoryLocation {
   id: string;
   name: string;
   description: string | null;
+  /** "Kalusto / Hylly 3" — only on the getLocations list, not on an item's own row. */
+  path?: string;
 }
 
 export interface InventoryItem {
@@ -358,7 +360,13 @@ function LocationCell({ row }: CellContext<typeof features, InventoryItem, Inven
   const [open, setOpen] = useState(false);
   const displayRef = useRef<HTMLSpanElement>(null);
 
-  const current = item.location ? { value: item.location.id, label: item.location.name } : null;
+  // The option carries the full path; the item row only has the last step.
+  const current = item.location
+    ? (locationOptions.find((o) => o.value === item.location!.id) ?? {
+        value: item.location.id,
+        label: item.location.name,
+      })
+    : null;
   const close = () => {
     setOpen(false);
     requestAnimationFrame(() => displayRef.current?.focus());
@@ -392,7 +400,7 @@ function LocationCell({ row }: CellContext<typeof features, InventoryItem, Inven
 
   return (
     <CellDisplay ref={displayRef} onOpen={() => setOpen(true)}>
-      <Truncated text={item.location?.name} />
+      <Truncated text={current?.label} />
     </CellDisplay>
   );
 }
@@ -921,7 +929,10 @@ export default function InventoryView() {
     if (!bulkCategoryValue) return;
     setBulkCategoryOpen(false);
     void runBulkAction(
-      { action: 'setCategory', categoryName: bulkCategoryValue.label },
+      // `value`, not `label`: bulkItems upserts on the id, so sending the name
+      // minted a duplicate kategoria every time an existing one was picked.
+      // A typed-in one has its name as the value, which is what gets created.
+      { action: 'setCategory', categoryName: bulkCategoryValue.value },
       (n) => `Kategoria asetettu ${n} kamalle`,
       'Kategoria-asetus epäonnistui',
       () => setBulkCategoryValue(null),
@@ -932,7 +943,10 @@ export default function InventoryView() {
     if (!bulkLocationValue) return;
     setBulkLocationOpen(false);
     void runBulkAction(
-      { action: 'setLocation', locationName: bulkLocationValue.label },
+      // `value`, not `label`: bulkItems upserts on the id, and a picked option's
+      // label is its path — sending that minted a duplicate sijainti every time.
+      // A typed-in one has its name as the value, which is what gets created.
+      { action: 'setLocation', locationName: bulkLocationValue.value },
       (n) => `Sijainti asetettu ${n} kamalle`,
       'Sijainnin asetus epäonnistui',
       () => setBulkLocationValue(null),
@@ -1076,7 +1090,7 @@ export default function InventoryView() {
     [categoryOptions],
   );
   const locationOptions = useMemo(
-    () => locations.map((l) => ({ value: l.id, label: l.name })),
+    () => locations.map((l) => ({ value: l.id, label: l.path ?? l.name })),
     [locations],
   );
 

@@ -212,7 +212,11 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
 | `auth/[...nextauth]` | — | Auth.js handler (`export const { GET, POST } = handlers`) |
 | `availability/getAvailabilities` | POST | item availability over a date range |
-| `category/getCategories`, `location/getLocations` | GET | option lists |
+| `category/getCategories` | GET | option list, with `_count.items` (live kamat) for the Kategoriat page |
+| `category/createCategory`, `category/updateCategory`, `category/deleteCategory` | POST | manage kategoriat directly; a name that already exists (case-insensitive) is refused; delete only untags the kamat (admin) |
+| `location/getLocations` | GET | every sijainti with `path` ("Kalusto / Hylly 3") and `depth`, in tree order — pickers label options with the path (admin) |
+| `location/createLocation`, `location/updateLocation`, `location/deleteLocation` | POST | the sijainti tree: name + `parentId`; loops, and deleting a non-empty or lainattava sijainti, are refused (`utils/locationQueries.ts`). Renaming/moving a lainattava one brings its kama along. Deleting lifts its children one level (admin) |
+| `location/setLoanable` | POST | `{ id, loanable }` — switch a sijainti's lainattava on (creates its kama) or off (archives and unlinks it) (admin) |
 | `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
 | `template/createTemplate` | POST | create one from an item list (`items: [{ itemId, amount }]`) |
 | `template/updateTemplate` | POST | rename + replace its item list |
@@ -306,8 +310,10 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
-| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). Shows loans still out — in use, **partially returned** (so the rest can be handed back), and stuck approved ones. `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
-| `/kiosk/startloan` | kiosk pickup queue |
+| `/admin/categories` | kategoriat — create, rename, delete. Linked from the Kamat view's header next to Sijainnit |
+| `/admin/locations` | the sijainti tree — create (top form, or "+" on a row for a sub-sijainti in place), rename, move ("Sijaitsee"), delete empty ones. a "Lainattava" switch per row. Linked from the Kamat view's header |
+| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
+| `/kiosk/startloan` | kiosk pickup queue (the palautuspäivä and the kamat are edited on the card itself and saved on "Aloita lainaus", with the same `components/LoanItemsEditor.tsx` rows + picker as `/loan/[id]/edit`, oma kama included) |
 | `/account`, `/login` | account settings / sign-in |
 
 ### Laatikot (no page of its own)
@@ -332,7 +338,7 @@ elevation, and email recipients so `Loan.user` history survives; the
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, soft-delete via `deletedAt`, optional `Box`,
 `calendarEventId` for the shared calendar) · `Box` ·
-`Location` (`itemId` set = this sijainti **is** a kama — see "Säilytyspaikat"
+`Location` (`parentId` = the sijainti it sits in; `itemId` set = this sijainti is **lainattava**, and that is its kama — see "Lainattavat sijainnit"
 below) · `Category` ·
 `Report` + `ReportAffectedItem` · `Announcement` (both are "huomiot" — see above) · `LoanHistory` /
 `ItemHistory` (audit) · `EmailLog` · `Template` + `TemplateItem` (loan
@@ -340,26 +346,37 @@ templates; **no** back-reference from `Loan` — a loan doesn't record whether i
 came from one). Migrations in `prisma/migrations/`; seed in
 `prisma/seed.ts`.
 
-## Säilytyspaikat (a kama that is also a sijainti)
+## Lainattavat sijainnit
 
-`Location.itemId` makes one sijainti stand for one kama: "Sininen työkalupakki"
-is both something you can borrow and the place other kamat are kept in. Nothing
-else about sijainnit changes — contents keep pointing at it through
-`Item.locationId` — but it changes what is free when:
+Sijainnit form one tree through `Location.parentId` ("Kalusto / Hylly 3 /
+Sininen työkalupakki"); `utils/locationTree.ts` builds the paths (`withPaths`,
+`canBeParent`, client-safe) that every picker, the item page, the Kamat table
+and the Excel export show.
+
+Any sijainti can be switched **lainattava** on `/admin/locations`. Loans reserve
+kamat, so that gives it a kama of its own (`Location.itemId`) — the thing that
+goes in the cart. The sijainti is the source of truth and the kama mirrors it:
+same name, stored in the sijainti's parent. `utils/containers.ts` is the only
+place the pair is made, broken or kept in step, from either side — renaming or
+moving the sijainti updates the kama, and moving or renaming the kama from a
+kama editor (`editItem`, `patchItem`, bulk `setLocation`) moves the sijainti,
+refusing a move into its own subtree. Switching lainattava off, or archiving the
+kama, archives and unlinks it; the sijainti and its contents stay.
+
+What it changes is what is free when:
 
 ```
-loan the box   →  everything inside it is unavailable too  (blockedBy names the box)
+loan the box   →  everything in its subtree is unavailable too  (blockedBy names the box)
 loan a hammer  →  the box stays loanable, one hammer short
 ```
 
-The cascade runs downwards only, and follows a box-inside-a-box chain (cycle- and
+The cascade walks **up** the sijainti tree from each kama's sijainti (cycle- and
 depth-guarded). It is decided in **one** place, `utils/availability.ts`
 (`computeAvailabilities`), which both `availability/getAvailabilities` and
 `loan/updateLoan`'s save-time guard call — the browser can't be shown a number
-the save then disagrees with. `utils/containers.ts` is the only place the
-Item↔Location pair is made, broken (refused while the box still holds anything:
-`Item.locationId` cascades on delete) or renamed. The toggle is in
-`EditItemDialog`; `/item/[id]` lists what a box contains.
+the save then disagrees with. The pickup, return and loan screens and
+`/item/[id]` list the contents (`itemBoxContentsInclude` + `flattenContents`,
+three sub-sijainti levels deep). A sijainti that isn't lainattava is just a label.
 
 ## Cross-cutting helpers
 
@@ -371,7 +388,7 @@ Item↔Location pair is made, broken (refused while the box still holds anything
 - `utils/loanHelpers.ts` / `itemHelpers.ts` — **client-safe** badge variants +
   history labels (no Prisma import).
 - `utils/availability.ts` — **the** availability computation (see
-  "Säilytyspaikat"); `utils/containers.ts` — the kama↔sijainti pair.
+  "Lainattavat sijainnit"); `utils/containers.ts` — the lainattava sijainti ↔ kama pair.
 - `utils/itemQueries.ts` — shared item query builders, including
   `inventoryQuery` (the admin table's filters/sort read off a query string,
   shared by `item/getInventory` and `item/exportInventory`).

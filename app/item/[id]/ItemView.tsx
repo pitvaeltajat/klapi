@@ -8,6 +8,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import ReservationTable from '@/components/ReservationTable';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { flattenContents, type ContentLocation } from '@/utils/boxContents';
 import { ArrowUpCircle, RotateCcw, TriangleAlert } from 'lucide-react';
 import { DateTime } from '@/components/DateTime';
 import { useSession } from 'next-auth/react';
@@ -47,8 +48,8 @@ interface ItemHistoryEntry {
 interface ItemWithRelations extends Item {
   categories: Category[];
   location: { id: string; name: string } | null;
-  /** Present when this kama is also a säilytyspaikka, with what is in it. */
-  asLocation: { id: string; items: { id: string; name: string; amount: number }[] } | null;
+  /** Present when this kama stands behind a lainattava sijainti, with what is in it. */
+  asLocation: ContentLocation | null;
   announcements: ItemAnnouncement[];
   reservations: (Reservation & {
     loan: {
@@ -99,7 +100,7 @@ export default function ItemView({
   // fetch them lazily so a plain item page never pays for the requests.
   const contents = React.useMemo(
     () =>
-      [...(item.asLocation?.items ?? [])].sort((a, b) => fiCollator.compare(a.name, b.name)),
+      flattenContents(item.asLocation).sort((a, b) => fiCollator.compare(a.name, b.name)),
     [item.asLocation],
   );
 
@@ -110,7 +111,7 @@ export default function ItemView({
     pickersOpen ? '/api/category/getCategories' : null,
     fetcher,
   );
-  const { data: allLocations = [] } = useSWR<{ id: string; name: string }[]>(
+  const { data: allLocations = [] } = useSWR<{ id: string; path: string }[]>(
     pickersOpen ? '/api/location/getLocations' : null,
     fetcher,
   );
@@ -404,7 +405,7 @@ export default function ItemView({
                   aria-label="Sijainti"
                   placeholder="Kolon vessa"
                   value={locationDraft}
-                  options={allLocations.map((loc) => ({ value: loc.id, label: loc.name }))}
+                  options={allLocations.map((loc) => ({ value: loc.id, label: loc.path }))}
                   onChange={(option) => setLocationDraft(option as SelectOption | null)}
                   isClearable
                 />
@@ -493,14 +494,14 @@ export default function ItemView({
               <EmptyState
                 variant="inline"
                 title="Ei kamoja"
-                description={`Aseta toisen kaman sijainniksi "${item.name}", niin se näkyy täällä.`}
+                description={`Tämä on lainattava sijainti. Aseta kaman sijainniksi "${item.name}" tai sen alasijainti, niin se näkyy täällä.`}
               />
             ) : (
               <>
                 <Alert variant="info" className="mb-3">
-                  Näiden kamojen sijainti on tämä kama, joten ne lähtevät mukana: kun tämä on
-                  lainassa, ne eivät ole vapaana. Yksittäisen kaman voi silti lainata erikseen,
-                  kun tämä on paikalla.
+                  Nämä kamat ovat tämän lainattavan sijainnin sisällä, joten ne lähtevät mukana:
+                  kun tämä on lainassa, ne eivät ole vapaana. Yksittäisen kaman voi silti lainata
+                  erikseen, kun tämä on paikalla.
                 </Alert>
                 <ul className="flex flex-col gap-2">
                   {contents.map((content) => (
