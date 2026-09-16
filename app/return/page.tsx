@@ -16,10 +16,13 @@ export default async function ReturnPage() {
   const isAdminOrKiosk =
     session?.user?.group === 'ADMIN' || session?.user?.group === 'KIOSK';
 
-  // Show loans currently in use, plus "stuck" loans: approved and past their
-  // pickup time but never marked in use. The borrower has those items
-  // physically, so they must be returnable too — otherwise the loan can never
-  // be closed through the kiosk.
+  // Show loans that still have items out, so the borrower can return them:
+  // - loans currently in use (INUSE reservations),
+  // - partially returned loans (some items back, some still out — the borrower
+  //   must be able to return the rest),
+  // - "stuck" loans: approved and past their pickup time but never marked in
+  //   use. The borrower has those items physically, so they must be returnable
+  //   too — otherwise the loan can never be closed through the kiosk.
   // `user.id` for the same reason as `/loan`: a session Klapi refused still has
   // a `user`, and `userId: undefined` below would widen the query to everyone's
   // loans rather than narrowing it to this person's.
@@ -29,6 +32,7 @@ export default async function ReturnPage() {
           ...activeLoansWhere,
           OR: [
             { reservations: { some: { status: ReservationStatus.INUSE } } },
+            { status: LoanStatus.PARTIALLY_RETURNED },
             {
               status: LoanStatus.ACCEPTED,
               startTime: { lte: new Date() },

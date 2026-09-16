@@ -7,10 +7,11 @@ import '@/utils/datepickerLocale';
 import { History, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Item, Loan, LoanStatus, Reservation, User } from '@prisma/client';
+import { Item, Loan, LoanStatus, Reservation, ReservationStatus, User } from '@prisma/client';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import CustomItemDialog from '@/components/CustomItemDialog';
 import ItemAmountCard from '@/components/ItemAmountCard';
+import LoanerAutocomplete from '@/components/LoanerAutocomplete';
 import LoanRangeCalendar from '@/components/LoanRangeCalendar';
 import { DateTime } from '@/components/DateTime';
 import { Alert } from '@/components/ui/alert';
@@ -30,6 +31,7 @@ import { isCustomItemId } from '@/utils/customItems';
 import {
   deriveLoanStatus,
   getLoanStatusLabel,
+  getReservationStatusLabel,
   getLoanerName,
   MANUAL_LOAN_STATUSES,
   type ManualLoanStatus,
@@ -49,11 +51,16 @@ interface LoanWithRelations extends Loan {
  * Keyed by `itemId` rather than reservation id: two rows of the same kama have
  * no meaning (`updateLoan` sums them by item anyway), so adding one that is
  * already in the list bumps its amount instead of starting a second row.
+ *
+ * `status` is the reservation status of the row. It is only editable by an
+ * admin (per-item status); for everyone else it is carried along untouched so
+ * a mixed-state loan survives the recreate-all.
  */
 interface Row {
   itemId: string;
   name: string;
   amount: number;
+  status: ReservationStatus;
 }
 
 const rowsFromLoan = (loan: LoanWithRelations): Row[] => {
@@ -61,7 +68,13 @@ const rowsFromLoan = (loan: LoanWithRelations): Row[] => {
   for (const r of loan.reservations) {
     const existing = byItem.get(r.itemId);
     if (existing) existing.amount += r.amount;
-    else byItem.set(r.itemId, { itemId: r.itemId, name: r.item.name, amount: r.amount });
+    else
+      byItem.set(r.itemId, {
+        itemId: r.itemId,
+        name: r.item.name,
+        amount: r.amount,
+        status: r.status,
+      });
   }
   return Array.from(byItem.values());
 };
@@ -94,6 +107,16 @@ export default function EditLoanView({
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // The loaner picker (admin only). `loanerValue` is the free-text name or the
+  // selected account's address; `loanerUserId` is the account the loan belongs
+  // to, or undefined while a free-text name is typed (meaning "keep the current
+  // account"). Seeded from the loan as it stands.
+  const originalLoanerName = getLoanerName(loan);
+  const [loanerValue, setLoanerValue] = useState(originalLoanerName);
+  const [loanerUserId, setLoanerUserId] = useState<string | undefined>(loan.userId);
+  const loanerChanged =
+    loanerValue !== originalLoanerName || loanerUserId !== loan.userId;
 
   const [startDate, endDate] = range;
 
@@ -131,10 +154,24 @@ export default function EditLoanView({
       current.map((r) => (r.itemId === itemId ? { ...r, amount } : r)),
     );
 
-  const addRow = (row: Row) =>
+  const setRowStatus = (itemId: string, status: ReservationStatus) =>
+    setRows((current) =>
+      current.map((r) => (r.itemId === itemId ? { ...r, status } : r)),
+    );
+
+  // A kama added to the loan mid-edit starts in the same state as the rest of
+  // the loan: in use if the loan is running, else reserved. The admin can then
+  // change it per row.
+  const defaultNewStatus = loan.reservations.some(
+    (r) => r.status === ReservationStatus.INUSE,
+  )
+    ? ReservationStatus.INUSE
+    : ReservationStatus.ACCEPTED;
+
+  const addRow = (row: Omit<Row, 'status'> & { status?: ReservationStatus }) =>
     setRows((current) => {
       const existing = current.find((r) => r.itemId === row.itemId);
-      if (!existing) return [...current, row];
+      if (!existing) return [...current, { ...row, status: row.status ?? defaultNewStatus }];
       return current.map((r) =>
         r.itemId === row.itemId ? { ...r, amount: r.amount + row.amount } : r,
       );
@@ -144,10 +181,20 @@ export default function EditLoanView({
     rows.length !== originalRows.length ||
     rows.some((r) => originalAmounts.get(r.itemId) !== r.amount);
 
+  // A per-item status change (admin) counts as a change worth saving.
+  const statusesDirty =
+    isAdmin &&
+    rows.some((r) => {
+      const original = originalRows.find((o) => o.itemId === r.itemId);
+      return original !== undefined && original.status !== r.status;
+    });
+
   const isDirty =
     rowsDirty ||
+    statusesDirty ||
     description !== loan.description ||
     (canSetStatus && status !== derivedStatus) ||
+    loanerChanged ||
     startDate?.getTime() !== new Date(loan.startTime).getTime() ||
     endDate?.getTime() !== new Date(loan.endTime).getTime();
 
@@ -171,8 +218,17 @@ export default function EditLoanView({
             // Only an oma kama carries a name: it is what updateLoan creates
             // the temporary item from.
             ...(isCustomItemId(r.itemId) ? { name: r.name } : {}),
+            // An admin may set each item's status individually. Always sent
+            // for an admin (the route only records actual changes in the audit
+            // trail); never sent for a non-admin, so their edit can't trip the
+            // admin-only guard on the route.
+            ...(isAdmin ? { status: r.status } : {}),
           })),
           ...(canSetStatus && status !== derivedStatus ? { status } : {}),
+          // Only send the loaner when it actually changed. A free-text name
+          // (no account picked) leaves `userId` undefined, so the account is
+          // kept while the label is rewritten.
+          ...(loanerChanged ? { loaner: loanerValue, userId: loanerUserId } : {}),
         }),
       });
 
@@ -271,12 +327,29 @@ export default function EditLoanView({
         <Card>
           <CardTitle>Perustiedot</CardTitle>
           <dl className="flex flex-col gap-2 text-sm sm:text-base">
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-muted-foreground">Lainaaja</dt>
-              <dd className="font-medium break-all">
-                {getLoanerName(loan)}
-              </dd>
-            </div>
+            {isAdmin ? (
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Lainaaja</dt>
+                <dd>
+                  <LoanerAutocomplete
+                    value={loanerValue}
+                    onChange={(value, userId) => {
+                      setLoanerValue(value);
+                      setLoanerUserId(userId);
+                    }}
+                    placeholder="Lainaajan nimi tai sähköposti"
+                    size="md"
+                  />
+                </dd>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <dt className="text-muted-foreground">Lainaaja</dt>
+                <dd className="font-medium break-all">
+                  {getLoanerName(loan)}
+                </dd>
+              </div>
+            )}
             {isAdmin && (
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <dt className="text-muted-foreground">Lainan ID</dt>
@@ -400,37 +473,65 @@ export default function EditLoanView({
                 const original = originalAmounts.get(row.itemId);
                 const max = headroom(row.itemId);
                 const isCustom = isCustomItemId(row.itemId);
+                const originalStatus = originalRows.find((o) => o.itemId === row.itemId)?.status;
                 return (
-                  <ItemAmountCard
-                    key={row.itemId}
-                    itemId={row.itemId}
-                    name={row.name}
-                    amount={row.amount}
-                    subtitle={
-                      isCustom ? (
-                        'Oma kama'
-                      ) : original === undefined ? (
-                        <span className="text-success">Uusi · vapaana {max}</span>
-                      ) : original !== row.amount ? (
-                        <span className="text-warning">
-                          Oli {original} kpl · vapaana {max}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Vapaana {max}</span>
-                      )
-                    }
-                    decrementDisabled={row.amount <= 1}
-                    incrementDisabled={row.amount >= max}
-                    onDecrement={() => setAmount(row.itemId, row.amount - 1)}
-                    onIncrement={() => setAmount(row.itemId, row.amount + 1)}
-                    onAmountChange={(next) =>
-                      setAmount(row.itemId, Math.min(max, Math.max(1, next)))
-                    }
-                    onRemove={() =>
-                      setRows((current) => current.filter((r) => r.itemId !== row.itemId))
-                    }
-                    removeLabel={`Poista ${row.name} lainasta`}
-                  />
+                  <div key={row.itemId} className="flex flex-col gap-1.5">
+                    <ItemAmountCard
+                      itemId={row.itemId}
+                      name={row.name}
+                      amount={row.amount}
+                      subtitle={
+                        isCustom ? (
+                          'Oma kama'
+                        ) : original === undefined ? (
+                          <span className="text-success">Uusi · vapaana {max}</span>
+                        ) : original !== row.amount ? (
+                          <span className="text-warning">
+                            Oli {original} kpl · vapaana {max}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">Vapaana {max}</span>
+                        )
+                      }
+                      decrementDisabled={row.amount <= 1}
+                      incrementDisabled={row.amount >= max}
+                      onDecrement={() => setAmount(row.itemId, row.amount - 1)}
+                      onIncrement={() => setAmount(row.itemId, row.amount + 1)}
+                      onAmountChange={(next) =>
+                        setAmount(row.itemId, Math.min(max, Math.max(1, next)))
+                      }
+                      onRemove={() =>
+                        setRows((current) => current.filter((r) => r.itemId !== row.itemId))
+                      }
+                      removeLabel={`Poista ${row.name} lainasta`}
+                    />
+                    {isAdmin && (
+                      <div className="flex items-center gap-2 px-1">
+                        <Label htmlFor={`status-${row.itemId}`} className="shrink-0 text-xs">
+                          Tila
+                        </Label>
+                        <NativeSelect
+                          id={`status-${row.itemId}`}
+                          value={row.status}
+                          onChange={(e) =>
+                            setRowStatus(row.itemId, e.target.value as ReservationStatus)
+                          }
+                          className="h-8 text-xs"
+                        >
+                          {Object.values(ReservationStatus).map((s) => (
+                            <option key={s} value={s}>
+                              {getReservationStatusLabel(s)}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                        {originalStatus !== undefined && originalStatus !== row.status && (
+                          <Badge variant="warning" className="shrink-0">
+                            Muokattu
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

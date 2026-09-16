@@ -258,18 +258,13 @@ export default function LoanView({
     derivedStatus !== 'PARTIALLY_RETURNED' &&
     derivedStatus !== 'RETURNED';
 
-  // Admins may edit ongoing (INUSE) loans — e.g. to extend the return date.
-  // updateLoan validates availability against other reservations, so an extend
-  // that would clash with someone else's booking is rejected server-side.
-  // PARTIALLY_RETURNED is excluded: its reservations have mixed statuses that
-  // updateLoan's recreate-all logic would flatten and corrupt.
+  // An admin may edit a loan in every state — dates, items, description, status
+  // and loaner. `updateLoan` preserves each reservation's status, so even a
+  // PARTIALLY_RETURNED loan (a mix of INUSE and IN_BOX/RETURNED lines) survives
+  // the recreate-all. A deleted loan is restored from its own page first.
   const canEdit =
     !isDeleted &&
-    (isAdmin
-      ? derivedStatus !== 'CANCELLED' &&
-        derivedStatus !== 'PARTIALLY_RETURNED' &&
-        derivedStatus !== 'RETURNED'
-      : isOwner && !loanStarted && derivedStatus === 'ACCEPTED');
+    (isAdmin ? true : isOwner && !loanStarted && derivedStatus === 'ACCEPTED');
 
   const canApprove =
     !isDeleted &&
@@ -293,11 +288,13 @@ export default function LoanView({
   const canDelete = isAdmin && !isDeleted;
 
   // The status buttons: hidden once the loan is finished, and while the Kamat
-  // card is still offering the check-back-in step.
+  // card is still offering the check-back-in step. The Muokkaa button is not
+  // part of this row — an admin may edit a loan in every state, so it renders
+  // on its own below whenever `canEdit` holds.
   const showStatusActions =
     derivedStatus !== 'RETURNED' &&
     !canMarkReturned &&
-    (canReject || canCancel || canEdit || canApprove || canStartUse);
+    (canReject || canCancel || canApprove || canStartUse);
 
   // The loaner is asked to write huomiot under a liability warning, so they get
   // to read their own back. Admins see them on every loan; a kiosk session is a
@@ -481,7 +478,7 @@ export default function LoanView({
             the Kamat card is the only action offered — same as before it moved
             up there. Poistaminen is the exception: it stands on its own and is
             offered whatever else the loan allows. */}
-        {(showStatusActions || canDelete) && (
+        {(showStatusActions || canEdit || canDelete) && (
           <Card>
             <div className="flex flex-col gap-3">
               <h3 className="mb-2 text-xl font-semibold">Toiminnot</h3>
@@ -509,13 +506,6 @@ export default function LoanView({
                       Peru laina
                     </Button>
                   )}
-                  {canEdit && (
-                    <Button asChild variant="warning" className="flex-1 md:max-w-[25%]">
-                      <NextLink href={`/loan/${loan.id}/edit`}>
-                        Muokkaa
-                      </NextLink>
-                    </Button>
-                  )}
                   {canApprove && (
                     <Button variant="success" onClick={approveLoan} className="flex-1 md:max-w-[25%]" isLoading={busy}>
                       Hyväksy
@@ -526,6 +516,15 @@ export default function LoanView({
                       Aloita lainaus
                     </Button>
                   )}
+                </div>
+              )}
+              {canEdit && (
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <Button asChild variant="warning" className="flex-1 md:max-w-[25%]">
+                    <NextLink href={`/loan/${loan.id}/edit`}>
+                      Muokkaa
+                    </NextLink>
+                  </Button>
                 </div>
               )}
               {canDelete && (

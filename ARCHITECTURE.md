@@ -169,7 +169,7 @@ passed, so a rejected edit leaves no orphan items behind.
 | Route | Method | Purpose |
 |---|---|---|
 | `submitLoan` | POST | create a loan (+ temporary items); logs `CREATED` |
-| `updateLoan` | POST | edit reservations/details (+ temporary items); logs `UPDATED` diff. An **admin** may also pass `status` to set the loan's status by hand (`MANUAL_LOAN_STATUSES` in `utils/loanHelpers.ts` — every status but the derived `PARTIALLY_RETURNED`); it is flattened onto every reservation, frees the box unless it is `IN_BOX`, and still goes through the availability/overlap check |
+| `updateLoan` | POST | edit reservations/details (+ temporary items); logs `UPDATED` diff. An **admin** may also pass `status` to set the loan's status by hand (`MANUAL_LOAN_STATUSES` in `utils/loanHelpers.ts` — every status but the derived `PARTIALLY_RETURNED`); it is flattened onto every reservation, frees the box unless it is `IN_BOX`, and still goes through the availability/overlap check. An **admin** may also pass a per-reservation `status` to set each item's status individually (e.g. one kama of a partial return); when they do, the loan's status is re-derived from the items (`deriveLoanStatus`) and the per-item changes land in the `UPDATED` audit trail as `statusChanges` |
 | `approveLoan` / `rejectLoan` / `cancelLoan` | POST | status transitions |
 | `deleteLoan` / `restoreLoan` | POST | soft-delete a loan / undo it (admin only); log `DELETED` / `RESTORED` |
 | `startLoan` | POST | mark in use |
@@ -306,7 +306,7 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
-| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
+| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). Shows loans still out — in use, **partially returned** (so the rest can be handed back), and stuck approved ones. `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
 | `/kiosk/startloan` | kiosk pickup queue |
 | `/account`, `/login` | account settings / sign-in |
 

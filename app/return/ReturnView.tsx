@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useLayoutEffect, useState } from 'react';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, Minus, Plus } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -123,6 +123,7 @@ const LoanReturnCard = ({
   onReturn: (
     id: string,
     reservationIds: string[],
+    returnAmounts: Record<string, number>,
     reportContent: string,
   ) => Promise<{ name: string; description: string | null } | null>;
   onReturnComplete: () => void;
@@ -150,6 +151,13 @@ const LoanReturnCard = ({
     () => new Set(returnableReservations.map((r) => r.id)),
   );
 
+  // How many of each selected reservation to hand back. Defaults to the full
+  // amount; a smaller number splits the reservation — the returned amount
+  // becomes its own IN_BOX line while the rest stays out on the loan.
+  const [returnAmounts, setReturnAmounts] = useState<Record<string, number>>(() =>
+    Object.fromEntries(returnableReservations.map((r) => [r.id, r.amount])),
+  );
+
   // Which contents of which box were *not* found, keyed per reservation so two
   // boxes holding a kama of the same name can't tick each other's.
   const [missingContents, setMissingContents] = useState<Set<string>>(new Set());
@@ -169,10 +177,38 @@ const LoanReturnCard = ({
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setReturnAmounts((amounts) => {
+          const copy = { ...amounts };
+          delete copy[id];
+          return copy;
+        });
+      } else {
+        next.add(id);
+        const reservation = returnableReservations.find((r) => r.id === id);
+        if (reservation) {
+          setReturnAmounts((amounts) => ({ ...amounts, [id]: reservation.amount }));
+        }
+      }
       return next;
     });
+  };
+
+  const setReturnAmount = (id: string, amount: number) => {
+    const reservation = returnableReservations.find((r) => r.id === id);
+    if (!reservation) return;
+    const clamped = Math.max(0, Math.min(Math.floor(amount), reservation.amount));
+    setReturnAmounts((prev) => ({ ...prev, [id]: clamped }));
+    if (clamped === 0) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => new Set(prev).add(id));
+    }
   };
 
   // Anything left unticked inside a box that is being returned becomes a line
@@ -194,9 +230,17 @@ const LoanReturnCard = ({
     .filter(Boolean)
     .join('\n');
 
-  const allSelected = selectedIds.size === returnableReservations.length;
-  const isPartialReturn =
-    selectedIds.size > 0 && selectedIds.size < returnableReservations.length;
+  // A reservation is returned in full when its amount is untouched; returning
+  // fewer than the full amount splits it. The count of "returned" lines is the
+  // sum of the amounts being handed back, so a 2-of-3 return reads as 2.
+  const returnedCount = returnableReservations
+    .filter((r) => selectedIds.has(r.id))
+    .reduce((sum, r) => sum + (returnAmounts[r.id] ?? r.amount), 0);
+  const totalCount = returnableReservations.reduce((sum, r) => sum + r.amount, 0);
+  const allSelected =
+    selectedIds.size === returnableReservations.length &&
+    returnableReservations.every((r) => (returnAmounts[r.id] ?? r.amount) === r.amount);
+  const isPartialReturn = returnedCount > 0 && returnedCount < totalCount;
 
   const handleConfirmReturn = async () => {
     if (isLoading) return;
@@ -205,6 +249,7 @@ const LoanReturnCard = ({
       const box = await onReturn(
         loan.id,
         Array.from(selectedIds),
+        returnAmounts,
         [missingNote, reportContent.trim()].filter(Boolean).join('\n\n'),
       );
       if (box) {
@@ -230,7 +275,6 @@ const LoanReturnCard = ({
       ? `${returnableReservations.length}|${isPartialReturn}|${missingNote}`
       : null,
   );
-
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
   return (
@@ -311,6 +355,8 @@ const LoanReturnCard = ({
                 >
                   {returnableReservations.map((reservation) => {
                     const checked = selectedIds.has(reservation.id);
+                    const amount = returnAmounts[reservation.id] ?? reservation.amount;
+                    const multi = reservation.amount > 1;
                     return (
                       <SelectableRow
                         key={reservation.id}
@@ -335,6 +381,55 @@ const LoanReturnCard = ({
                               </p>
                             </div>
                           </div>
+                          {/* A multi-instance reservation can be handed back in
+                              part: pick how many of the amount to return. The
+                              rest stays out on the loan. */}
+                          {multi && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">
+                                Palautetaan:
+                              </span>
+                              <div className="flex h-9 items-center">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={`Vähennä ${reservation.item.name} palautettavaa määrää`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReturnAmount(reservation.id, amount - 1);
+                                  }}
+                                  disabled={amount <= 0}
+                                  className="h-full w-9 shrink-0 rounded-r-none"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <span
+                                  className="flex h-full min-w-10 items-center justify-center border-y border-input bg-background px-2 text-sm font-bold"
+                                  aria-live="polite"
+                                >
+                                  {amount}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={`Lisää ${reservation.item.name} palautettavaa määrää`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReturnAmount(reservation.id, amount + 1);
+                                  }}
+                                  disabled={amount >= reservation.amount}
+                                  className="h-full w-9 shrink-0 rounded-l-none"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <span className="text-sm text-muted-foreground">
+                                / {reservation.amount} kpl
+                              </span>
+                            </div>
+                          )}
                           {/* Checking a box back in is checking its contents. */}
                           <BoxContents
                             defaultOpen
@@ -361,9 +456,9 @@ const LoanReturnCard = ({
                 {isPartialReturn && (
                   <Alert
                     variant="warning"
-                    title={`Osittainen palautus: ${selectedIds.size} / ${returnableReservations.length} tavaraa`}
+                    title={`Osittainen palautus: ${returnedCount} / ${totalCount} kpl`}
                   >
-                    Valitsemattomat tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
+                    Loput tavarat jäävät lainaan ja voit palauttaa ne myöhemmin.
                   </Alert>
                 )}
               </div>
@@ -443,7 +538,7 @@ const LoanReturnCard = ({
               disabled={!termsAccepted || selectedIds.size === 0}
             >
               {isPartialReturn
-                ? `Vahvista osittainen palautus (${selectedIds.size})`
+                ? `Vahvista osittainen palautus (${returnedCount} kpl)`
                 : 'Vahvista palautus'}
             </Button>
           </DialogFooter>
@@ -499,13 +594,14 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
   const handleReturn = async (
     loanId: string,
     reservationIds: string[],
+    returnAmounts: Record<string, number>,
     reportContent: string,
   ): Promise<{ name: string; description: string | null } | null> => {
     try {
       const response = await fetch('/api/loan/loanReturned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loanId, reservationIds, reportContent }),
+        body: JSON.stringify({ id: loanId, reservationIds, returns: returnAmounts, reportContent }),
       });
 
       if (response.ok) {

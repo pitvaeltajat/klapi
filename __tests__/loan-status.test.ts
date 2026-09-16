@@ -37,13 +37,18 @@ describe('deriveLoanStatus', () => {
     expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.REJECTED);
   });
 
-  it('should return IN_BOX when any reservation is IN_BOX and none are INUSE', () => {
+  it('should return PARTIALLY_RETURNED when ACCEPTED items are mixed with returned ones', () => {
+    // A "stuck" loan picked up without ever being marked INUSE keeps ACCEPTED
+    // reservations. Returning some of them is a partial return, not a plain
+    // IN_BOX — the ACCEPTED kamat are still physically out.
     const reservations = [
       { status: ReservationStatus.ACCEPTED },
       { status: ReservationStatus.IN_BOX },
       { status: ReservationStatus.RETURNED },
     ];
-    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(LoanStatus.IN_BOX);
+    expect(deriveLoanStatus(reservations, LoanStatus.ACCEPTED)).toBe(
+      LoanStatus.PARTIALLY_RETURNED,
+    );
   });
 
   it('should return PARTIALLY_RETURNED when some are INUSE and some are IN_BOX', () => {

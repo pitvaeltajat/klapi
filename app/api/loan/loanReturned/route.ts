@@ -15,9 +15,16 @@ export async function POST(request: Request) {
   const { session, denied } = await requireUser();
   if (denied) return denied;
 
-  const { id, reservationIds, reportContent } = await request.json() as {
+  const { id, reservationIds, returns, reportContent } = await request.json() as {
     id: string;
     reservationIds?: string[];
+    /**
+     * Per-reservation return amounts — how many of each reservation to hand
+     * back. Lets a borrower return 2 of 3 identical kamat: the reservation is
+     * split, the returned amount minted as its own IN_BOX line while the rest
+     * stays out. `reservationIds` (whole reservations) is the older form.
+     */
+    returns?: Array<{ reservationId: string; amount: number }>;
     reportContent?: string;
   };
 
@@ -30,6 +37,7 @@ export async function POST(request: Request) {
           id: true,
           itemId: true,
           status: true,
+          amount: true,
         },
       },
     },
@@ -58,12 +66,49 @@ export async function POST(request: Request) {
     (r) =>
       r.status === ReservationStatus.INUSE || r.status === ReservationStatus.ACCEPTED,
   );
+
+  // The whole-reservation form: every eligible reservation named is returned
+  // in full. Kept for the older callers (the loan page's check-in flow).
   const targetIds =
     Array.isArray(reservationIds) && reservationIds.length > 0
       ? eligible.filter((r) => reservationIds.includes(r.id)).map((r) => r.id)
       : eligible.map((r) => r.id);
 
-  if (targetIds.length === 0) {
+  // The per-amount form: `{ reservationId, amount }` — how many of each
+  // reservation to hand back. A reservation returned in full is just a whole
+  // target; one returned only in part is split, the returned amount minted as
+  // its own IN_BOX line while the rest stays out.
+  const returnAmounts = new Map<string, number>();
+  if (Array.isArray(returns) && returns.length > 0) {
+    for (const { reservationId, amount } of returns) {
+      const reservation = eligible.find((r) => r.id === reservationId);
+      if (!reservation) continue;
+      const clamped = Math.max(0, Math.min(Math.floor(amount), reservation.amount));
+      if (clamped > 0) returnAmounts.set(reservationId, clamped);
+    }
+  }
+
+  // A reservation that is returned in full (either form) is a plain target.
+  const fullReturnIds = new Set<string>();
+  for (const r of eligible) {
+    const amount = returnAmounts.get(r.id);
+    if (amount === undefined) {
+      if (targetIds.includes(r.id)) fullReturnIds.add(r.id);
+    } else if (amount >= r.amount) {
+      fullReturnIds.add(r.id);
+    }
+  }
+
+  // A reservation returned only in part must be split: the returned amount
+  // becomes a new IN_BOX line, the remainder stays out on the original.
+  const splitReturns = eligible
+    .filter((r) => {
+      const amount = returnAmounts.get(r.id);
+      return amount !== undefined && amount > 0 && amount < r.amount;
+    })
+    .map((r) => ({ reservation: r, amount: returnAmounts.get(r.id)! }));
+
+  if (fullReturnIds.size === 0 && splitReturns.length === 0) {
     return NextResponse.json({ message: 'Ei palautettavia tavaroita' }, { status: 400 });
   }
 
@@ -79,8 +124,12 @@ export async function POST(request: Request) {
   }
 
   if (!selectedBox) {
+    const returningReservations = [
+      ...loan.reservations.filter((r) => fullReturnIds.has(r.id)),
+      ...splitReturns.map((s) => s.reservation),
+    ];
     const loanItemIds = Array.from(
-      new Set(loan.reservations.filter((r) => targetIds.includes(r.id)).map((r) => r.itemId)),
+      new Set(returningReservations.map((r) => r.itemId)),
     );
 
     const [boxes, loanCounts, overlappingReservations] = await Promise.all([
@@ -148,9 +197,14 @@ export async function POST(request: Request) {
   }
 
   // Compute the new derived loan status based on the post-update reservation states.
-  const updatedReservationStates = loan.reservations.map((r) =>
-    targetIds.includes(r.id) ? { status: ReservationStatus.IN_BOX } : { status: r.status },
-  );
+  // A split reservation contributes one IN_BOX line (the returned amount) and
+  // keeps its original line out with the remainder.
+  const updatedReservationStates = [
+    ...loan.reservations.map((r) =>
+      fullReturnIds.has(r.id) ? { status: ReservationStatus.IN_BOX } : { status: r.status },
+    ),
+    ...splitReturns.map(() => ({ status: ReservationStatus.IN_BOX })),
+  ];
   const newLoanStatus = deriveLoanStatus(updatedReservationStates, loan.status);
 
   const result = await prisma.loan.update({
@@ -159,14 +213,31 @@ export async function POST(request: Request) {
       status: newLoanStatus,
       boxId: selectedBox.id,
       reservations: {
+        // Whole reservations returned in full flip to IN_BOX.
         updateMany: {
-          where: { id: { in: targetIds } },
+          where: { id: { in: Array.from(fullReturnIds) } },
           data: { status: ReservationStatus.IN_BOX },
         },
+        // A partially returned reservation keeps its line — reduced to the
+        // remainder — and gains a new IN_BOX line for the returned amount.
+        ...(splitReturns.length > 0
+          ? {
+              update: splitReturns.map(({ reservation, amount }) => ({
+                where: { id: reservation.id },
+                data: { amount: reservation.amount - amount },
+              })),
+              create: splitReturns.map(({ reservation, amount }) => ({
+                itemId: reservation.itemId,
+                amount,
+                status: ReservationStatus.IN_BOX,
+              })),
+            }
+          : {}),
       },
     },
     include: {
       box: true,
+      reservations: true,
     },
   });
 
@@ -181,9 +252,10 @@ export async function POST(request: Request) {
     });
   }
 
-  const returnedItems = loan.reservations
-    .filter((r) => targetIds.includes(r.id))
-    .map((r) => r.id);
+  const returnedItems = [
+    ...loan.reservations.filter((r) => fullReturnIds.has(r.id)).map((r) => r.id),
+    ...splitReturns.map((s) => s.reservation.id),
+  ];
   await logLoanHistory({
     loanId: id,
     action: 'RETURNED_TO_BOX',
@@ -194,6 +266,17 @@ export async function POST(request: Request) {
       reservationIds: returnedItems,
       count: returnedItems.length,
       newStatus: newLoanStatus,
+      // The split lines, for the audit trail: which reservation gave up how
+      // many, and the new IN_BOX line minted for them.
+      ...(splitReturns.length > 0
+        ? {
+            splits: splitReturns.map(({ reservation, amount }) => ({
+              reservationId: reservation.id,
+              itemId: reservation.itemId,
+              returnedAmount: amount,
+            })),
+          }
+        : {}),
     },
   });
 
