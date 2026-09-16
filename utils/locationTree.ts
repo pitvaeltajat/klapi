@@ -1,12 +1,7 @@
 /**
- * Sijainnit form a tree: "Kalusto / Hylly 3 / Sininen työkalupakki".
- *
- * Two kinds of edge make it up. A plain sijainti names its parent in
- * `parentId`. A säilytyspaikka (a sijainti that *is* a kama, see
- * `utils/containers.ts`) has no parent of its own — it sits wherever its kama
- * is stored, so its parent is that kama's `locationId`. Reading both through
- * `parentOf` is what lets a box on a shelf show up under the shelf without the
- * two ever being kept in step.
+ * Sijainnit form a tree through `parentId`: "Kalusto / Hylly 3 / Sininen
+ * työkalupakki". A lainattava sijainti (the toolbox) is a node like any other —
+ * see `utils/containers.ts` for the kama that stands behind it.
  *
  * Client-safe (no Prisma): the pickers build their labels from the same rows
  * the server validates a move against.
@@ -16,8 +11,6 @@ export interface LocationNode {
   id: string;
   name: string;
   parentId: string | null;
-  /** Set on a säilytyspaikka: where its kama is kept. */
-  item?: { locationId: string | null } | null;
 }
 
 /** Separator between the levels of a path, as shown in every picker. */
@@ -25,9 +18,6 @@ export const PATH_SEPARATOR = ' / ';
 
 /** Deeper than any real storage room; stops a corrupted chain from spinning. */
 const MAX_DEPTH = 20;
-
-const parentOf = (node: LocationNode): string | null =>
-  node.item ? node.item.locationId : node.parentId;
 
 /** The chain from the root down to `id`, inclusive. Cycle- and depth-guarded. */
 export function ancestry<T extends LocationNode>(byId: Map<string, T>, id: string): T[] {
@@ -37,7 +27,7 @@ export function ancestry<T extends LocationNode>(byId: Map<string, T>, id: strin
   while (current && !seen.has(current.id) && chain.length < MAX_DEPTH) {
     seen.add(current.id);
     chain.unshift(current);
-    const parent = parentOf(current);
+    const parent = current.parentId;
     current = parent ? byId.get(parent) : undefined;
   }
   return chain;

@@ -3,12 +3,10 @@ import prisma from '@/utils/prisma';
 import { canBeParent, withPaths } from '@/utils/locationTree';
 
 /**
- * The parent check every write to a plain sijainti shares. Returns a response
- * to send back when the parent is refused, or null when it may go ahead.
- *
- * A säilytyspaikka is never a parent here: its contents are kamat stored in a
- * kama, and that is what the availability cascade follows. A shelf "inside" a
- * toolbox would be a second, silent kind of containment the cascade ignores.
+ * The parent check every sijainti write shares. Returns a response to send back
+ * when the parent is refused, or null when it may go ahead. Any sijainti can
+ * hold another — a lainattava one included, whose whole subtree then goes out
+ * with it.
  */
 export async function refuseParent(id: string | null, parentId: string | null) {
   if (parentId === null) return null;
@@ -16,12 +14,6 @@ export async function refuseParent(id: string | null, parentId: string | null) {
   const parent = locations.find((l) => l.id === parentId);
   if (!parent) {
     return NextResponse.json({ message: 'Yläsijaintia ei löytynyt' }, { status: 400 });
-  }
-  if (parent.item) {
-    return NextResponse.json(
-      { message: 'Säilytyspaikan sisään ei voi lisätä sijaintia — lisää kamat sinne' },
-      { status: 400 },
-    );
   }
   if (id && !canBeParent(locations, id, parentId)) {
     return NextResponse.json(
@@ -32,12 +24,7 @@ export async function refuseParent(id: string | null, parentId: string | null) {
   return null;
 }
 
-const treeSelect = {
-  id: true,
-  name: true,
-  parentId: true,
-  item: { select: { locationId: true } },
-} as const;
+const treeSelect = { id: true, name: true, parentId: true } as const;
 
 /** Sijainti id → "Kalusto / Hylly 3", for anything that shows a kama's place. */
 export async function locationPaths(): Promise<Map<string, string>> {

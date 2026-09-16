@@ -34,7 +34,9 @@ function BrowseModeHeader({
     <div className="mb-4 flex flex-col gap-4">
       <h2 className="text-xl font-semibold">Selaa katalogia</h2>
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>
+        {/* An admin's Kamat is the kalusto table, not a detour from lending —
+            "Lainaa" in the top bar is the way back. */}
+        {!isAdmin && <Button onClick={onExitBrowseMode}>Siirry lainaamaan</Button>}
         {isAdmin && (
           <Button variant="success" className="gap-2" onClick={onCreateItem}>
             <Plus className="h-4 w-4" /> Luo uusi kama

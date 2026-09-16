@@ -23,7 +23,7 @@ export interface BoxChecklist {
 const fiCollator = new Intl.Collator('fi');
 
 /**
- * What is inside a kama that is a säilytyspaikka, folded away until asked for.
+ * What is inside a kama that stands behind a lainattava sijainti, folded away until asked for.
  *
  * It earns its place at the two moments the loan is physically in someone's
  * hands: handing "Sininen työkalupakki" over, and checking it back in. The

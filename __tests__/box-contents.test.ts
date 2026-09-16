@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { boxContents, type ContentRow } from '../utils/boxContents';
+import { boxContents, type ContentLocation, type ContentRow } from '../utils/boxContents';
 
 const NOW = new Date('2026-03-10T12:00:00Z');
 const day = (offset: number) => new Date(NOW.getTime() + offset * 86_400_000);
@@ -20,19 +20,29 @@ function content(overrides: Partial<ContentRow> = {}): ContentRow {
  * the palauttaja for that vasara — an unticked line there files a huomio about
  * a missing kama, and the terms on that dialog have teeth.
  */
+const box = (...items: ContentRow[]): ContentLocation => ({ items });
+
 describe('boxContents', () => {
+  it('lists what is in the sub-sijainnit too, since they go out with the box', () => {
+    const pakki: ContentLocation = {
+      items: [content({ id: 'vasara' })],
+      children: [{ items: [content({ id: 'ruuvi', name: 'Ruuvi' })], children: [] }],
+    };
+    expect(boxContents(pakki, 'box-loan', NOW).map((c) => c.id)).toEqual(['vasara', 'ruuvi']);
+  });
+
   it('expects a content nobody has borrowed', () => {
-    const [vasara] = boxContents([content()], 'box-loan', NOW);
+    const [vasara] = boxContents(box(content()), 'box-loan', NOW);
     expect(vasara.outOnLoan).toBe(false);
   });
 
   it('does not expect one that is out on somebody else’s loan', () => {
     const [vasara] = boxContents(
-      [
+      box(
         content({
           reservations: [{ loan: { id: 'other-loan', startTime: day(-2), endTime: day(2) } }],
         }),
-      ],
+      ),
       'box-loan',
       NOW,
     );
@@ -43,11 +53,11 @@ describe('boxContents', () => {
     // The box and the vasara are both on this loan: it is with the borrower
     // either way, so it is theirs to bring back.
     const [vasara] = boxContents(
-      [
+      box(
         content({
           reservations: [{ loan: { id: 'box-loan', startTime: day(-2), endTime: day(2) } }],
         }),
-      ],
+      ),
       'box-loan',
       NOW,
     );
@@ -56,22 +66,22 @@ describe('boxContents', () => {
 
   it('ignores a booking that has not started or has already ended', () => {
     const [future] = boxContents(
-      [
+      box(
         content({
           reservations: [{ loan: { id: 'later', startTime: day(5), endTime: day(9) } }],
         }),
-      ],
+      ),
       'box-loan',
       NOW,
     );
     expect(future.outOnLoan).toBe(false);
 
     const [past] = boxContents(
-      [
+      box(
         content({
           reservations: [{ loan: { id: 'earlier', startTime: day(-9), endTime: day(-5) } }],
         }),
-      ],
+      ),
       'box-loan',
       NOW,
     );
@@ -80,7 +90,7 @@ describe('boxContents', () => {
 
   it('reads serialized dates, which is how the page hands them over', () => {
     const [vasara] = boxContents(
-      [
+      box(
         content({
           reservations: [
             {
@@ -92,7 +102,7 @@ describe('boxContents', () => {
             },
           ],
         }),
-      ],
+      ),
       'box-loan',
       NOW,
     );
@@ -101,7 +111,7 @@ describe('boxContents', () => {
 
   it('carries the name and amount through, and copes with no box at all', () => {
     expect(boxContents(undefined, 'box-loan', NOW)).toEqual([]);
-    expect(boxContents([content({ amount: 666 })], 'box-loan', NOW)[0]).toMatchObject({
+    expect(boxContents(box(content({ amount: 666 })), 'box-loan', NOW)[0]).toMatchObject({
       id: 'vasara',
       name: 'Vasara',
       amount: 666,

@@ -21,7 +21,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Field } from '@/components/ui/field';
 import { NumberInput } from '@/components/ui/number-input';
 import { CreatableSelect } from '@/components/ui/creatable-select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ApiError, readJson } from '@/utils/apiError';
 import { useItemOriginalImageState } from '@/hooks/useItemImage';
 import { cn } from '@/lib/utils';
@@ -74,18 +73,10 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
     open ? '/api/category/getCategories' : null,
     fetcher,
   );
-  const { data: locations = [], isLoading: locationsLoading } = useSWR<LocationWithPath[]>(
+  const { data: locations = [] } = useSWR<LocationWithPath[]>(
     open ? '/api/location/getLocations' : null,
     fetcher,
   );
-
-  // "Tämä kama on myös säilytyspaikka": the kama has a sijainti row of its own,
-  // which is what other kamat point at. Read off the sijainti list rather than
-  // asked of every caller, and only overridden once the admin ticks the box —
-  // saving before the list has loaded must not read as "untick it".
-  const isContainerStored = locations.some((loc) => loc.itemId === item.id);
-  const [containerDraft, setContainerDraft] = useState<boolean | null>(null);
-  const container = containerDraft ?? isContainerStored;
 
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description);
@@ -148,7 +139,6 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
           // picked carries its own label as `value`, which the route turns
           // into a new Location (same contract as createItem).
           locationId: location,
-          ...(locationsLoading ? {} : { container }),
         }),
       });
       await readJson(response, 'Virhe kaman päivityksessä');
@@ -236,20 +226,6 @@ export default function EditItemDialog({ item, open, onOpenChange, onSaved }: Ed
               onChange={(option) => setLocation(option as SelectOption | null)}
               isClearable
             />
-          </Field>
-
-          <Field
-            label="Säilytyspaikka"
-            helper="Työkalupakki, laatikko tai muu kama jonka sisällä muita kamoja säilytetään. Kun tämä on lainassa, sisältö ei ole vapaana, mutta yksittäisen kaman voi silti lainata erikseen."
-          >
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={container}
-                disabled={locationsLoading}
-                onChange={(e) => setContainerDraft(e.target.checked)}
-              />
-              Tämä kama on myös säilytyspaikka
-            </label>
           </Field>
 
           <Field label="Kuva" htmlFor="edit-item-image">

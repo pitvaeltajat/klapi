@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { logItemHistory } from '@/utils/itemHistory';
+import {
+  assertContainerPlace,
+  ContainerCycleError,
+  syncContainerPlace,
+  unlinkArchivedContainers,
+} from '@/utils/containers';
 import { requireAdmin } from '@/utils/apiAuth';
 
 export async function POST(request: Request) {
@@ -32,6 +38,7 @@ export async function POST(request: Request) {
       where: { id: { in: ids } },
       data: { deletedAt: new Date() },
     });
+    await unlinkArchivedContainers(ids);
     await Promise.all(
       affected
         .filter((i) => !i.deletedAt)
@@ -138,6 +145,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Sijainti puuttuu' }, { status: 400 });
     }
 
+    try {
+      for (const id of ids) await assertContainerPlace(id, locationName);
+    } catch (err) {
+      if (err instanceof ContainerCycleError) {
+        return NextResponse.json({ message: err.message }, { status: 400 });
+      }
+      throw err;
+    }
+
     const location = await prisma.location.upsert({
       where: { id: locationName },
       create: { name: locationName },
@@ -148,6 +164,7 @@ export async function POST(request: Request) {
       where: { id: { in: ids } },
       data: { locationId: location.id },
     });
+    await syncContainerPlace(ids, location.id);
     await Promise.all(
       ids.map((id) =>
         logItemHistory({

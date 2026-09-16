@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { requireAdmin } from '@/utils/apiAuth';
 import { readParentId, refuseParent } from '@/utils/locationQueries';
+import { syncLoanableItem } from '@/utils/containers';
 
 /** Rename a sijainti and/or move it under another one (`parentId: null` = top level). */
 export async function POST(request: Request) {
@@ -11,18 +12,10 @@ export async function POST(request: Request) {
   const body = await request.json();
   const id = typeof body.id === 'string' ? body.id : '';
   const existing = id
-    ? await prisma.location.findUnique({ where: { id }, select: { itemId: true } })
+    ? await prisma.location.findUnique({ where: { id }, select: { id: true } })
     : null;
   if (!existing) {
     return NextResponse.json({ message: 'Sijaintia ei löytynyt' }, { status: 404 });
-  }
-  // Its name is the kama's name and its place is where the kama is stored —
-  // both are changed on the kama, which keeps the pair in step.
-  if (existing.itemId) {
-    return NextResponse.json(
-      { message: 'Säilytyspaikkaa muokataan sen kaman kautta' },
-      { status: 400 },
-    );
   }
 
   const data: { name?: string; parentId?: string | null } = {};
@@ -38,5 +31,7 @@ export async function POST(request: Request) {
   }
 
   const location = await prisma.location.update({ where: { id }, data });
+  // A lainattava sijainti's kama carries the same name and place.
+  await syncLoanableItem(id);
   return NextResponse.json(location);
 }

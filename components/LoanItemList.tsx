@@ -18,7 +18,7 @@ export interface LoanItemRow {
   amount: number;
   status: ReservationStatus;
   item: { name: string };
-  /** What is inside it, when the kama is a säilytyspaikka. */
+  /** What is inside it, when the kama stands behind a lainattava sijainti. */
   contents?: BoxContent[];
 }
 

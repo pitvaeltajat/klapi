@@ -1,22 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { canBeParent, withPaths, type LocationNode } from '@/utils/locationTree';
+import { canBeParent, withPaths } from '@/utils/locationTree';
 
-const loc = (id: string, name: string, parentId: string | null = null, item?: LocationNode['item']) => ({
-  id,
-  name,
-  parentId,
-  item,
-});
+const loc = (id: string, name: string, parentId: string | null = null) => ({ id, name, parentId });
 
 describe('location tree', () => {
   const kalusto = loc('k', 'Kalusto');
   const hylly = loc('h', 'Hylly 3', 'k');
-  // A säilytyspaikka's parent is where its kama is stored, not its own parentId.
-  const pakki = loc('p', 'Sininen pakki', 'ignored', { locationId: 'h' });
+  // A lainattava sijainti is an ordinary node in the tree.
+  const pakki = loc('p', 'Sininen pakki', 'h');
   const kalusto2 = loc('k2', 'Kalusto 2');
   const all = [pakki, kalusto2, hylly, kalusto];
 
-  it('builds paths through both parents and stored kamat, sorted level by level', () => {
+  it('builds full paths, sorted level by level', () => {
     expect(withPaths(all).map((l) => [l.path, l.depth])).toEqual([
       ['Kalusto', 0],
       ['Kalusto / Hylly 3', 1],
@@ -30,6 +25,7 @@ describe('location tree', () => {
     expect(canBeParent(all, 'k', 'h')).toBe(false);
     expect(canBeParent(all, 'k', 'p')).toBe(false);
     expect(canBeParent(all, 'h', 'k2')).toBe(true);
+    expect(canBeParent(all, 'h', 'p')).toBe(false);
   });
 
   it('survives a loop already in the data', () => {

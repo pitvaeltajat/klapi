@@ -35,7 +35,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import BoxContents from '@/components/BoxContents';
-import { boxContents, type ContentRow } from '@/utils/boxContents';
+import { boxContents, flattenContents, type ContentLocation } from '@/utils/boxContents';
 
 interface Reservation {
   id: string;
@@ -44,8 +44,8 @@ interface Reservation {
   item: {
     id: string;
     name: string;
-    /** Set when the kama is a säilytyspaikka — what should be back in the box. */
-    asLocation: { items: ContentRow[] } | null;
+    /** Set when the kama stands behind a lainattava sijainti — what should be back in the box. */
+    asLocation: ContentLocation | null;
   };
 }
 
@@ -182,7 +182,7 @@ const LoanReturnCard = ({
   const missingNote = returnableReservations
     .filter((reservation) => selectedIds.has(reservation.id))
     .map((reservation) => {
-      const gone = boxContents(reservation.item.asLocation?.items, loan.id).filter(
+      const gone = boxContents(reservation.item.asLocation, loan.id).filter(
         (content) =>
           !content.outOnLoan && missingContents.has(missingKey(reservation.id, content.id)),
       );
@@ -338,12 +338,12 @@ const LoanReturnCard = ({
                           {/* Checking a box back in is checking its contents. */}
                           <BoxContents
                             defaultOpen
-                            contents={boxContents(reservation.item.asLocation?.items, loan.id)}
+                            contents={boxContents(reservation.item.asLocation, loan.id)}
                             checklist={{
                               // The component speaks content ids; the keys are
                               // per reservation, so narrow to this box's own.
                               missing: new Set(
-                                (reservation.item.asLocation?.items ?? [])
+                                flattenContents(reservation.item.asLocation)
                                   .filter((content) =>
                                     missingContents.has(missingKey(reservation.id, content.id)),
                                   )

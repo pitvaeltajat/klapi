@@ -40,7 +40,7 @@ import {
 } from '@/components/LoanItemsEditor';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 import BoxContents from '@/components/BoxContents';
-import { boxContents, type ContentRow } from '@/utils/boxContents';
+import { boxContents, type ContentLocation } from '@/utils/boxContents';
 
 interface Reservation {
   id: string;
@@ -49,8 +49,8 @@ interface Reservation {
   item: {
     id: string;
     name: string;
-    /** Set when the kama is a säilytyspaikka — what goes out with it. */
-    asLocation?: { items: ContentRow[] } | null;
+    /** Set when the kama stands behind a lainattava sijainti — what goes out with it. */
+    asLocation?: ContentLocation | null;
   };
 }
 
@@ -146,7 +146,7 @@ const LoanStartCard = ({
         return;
       }
       // The server's answer carries what the rows can't: an oma kama's real
-      // row and a säilytyspaikka's contents.
+      // row and a lainattava sijainti's contents.
       router.refresh();
       setOpen(true);
     } catch {
@@ -230,13 +230,13 @@ const LoanStartCard = ({
               <LoanItemRows editor={editor} className="lg:grid-cols-2" />
             )}
             {/* This is the counter: the kamat are being handed over right now,
-                so what is inside a säilytyspaikka is checked here rather than
+                so what is inside a lainattava sijainti is checked here rather than
                 on the box's own page. */}
             {acceptedReservations.map((reservation) => (
               <BoxContents
                 key={`contents-${reservation.id}`}
                 defaultOpen
-                contents={boxContents(reservation.item.asLocation?.items, loan.id)}
+                contents={boxContents(reservation.item.asLocation, loan.id)}
               />
             ))}
             <div className="flex flex-col gap-2">

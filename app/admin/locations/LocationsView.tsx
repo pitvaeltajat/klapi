@@ -19,6 +19,7 @@ import { InlineEdit } from '@/components/ui/inline-edit';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { canBeParent } from '@/utils/locationTree';
 import { postJson } from '@/utils/postJson';
 
@@ -43,8 +44,12 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 /**
  * The sijainti tree: "Kalusto / Hylly 3". Pickers elsewhere still mint a
  * top-level sijainti when a name is typed in; this is where it gets put in its
- * place. A säilytyspaikka shows up in the tree under wherever its kama is
- * stored, but is read-only here — its name and place belong to the kama.
+ * place.
+ *
+ * Any sijainti can be switched to lainattava — a toolbox, a peräkärry — which
+ * gives it a kama that goes in the cart and takes the sijainti's whole subtree
+ * with it (`utils/containers.ts`). Renaming or moving it here brings the kama
+ * along.
  */
 export default function LocationsView() {
   const { data: session } = useSession();
@@ -66,10 +71,9 @@ export default function LocationsView() {
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
 
   const rows = locations ?? [];
-  // Only a plain sijainti can hold another one — see `refuseParent`.
   const parentOptions = (forId: string | null): Option[] =>
     rows
-      .filter((l) => !l.itemId && (forId === null || canBeParent(rows, forId, l.id)))
+      .filter((l) => forId === null || canBeParent(rows, forId, l.id))
       .map((l) => ({ value: l.id, label: l.path }));
 
   const create = async () => {
@@ -103,6 +107,20 @@ export default function LocationsView() {
       await mutate();
     } catch {
       // postJson already toasted; keep the field open with what was typed.
+    }
+  };
+
+  const setLoanable = async (loc: LocationRow, loanable: boolean) => {
+    try {
+      await postJson('/api/location/setLoanable', { id: loc.id, loanable });
+      toast.success(loanable ? 'Sijainti on nyt lainattava' : 'Sijainti ei ole enää lainattava', {
+        description: loanable
+          ? `${loc.name} löytyy kamoista, ja sen sisältö lähtee mukana lainaan.`
+          : `${loc.name} -kama arkistoitiin. Sijainti ja sen sisältö säilyvät.`,
+      });
+      await mutate();
+    } catch {
+      // postJson already toasted.
     }
   };
 
@@ -191,74 +209,83 @@ export default function LocationsView() {
                   >
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
                       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                        {loc.item ? (
-                          <>
-                            <Package className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                            <NextLink href={`/item/${loc.item.id}`} className="font-medium hover:underline">
-                              {loc.name}
-                            </NextLink>
-                            <Badge variant="secondary">Säilytyspaikka</Badge>
-                          </>
-                        ) : (
-                          <InlineEdit
-                            value={loc.name}
-                            label="nimeä"
-                            className="font-medium"
-                            validate={(next) => (next ? null : 'Anna sijainnille nimi')}
-                            onSave={(name) => update(loc.id, { name })}
-                          />
-                        )}
+                        <InlineEdit
+                          value={loc.name}
+                          label="nimeä"
+                          className="font-medium"
+                          validate={(next) => (next ? null : 'Anna sijainnille nimi')}
+                          onSave={(name) => update(loc.id, { name })}
+                        />
                         <span className="text-sm text-muted-foreground">
                           {loc._count.items} kamaa
                         </span>
+                        {loc.item && (
+                          <NextLink href={`/item/${loc.item.id}`} title="Avaa lainattava kama">
+                            <Badge variant="default" className="gap-1 hover:underline">
+                              <Package className="h-3 w-3" aria-hidden /> Lainattava
+                            </Badge>
+                          </NextLink>
+                        )}
                       </div>
 
-                      {!loc.item && (
-                        <div className="flex items-center gap-2">
-                          <div className="min-w-0 flex-1 md:w-64 md:flex-none">
-                            <Select<Option>
-                              aria-label={`${loc.name}: sijaitsee`}
-                              options={parentOptions(loc.id)}
-                              value={parentValue}
-                              onChange={(option) => {
-                                if ((option?.value ?? null) === loc.parentId) return;
-                                update(loc.id, { parentId: option?.value ?? null }).then(
-                                  () => toast.success('Sijainti siirretty'),
-                                  () => {},
-                                );
-                              }}
-                              isClearable
-                              placeholder="Ylin taso"
-                              noOptionsMessage={() => 'Ei sijainteja'}
-                            />
-                          </div>
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            aria-label={`Lisää alasijainti: ${loc.name}`}
-                            title="Lisää alasijainti"
-                            onClick={() => {
-                              setChildName('');
-                              setAddingUnder(addingUnder === loc.id ? null : loc.id);
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Switch
+                            checked={Boolean(loc.item)}
+                            onCheckedChange={(on) => setLoanable(loc, on)}
+                            aria-label={`${loc.name}: lainattava`}
+                          />
+                          <span className="md:hidden lg:inline">Lainattava</span>
+                        </label>
+                        <div className="min-w-0 flex-1 md:w-64 md:flex-none">
+                          <Select<Option>
+                            aria-label={`${loc.name}: sijaitsee`}
+                            options={parentOptions(loc.id)}
+                            value={parentValue}
+                            onChange={(option) => {
+                              if ((option?.value ?? null) === loc.parentId) return;
+                              update(loc.id, { parentId: option?.value ?? null }).then(
+                                () => toast.success('Sijainti siirretty'),
+                                () => {},
+                              );
                             }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            aria-label={`Poista ${loc.name}`}
-                            // Emptying it first is the only safe order: kamat
-                            // cascade away with their sijainti.
-                            disabled={loc._count.items > 0}
-                            title={loc._count.items > 0 ? 'Siirrä kamat ensin muualle' : undefined}
-                            className="text-destructive hover:bg-destructive/10"
-                            onClick={() => setDeleteTarget(loc)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            isClearable
+                            placeholder="Ylin taso"
+                            noOptionsMessage={() => 'Ei sijainteja'}
+                          />
                         </div>
-                      )}
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Lisää alasijainti: ${loc.name}`}
+                          title="Lisää alasijainti"
+                          onClick={() => {
+                            setChildName('');
+                            setAddingUnder(addingUnder === loc.id ? null : loc.id);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Poista ${loc.name}`}
+                          // Emptying it first is the only safe order: kamat
+                          // cascade away with their sijainti.
+                          disabled={loc._count.items > 0 || Boolean(loc.item)}
+                          title={
+                            loc.item
+                              ? 'Poista lainattavuus ensin'
+                              : loc._count.items > 0
+                                ? 'Siirrä kamat ensin muualle'
+                                : undefined
+                          }
+                          className="text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteTarget(loc)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     {addingUnder === loc.id && (
                       <form

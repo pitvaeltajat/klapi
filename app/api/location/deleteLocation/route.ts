@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   }
   if (existing.itemId) {
     return NextResponse.json(
-      { message: 'Säilytyspaikka poistetaan sen kaman asetuksista' },
+      { message: 'Sijainti on lainattava — poista lainattavuus ensin' },
       { status: 400 },
     );
   }

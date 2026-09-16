@@ -4,7 +4,12 @@ import { Category } from '@prisma/client';
 import { diffItemFields, logItemHistory } from '@/utils/itemHistory';
 import { requireAdmin } from '@/utils/apiAuth';
 import { badRequest, failed } from '@/utils/apiResponse';
-import { ContainerNotEmptyError, setItemAsContainer, syncContainerName } from '@/utils/containers';
+import {
+  assertContainerPlace,
+  ContainerCycleError,
+  syncContainerName,
+  syncContainerPlace,
+} from '@/utils/containers';
 
 /** What CreatableSelect hands back for a sijainti — `value` is the id, or the
  *  typed text when the option is brand new. */
@@ -57,6 +62,8 @@ export async function POST(request: Request) {
     const keptIds = new Set(categories?.map((category) => category.id));
     const removed = before.categories.filter((category) => !keptIds.has(category.id));
 
+    if (hasLocation) await assertContainerPlace(body.id, location?.value ?? null);
+
     // edit the item in the database
     const updated = await prisma.item.update({
       where: {
@@ -91,14 +98,10 @@ export async function POST(request: Request) {
       },
     });
 
-    // A kama that is also a säilytyspaikka carries a sijainti row of its own.
-    // Absent key = leave it as it is; either way the name has to follow the
-    // kama's, or every other kama's Sijainti keeps showing the old one.
-    if (typeof body.container === 'boolean') {
-      await setItemAsContainer(body.id, name, body.container);
-    } else {
-      await syncContainerName(body.id, name);
-    }
+    // The kama behind a lainattava sijainti: the sijainti follows its name and
+    // its place (see utils/containers).
+    await syncContainerName(body.id, name);
+    if (hasLocation) await syncContainerPlace([body.id], updated.locationId);
 
     const changed = diffItemFields(
       {
@@ -132,14 +135,8 @@ export async function POST(request: Request) {
       message: 'Item edited',
     });
   } catch (err) {
-    if (err instanceof ContainerNotEmptyError) {
-      return NextResponse.json(
-        {
-          message: 'Säilytyspaikkaa ei voi poistaa',
-          detail: `${err.message}. Siirrä ne muualle ensin.`,
-        },
-        { status: 409 },
-      );
+    if (err instanceof ContainerCycleError) {
+      return NextResponse.json({ message: err.message }, { status: 400 });
     }
     return failed('Kaman päivitys epäonnistui', err, 'editItem');
   }
