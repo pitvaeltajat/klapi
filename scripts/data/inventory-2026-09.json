@@ -955,9 +955,9 @@
   "name": "Lämpöpuhallin",
   "amount": 1,
   "box": "Lukkokaappi",
-  "guess": true,
-  "id": "cl4p94acu00370ip7rxdmlfkw",
-  "was": "Kuumailmapuhallin"
+  "guess": false,
+  "id": "clvcmemgc000a11new5ifnlc4",
+  "was": "Kuumailmapuhaltelija"
  },
  {
   "name": "Pelastusliivit",
