@@ -7,15 +7,11 @@ import '@/utils/datepickerLocale';
 import { History } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Item, Loan, LoanStatus, Reservation, User } from '@prisma/client';
+import { Item, Loan, LoanStatus, Reservation, ReservationStatus, User } from '@prisma/client';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import {
-  AddLoanItemPicker,
-  LoanItemRows,
-  rowsFromReservations,
-  rowsToReservations,
-  useLoanItemRows,
-} from '@/components/LoanItemsEditor';
+import ItemAmountCard from '@/components/ItemAmountCard';
+import LoanerAutocomplete from '@/components/LoanerAutocomplete';
+import { AddLoanItemPicker, rowsFromReservations, useLoanItemRows } from '@/components/LoanItemsEditor';
 import LoanRangeCalendar from '@/components/LoanRangeCalendar';
 import { DateTime } from '@/components/DateTime';
 import { Alert } from '@/components/ui/alert';
@@ -23,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { PageHeader } from '@/components/ui/page-header';
@@ -32,10 +29,12 @@ import { useAvailabilities } from '@/hooks/useAvailabilities';
 import {
   deriveLoanStatus,
   getLoanStatusLabel,
+  getReservationStatusLabel,
   getLoanerName,
   MANUAL_LOAN_STATUSES,
   type ManualLoanStatus,
 } from '@/utils/loanHelpers';
+import { isCustomItemId } from '@/utils/customItems';
 import { isSameCalendarDay, setDefaultTime, setEndOfDay, type DateRange } from '@/utils/dateRange';
 
 interface LoanWithRelations extends Loan {
@@ -57,13 +56,19 @@ export default function EditLoanView({
   const originalRows = useMemo(() => rowsFromReservations(loan.reservations), [loan]);
 
   const [description, setDescription] = useState(loan.description);
-  const [range, setRange] = useState<DateRange>([
-    new Date(loan.startTime),
-    new Date(loan.endTime),
-  ]);
+  const [range, setRange] = useState<DateRange>([new Date(loan.startTime), new Date(loan.endTime)]);
   const [status, setStatus] = useState(deriveLoanStatus(loan.reservations, loan.status));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // The loaner picker (admin only). `loanerValue` is the free-text name or the
+  // selected account's address; `loanerUserId` is the account the loan belongs
+  // to, or undefined while a free-text name is typed (meaning "keep the current
+  // account"). Seeded from the loan as it stands.
+  const originalLoanerName = getLoanerName(loan);
+  const [loanerValue, setLoanerValue] = useState(originalLoanerName);
+  const [loanerUserId, setLoanerUserId] = useState<string | undefined>(loan.userId);
+  const loanerChanged = loanerValue !== originalLoanerName || loanerUserId !== loan.userId;
 
   const [startDate, endDate] = range;
 
@@ -86,11 +91,28 @@ export default function EditLoanView({
   const canSetStatus = isAdmin && derivedStatus !== LoanStatus.PARTIALLY_RETURNED;
 
   const editor = useLoanItemRows(originalRows, availabilities);
+  const { rows, setRows, originalAmounts, headroom, overBooked } = editor;
+
+  const setAmount = (itemId: string, amount: number) =>
+    setRows((current) => current.map((r) => (r.itemId === itemId ? { ...r, amount } : r)));
+
+  const setRowStatus = (itemId: string, status: ReservationStatus) =>
+    setRows((current) => current.map((r) => (r.itemId === itemId ? { ...r, status } : r)));
+
+  // A per-item status change (admin) counts as a change worth saving.
+  const statusesDirty =
+    isAdmin &&
+    rows.some((r) => {
+      const original = originalRows.find((o) => o.itemId === r.itemId);
+      return original !== undefined && original.status !== r.status;
+    });
 
   const isDirty =
     editor.dirty ||
+    statusesDirty ||
     description !== loan.description ||
     (canSetStatus && status !== derivedStatus) ||
+    loanerChanged ||
     startDate?.getTime() !== new Date(loan.startTime).getTime() ||
     endDate?.getTime() !== new Date(loan.endTime).getTime();
 
@@ -106,8 +128,23 @@ export default function EditLoanView({
           description,
           startTime: startDate,
           endTime: endDate,
-          reservations: rowsToReservations(editor.rows),
+          reservations: rows.map((r) => ({
+            amount: r.amount,
+            item: { connect: { id: r.itemId } },
+            // Only an oma kama carries a name: it is what updateLoan creates
+            // the temporary item from.
+            ...(isCustomItemId(r.itemId) ? { name: r.name } : {}),
+            // An admin may set each item's status individually. Always sent
+            // for an admin (the route only records actual changes in the audit
+            // trail); never sent for a non-admin, so their edit can't trip the
+            // admin-only guard on the route.
+            ...(isAdmin ? { status: r.status } : {}),
+          })),
           ...(canSetStatus && status !== derivedStatus ? { status } : {}),
+          // Only send the loaner when it actually changed. A free-text name
+          // (no account picked) leaves `userId` undefined, so the account is
+          // kept while the label is rewritten.
+          ...(loanerChanged ? { loaner: loanerValue, userId: loanerUserId } : {}),
         }),
       });
 
@@ -181,21 +218,35 @@ export default function EditLoanView({
 
         {loanStarted && isAdmin && (
           <Alert variant="warning" title="Laina on jo alkanut">
-            Noutoaikaa siirtämällä muutat merkintää siitä, milloin kamat noudettiin.
-            Saatavuus tarkistetaan muiden lainojen suhteen, joten päällekkäinen aika
-            estetään tallennuksessa.
+            Noutoaikaa siirtämällä muutat merkintää siitä, milloin kamat noudettiin. Saatavuus
+            tarkistetaan muiden lainojen suhteen, joten päällekkäinen aika estetään tallennuksessa.
           </Alert>
         )}
 
         <Card>
           <CardTitle>Perustiedot</CardTitle>
           <dl className="flex flex-col gap-2 text-sm sm:text-base">
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-muted-foreground">Lainaaja</dt>
-              <dd className="font-medium break-all">
-                {getLoanerName(loan)}
-              </dd>
-            </div>
+            {isAdmin ? (
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Lainaaja</dt>
+                <dd>
+                  <LoanerAutocomplete
+                    value={loanerValue}
+                    onChange={(value, userId) => {
+                      setLoanerValue(value);
+                      setLoanerUserId(userId);
+                    }}
+                    placeholder="Lainaajan nimi tai sähköposti"
+                    size="md"
+                  />
+                </dd>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <dt className="text-muted-foreground">Lainaaja</dt>
+                <dd className="font-medium break-all">{getLoanerName(loan)}</dd>
+              </div>
+            )}
             {isAdmin && (
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <dt className="text-muted-foreground">Lainan ID</dt>
@@ -259,9 +310,7 @@ export default function EditLoanView({
                     if (!date || !startDate) return;
                     setRange([
                       startDate,
-                      isSameCalendarDay(date, startDate)
-                        ? setEndOfDay(date)
-                        : setDefaultTime(date),
+                      isSameCalendarDay(date, startDate) ? setEndOfDay(date) : setDefaultTime(date),
                     ]);
                   }}
                   inline
@@ -305,7 +354,87 @@ export default function EditLoanView({
             </Button>
           </CardHeader>
 
-          <LoanItemRows editor={editor} className="lg:grid-cols-2" />
+          {overBooked.length > 0 && (
+            <Alert
+              variant="warning"
+              title="Osa kamoista ei mahdu valitulle ajalle"
+              className="mb-3"
+            >
+              Pienennä alla merkittyjen kamojen määriä, muuten tallennus estetään.
+            </Alert>
+          )}
+
+          {rows.length === 0 ? (
+            <EmptyState variant="inline" title="Ei kamoja" />
+          ) : (
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+              {rows.map((row) => {
+                const original = originalAmounts.get(row.itemId);
+                const max = headroom(row.itemId);
+                const isCustom = isCustomItemId(row.itemId);
+                const originalStatus = originalRows.find((o) => o.itemId === row.itemId)?.status;
+                return (
+                  <div key={row.itemId} className="flex flex-col gap-1.5">
+                    <ItemAmountCard
+                      itemId={row.itemId}
+                      name={row.name}
+                      amount={row.amount}
+                      subtitle={
+                        isCustom ? (
+                          'Oma kama'
+                        ) : original === undefined ? (
+                          <span className="text-success">Uusi · vapaana {max}</span>
+                        ) : original !== row.amount ? (
+                          <span className="text-warning">
+                            Oli {original} kpl · vapaana {max}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">Vapaana {max}</span>
+                        )
+                      }
+                      decrementDisabled={row.amount <= 1}
+                      incrementDisabled={row.amount >= max}
+                      onDecrement={() => setAmount(row.itemId, row.amount - 1)}
+                      onIncrement={() => setAmount(row.itemId, row.amount + 1)}
+                      onAmountChange={(next) =>
+                        setAmount(row.itemId, Math.min(max, Math.max(1, next)))
+                      }
+                      onRemove={() =>
+                        setRows((current) => current.filter((r) => r.itemId !== row.itemId))
+                      }
+                      removeLabel={`Poista ${row.name} lainasta`}
+                    />
+                    {isAdmin && (
+                      <div className="flex items-center gap-2 px-1">
+                        <Label htmlFor={`status-${row.itemId}`} className="shrink-0 text-xs">
+                          Tila
+                        </Label>
+                        <NativeSelect
+                          id={`status-${row.itemId}`}
+                          value={row.status}
+                          onChange={(e) =>
+                            setRowStatus(row.itemId, e.target.value as ReservationStatus)
+                          }
+                          className="h-8 text-xs"
+                        >
+                          {Object.values(ReservationStatus).map((s) => (
+                            <option key={s} value={s}>
+                              {getReservationStatusLabel(s)}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                        {originalStatus !== undefined && originalStatus !== row.status && (
+                          <Badge variant="warning" className="shrink-0">
+                            Muokattu
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
 
         <Card>

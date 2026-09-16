@@ -45,12 +45,12 @@ export default async function EditLoanPage({ params }: { params: Promise<{ id: s
   const isOwner = session.user.id === loan.userId;
   const status = deriveLoanStatus(loan.reservations, loan.status);
 
-  // PARTIALLY_RETURNED is excluded even for an admin: its reservations carry a
-  // mix of statuses that `updateLoan`'s recreate-all would flatten.
+  // An admin may edit a loan in every state — dates, items, description, status
+  // and loaner. `updateLoan` preserves each reservation's status, so even a
+  // PARTIALLY_RETURNED loan (a mix of INUSE and IN_BOX/RETURNED lines) survives
+  // the recreate-all. A deleted loan is restored from its own page first.
   const canEdit = isAdmin
-    ? status !== LoanStatus.CANCELLED &&
-      status !== LoanStatus.PARTIALLY_RETURNED &&
-      status !== LoanStatus.RETURNED
+    ? true
     : isOwner && loan.startTime > new Date() && status === LoanStatus.ACCEPTED;
 
   if (!canEdit) redirect(`/loan/${id}`);

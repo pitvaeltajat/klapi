@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { activeItemsWhere } from '@/utils/itemQueries';
-import { LoanStatus, ReservationStatus } from '@prisma/client';
+import { LoanStatus, ReservationStatus, Prisma } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
-import { MANUAL_LOAN_STATUSES, isManualLoanStatus } from '@/utils/loanHelpers';
+import { MANUAL_LOAN_STATUSES, isManualLoanStatus, deriveLoanStatus } from '@/utils/loanHelpers';
 import { requireUser } from '@/utils/apiAuth';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 import { isCustomItemId } from '@/utils/customItems';
@@ -15,7 +15,8 @@ export async function POST(request: Request) {
     const { session, denied } = await requireUser();
     if (denied) return denied;
 
-    const { id, reservations, startTime, endTime, description, status } = await request.json();
+    const { id, reservations, startTime, endTime, description, status, userId, loaner } =
+      await request.json();
 
     // Check that user is admin or owns this loan
     const existingLoan = await prisma.loan.findUnique({
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
         deletedAt: true,
         startTime: true,
         endTime: true,
+        loaner: true,
         reservations: { select: { status: true, itemId: true, amount: true } },
       },
     });
@@ -36,10 +38,7 @@ export async function POST(request: Request) {
 
     // A deleted loan is restored first, then edited — never edited in place.
     if (existingLoan.deletedAt) {
-      return NextResponse.json(
-        { message: 'Poistettua lainaa ei voi muokata' },
-        { status: 409 },
-      );
+      return NextResponse.json({ message: 'Poistettua lainaa ei voi muokata' }, { status: 409 });
     }
 
     const isAdmin = session.user.group === 'ADMIN';
@@ -47,7 +46,36 @@ export async function POST(request: Request) {
     const isOwner = session.user.id === existingLoan.userId;
 
     if (!isAdmin && !isKiosk && !isOwner) {
-      return NextResponse.json({ message: 'Sinulla ei ole oikeutta muokata tätä lainaa' }, { status: 403 });
+      return NextResponse.json(
+        { message: 'Sinulla ei ole oikeutta muokata tätä lainaa' },
+        { status: 403 },
+      );
+    }
+
+    // Only an admin may reassign the loan to another member or rewrite the
+    // free-text loaner name — the loaner picker in the edit form is admin-only.
+    let newUserId: string | undefined;
+    let newLoaner: string | undefined;
+    if (userId !== undefined || loaner !== undefined) {
+      if (!isAdmin) {
+        return NextResponse.json(
+          { message: 'Vain ylläpitäjä voi vaihtaa lainaajaa' },
+          { status: 403 },
+        );
+      }
+      if (userId !== undefined && userId !== null && userId !== existingLoan.userId) {
+        const target = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true },
+        });
+        if (!target) {
+          return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
+        }
+        newUserId = userId;
+      }
+      if (loaner !== undefined && loaner !== null) {
+        newLoaner = String(loaner).trim();
+      }
     }
 
     // An admin may set the loan's status by hand (e.g. an item handed back
@@ -93,7 +121,29 @@ export async function POST(request: Request) {
       amount: number;
       name?: string;
       item: { connect: { id: string } };
+      /** An admin-set per-item status (e.g. one kama of a partial return). */
+      status?: ReservationStatus;
     }>;
+
+    // An admin may set each item's status individually, on top of (or instead
+    // of) the whole-loan status. Only an admin may, and the value must be a
+    // real reservation status — a bogus one would otherwise be written straight
+    // into the recreate-all below.
+    const hasPerItemStatus = requestedReservations.some((r) => r.status !== undefined);
+    if (hasPerItemStatus && !isAdmin) {
+      return NextResponse.json(
+        { message: 'Vain ylläpitäjä voi vaihtaa yksittäisen kaman tilaa' },
+        { status: 403 },
+      );
+    }
+    for (const r of requestedReservations) {
+      if (r.status !== undefined && !Object.values(ReservationStatus).includes(r.status)) {
+        return NextResponse.json(
+          { message: `Tuntematon kaman tila: ${r.status}` },
+          { status: 400 },
+        );
+      }
+    }
 
     // Get all items to check their total amounts. Skip archived items so an
     // edit cannot pull a previously soft-deleted item back into a loan.
@@ -116,64 +166,74 @@ export async function POST(request: Request) {
     const requestedStart = new Date(startTime);
     const requestedEnd = new Date(endTime);
 
-    // The same sums the browser was shown — including "the box is out, so what
-    // is in it is out" — rather than a second copy of the arithmetic that can
-    // drift from it. The loan's own lines are excluded: it is already holding
-    // some of what it is asking for.
-    const availabilities = await computeAvailabilities(
-      { start: requestedStart, end: requestedEnd },
-      { excludeLoanId: id },
-    );
+    // An admin correcting a loan that has already started (or been returned) is
+    // fixing the record, not reserving gear — the kamat were already used, so a
+    // retroactive edit can't double-book anything. Skip the availability check
+    // for those; future-dated admin edits still enforce it, as do all non-admin
+    // edits.
+    const loanStarted = existingLoan.startTime <= new Date();
+    const skipAvailability = isAdmin && loanStarted;
 
-    // Aggregate requested amounts by item
-    // Custom kamat are the loaner's own gear, not the troop's, so there is
-    // nothing to check them against — they never enter the availability sums.
-    const requestedByItem = new Map<string, number>();
-    for (const res of requestedReservations) {
-      const itemId = res.item.connect.id;
-      if (customIds.has(itemId)) continue;
-      const current = requestedByItem.get(itemId) ?? 0;
-      requestedByItem.set(itemId, current + res.amount);
-    }
+    if (!skipAvailability) {
+      // The same sums the browser was shown — including "the box is out, so what
+      // is in it is out" — rather than a second copy of the arithmetic that can
+      // drift from it. The loan's own lines are excluded: it is already holding
+      // some of what it is asking for.
+      const availabilities = await computeAvailabilities(
+        { start: requestedStart, end: requestedEnd },
+        { excludeLoanId: id },
+      );
 
-    // Validate each item's availability
-    const unavailableItems: string[] = [];
-    for (const [itemId, requestedAmount] of Array.from(requestedByItem.entries())) {
-      const item = itemMap.get(itemId);
-      if (!item) {
-        unavailableItems.push(`Tuotetta (${itemId}) ei löydy`);
-        continue;
+      // Aggregate requested amounts by item
+      // Custom kamat are the loaner's own gear, not the troop's, so there is
+      // nothing to check them against — they never enter the availability sums.
+      const requestedByItem = new Map<string, number>();
+      for (const res of requestedReservations) {
+        const itemId = res.item.connect.id;
+        if (customIds.has(itemId)) continue;
+        const current = requestedByItem.get(itemId) ?? 0;
+        requestedByItem.set(itemId, current + res.amount);
       }
 
-      const availability = availabilities[itemId];
-      const available = availability?.available ?? 0;
+      // Validate each item's availability
+      const unavailableItems: string[] = [];
+      for (const [itemId, requestedAmount] of Array.from(requestedByItem.entries())) {
+        const item = itemMap.get(itemId);
+        if (!item) {
+          unavailableItems.push(`Tuotetta (${itemId}) ei löydy`);
+          continue;
+        }
 
-      if (requestedAmount > available) {
-        unavailableItems.push(
-          availability?.blockedBy
-            ? `${item.name}: on lainatun kaman "${availability.blockedBy.name}" sisällä`
-            : `${item.name}: pyydetty ${requestedAmount}, vapaana ${available}`,
+        const availability = availabilities[itemId];
+        const available = availability?.available ?? 0;
+
+        if (requestedAmount > available) {
+          unavailableItems.push(
+            availability?.blockedBy
+              ? `${item.name}: on lainatun kaman "${availability.blockedBy.name}" sisällä`
+              : `${item.name}: pyydetty ${requestedAmount}, vapaana ${available}`,
+          );
+        }
+      }
+
+      if (unavailableItems.length > 0) {
+        return NextResponse.json(
+          {
+            message: 'Saatavuusvirhe: joitain tuotteita ei ole riittävästi vapaana',
+            details: unavailableItems,
+          },
+          { status: 400 },
         );
       }
     }
 
-    if (unavailableItems.length > 0) {
-      return NextResponse.json({
-        message: 'Saatavuusvirhe: joitain tuotteita ei ole riittävästi vapaana',
-        details: unavailableItems,
-      }, { status: 400 });
-    }
-
-    // Determine the status for new reservations.
-    // An admin-set loan status wins and is flattened onto every line; otherwise
-    // if any existing reservation is INUSE, new ones should be INUSE too, and
-    // ACCEPTED is the default.
-    const existingStatus = existingLoan.reservations[0]?.status || ReservationStatus.ACCEPTED;
-    const reservationStatus = manualStatus
-      ? MANUAL_LOAN_STATUSES[manualStatus]
-      : existingStatus === ReservationStatus.INUSE
-        ? ReservationStatus.INUSE
-        : ReservationStatus.ACCEPTED;
+    // Preserve each existing reservation's status so a mixed-state loan (e.g.
+    // PARTIALLY_RETURNED) survives the recreate-all below. New lines default to
+    // INUSE when the loan is in use, else ACCEPTED. An admin-set loan status
+    // still wins and is flattened onto every line.
+    const statusByItem = new Map(existingLoan.reservations.map((r) => [r.itemId, r.status]));
+    const hasInuse = existingLoan.reservations.some((r) => r.status === ReservationStatus.INUSE);
+    const defaultNewStatus = hasInuse ? ReservationStatus.INUSE : ReservationStatus.ACCEPTED;
 
     // Only now — with availability settled — do the loaner's own kamat become
     // real rows, so a rejected edit doesn't leave orphan items behind.
@@ -189,12 +249,17 @@ export async function POST(request: Request) {
       amount: r.amount,
       itemId: customIdByOriginal.get(r.item.connect.id) ?? r.item.connect.id,
       name: r.name?.trim(),
+      status: r.status,
     }));
 
+    // A per-item status (admin) wins over the preserved status; the whole-loan
+    // manual status still wins over everything and is flattened onto every line.
     const reservationsWithStatus = resolvedReservations.map((r) => ({
       amount: r.amount,
       item: { connect: { id: r.itemId } },
-      status: reservationStatus,
+      status: manualStatus
+        ? MANUAL_LOAN_STATUSES[manualStatus]
+        : (r.status ?? statusByItem.get(r.itemId) ?? defaultNewStatus),
     }));
 
     // Build a diff of reservation changes for history. A kama created a moment
@@ -206,8 +271,22 @@ export async function POST(request: Request) {
     const newByItem = new Map(resolvedReservations.map((r) => [r.itemId, r.amount]));
 
     const addedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
-    const changedItems: Array<{ itemId: string; name: string | undefined; from: number; to: number }> = [];
+    const changedItems: Array<{
+      itemId: string;
+      name: string | undefined;
+      from: number;
+      to: number;
+    }> = [];
     const removedItems: Array<{ itemId: string; name: string | undefined; amount: number }> = [];
+    // Per-item status changes (admin), for the audit trail. Only recorded when
+    // the whole-loan status isn't being flattened over everything — in that
+    // case the loan-level `status` change already says it all.
+    const statusChanges: Array<{
+      itemId: string;
+      name: string | undefined;
+      from: ReservationStatus;
+      to: ReservationStatus;
+    }> = [];
 
     for (const [itemId, newAmount] of newByItem.entries()) {
       if (!originalByItem.has(itemId)) {
@@ -224,28 +303,67 @@ export async function POST(request: Request) {
         removedItems.push({ itemId, name: itemMap.get(itemId)?.name, amount: origAmount });
       }
     }
+    if (!manualStatus) {
+      for (const r of resolvedReservations) {
+        if (r.status === undefined) continue;
+        const from = statusByItem.get(r.itemId);
+        if (from !== undefined && from !== r.status) {
+          statusChanges.push({
+            itemId: r.itemId,
+            name: nameByItem.get(r.itemId),
+            from,
+            to: r.status,
+          });
+        }
+      }
+    }
+
+    // When an admin changes per-item statuses (and no whole-loan status was
+    // set), the loan's stored status must follow the reservations — the same
+    // derivation `loanReturned`/`loanProcessed` use — or a loan whose items
+    // were individually moved to IN_BOX would keep reading INUSE. A whole-loan
+    // manual status still wins and is flattened onto every line.
+    const derivedFromItems =
+      !manualStatus && statusChanges.length > 0
+        ? deriveLoanStatus(
+            reservationsWithStatus.map((r) => ({ status: r.status })),
+            existingLoan.status,
+          )
+        : undefined;
+
+    const data: Prisma.LoanUpdateInput = {
+      reservations: {
+        deleteMany: {},
+        create: reservationsWithStatus,
+      },
+      startTime: startTime,
+      endTime: endTime,
+      description: description,
+      // Only a loan sitting in a box keeps its box; any other manual status
+      // means the kamat are no longer there, so the box is freed.
+      ...(manualStatus
+        ? {
+            status: manualStatus,
+            ...(manualStatus === LoanStatus.IN_BOX ? {} : { boxId: null }),
+          }
+        : {}),
+      // A per-item status change re-derives the loan status; free the box when
+      // nothing is left in it.
+      ...(derivedFromItems
+        ? {
+            status: derivedFromItems,
+            ...(derivedFromItems === LoanStatus.IN_BOX ? {} : { boxId: null }),
+          }
+        : {}),
+      ...(newUserId ? { user: { connect: { id: newUserId } } } : {}),
+      ...(newLoaner !== undefined ? { loaner: newLoaner } : {}),
+    };
 
     const result = await prisma.loan.update({
       where: {
         id: id,
       },
-      data: {
-        reservations: {
-          deleteMany: {},
-          create: reservationsWithStatus,
-        },
-        startTime: startTime,
-        endTime: endTime,
-        description: description,
-        // Only a loan sitting in a box keeps its box; any other manual status
-        // means the kamat are no longer there, so the box is freed.
-        ...(manualStatus
-          ? {
-              status: manualStatus,
-              ...(manualStatus === LoanStatus.IN_BOX ? {} : { boxId: null }),
-            }
-          : {}),
-      },
+      data,
     });
 
     // Record a date change (e.g. an admin extending an ongoing loan) so the
@@ -262,6 +380,19 @@ export async function POST(request: Request) {
 
     const statusChanged = manualStatus !== undefined && manualStatus !== existingLoan.status;
 
+    const loanerChanged =
+      (newUserId !== undefined && newUserId !== existingLoan.userId) ||
+      (newLoaner !== undefined && newLoaner !== (existingLoan.loaner ?? ''));
+    const loanerChange = loanerChanged
+      ? {
+          userId: { from: existingLoan.userId, to: newUserId ?? existingLoan.userId },
+          loaner: {
+            from: existingLoan.loaner ?? null,
+            to: newLoaner ?? existingLoan.loaner ?? null,
+          },
+        }
+      : undefined;
+
     await logLoanHistory({
       loanId: id,
       action: 'UPDATED',
@@ -270,8 +401,10 @@ export async function POST(request: Request) {
         added: addedItems,
         changed: changedItems,
         removed: removedItems,
+        ...(statusChanges.length > 0 ? { statusChanges } : {}),
         ...(dates ? { dates } : {}),
         ...(statusChanged ? { status: { from: existingLoan.status, to: manualStatus } } : {}),
+        ...(loanerChange ? { loaner: loanerChange } : {}),
       },
     });
 

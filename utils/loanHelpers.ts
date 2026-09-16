@@ -252,7 +252,10 @@ export const getAnnouncementKindColor = (kind: AnnouncementKind | string): Badge
  *    reservations, so this must be checked before the reservation rules)
  * 1. All RETURNED -> RETURNED
  * 2. All REJECTED -> REJECTED
- * 3. Mix of INUSE + (IN_BOX or RETURNED) -> PARTIALLY_RETURNED
+ * 3. Mix of still-out (INUSE or ACCEPTED) + (IN_BOX or RETURNED) ->
+ *    PARTIALLY_RETURNED. ACCEPTED counts as still-out: a "stuck" loan that
+ *    was picked up without ever being marked INUSE still has its kamat out,
+ *    so returning some of them is a partial return, not a plain IN_BOX.
  * 4. Any INUSE -> INUSE (remaining non-INUSE are ACCEPTED/REJECTED)
  * 5. Any IN_BOX -> IN_BOX
  * 6. Otherwise -> loan's DB status
@@ -272,10 +275,13 @@ export const deriveLoanStatus = (
   }
 
   const hasInuse = reservations.some((r) => r.status === ReservationStatus.INUSE);
+  const hasAccepted = reservations.some((r) => r.status === ReservationStatus.ACCEPTED);
   const hasInBox = reservations.some((r) => r.status === ReservationStatus.IN_BOX);
   const hasReturned = reservations.some((r) => r.status === ReservationStatus.RETURNED);
 
-  if (hasInuse && (hasInBox || hasReturned)) {
+  // Still-out = INUSE or ACCEPTED (a picked-up-but-never-marked loan).
+  const hasStillOut = hasInuse || hasAccepted;
+  if (hasStillOut && (hasInBox || hasReturned)) {
     return LoanStatus.PARTIALLY_RETURNED;
   }
   if (hasInuse) {

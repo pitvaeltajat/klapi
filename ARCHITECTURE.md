@@ -14,26 +14,26 @@ needed.
 
 The UI is Finnish; models/code are English. Map concepts before grepping:
 
-| Finnish        | Code / model            | Notes |
-|----------------|-------------------------|-------|
-| kama, kalusto  | `Item`                  | a piece of equipment ("kama" = one item) |
-| laina          | `Loan`                  | a loan/booking |
-| varaus         | `Reservation`           | one item line within a loan |
-| laatikko       | `Box`                   | physical return box at the kiosk |
-| sijainti       | `Location`              | storage location of an item |
-| kategoria      | `Category`              | item category (many-to-many) |
-| huomio         | `Report` **or** `Announcement` | see "Huomiot" below — one UI concept, two tables |
-| (huomio, käsittelemätön) | `Report`      | what a loaner wrote about a loan, at pickup or return |
-| (huomio, julkaistu) | `Announcement`     | what an admin published on a kama, visible to everyone |
-| pohja, valmis setti | `Template`         | pre-picked item set the loaner drops into the cart |
-| käyttäjä       | `User`                  | group = ADMIN \| USER \| KIOSK |
-| kiosk          | KIOSK group / `app/kiosk`| shared terminal; admins elevate via PIN |
-| muokkaushistoria | `ItemHistory`         | per-item audit log |
-| (loan) historia | `LoanHistory`          | per-loan audit log |
+| Finnish                  | Code / model                   | Notes                                                  |
+| ------------------------ | ------------------------------ | ------------------------------------------------------ |
+| kama, kalusto            | `Item`                         | a piece of equipment ("kama" = one item)               |
+| laina                    | `Loan`                         | a loan/booking                                         |
+| varaus                   | `Reservation`                  | one item line within a loan                            |
+| laatikko                 | `Box`                          | physical return box at the kiosk                       |
+| sijainti                 | `Location`                     | storage location of an item                            |
+| kategoria                | `Category`                     | item category (many-to-many)                           |
+| huomio                   | `Report` **or** `Announcement` | see "Huomiot" below — one UI concept, two tables       |
+| (huomio, käsittelemätön) | `Report`                       | what a loaner wrote about a loan, at pickup or return  |
+| (huomio, julkaistu)      | `Announcement`                 | what an admin published on a kama, visible to everyone |
+| pohja, valmis setti      | `Template`                     | pre-picked item set the loaner drops into the cart     |
+| käyttäjä                 | `User`                         | group = ADMIN \| USER \| KIOSK                         |
+| kiosk                    | KIOSK group / `app/kiosk`      | shared terminal; admins elevate via PIN                |
+| muokkaushistoria         | `ItemHistory`                  | per-item audit log                                     |
+| (loan) historia          | `LoanHistory`                  | per-loan audit log                                     |
 
 ## Huomiot (one feature, two tables)
 
-The UI has **one** concept — a *huomio*, something noticed about a kama — backed
+The UI has **one** concept — a _huomio_, something noticed about a kama — backed
 by two models. They used to be two separate features ("raportit" and
 "ilmoitukset") with their own pages and words, which is why nobody could tell
 when to use which:
@@ -77,7 +77,7 @@ if (denied) return denied;
 They only answer "may this caller call this route at all". Per-resource checks
 (is this the caller's own loan?) stay in the route. A few routes still call
 `getServerSession` directly because their rule isn't a simple group check —
-`user/[userId]` GET (admin *or* the user themselves) and `loan/myPendingPickups`
+`user/[userId]` GET (admin _or_ the user themselves) and `loan/myPendingPickups`
 (answers with an empty list rather than a 401).
 
 `session.user` carries `id`, `group`, `email`, and — for a PIN-elevated kiosk
@@ -88,7 +88,7 @@ session back to KIOSK once it passes.
 **Elevation flips `group` to ADMIN but not `session.user.id`**, which stays the
 kiosk account. So `group === 'KIOSK'` is the wrong test for "is this the kaluston
 kone" — for those 30 minutes the shared wall screen would answer no. Use
-`isKioskMachine` (`utils/kioskSession.ts`) instead wherever the *machine*
+`isKioskMachine` (`utils/kioskSession.ts`) instead wherever the _machine_
 matters rather than the privilege: the whole loan flow (the kiosk mode/date
 selectors, the cart's Lainaaja field and free-text loaner, the cart reset after
 submitting, and `submitLoan` creating the loan already INUSE) branches on it, as
@@ -123,10 +123,10 @@ Two parallel audit logs, same shape (`{ id, <fk>, action, details Json?,
 actedById, createdAt }`, FK cascade, actor `SetNull`), rendered server-side on
 the entity's detail page:
 
-| | Model | Server logger | Client labels/format | Shown on |
-|---|---|---|---|---|
-| Loans | `LoanHistory` | `utils/loanHistory.ts` (`logLoanHistory`, `resolveLoanActor`) | `utils/loanHelpers.ts` | `/loan/[id]` |
-| Items | `ItemHistory` | `utils/itemHistory.ts` (`logItemHistory`, `diffItemFields`) | `utils/itemHelpers.ts` | `/item/[id]` (admin only) |
+|       | Model         | Server logger                                                 | Client labels/format   | Shown on                  |
+| ----- | ------------- | ------------------------------------------------------------- | ---------------------- | ------------------------- |
+| Loans | `LoanHistory` | `utils/loanHistory.ts` (`logLoanHistory`, `resolveLoanActor`) | `utils/loanHelpers.ts` | `/loan/[id]`              |
+| Items | `ItemHistory` | `utils/itemHistory.ts` (`logItemHistory`, `diffItemFields`)   | `utils/itemHelpers.ts` | `/item/[id]` (admin only) |
 
 `logItemHistory` is best-effort (never throws). Item edits store a field-level
 `{ changed: { field: { from, to } } }` diff; bulk ops carry a `bulk` flag.
@@ -136,21 +136,22 @@ the entity's detail page:
 ## API routes
 
 ### `item/*` — equipment (admin-gated except reads)
-| Route | Method | Purpose |
-|---|---|---|
-| `createItem` | POST | create an item; logs `CREATED` |
-| `editItem` | POST | full edit (name/description/amount/categories); logs `UPDATED` diff |
-| `patchItem` | PATCH | single-field inline edit (name/description/amount/locationId); logs `UPDATED` |
-| `deleteItem` | POST | soft-delete (stamp `deletedAt`); logs `ARCHIVED` |
-| `restoreItem` | POST | clear `deletedAt`; logs `RESTORED` |
-| `promoteItem` | POST | temporary → normal item (`locationId` takes the `{ value, label }` sijainti shape, same as createItem/editItem); logs `PROMOTED` |
-| `bulkItems` | POST | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item |
-| `getInventory` | GET | inventory listing (admin table source); each `temporary` row carries `similar` — the kalusto kama it looks like a duplicate of (`utils/similarItems.ts`) |
-| `exportInventory` | GET | the same view as an .xlsx download ("Vie Exceliin"); shares `inventoryQuery` with `getInventory`, minus the paging |
-| `uploadImage` | POST | S3 presigned URL for the item image (admin; any non-kiosk user for a `custom-<uuid>` key, or for a real kama that has **no** photo yet — HEADs the public bucket to check) |
-| `deleteImage` | POST | drop a kama's photo without replacing it (admin; deletes the raw key plus the `original/` and `compressed/` renditions); logs `UPDATED` with a note |
-| `createAnnouncement` | POST | publish a huomio onto one or more kamat (`{ itemIds, message, kind, reportId? }`) |
-| `expireAnnouncement` | POST | unpublish one (stamps `expiresAt`) |
+
+| Route                | Method | Purpose                                                                                                                                                                    |
+| -------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createItem`         | POST   | create an item; logs `CREATED`                                                                                                                                             |
+| `editItem`           | POST   | full edit (name/description/amount/categories); logs `UPDATED` diff                                                                                                        |
+| `patchItem`          | PATCH  | single-field inline edit (name/description/amount/locationId); logs `UPDATED`                                                                                              |
+| `deleteItem`         | POST   | soft-delete (stamp `deletedAt`); logs `ARCHIVED`                                                                                                                           |
+| `restoreItem`        | POST   | clear `deletedAt`; logs `RESTORED`                                                                                                                                         |
+| `promoteItem`        | POST   | temporary → normal item (`locationId` takes the `{ value, label }` sijainti shape, same as createItem/editItem); logs `PROMOTED`                                           |
+| `bulkItems`          | POST   | bulk `delete`/`restore`/`setCategory`/`setLocation`; logs per item                                                                                                         |
+| `getInventory`       | GET    | inventory listing (admin table source); each `temporary` row carries `similar` — the kalusto kama it looks like a duplicate of (`utils/similarItems.ts`)                   |
+| `exportInventory`    | GET    | the same view as an .xlsx download ("Vie Exceliin"); shares `inventoryQuery` with `getInventory`, minus the paging                                                         |
+| `uploadImage`        | POST   | S3 presigned URL for the item image (admin; any non-kiosk user for a `custom-<uuid>` key, or for a real kama that has **no** photo yet — HEADs the public bucket to check) |
+| `deleteImage`        | POST   | drop a kama's photo without replacing it (admin; deletes the raw key plus the `original/` and `compressed/` renditions); logs `UPDATED` with a note                        |
+| `createAnnouncement` | POST   | publish a huomio onto one or more kamat (`{ itemIds, message, kind, reportId? }`)                                                                                          |
+| `expireAnnouncement` | POST   | unpublish one (stamps `expiresAt`)                                                                                                                                         |
 
 Items are **soft-deleted** (`deletedAt`), so reservations + history survive.
 Temporary items ("omat kamat") are auto-created during `loan/submitLoan` **and
@@ -166,19 +167,20 @@ picture line up. The catalogue offers one wherever a search comes up empty:
 passed, so a rejected edit leaves no orphan items behind.
 
 ### `loan/*` — loans
-| Route | Method | Purpose |
-|---|---|---|
-| `submitLoan` | POST | create a loan (+ temporary items); logs `CREATED` |
-| `updateLoan` | POST | edit reservations/details (+ temporary items); logs `UPDATED` diff. An **admin** may also pass `status` to set the loan's status by hand (`MANUAL_LOAN_STATUSES` in `utils/loanHelpers.ts` — every status but the derived `PARTIALLY_RETURNED`); it is flattened onto every reservation, frees the box unless it is `IN_BOX`, and still goes through the availability/overlap check |
-| `approveLoan` / `rejectLoan` / `cancelLoan` | POST | status transitions |
-| `deleteLoan` / `restoreLoan` | POST | soft-delete a loan / undo it (admin only); log `DELETED` / `RESTORED` |
-| `startLoan` | POST | mark in use |
-| `loanReturned` | POST | returned to box |
-| `loanProcessed` | POST | process returned-from-box |
-| `editReport` | POST | triage a huomio: set status + re-tag affected kamat (admin only) |
-| `handledReports` | GET | the huomiot archive: RESOLVED reports, newest 100 (admin only) |
-| `myPendingPickups` | GET | current user's pending pickups |
-| `syncCalendar` | POST | force one loan's calendar event back in sync (admin only); repair tool, no UI |
+
+| Route                                       | Method | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `submitLoan`                                | POST   | create a loan (+ temporary items); logs `CREATED`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `updateLoan`                                | POST   | edit reservations/details (+ temporary items); logs `UPDATED` diff. An **admin** may also pass `status` to set the loan's status by hand (`MANUAL_LOAN_STATUSES` in `utils/loanHelpers.ts` — every status but the derived `PARTIALLY_RETURNED`); it is flattened onto every reservation, frees the box unless it is `IN_BOX`, and still goes through the availability/overlap check. An **admin** may also pass a per-reservation `status` to set each item's status individually (e.g. one kama of a partial return); when they do, the loan's status is re-derived from the items (`deriveLoanStatus`) and the per-item changes land in the `UPDATED` audit trail as `statusChanges` |
+| `approveLoan` / `rejectLoan` / `cancelLoan` | POST   | status transitions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `deleteLoan` / `restoreLoan`                | POST   | soft-delete a loan / undo it (admin only); log `DELETED` / `RESTORED`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `startLoan`                                 | POST   | mark in use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `loanReturned`                              | POST   | returned to box                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `loanProcessed`                             | POST   | process returned-from-box                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `editReport`                                | POST   | triage a huomio: set status + re-tag affected kamat (admin only)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `handledReports`                            | GET    | the huomiot archive: RESOLVED reports, newest 100 (admin only)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `myPendingPickups`                          | GET    | current user's pending pickups                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `syncCalendar`                              | POST   | force one loan's calendar event back in sync (admin only); repair tool, no UI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 Loans are **soft-deleted** too (`Loan.deletedAt`, `loan/deleteLoan`): an admin
 removing a duplicate or a mis-entered loan hides it rather than dropping the row,
@@ -187,41 +189,43 @@ puts it back exactly as it was. Everything that reads loans therefore has to
 exclude them — use `activeLoansWhere` / `activeLoanReservationWhere` from
 `utils/loanQueries.ts`, never a bare `prisma.loan.findMany({})`. Reservations of
 a deleted loan keep their statuses (that is what makes the restore exact), so
-availability, the box lookups and `reservation/checkInBox` filter on the *loan*,
+availability, the box lookups and `reservation/checkInBox` filter on the _loan_,
 not on the reservation status. The one place a deleted loan is still visible is
 its own `/loan/[id]` for an admin — the restore button lives there — and the
 "Poistetut" chip on `/loan`, which is how they find it again. Every mutation
 route refuses one (404/409).
 
 `submitLoan` creates the loan already **ACCEPTED** (or **INUSE** when it is made
-at the kaluston kone — `isKioskMachine`, so an elevated admin counts — *and*
+at the kaluston kone — `isKioskMachine`, so an elevated admin counts — _and_
 starts now; a booking for a later date stays a reservation whatever machine it
 was made on — that is what "Tee varaus toiselle päivälle" makes) — there is no approval queue. `approveLoan` therefore only
 exists to bring a rejected loan back, which is why the "Hyväksy" button is
 hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 
 ### `user/*`, `auth/*`, misc
-| Route | Method | Purpose |
-|---|---|---|
-| `user/[userId]` | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`, `deletedBySync: false`) so loans + history survive; restore by clearing `deletedAt` |
-| `user/getUsers` | GET | list **all** live users, full records (admin only); excludes `deletedAt` |
-| `users/getUsers` | GET | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt`; raw SQL, ordered by name (email as fallback) with the `fi-FI-x-icu` collation |
-| `user/kioskPassword` | GET/POST | read / rotate the reusable static kiosk password |
-| `user/updateEmailPreferences` | POST | notification prefs (the `email*` toggles **and** `calendarLoanEvents`) — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
-| `auth/createPin` | POST | set the admin kiosk-elevation PIN |
-| `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
-| `auth/[...nextauth]` | — | Auth.js handler (`export const { GET, POST } = handlers`) |
-| `availability/getAvailabilities` | POST | item availability over a date range |
-| `category/getCategories` | GET | option list, with `_count.items` (live kamat) for the Kategoriat page |
-| `category/createCategory`, `category/updateCategory`, `category/deleteCategory` | POST | manage kategoriat directly; a name that already exists (case-insensitive) is refused; delete only untags the kamat (admin) |
-| `location/getLocations` | GET | every sijainti with `path` ("Kalusto / Hylly 3") and `depth`, in tree order — pickers label options with the path (admin) |
-| `location/createLocation`, `location/updateLocation`, `location/deleteLocation` | POST | the sijainti tree: name + `parentId`; loops, and deleting a non-empty or lainattava sijainti, are refused (`utils/locationQueries.ts`). Renaming/moving a lainattava one brings its kama along. Deleting lifts its children one level (admin) |
-| `location/setLoanable` | POST | `{ id, loanable }` — switch a sijainti's lainattava on (creates its kama) or off (archives and unlinks it) (admin) |
-| `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
-| `template/createTemplate` | POST | create one from an item list (`items: [{ itemId, amount }]`) |
-| `template/updateTemplate` | POST | rename + replace its item list |
-| `template/deleteTemplate` | POST | hard delete (nothing references a template) |
-| `reservation/checkInBox` | POST | mark a reservation checked into a box |
+
+| Route                                                                           | Method               | Purpose                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user/[userId]`                                                                 | GET/PUT/PATCH/DELETE | user CRUD; role flip via PATCH `group`. DELETE **soft-deletes** (stamps `deletedAt`, `deletedBySync: false`) so loans + history survive; restore by clearing `deletedAt`                                                                                       |
+| `user/getUsers`                                                                 | GET                  | list **all** live users, full records (admin only); excludes `deletedAt`                                                                                                                                                                                       |
+| `users/getUsers`                                                                | GET                  | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt`; raw SQL, ordered by name (email as fallback) with the `fi-FI-x-icu` collation                                                              |
+| `user/kioskPassword`                                                            | GET/POST             | read / rotate the reusable static kiosk password                                                                                                                                                                                                               |
+| `user/updateEmailPreferences`                                                   | POST                 | notification prefs (the `email*` toggles **and** `calendarLoanEvents`) — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
+| `auth/createPin`                                                                | POST                 | set the admin kiosk-elevation PIN                                                                                                                                                                                                                              |
+| `auth/elevatableAdmins`                                                         | GET                  | admins a kiosk session may elevate to (used by `TopBar`)                                                                                                                                                                                                       |
+| `auth/[...nextauth]`                                                            | —                    | Auth.js handler (`export const { GET, POST } = handlers`)                                                                                                                                                                                                      |
+| `availability/getAvailabilities`                                                | POST                 | item availability over a date range                                                                                                                                                                                                                            |
+| `category/getCategories`                                                        | GET                  | option list, with `_count.items` (live kamat) for the Kategoriat page                                                                                                                                                                                          |
+| `category/createCategory`, `category/updateCategory`, `category/deleteCategory` | POST                 | manage kategoriat directly; a name that already exists (case-insensitive) is refused; delete only untags the kamat (admin)                                                                                                                                     |
+| `location/getLocations`                                                         | GET                  | every sijainti with `path` ("Kalusto / Hylly 3") and `depth`, in tree order — pickers label options with the path (admin)                                                                                                                                      |
+| `location/createLocation`, `location/updateLocation`, `location/deleteLocation` | POST                 | the sijainti tree: name + `parentId`; loops, and deleting a non-empty or lainattava sijainti, are refused (`utils/locationQueries.ts`). Renaming/moving a lainattava one brings its kama along. Deleting lifts its children one level (admin)                  |
+| `location/setLoanable`                                                          | POST                 | `{ id, loanable }` — switch a sijainti's lainattava on (creates its kama) or off (archives and unlinks it) (admin)                                                                                                                                             |
+| `template/getTemplates`                                                         | GET                  | the pre-picked item sets (any signed-in caller)                                                                                                                                                                                                                |
+| `template/createTemplate`                                                       | POST                 | create one from an item list (`items: [{ itemId, amount }]`)                                                                                                                                                                                                   |
+| `template/updateTemplate`                                                       | POST                 | rename + replace its item list                                                                                                                                                                                                                                 |
+| `template/deleteTemplate`                                                       | POST                 | hard delete (nothing references a template)                                                                                                                                                                                                                    |
+| `reservation/checkInBox`                                                        | POST                 | mark a reservation checked into a box                                                                                                                                                                                                                          |
+
 Transactional email is **not** a route: the senders live in `utils/emails/`
 (one module per email, each split into a pure `render*Email` and a
 `send*Email`), with the shared pieces in `utils/emailHelpers` and the
@@ -233,15 +237,15 @@ cron sweeps — import and call them directly.
 ## Google Workspace user sync
 
 The troop roster lives in Google Workspace and Klapi follows it — see
-README § *Google Workspace user sync* for the setup and the env vars.
+README § _Google Workspace user sync_ for the setup and the env vars.
 
-| | Where |
-|---|---|
-| Service-account auth (JWT → token), shared by both Google integrations | `utils/googleAuth.ts` |
-| Directory API client (impersonates `GOOGLE_WORKSPACE_SUBJECT`) | `utils/googleWorkspace.ts` |
-| Reconciliation + guards | `utils/userSync.ts` |
-| Cron wrapper | `app/api/cron/syncWorkspaceUsers/route.ts` |
-| Tests | `__tests__/api/syncWorkspaceUsers.integration.test.ts` |
+|                                                                        | Where                                                  |
+| ---------------------------------------------------------------------- | ------------------------------------------------------ |
+| Service-account auth (JWT → token), shared by both Google integrations | `utils/googleAuth.ts`                                  |
+| Directory API client (impersonates `GOOGLE_WORKSPACE_SUBJECT`)         | `utils/googleWorkspace.ts`                             |
+| Reconciliation + guards                                                | `utils/userSync.ts`                                    |
+| Cron wrapper                                                           | `app/api/cron/syncWorkspaceUsers/route.ts`             |
+| Tests                                                                  | `__tests__/api/syncWorkspaceUsers.integration.test.ts` |
 
 The split matters: `userSync` takes an already-fetched roster, so every
 lock-people-out decision is testable without a key or a network.
@@ -264,15 +268,15 @@ soft-deletes a user must set it.
 ## Loans on the shared calendar
 
 One event per loan on one shared Google Calendar, with the borrower invited as a
-guest so it lands in their own calendar too — README § *Loans on the shared
-calendar* has the setup. Unset `GOOGLE_CALENDAR_ID` and the whole thing is a
+guest so it lands in their own calendar too — README § _Loans on the shared
+calendar_ has the setup. Unset `GOOGLE_CALENDAR_ID` and the whole thing is a
 no-op, which is what local dev and the tests run with.
 
-| | Where |
-|---|---|
-| Calendar API client (SA **impersonates** `GOOGLE_WORKSPACE_SUBJECT`, the calendar's owner) | `utils/googleCalendar.ts` |
-| Which loans get an event, what it says, who is invited | `utils/loanCalendar.ts` |
-| Tests (fake `CalendarClient`, no key, no network) | `__tests__/api/loanCalendar.integration.test.ts` |
+|                                                                                            | Where                                            |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Calendar API client (SA **impersonates** `GOOGLE_WORKSPACE_SUBJECT`, the calendar's owner) | `utils/googleCalendar.ts`                        |
+| Which loans get an event, what it says, who is invited                                     | `utils/loanCalendar.ts`                          |
+| Tests (fake `CalendarClient`, no key, no network)                                          | `__tests__/api/loanCalendar.integration.test.ts` |
 
 `syncLoanCalendarInBackground(loanId)` is the whole API for routes, and it
 **reconciles** rather than commands: it reads the loan as it now stands and
@@ -290,7 +294,7 @@ the kiosk; the shared calendar gets the event either way.
 
 Those guests are also why the client impersonates instead of acting as the
 service account itself. Sharing the calendar with the SA's own address is
-enough to write events with no guests, and *only* those: an `insert` carrying
+enough to write events with no guests, and _only_ those: an `insert` carrying
 `attendees` is refused with `403 forbiddenForServiceAccounts`. The mirror
 shipped that way and silently wrote nothing for nine days, so
 `GOOGLE_WORKSPACE_SUBJECT` is now part of `isCalendarConfigured()` — a
@@ -298,29 +302,29 @@ half-configured calendar skips rather than minting a token Google will refuse.
 
 ## Pages (`app/**/page.tsx`)
 
-| Path | Purpose |
-|---|---|
-| `/` | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own) |
-| `/item/[id]` | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**). Admins edit nimi/kuvaus/määrä/sijainti/kategoriat inline on the page (`components/ui/inline-edit.tsx`); the photo and a batch edit stay in `EditItemDialog`, and a väliaikainen kama gets "Siirrä kirjastoon" (`components/PromoteItemDialog.tsx`, shared with the inventory table). A poistettu (soft-deleted) kama still has a page — old loans link to it — but it says so, the inline editors are off and the admin's buttons become "Palauta kalustoon" |
-| `/notices` | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins |
-| `/item/announcements`, `/admin/reports` | permanent redirects to `/notices` (kept for old links) |
-| `/admin/boxes` | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below |
-| `/admin/editLoan/[id]` | permanent redirect to `/loan/[id]/edit` (kept for old links) |
-| `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list (status chips + admin-only "Poistetut" archive) / detail (+ history, admin delete & restore) / **the one** edit page — admin and loaner alike, with the admin extras (loan id, the Tila picker, editing a running loan) gated inside it on `isAdmin`. Gated server-side, before the loan is queried |
-| `/admin` | user management |
-| `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
-| `/admin/templates` | manage the loan templates ("valmiit setit") |
-| `/admin/categories` | kategoriat — create, rename, delete. Linked from the Kamat view's header next to Sijainnit |
-| `/admin/locations` | the sijainti tree — create (top form, or "+" on a row for a sub-sijainti in place), rename, move ("Sijaitsee"), delete empty ones. a "Lainattava" switch per row. Linked from the Kamat view's header |
-| `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
-| `/kiosk/startloan` | kiosk pickup queue (the palautuspäivä and the kamat are edited on the card itself and saved on "Aloita lainaus", with the same `components/LoanItemsEditor.tsx` rows + picker as `/loan/[id]/edit`, oma kama included) |
-| `/account`, `/login` | account settings / sign-in |
+| Path                                     | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                      | home / catalog browse (admin: the inventory table + the kama create/edit dialogs — `components/AddItemDialog.tsx`, `components/EditItemDialog.tsx`; neither has a route of its own)                                                                                                                                                                                                                                                                                                                                                     |
+| `/item/[id]`                             | item detail (+ **huomiot** — published & untriaged, **muokkaushistoria**). Admins edit nimi/kuvaus/määrä/sijainti/kategoriat inline on the page (`components/ui/inline-edit.tsx`); the photo and a batch edit stay in `EditItemDialog`, and a väliaikainen kama gets "Siirrä kirjastoon" (`components/PromoteItemDialog.tsx`, shared with the inventory table). A poistettu (soft-deleted) kama still has a page — old loans link to it — but it says so, the inline editors are off and the admin's buttons become "Palauta kalustoon" |
+| `/notices`                               | the huomiot page: published list for everyone, triage queue + handled archive ("Näytä käsitellyt") for admins                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `/item/announcements`, `/admin/reports`  | permanent redirects to `/notices` (kept for old links)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `/admin/boxes`                           | permanent redirect to `/loan` (kept for old links) — see "Laatikot" below                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `/admin/editLoan/[id]`                   | permanent redirect to `/loan/[id]/edit` (kept for old links)                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `/loan`, `/loan/[id]`, `/loan/[id]/edit` | loan list (status chips + admin-only "Poistetut" archive) / detail (+ history, admin delete & restore) / **the one** edit page — admin and loaner alike, with the admin extras (loan id, the Tila picker, editing a running loan) gated inside it on `isAdmin`. Gated server-side, before the loan is queried                                                                                                                                                                                                                           |
+| `/admin`                                 | user management                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `/admin/user/[userId]`                   | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser                                                                                                                                                                                                                                                                         |
+| `/admin/templates`                       | manage the loan templates ("valmiit setit")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `/admin/categories`                      | kategoriat — create, rename, delete. Linked from the Kamat view's header next to Sijainnit                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/admin/locations`                       | the sijainti tree — create (top form, or "+" on a row for a sub-sijainti in place), rename, move ("Sijaitsee"), delete empty ones. a "Lainattava" switch per row. Linked from the Kamat view's header                                                                                                                                                                                                                                                                                                                                   |
+| `/return`                                | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen                                                                                                                                                                                                                                                                                           |
+| `/kiosk/startloan`                       | kiosk pickup queue (the palautuspäivä and the kamat are edited on the card itself and saved on "Aloita lainaus", with the same `components/LoanItemsEditor.tsx` rows + picker as `/loan/[id]/edit`, oma kama included)                                                                                                                                                                                                                                                                                                                  |
+| `/account`, `/login`                     | account settings / sign-in                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ### Laatikot (no page of its own)
 
 There is one physical palautuslaatikko, so "what's in the box" is a filter, not
 a place: the **Laatikossa** chip on `/loan` (preselected, alongside the other
-status chips). It is the one chip that is *not* a plain derived-status match —
+status chips). It is the one chip that is _not_ a plain derived-status match —
 it also catches loans deriving as `PARTIALLY_RETURNED`, whose returned half is
 sitting in the box while the rest is still out (`app/loan/LoanListClient.tsx`).
 `LoanCard` badges those with "Laatikossa: N"; checking items back in stays on
@@ -408,7 +412,7 @@ three sub-sijainti levels deep). A sijainti that isn't lainattava is just a labe
   only the rows the admin could see. Client components take `TemplateView` from
   `@/types` instead — that module imports Prisma.
 - `hooks/useItemImage.ts` — item image with theme-aware placeholder + SSR guard.
-- `utils/kioskSession.ts` — `isKioskMachine` (kiosk login *or* an admin
+- `utils/kioskSession.ts` — `isKioskMachine` (kiosk login _or_ an admin
   PIN-elevated on one) and `loanStartsNow`; client-safe, so the cart and
   `loan/submitLoan` branch on the same rule.
 - `utils/customItems.ts` — the `custom-<uuid>` id for a loaner's own item: minted

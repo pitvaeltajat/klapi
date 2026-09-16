@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { ReservationStatus } from '@prisma/client';
 import CustomItemDialog from '@/components/CustomItemDialog';
 import ItemAmountCard from '@/components/ItemAmountCard';
 import { Alert } from '@/components/ui/alert';
@@ -26,16 +27,29 @@ export interface LoanItemRow {
   itemId: string;
   name: string;
   amount: number;
+  /** Per-item reservation status, carried through the editor for the loan edit
+   *  page where an admin may flatten each row's state. */
+  status?: ReservationStatus;
 }
 
 export const rowsFromReservations = (
-  reservations: { amount: number; item: { id: string; name: string } }[],
+  reservations: {
+    amount: number;
+    item: { id: string; name: string };
+    status?: ReservationStatus;
+  }[],
 ): LoanItemRow[] => {
   const byItem = new Map<string, LoanItemRow>();
   for (const r of reservations) {
     const existing = byItem.get(r.item.id);
     if (existing) existing.amount += r.amount;
-    else byItem.set(r.item.id, { itemId: r.item.id, name: r.item.name, amount: r.amount });
+    else
+      byItem.set(r.item.id, {
+        itemId: r.item.id,
+        name: r.item.name,
+        amount: r.amount,
+        status: r.status,
+      });
   }
   return Array.from(byItem.values());
 };
@@ -48,6 +62,9 @@ export const rowsToReservations = (rows: LoanItemRow[]) =>
     // Only an oma kama carries a name: it is what updateLoan creates the
     // temporary item from.
     ...(isCustomItemId(r.itemId) ? { name: r.name } : {}),
+    // A per-item status is only ever set by an admin on the loan edit page;
+    // the kiosk never sends one.
+    ...(r.status ? { status: r.status } : {}),
   }));
 
 export function useLoanItemRows(
