@@ -346,7 +346,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 </NextLink>
               )}
               <div className="h-6 w-px bg-header-foreground/30" />
-              {browseLink}
+              {role !== 'KIOSK' && browseLink}
               <NextLink href="/notices" className={linkClass(isPathActive('/notices'))}>
                 Huomiot
               </NextLink>
@@ -418,16 +418,18 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 </NextLink>
               );
             })}
-            <button
-              type="button"
-              onClick={() => {
-                handleBrowseClick();
-                onClose();
-              }}
-              className={`cursor-pointer px-6 py-4 text-left ${isKamatActive ? 'font-bold' : ''}`}
-            >
-              Kamat
-            </button>
+            {role !== 'KIOSK' && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleBrowseClick();
+                  onClose();
+                }}
+                className={`cursor-pointer px-6 py-4 text-left ${isKamatActive ? 'font-bold' : ''}`}
+              >
+                Kamat
+              </button>
+            )}
             <NextLink
               href="/notices"
               onClick={onClose}
