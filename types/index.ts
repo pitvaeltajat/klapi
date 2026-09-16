@@ -78,6 +78,8 @@ export interface ItemCardProps {
       name: string;
     }[];
     announcements: Announcement[];
+    /** "Kolo / Kalusto / Työkaluseinä" — see utils/locationTree. */
+    locationPath?: string | null;
   };
   availableAmount: number;
   /** Names the kama this one is stored in, when that kama being out is why

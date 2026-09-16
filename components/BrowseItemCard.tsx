@@ -8,6 +8,7 @@ interface ItemWithCategories extends Item {
   categories: Category[];
   type: ItemType;
   announcements: Announcement[];
+  locationPath?: string | null;
 }
 
 interface BrowseItemCardProps {
@@ -25,6 +26,7 @@ export default function BrowseItemCard({ item }: BrowseItemCardProps) {
       loading={image.status === 'loading'}
       subtitle={`${item.amount} kpl`}
       categoryLine={item.categories.map((cat) => cat.name).join(', ')}
+      locationPath={item.locationPath}
       announcements={item.announcements}
       href={`/item/${item.id}`}
     />

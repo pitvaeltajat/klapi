@@ -8,6 +8,7 @@ import { Item, Category, Announcement } from '@prisma/client';
 interface ItemWithCategories extends Item {
   categories: Category[];
   announcements: Announcement[];
+  locationPath?: string | null;
 }
 
 interface ItemGridProps {
@@ -43,6 +44,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
               amount: item.amount,
               categories: item.categories.map((cat) => ({ id: cat.id, name: cat.name })),
               announcements: item.announcements || null,
+              locationPath: item.locationPath,
             }}
             availableAmount={availabilities?.[item.id]?.available ?? 0}
             blockedBy={availabilities?.[item.id]?.blockedBy}

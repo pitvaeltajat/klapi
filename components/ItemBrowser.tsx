@@ -23,6 +23,7 @@ interface ItemWithRelations extends Item {
   announcements: Announcement[];
   /** Bookings within the rolling window; drives the "Suosituimmat" sort. */
   popularity?: number;
+  locationPath?: string | null;
 }
 
 // Finnish collation: ä/å/ö sort at the END of the alphabet, not next to a/o.

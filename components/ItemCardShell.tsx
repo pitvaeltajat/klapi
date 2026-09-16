@@ -2,7 +2,8 @@
 
 import React from 'react';
 import NextLink from 'next/link';
-import { Info, TriangleAlert } from 'lucide-react';
+import { Info, MapPin, TriangleAlert } from 'lucide-react';
+import { PATH_SEPARATOR } from '@/utils/locationTree';
 import { AnnouncementKind, type Announcement } from '@prisma/client';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cardVariants } from '@/components/ui/card';
@@ -26,6 +27,8 @@ interface ItemCardShellProps {
   loading?: boolean;
   subtitle?: React.ReactNode;
   categoryLine?: string;
+  /** The kama's sijainti path; the card shows its last two levels. */
+  locationPath?: string | null;
   announcements?: Announcement[] | null;
   /**
    * If provided, the whole card is a NextLink to this href. Otherwise the
@@ -62,6 +65,7 @@ export default function ItemCardShell({
   loading = false,
   subtitle,
   categoryLine,
+  locationPath,
   announcements,
   href,
   onClick,
@@ -139,6 +143,21 @@ export default function ItemCardShell({
 
         {subtitle !== undefined && (
           <div className="text-sm font-semibold sm:mt-0.5 sm:text-sm">{subtitle}</div>
+        )}
+
+        {locationPath && (
+          // The tail of the path is what finds the kama on the shelf — the
+          // top levels are the same for nearly everything — so the card shows
+          // the last two and the tooltip the whole.
+          <p
+            className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+            title={locationPath}
+          >
+            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="truncate">
+              {locationPath.split(PATH_SEPARATOR).slice(-2).join(PATH_SEPARATOR)}
+            </span>
+          </p>
         )}
 
         {categoryLine !== undefined && (
