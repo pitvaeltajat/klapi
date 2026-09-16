@@ -2,7 +2,7 @@
 
 import React, { Suspense, use, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Plus } from 'lucide-react';
+import { MapPin, Plus, Tags } from 'lucide-react';
 import NextLink from 'next/link';
 import DateSelector from '@/components/DateSelector';
 import DateSummaryBar from '@/components/DateSummaryBar';
@@ -44,6 +44,13 @@ function BrowseModeHeader({
           <Button variant="outline" className="gap-2" asChild>
             <NextLink href="/admin/locations">
               <MapPin className="h-4 w-4" /> Sijainnit
+            </NextLink>
+          </Button>
+        )}
+        {isAdmin && (
+          <Button variant="outline" className="gap-2" asChild>
+            <NextLink href="/admin/categories">
+              <Tags className="h-4 w-4" /> Kategoriat
             </NextLink>
           </Button>
         )}

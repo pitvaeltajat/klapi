@@ -5,7 +5,7 @@ import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { Package, Plus, Trash2 } from 'lucide-react';
+import { CornerDownRight, Package, Plus, Trash2 } from 'lucide-react';
 import NotAuthenticated from '@/components/NotAuthenticated';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { canBeParent } from '@/utils/locationTree';
+import { postJson } from '@/utils/postJson';
 
 interface LocationRow {
   id: string;
@@ -39,20 +40,6 @@ interface Option {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-async function post(url: string, body: unknown) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    toast.error(data.message || 'Tallennus epäonnistui');
-    throw new Error(data.message);
-  }
-  return data;
-}
-
 /**
  * The sijainti tree: "Kalusto / Hylly 3". Pickers elsewhere still mint a
  * top-level sijainti when a name is typed in; this is where it gets put in its
@@ -71,6 +58,9 @@ export default function LocationsView() {
   const [newParent, setNewParent] = useState<Option | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<LocationRow | null>(null);
+  /** The row whose "Lisää alasijainti" field is open, and what is typed in it. */
+  const [addingUnder, setAddingUnder] = useState<string | null>(null);
+  const [childName, setChildName] = useState('');
   const [deleting, setDeleting] = useState(false);
 
   if (session?.user?.group !== 'ADMIN') return <NotAuthenticated />;
@@ -86,7 +76,7 @@ export default function LocationsView() {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await post('/api/location/createLocation', {
+      await postJson('/api/location/createLocation', {
         name: newName,
         parentId: newParent?.value ?? null,
       });
@@ -94,14 +84,30 @@ export default function LocationsView() {
       setNewName('');
       await mutate();
     } catch {
-      // post() already toasted.
+      // postJson already toasted.
     } finally {
       setCreating(false);
     }
   };
 
+  // Adding a child where the parent is, rather than scrolling up to the form and
+  // finding the parent in a picker: "Kalusto / something" is one click and a name.
+  const createChild = async (parent: LocationRow) => {
+    const name = childName.trim();
+    if (!name) return;
+    try {
+      await postJson('/api/location/createLocation', { name, parentId: parent.id });
+      toast.success('Sijainti lisätty', { description: `${parent.path} / ${name}` });
+      setChildName('');
+      setAddingUnder(null);
+      await mutate();
+    } catch {
+      // postJson already toasted; keep the field open with what was typed.
+    }
+  };
+
   const update = async (id: string, patch: { name?: string; parentId?: string | null }) => {
-    await post('/api/location/updateLocation', { id, ...patch });
+    await postJson('/api/location/updateLocation', { id, ...patch });
     await mutate();
   };
 
@@ -109,12 +115,12 @@ export default function LocationsView() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await post('/api/location/deleteLocation', { id: deleteTarget.id });
+      await postJson('/api/location/deleteLocation', { id: deleteTarget.id });
       toast.success('Sijainti poistettu', { description: deleteTarget.path });
       setDeleteTarget(null);
       await mutate();
     } catch {
-      // post() already toasted.
+      // postJson already toasted.
     } finally {
       setDeleting(false);
     }
@@ -179,66 +185,108 @@ export default function LocationsView() {
                 return (
                   <li
                     key={loc.id}
-                    className="flex flex-col gap-2 py-3 md:flex-row md:items-center md:gap-4"
+                    className="py-3"
                     // Indent by depth so the tree reads without drawing lines.
                     style={{ paddingLeft: `${Math.min(loc.depth, 6) * 1.25}rem` }}
                   >
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                      {loc.item ? (
-                        <>
-                          <Package className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                          <NextLink href={`/item/${loc.item.id}`} className="font-medium hover:underline">
-                            {loc.name}
-                          </NextLink>
-                          <Badge variant="secondary">Säilytyspaikka</Badge>
-                        </>
-                      ) : (
-                        <InlineEdit
-                          value={loc.name}
-                          label="nimeä"
-                          className="font-medium"
-                          validate={(next) => (next ? null : 'Anna sijainnille nimi')}
-                          onSave={(name) => update(loc.id, { name })}
-                        />
-                      )}
-                      <span className="text-sm text-muted-foreground">
-                        {loc._count.items} kamaa
-                      </span>
-                    </div>
-
-                    {!loc.item && (
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1 md:w-64 md:flex-none">
-                          <Select<Option>
-                            aria-label={`${loc.name}: sijaitsee`}
-                            options={parentOptions(loc.id)}
-                            value={parentValue}
-                            onChange={(option) => {
-                              if ((option?.value ?? null) === loc.parentId) return;
-                              update(loc.id, { parentId: option?.value ?? null }).then(
-                                () => toast.success('Sijainti siirretty'),
-                                () => {},
-                              );
-                            }}
-                            isClearable
-                            placeholder="Ylin taso"
-                            noOptionsMessage={() => 'Ei sijainteja'}
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                        {loc.item ? (
+                          <>
+                            <Package className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                            <NextLink href={`/item/${loc.item.id}`} className="font-medium hover:underline">
+                              {loc.name}
+                            </NextLink>
+                            <Badge variant="secondary">Säilytyspaikka</Badge>
+                          </>
+                        ) : (
+                          <InlineEdit
+                            value={loc.name}
+                            label="nimeä"
+                            className="font-medium"
+                            validate={(next) => (next ? null : 'Anna sijainnille nimi')}
+                            onSave={(name) => update(loc.id, { name })}
                           />
-                        </div>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={`Poista ${loc.name}`}
-                          // Emptying it first is the only safe order: kamat
-                          // cascade away with their sijainti.
-                          disabled={loc._count.items > 0}
-                          title={loc._count.items > 0 ? 'Siirrä kamat ensin muualle' : undefined}
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => setDeleteTarget(loc)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          {loc._count.items} kamaa
+                        </span>
                       </div>
+
+                      {!loc.item && (
+                        <div className="flex items-center gap-2">
+                          <div className="min-w-0 flex-1 md:w-64 md:flex-none">
+                            <Select<Option>
+                              aria-label={`${loc.name}: sijaitsee`}
+                              options={parentOptions(loc.id)}
+                              value={parentValue}
+                              onChange={(option) => {
+                                if ((option?.value ?? null) === loc.parentId) return;
+                                update(loc.id, { parentId: option?.value ?? null }).then(
+                                  () => toast.success('Sijainti siirretty'),
+                                  () => {},
+                                );
+                              }}
+                              isClearable
+                              placeholder="Ylin taso"
+                              noOptionsMessage={() => 'Ei sijainteja'}
+                            />
+                          </div>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Lisää alasijainti: ${loc.name}`}
+                            title="Lisää alasijainti"
+                            onClick={() => {
+                              setChildName('');
+                              setAddingUnder(addingUnder === loc.id ? null : loc.id);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Poista ${loc.name}`}
+                            // Emptying it first is the only safe order: kamat
+                            // cascade away with their sijainti.
+                            disabled={loc._count.items > 0}
+                            title={loc._count.items > 0 ? 'Siirrä kamat ensin muualle' : undefined}
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteTarget(loc)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {addingUnder === loc.id && (
+                      <form
+                        className="mt-2 flex items-center gap-2 pl-5"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void createChild(loc);
+                        }}
+                      >
+                        <CornerDownRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                        <Input
+                          autoFocus
+                          value={childName}
+                          onChange={(e) => setChildName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') setAddingUnder(null);
+                          }}
+                          placeholder={`Uusi sijainti kohteeseen ${loc.name}`}
+                          aria-label={`Uuden alasijainnin nimi: ${loc.path}`}
+                          className="max-w-sm"
+                        />
+                        <Button type="submit" size="sm" disabled={!childName.trim()}>
+                          Lisää
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setAddingUnder(null)}>
+                          Peruuta
+                        </Button>
+                      </form>
                     )}
                   </li>
                 );

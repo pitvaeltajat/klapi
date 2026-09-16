@@ -929,7 +929,10 @@ export default function InventoryView() {
     if (!bulkCategoryValue) return;
     setBulkCategoryOpen(false);
     void runBulkAction(
-      { action: 'setCategory', categoryName: bulkCategoryValue.label },
+      // `value`, not `label`: bulkItems upserts on the id, so sending the name
+      // minted a duplicate kategoria every time an existing one was picked.
+      // A typed-in one has its name as the value, which is what gets created.
+      { action: 'setCategory', categoryName: bulkCategoryValue.value },
       (n) => `Kategoria asetettu ${n} kamalle`,
       'Kategoria-asetus epäonnistui',
       () => setBulkCategoryValue(null),

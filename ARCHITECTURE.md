@@ -212,7 +212,8 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `auth/elevatableAdmins` | GET | admins a kiosk session may elevate to (used by `TopBar`) |
 | `auth/[...nextauth]` | — | Auth.js handler (`export const { GET, POST } = handlers`) |
 | `availability/getAvailabilities` | POST | item availability over a date range |
-| `category/getCategories` | GET | option list |
+| `category/getCategories` | GET | option list, with `_count.items` (live kamat) for the Kategoriat page |
+| `category/createCategory`, `category/updateCategory`, `category/deleteCategory` | POST | manage kategoriat directly; a name that already exists (case-insensitive) is refused; delete only untags the kamat (admin) |
 | `location/getLocations` | GET | every sijainti with `path` ("Kalusto / Hylly 3") and `depth`, in tree order — pickers label options with the path (admin) |
 | `location/createLocation`, `location/updateLocation`, `location/deleteLocation` | POST | the sijainti tree: name + `parentId`; loops, a säilytyspaikka as parent, editing a säilytyspaikka, and deleting a non-empty sijainti are refused (`utils/locationQueries.ts`). Deleting lifts its children one level (admin) |
 | `template/getTemplates` | GET | the pre-picked item sets (any signed-in caller) |
@@ -308,7 +309,8 @@ half-configured calendar skips rather than minting a token Google will refuse.
 | `/admin` | user management |
 | `/admin/user/[userId]` | one person as an admin sees them: role, ilmoitusasetukset (sähköposti + kalenteri), lainahistoria — `/account` for somebody else. Reached by clicking a name in `/admin`. Gated server-side: another member's loan history must not reach a non-admin's browser |
 | `/admin/templates` | manage the loan templates ("valmiit setit") |
-| `/admin/locations` | the sijainti tree — create, rename, move ("Sijaitsee"), delete empty ones. Linked from the Kamat view's header; säilytyspaikat appear under the sijainti their kama is in, read-only |
+| `/admin/categories` | kategoriat — create, rename, delete. Linked from the Kamat view's header next to Sijainnit |
+| `/admin/locations` | the sijainti tree — create (top form, or "+" on a row for a sub-sijainti in place), rename, move ("Sijaitsee"), delete empty ones. Linked from the Kamat view's header; säilytyspaikat appear under the sijainti their kama is in, read-only |
 | `/return` | return a loan (own loans for users; everyone's for admin/kiosk). `/kiosk/return` permanently redirects here. The full-screen palautus dialog shrinks its kama grid (`useFitToScreen`, CSS `zoom`) so a big loan still fits one desktop screen |
 | `/kiosk/startloan` | kiosk pickup queue (the palautuspäivä and the kamat are edited on the card itself and saved on "Aloita lainaus", with the same `components/LoanItemsEditor.tsx` rows + picker as `/loan/[id]/edit`, oma kama included) |
 | `/account`, `/login` | account settings / sign-in |
