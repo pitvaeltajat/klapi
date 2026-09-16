@@ -52,6 +52,28 @@ export async function setLocationLoanable(locationId: string, loanable: boolean)
 }
 
 /**
+ * Turn an existing kama into a lainattava sijainti — a toolbox that was
+ * catalogued as a plain kama. Unlike switching lainattava on for a sijainti,
+ * no new kama is made: this one stands behind the new sijainti, so its id,
+ * photo and loan history carry on. The sijainti takes the kama's name and sits
+ * where the kama is stored. Returns the new sijainti's id.
+ */
+export async function makeItemLoanableLocation(itemId: string): Promise<string> {
+  const item = await prisma.item.findUniqueOrThrow({
+    where: { id: itemId },
+    select: { name: true, locationId: true, deletedAt: true, type: true, asLocation: { select: { id: true } } },
+  });
+  if (item.asLocation) return item.asLocation.id;
+  if (item.deletedAt || item.type !== 'normal') {
+    throw new Error(`"${item.name}" ei ole elävä normaali kama`);
+  }
+  const location = await prisma.location.create({
+    data: { name: item.name, parentId: item.locationId, itemId },
+  });
+  return location.id;
+}
+
+/**
  * After a lainattava sijainti is renamed or moved on the Sijainnit page, bring
  * its kama along. A no-op for an ordinary sijainti.
  */
