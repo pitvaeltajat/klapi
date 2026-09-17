@@ -216,9 +216,12 @@ export default function LocationsView() {
                           validate={(next) => (next ? null : 'Anna sijainnille nimi')}
                           onSave={(name) => update(loc.id, { name })}
                         />
-                        <span className="text-sm text-muted-foreground">
+                        <NextLink
+                          href={`/?browse=1&location=${loc.id}`}
+                          className="text-sm text-muted-foreground hover:underline"
+                        >
                           {loc._count.items} kamaa
-                        </span>
+                        </NextLink>
                         {loc.item && (
                           <NextLink href={`/item/${loc.item.id}`} title="Avaa lainattava kama">
                             <Badge variant="default" className="gap-1 hover:underline">
