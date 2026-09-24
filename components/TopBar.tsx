@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu } from 'lucide-react';
+import { LayoutGrid, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
@@ -270,9 +270,10 @@ export default function TopBar({ children }: { children: ReactNode }) {
                 <a
                   href="https://atk.pitva.fi"
                   title="Kaikki PitVan palvelut"
-                  className="hidden text-sm font-medium opacity-80 transition hover:underline hover:opacity-100 sm:inline"
+                  className="hidden h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-header-foreground/20 px-[11px] text-[13px] font-medium tracking-[0.02em] opacity-90 transition hover:border-header-foreground/40 hover:bg-header-foreground/10 hover:opacity-100 sm:inline-flex"
                 >
-                  ← ATK
+                  <LayoutGrid className="h-[13px] w-[13px] shrink-0" strokeWidth={2.25} aria-hidden />
+                  ATK
                 </a>
               )}
               {session && isKiosk && (
@@ -472,8 +473,13 @@ export default function TopBar({ children }: { children: ReactNode }) {
               Oma tili
             </NextLink>
             {!isKiosk && (
-              <a href="https://atk.pitva.fi" onClick={onClose} className="px-6 py-4">
-                ← ATK
+              <a
+                href="https://atk.pitva.fi"
+                onClick={onClose}
+                className="flex items-center gap-2 px-6 py-4"
+              >
+                <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
+                ATK
               </a>
             )}
           </nav>
