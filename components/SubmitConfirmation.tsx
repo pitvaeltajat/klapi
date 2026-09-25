@@ -5,6 +5,7 @@ import { CartItem } from '../types';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { CircleCheck } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useDates } from '@/contexts/DatesContext';
 import {
@@ -50,6 +51,35 @@ export default function SubmitConfirmation({
   const { data: session } = useSession();
 
   const [isLoading, setIsLoading] = React.useState(false);
+  /** Kiosk only: the loan went through and the receipt is on screen. The cart
+   *  is kept until it closes, so the receipt can list what was taken. */
+  const [sent, setSent] = React.useState(false);
+  const [sentWithNote, setSentWithNote] = React.useState(false);
+
+  // On the kaluston kone the next person in the queue is already waiting: hand
+  // them an empty basket and the front page, not this loaner's receipt.
+  const finishKiosk = React.useCallback(() => {
+    setSent(false);
+    resetCart();
+    setDatesSet(false);
+    router.push('/');
+    onClose();
+    closeDrawer();
+  }, [resetCart, setDatesSet, router, onClose, closeDrawer]);
+
+  // A small toast on a wall screen is easy to miss, so the kiosk shows a
+  // full receipt instead, and clears itself if nobody taps "Valmis".
+  // Through a ref: the drawer's callbacks are new on every render, and the
+  // timer must not restart each time something re-renders behind the receipt.
+  const finishRef = React.useRef(finishKiosk);
+  React.useEffect(() => {
+    finishRef.current = finishKiosk;
+  });
+  React.useEffect(() => {
+    if (!sent) return;
+    const t = setTimeout(() => finishRef.current(), 15000);
+    return () => clearTimeout(t);
+  }, [sent]);
 
   const itemIds = React.useMemo(() => cart.items.map((item) => item.id), [cart.items]);
   const { inBoxItems, isChecking } = useInBoxItems(itemIds, isOpen);
@@ -83,6 +113,14 @@ export default function SubmitConfirmation({
       body: JSON.stringify(body),
     });
 
+    if (response.ok && isKioskMachine(session?.user)) {
+      setSentWithNote(Boolean(reportContent?.trim()));
+      setReportContent('');
+      setSent(true);
+      setIsLoading(false);
+      return;
+    }
+
     if (response.ok) {
       setReportContent('');
       clearCart();
@@ -92,23 +130,56 @@ export default function SubmitConfirmation({
           : 'Laina rekisteröitiin onnistuneesti.',
         duration: 9000,
       });
-      // On the kaluston kone the next person in the queue is already waiting:
-      // hand them an empty basket and the front page, not this loaner's account.
-      if (isKioskMachine(session?.user)) {
-        resetCart();
-        setDatesSet(false);
-        router.push('/');
-      } else {
-        router.push('/account');
-      }
+      router.push('/account');
     } else {
-      toast.error('Error', { description: 'Lainan lähetyksessä tapahtui virhe' });
+      toast.error('Virhe', { description: 'Lainan lähetyksessä tapahtui virhe' });
     }
 
     onClose();
     closeDrawer();
     setIsLoading(false);
   };
+
+  if (sent) {
+    return (
+      <Dialog open onOpenChange={(o) => (!o ? finishKiosk() : null)}>
+        <DialogContent className="sm:max-w-xl">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <CircleCheck className="h-16 w-16 text-success" aria-hidden />
+            <DialogTitle className="text-2xl sm:text-3xl">Laina lähetetty</DialogTitle>
+            <p className="text-lg">
+              Palauta viimeistään{' '}
+              <b>
+                <DateTime value={dates.endDate} format="numeric" />
+              </b>
+            </p>
+            {sentWithNote && <p className="text-muted-foreground">Huomiosi kirjattiin.</p>}
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Kama</TableHead>
+                <TableHead className="text-right">Määrä</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cart.items.map((cartItem) => (
+                <TableRow key={cartItem.id}>
+                  <TableCell>{cartItem.name}</TableCell>
+                  <TableCell className="text-right">{cartItem.amount}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          <Button size="lg" onClick={finishKiosk}>
+            Valmis
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : null)}>
