@@ -147,11 +147,7 @@ export default function LocationsView() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Kamat', href: '/?browse=1' }, { label: 'Sijainnit' }]} />
-      {/* Frozen under the app bar, same strip as ItemBrowser's search row. */}
-      <PageHeader
-        title="Sijainnit"
-        className="sticky top-16 z-30 -mx-4 border-b bg-background/95 px-4 pt-2 pb-3 backdrop-blur-xs"
-      />
+      <PageHeader title="Sijainnit" />
 
       <div className="flex flex-col gap-6">
         <Card>
@@ -199,133 +195,145 @@ export default function LocationsView() {
           ) : rows.length === 0 ? (
             <EmptyState variant="inline" title="Ei sijainteja" />
           ) : (
-            <ul className="divide-y">
-              {rows.map((loc) => {
-                const parentValue = loc.parentId
-                  ? (parentOptions(loc.id).find((o) => o.value === loc.parentId) ?? null)
-                  : null;
-                return (
-                  <li
-                    key={loc.id}
-                    className="py-3"
-                    // Indent by depth so the tree reads without drawing lines.
-                    style={{ paddingLeft: `${Math.min(loc.depth, 6) * 1.25}rem` }}
-                  >
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                        <InlineEdit
-                          value={loc.name}
-                          label="nimeä"
-                          className="font-medium"
-                          validate={(next) => (next ? null : 'Anna sijainnille nimi')}
-                          onSave={(name) => update(loc.id, { name })}
-                        />
-                        <NextLink
-                          href={`/?browse=1&location=${loc.id}`}
-                          className="text-sm text-muted-foreground hover:underline"
-                        >
-                          {loc._count.items} kamaa
-                        </NextLink>
-                        {loc.item && (
-                          <NextLink href={`/item/${loc.item.id}`} title="Avaa lainattava kama">
-                            <Badge variant="default" className="gap-1 hover:underline">
-                              <Package className="h-3 w-3" aria-hidden /> Lainattava
-                            </Badge>
+            <>
+              {/* Column titles, frozen under the app bar while the tree scrolls.
+                  Phones stack each row, so there are no columns to title there. */}
+              <div className="sticky top-16 z-10 -mx-4 hidden border-b bg-card px-4 py-2 text-sm font-medium text-muted-foreground sm:-mx-6 sm:px-6 md:flex md:items-center md:gap-4">
+                <span className="flex-1">Sijainti</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-24">Lainattava</span>
+                  <span className="w-64">Sijaitsee</span>
+                  <span className="w-20 text-right">Toiminnot</span>
+                </div>
+              </div>
+              <ul className="divide-y">
+                {rows.map((loc) => {
+                  const parentValue = loc.parentId
+                    ? (parentOptions(loc.id).find((o) => o.value === loc.parentId) ?? null)
+                    : null;
+                  return (
+                    <li
+                      key={loc.id}
+                      className="py-3"
+                      // Indent by depth so the tree reads without drawing lines.
+                      style={{ paddingLeft: `${Math.min(loc.depth, 6) * 1.25}rem` }}
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                          <InlineEdit
+                            value={loc.name}
+                            label="nimeä"
+                            className="font-medium"
+                            validate={(next) => (next ? null : 'Anna sijainnille nimi')}
+                            onSave={(name) => update(loc.id, { name })}
+                          />
+                          <NextLink
+                            href={`/?browse=1&location=${loc.id}`}
+                            className="text-sm text-muted-foreground hover:underline"
+                          >
+                            {loc._count.items} kamaa
                           </NextLink>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Switch
-                            checked={Boolean(loc.item)}
-                            onCheckedChange={(on) => setLoanable(loc, on)}
-                            aria-label={`${loc.name}: lainattava`}
-                          />
-                          <span className="md:hidden lg:inline">Lainattava</span>
-                        </label>
-                        <div className="min-w-0 flex-1 md:w-64 md:flex-none">
-                          <Select<Option>
-                            aria-label={`${loc.name}: sijaitsee`}
-                            options={parentOptions(loc.id)}
-                            value={parentValue}
-                            onChange={(option) => {
-                              if ((option?.value ?? null) === loc.parentId) return;
-                              update(loc.id, { parentId: option?.value ?? null }).then(
-                                () => toast.success('Sijainti siirretty'),
-                                () => {},
-                              );
-                            }}
-                            isClearable
-                            placeholder="Ylin taso"
-                            noOptionsMessage={() => 'Ei sijainteja'}
-                          />
+                          {loc.item && (
+                            <NextLink href={`/item/${loc.item.id}`} title="Avaa lainattava kama">
+                              <Badge variant="default" className="gap-1 hover:underline">
+                                <Package className="h-3 w-3" aria-hidden /> Lainattava
+                              </Badge>
+                            </NextLink>
+                          )}
                         </div>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={`Lisää alasijainti: ${loc.name}`}
-                          title="Lisää alasijainti"
-                          onClick={() => {
-                            setChildName('');
-                            setAddingUnder(addingUnder === loc.id ? null : loc.id);
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={`Poista ${loc.name}`}
-                          // Emptying it first is the only safe order: kamat
-                          // cascade away with their sijainti.
-                          disabled={loc._count.items > 0 || Boolean(loc.item)}
-                          title={
-                            loc.item
-                              ? 'Poista lainattavuus ensin'
-                              : loc._count.items > 0
-                                ? 'Siirrä kamat ensin muualle'
-                                : undefined
-                          }
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => setDeleteTarget(loc)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground md:w-24">
+                            <Switch
+                              checked={Boolean(loc.item)}
+                              onCheckedChange={(on) => setLoanable(loc, on)}
+                              aria-label={`${loc.name}: lainattava`}
+                            />
+                            <span className="md:hidden">Lainattava</span>
+                          </label>
+                          <div className="min-w-0 flex-1 md:w-64 md:flex-none">
+                            <Select<Option>
+                              aria-label={`${loc.name}: sijaitsee`}
+                              options={parentOptions(loc.id)}
+                              value={parentValue}
+                              onChange={(option) => {
+                                if ((option?.value ?? null) === loc.parentId) return;
+                                update(loc.id, { parentId: option?.value ?? null }).then(
+                                  () => toast.success('Sijainti siirretty'),
+                                  () => {},
+                                );
+                              }}
+                              isClearable
+                              placeholder="Ylin taso"
+                              noOptionsMessage={() => 'Ei sijainteja'}
+                            />
+                          </div>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Lisää alasijainti: ${loc.name}`}
+                            title="Lisää alasijainti"
+                            onClick={() => {
+                              setChildName('');
+                              setAddingUnder(addingUnder === loc.id ? null : loc.id);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Poista ${loc.name}`}
+                            // Emptying it first is the only safe order: kamat
+                            // cascade away with their sijainti.
+                            disabled={loc._count.items > 0 || Boolean(loc.item)}
+                            title={
+                              loc.item
+                                ? 'Poista lainattavuus ensin'
+                                : loc._count.items > 0
+                                  ? 'Siirrä kamat ensin muualle'
+                                  : undefined
+                            }
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteTarget(loc)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    {addingUnder === loc.id && (
-                      <form
-                        className="mt-2 flex items-center gap-2 pl-5"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          void createChild(loc);
-                        }}
-                      >
-                        <CornerDownRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                        <Input
-                          autoFocus
-                          value={childName}
-                          onChange={(e) => setChildName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Escape') setAddingUnder(null);
+                      {addingUnder === loc.id && (
+                        <form
+                          className="mt-2 flex items-center gap-2 pl-5"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void createChild(loc);
                           }}
-                          placeholder={`Uusi sijainti kohteeseen ${loc.name}`}
-                          aria-label={`Uuden alasijainnin nimi: ${loc.path}`}
-                          className="max-w-sm"
-                        />
-                        <Button type="submit" size="sm" disabled={!childName.trim()}>
-                          Lisää
-                        </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setAddingUnder(null)}>
-                          Peruuta
-                        </Button>
-                      </form>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                        >
+                          <CornerDownRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                          <Input
+                            autoFocus
+                            value={childName}
+                            onChange={(e) => setChildName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') setAddingUnder(null);
+                            }}
+                            placeholder={`Uusi sijainti kohteeseen ${loc.name}`}
+                            aria-label={`Uuden alasijainnin nimi: ${loc.path}`}
+                            className="max-w-sm"
+                          />
+                          <Button type="submit" size="sm" disabled={!childName.trim()}>
+                            Lisää
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={() => setAddingUnder(null)}>
+                            Peruuta
+                          </Button>
+                        </form>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </Card>
       </div>
