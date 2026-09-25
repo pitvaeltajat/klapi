@@ -1334,8 +1334,10 @@ export default function InventoryView() {
 
         {/* Table */}
         <Card padding="none">
-          <Table>
-            <TableHeader>
+          {/* Header frozen under the app bar from md up; phones keep the
+              sideways-scrolling wrapper, which a sticky header can't escape. */}
+          <Table containerClassName="md:overflow-visible">
+            <TableHeader className="md:sticky md:top-16 md:z-10 md:bg-card md:shadow-[0_1px_0_var(--color-border)]">
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id}>
                   {hg.headers.map((header) => (

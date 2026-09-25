@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -129,7 +130,12 @@ export default function CategoriesView() {
                         await mutate();
                       }}
                     />
-                    <span className="text-sm text-muted-foreground">{cat._count.items} kamaa</span>
+                    <NextLink
+                      href={`/?browse=1&category=${cat.id}`}
+                      className="text-sm text-muted-foreground hover:underline"
+                    >
+                      {cat._count.items} kamaa
+                    </NextLink>
                   </div>
                   <Button
                     size="icon-sm"
