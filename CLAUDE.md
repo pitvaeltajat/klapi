@@ -162,8 +162,8 @@ server components or route handlers.
   outside that file should hard-code a colour — the app bar has its own
   `--header` / `--header-foreground` pair rather than `text-white`. The two
   places a colour is unavoidably literal are `utils/emailHelpers.ts` (email
-  clients have no CSS variables) and `utils/imageHelpers.ts` (the placehold.co
-  "Ei kuvaa" URLs); both carry the palette's hexes and must be updated by hand.
+  clients have no CSS variables) and `public/placeholder-{light,dark}.svg` (the
+  "Ei kuvaa" placeholders, saved placehold.co renders); both carry the palette's hexes and must be updated by hand.
 - Dark mode is class-based via `next-themes` (`attribute="class"`).
 - Toasts: `import { toast } from 'sonner'` — use `toast.success/error/warning`.
   The `Toaster` is already mounted in `app/providers.tsx`.

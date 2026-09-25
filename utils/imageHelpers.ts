@@ -1,6 +1,10 @@
-// Placeholder URLs for light and dark mode
-const PLACEHOLDER_LIGHT = 'https://placehold.co/500x300/EAE7E6/5A5874?text=Ei+kuvaa';
-const PLACEHOLDER_DARK = 'https://placehold.co/500x300/2D2B50/9FACC6?text=Ei+kuvaa';
+// "Ei kuvaa" placeholders for light and dark mode. Served from public/ rather
+// than hot-linked from placehold.co: when that site was slow or rate-limited
+// the cards were left as blank grey boxes. The files are the placehold.co
+// renders (500x300, EAE7E6/5A5874 and 2D2B50/9FACC6) with the text as paths;
+// re-download them from placehold.co if the palette changes.
+const PLACEHOLDER_LIGHT = '/placeholder-light.svg';
+const PLACEHOLDER_DARK = '/placeholder-dark.svg';
 
 export function getPlaceholderUrl(isDarkMode: boolean): string {
   return isDarkMode ? PLACEHOLDER_DARK : PLACEHOLDER_LIGHT;
