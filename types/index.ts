@@ -80,6 +80,8 @@ export interface ItemCardProps {
     announcements: Announcement[];
     /** "Kolo / Kalusto / Työkaluseinä" — see utils/locationTree. */
     locationPath?: string | null;
+    /** Item.hasImage — `false` lets the card skip probing S3 for a photo. */
+    hasImage?: boolean | null;
   };
   availableAmount: number;
   /** Names the kama this one is stored in, when that kama being out is why

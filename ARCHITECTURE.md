@@ -232,6 +232,7 @@ Transactional email is **not** a route: the senders live in `utils/emails/`
 once-per-day dedup in `utils/emailLogHelpers`. Callers — `submitLoan` and the
 cron sweeps — import and call them directly.
 | `cron/checkExpiringLoans`, `cron/checkOverdueLoans`, `cron/startDueLoans` | GET | scheduled jobs; require `Authorization: Bearer $CRON_SECRET`. Schedules live in `vercel.json` |
+| `cron/resolveItemImages` | GET | nightly: HEADs the photo bucket for every kama and records `Item.hasImage`, so lists skip S3 for kamat without a photo (`utils/itemPhotos.ts`). Same `CRON_SECRET` guard |
 | `cron/syncWorkspaceUsers` | GET | nightly Google Workspace → `User` reconciliation; `?dryRun=1` reports without writing. Same `CRON_SECRET` guard |
 
 ## Google Workspace user sync

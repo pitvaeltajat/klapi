@@ -16,7 +16,7 @@ interface BrowseItemCardProps {
 }
 
 export default function BrowseItemCard({ item }: BrowseItemCardProps) {
-  const image = useItemImageState(item.id);
+  const image = useItemImageState(item.id, item.hasImage);
 
   return (
     <ItemCardShell

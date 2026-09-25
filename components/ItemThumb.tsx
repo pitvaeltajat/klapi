@@ -11,6 +11,8 @@ interface ItemThumbProps {
   /** Box size, rounding and border. The image fills it exactly. */
   className?: string;
   loading?: 'lazy' | 'eager';
+  /** The row's `Item.hasImage`; `false` skips the S3 probe. */
+  hasImage?: boolean | null;
 }
 
 /**
@@ -28,8 +30,14 @@ interface ItemThumbProps {
  * photo see ItemView; for the catalogue cards see ItemCardShell, which carries
  * the same idea at card size.
  */
-export default function ItemThumb({ itemId, alt, className, loading = 'lazy' }: ItemThumbProps) {
-  const { src, status, placeholder } = useItemImageState(itemId);
+export default function ItemThumb({
+  itemId,
+  alt,
+  className,
+  loading = 'lazy',
+  hasImage,
+}: ItemThumbProps) {
+  const { src, status, placeholder } = useItemImageState(itemId, hasImage);
 
   return (
     <div className={cn('shrink-0 overflow-hidden bg-muted', className)}>

@@ -45,6 +45,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
               categories: item.categories.map((cat) => ({ id: cat.id, name: cat.name })),
               announcements: item.announcements || null,
               locationPath: item.locationPath,
+              hasImage: item.hasImage,
             }}
             availableAmount={availabilities?.[item.id]?.available ?? 0}
             blockedBy={availabilities?.[item.id]?.blockedBy}

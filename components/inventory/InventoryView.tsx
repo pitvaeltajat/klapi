@@ -81,6 +81,8 @@ export interface InventoryItem {
   deletedAt: string | null;
   location: InventoryLocation | null;
   categories: InventoryCategory[];
+  /** Item.hasImage — `false` lets the thumbnail skip probing S3. */
+  hasImage?: boolean | null;
   /**
    * Only on `temporary` rows: the kalusto kama this oma kama looks like a
    * duplicate of, as `getInventory` guessed it. Absent after an inline rename
@@ -991,6 +993,7 @@ export default function InventoryView() {
         >
           <ItemThumb
             itemId={row.original.id}
+            hasImage={row.original.hasImage}
             alt={row.original.name}
             className="h-9 w-9 rounded border border-border"
           />

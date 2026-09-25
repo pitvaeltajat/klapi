@@ -81,9 +81,14 @@ describe('uploadImage — who may add a kama photo', () => {
   });
 
   it('lets a loaner add the missing photo of a real kama', async () => {
+    await prisma.item.update({ where: { id: itemId }, data: { hasImage: false } });
     const response = await post({ filename: itemId, contentType: 'image/jpeg' });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ fields: { key: itemId } });
+    // "No photo" is stale once an upload is signed: back to unknown, so the
+    // cards probe S3 again until the nightly cron settles it.
+    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    expect(item?.hasImage).toBeNull();
   });
 
   it('refuses to let a loaner replace a photo that already exists', async () => {

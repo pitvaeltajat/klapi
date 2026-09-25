@@ -107,6 +107,11 @@ model Item {
   locationId          String?
   type                ItemType             @default(normal)
   deletedAt           DateTime?
+  /// Does the photo bucket hold a picture of this kama? Null = not known yet
+  /// (the browser probes S3, as before); false lets the lists skip the probe.
+  /// Reset to null on every upload, set false on delete, and resolved nightly
+  /// by /api/cron/resolveItemImages.
+  hasImage            Boolean?
   location            Location?            @relation("ItemLocation", fields: [locationId], references: [id], onDelete: Cascade)
   /// Set when this kama is also a säilytyspaikka — the sijainti row other
   /// kamat point at. Loaning this kama takes everything inside it with it.
