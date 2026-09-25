@@ -147,7 +147,11 @@ export default function LocationsView() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Kamat', href: '/?browse=1' }, { label: 'Sijainnit' }]} />
-      <PageHeader title="Sijainnit" />
+      {/* Frozen under the app bar, same strip as ItemBrowser's search row. */}
+      <PageHeader
+        title="Sijainnit"
+        className="sticky top-16 z-30 -mx-4 border-b bg-background/95 px-4 pt-2 pb-3 backdrop-blur-xs"
+      />
 
       <div className="flex flex-col gap-6">
         <Card>
