@@ -5,11 +5,10 @@
  * - Loan creation with reservations
  * - Kiosk vs regular user status handling
  * - Custom/temporary item creation
- * - IN_BOX reservation cleanup
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { PrismaClient, LoanStatus, ReservationStatus, Group } from '@prisma/client';
+import { PrismaClient, ReservationStatus, Group } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -78,18 +77,6 @@ async function submitLoanDirect(
       itemId = created.id;
     }
     processedReservations.push({ itemId, amount: r.amount });
-  }
-
-  // Handle IN_BOX reservations
-  const itemIds = processedReservations.map((r) => r.itemId);
-  const inBoxReservations = await prisma.reservation.findMany({
-    where: { itemId: { in: itemIds }, status: ReservationStatus.IN_BOX },
-  });
-  if (inBoxReservations.length > 0) {
-    await prisma.reservation.updateMany({
-      where: { id: { in: inBoxReservations.map((r) => r.id) } },
-      data: { status: ReservationStatus.RETURNED },
-    });
   }
 
   const result = await prisma.loan.create({
@@ -263,47 +250,6 @@ describe('submitLoan - custom/temporary items', () => {
 
     expect(result.status).toBe(400);
     expect(result.error).toContain('Missing name');
-  });
-});
-
-describe('submitLoan - IN_BOX reservation cleanup', () => {
-  it('should mark IN_BOX reservations as RETURNED when item is re-borrowed', async () => {
-    // Create a loan where item is IN_BOX
-    const existingLoan = await prisma.loan.create({
-      data: {
-        userId: testUser.id,
-        status: LoanStatus.IN_BOX,
-        startTime: new Date('2026-05-01'),
-        endTime: new Date('2026-05-07'),
-        description: 'Old loan in box',
-        reservations: {
-          create: [{ amount: 1, itemId: testItem1.id, status: ReservationStatus.IN_BOX }],
-        },
-      },
-      include: { reservations: true },
-    });
-    createdLoanIds.push(existingLoan.id);
-
-    const inBoxReservationId = existingLoan.reservations[0].id;
-
-    // Submit a new loan for the same item
-    const result = await submitLoanDirect(
-      { id: testUser.id, group: Group.USER },
-      testUser.id,
-      [{ itemId: testItem1.id, amount: 1 }],
-      new Date('2026-06-01'),
-      new Date('2026-06-07'),
-      'New loan taking from box',
-    );
-
-    expect(result.status).toBe(200);
-    createdLoanIds.push(result.data!.id);
-
-    // Verify the old IN_BOX reservation was marked as RETURNED
-    const updatedReservation = await prisma.reservation.findUnique({
-      where: { id: inBoxReservationId },
-    });
-    expect(updatedReservation?.status).toBe(ReservationStatus.RETURNED);
   });
 });
 
