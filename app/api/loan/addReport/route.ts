@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Sisältö puuttuu' }, { status: 400 });
     }
     const isReportCreated = (v: unknown): v is ReportCreated =>
-      v === ReportCreated.BEFORE_LOAN || v === ReportCreated.AFTER_LOAN;
+      (Object.values(ReportCreated) as string[]).includes(v as string);
     if (!isReportCreated(created)) {
       return NextResponse.json({ message: 'Virheellinen tyyppi' }, { status: 400 });
     }

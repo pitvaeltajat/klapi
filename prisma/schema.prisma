@@ -345,6 +345,7 @@ enum ReportStatus {
 enum ReportCreated {
   BEFORE_LOAN
   AFTER_LOAN
+  OTHER
 }
 
 enum LoanStatus {
