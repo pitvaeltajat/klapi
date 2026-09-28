@@ -486,6 +486,9 @@ export default function EditLoanView({
                   <option value={ReportCreated.AFTER_LOAN}>
                     {getReportCreatedLabel(ReportCreated.AFTER_LOAN)}
                   </option>
+                  <option value={ReportCreated.OTHER}>
+                    {getReportCreatedLabel(ReportCreated.OTHER)}
+                  </option>
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1">
