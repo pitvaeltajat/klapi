@@ -40,6 +40,7 @@ export interface NoticeReport {
   status: string;
   affectedItems?: { itemId: string; amount: number }[];
   announcements?: { id: string }[];
+  author?: { id: string; name: string | null; email: string | null } | null;
 }
 
 interface HandleNoticeDialogProps {

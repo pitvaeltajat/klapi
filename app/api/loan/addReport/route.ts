@@ -5,7 +5,7 @@ import { requireAdmin } from '@/utils/apiAuth';
 
 export async function POST(request: Request) {
   try {
-    const { denied } = await requireAdmin();
+    const { denied, session } = await requireAdmin();
     if (denied) return denied;
 
     const body = (await request.json()) as {
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     }
 
     const report = await prisma.report.create({
-      data: { loanId, content: content.trim(), created },
+      data: { loanId, content: content.trim(), created, authorId: session.user.id },
     });
 
     return NextResponse.json({ report });

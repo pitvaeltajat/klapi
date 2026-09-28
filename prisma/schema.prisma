@@ -95,6 +95,7 @@ model User {
   emailLogs                EmailLog[]
   loanHistoryEntries       LoanHistory[]
   itemHistoryEntries       ItemHistory[]
+  authoredReports          Report[]
 
   @@index([deletedAt])
 }
@@ -307,6 +308,8 @@ model Report {
   created       ReportCreated        @default(AFTER_LOAN)
   loanId        String
   loan          Loan                 @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  authorId      String?
+  author        User?                @relation(fields: [authorId], references: [id], onDelete: SetNull)
   affectedItems ReportAffectedItem[]
   announcements Announcement[]
 }

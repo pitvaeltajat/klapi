@@ -41,6 +41,7 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
         status: true,
         affectedItems: { select: { itemId: true, amount: true } },
         announcements: { select: { id: true } },
+        author: { select: { id: true, name: true, email: true } },
       },
     }),
     prisma.loanHistory.findMany({
