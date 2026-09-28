@@ -190,12 +190,7 @@ export default function LoanView({
       }
     });
 
-  const [processingIds, setProcessingIds] = React.useState<Set<string>>(
-    () =>
-      new Set(
-        loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).map((r) => r.id),
-      ),
-  );
+  const [processingIds, setProcessingIds] = React.useState<Set<string>>(() => new Set());
 
   const loanProcessed = () =>
     guard(async () => {
@@ -423,9 +418,23 @@ export default function LoanView({
             )}
           </CardHeader>
           {canMarkReturned && (
-            <p className="mb-3 text-sm text-muted-foreground">
-              Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta.
-            </p>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                Valitse ne tavarat, jotka olet fyysisesti tarkistanut laatikosta.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setProcessingIds(
+                    new Set(inBoxReservations.map((r) => r.id)),
+                  )
+                }
+                disabled={processingIds.size === inBoxReservations.length}
+              >
+                Valitse kaikki
+              </Button>
+            </div>
           )}
           <LoanItemList
             reservations={loan.reservations.map((r) => ({
