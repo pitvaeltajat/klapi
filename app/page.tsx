@@ -7,6 +7,7 @@ import {
   itemsWithRelationsInclude,
   getPopularityMap,
 } from '@/utils/itemQueries';
+import { locationPaths } from '@/utils/locationQueries';
 import HomeClient from './HomeClient';
 
 export const metadata = { title: 'Etusivu | Klapi' };
@@ -17,7 +18,7 @@ export const metadata = { title: 'Etusivu | Klapi' };
 // only consumed once the user picks dates or enters browse mode, by which time
 // this background fetch has finished.
 async function loadCatalogue() {
-  const [items, categories, popularity] = await Promise.all([
+  const [items, categories, popularity, paths] = await Promise.all([
     prisma.item.findMany({
       where: visibleItemsWhere,
       include: itemsWithRelationsInclude,
@@ -25,6 +26,7 @@ async function loadCatalogue() {
     }),
     prisma.category.findMany({ include: { items: true } }),
     getPopularityMap(),
+    locationPaths(),
   ]);
   // Attach the rolling-window booking count so the client can offer a
   // "Suosituimmat" sort. Alphabetical order from the query is kept as the
@@ -34,6 +36,9 @@ async function loadCatalogue() {
   const itemsWithScore = items.map((item) => ({
     ...item,
     popularity: popularity[item.id] ?? 0,
+    // Where to go and get it — two kamat can share a name ("Tasataltta" on the
+    // shelf and in a työkalupakki), and the place is what tells them apart.
+    locationPath: item.locationId ? (paths.get(item.locationId) ?? null) : null,
     announcements: item.announcements.filter(
       (a) => a.expiresAt === null || new Date(a.expiresAt).getTime() > now,
     ),

@@ -31,6 +31,16 @@ const nextConfig: NextConfig = {
     // package does provide at `typescript/lib/typescript.js`.
     useTypeScriptCli: false,
   },
+  // public/ files default to max-age=0, so every page load revalidated the
+  // "Ei kuvaa" placeholder. It changes only with the palette; cache it a week.
+  async headers() {
+    return [
+      {
+        source: '/placeholder-:theme(light|dark).svg',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

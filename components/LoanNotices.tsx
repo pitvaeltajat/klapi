@@ -12,6 +12,7 @@ import {
   getReportStatusColor,
   getReportCreatedLabel,
 } from '@/utils/loanHelpers';
+import { displayName } from '@/utils/userDisplay';
 
 interface ReservationWithItem extends Reservation {
   item: { id: string; name: string; amount: number };
@@ -48,7 +49,7 @@ const LoanNotices: React.FC<LoanNoticesProps> = ({ reports, reservations, isAdmi
 
       <p className="mb-3 text-sm text-muted-foreground">
         {isAdmin
-          ? 'Lainaajan kirjaamat huomiot kamojen kunnosta. Käsittele ne ja julkaise tarvittaessa lainaajille näkyväksi.'
+          ? 'Huomiot kamojen kunnosta. Käsittele ne ja julkaise tarvittaessa lainaajille näkyväksi.'
           : 'Kirjaamasi huomiot kamojen kunnosta.'}
       </p>
 
@@ -63,6 +64,9 @@ const LoanNotices: React.FC<LoanNoticesProps> = ({ reports, reservations, isAdmi
                 {getReportCreatedLabel(report.created)}
                 {' · '}
                 <DateTime value={report.createdAt} format="numeric" />
+                {report.author && (
+                  <> · {displayName(report.author)}</>
+                )}
               </span>
               {(report.announcements?.length ?? 0) > 0 && (
                 <Badge variant="secondary">Julkaistu</Badge>

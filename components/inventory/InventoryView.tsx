@@ -81,6 +81,8 @@ export interface InventoryItem {
   deletedAt: string | null;
   location: InventoryLocation | null;
   categories: InventoryCategory[];
+  /** Item.hasImage — `false` lets the thumbnail skip probing S3. */
+  hasImage?: boolean | null;
   /**
    * Only on `temporary` rows: the kalusto kama this oma kama looks like a
    * duplicate of, as `getInventory` guessed it. Absent after an inline rename
@@ -603,6 +605,9 @@ export default function InventoryView() {
   const [categoryFilter, setCategoryFilter] = useState<string>(
     () => searchParams.get('category') ?? '',
   );
+  const [locationFilter, setLocationFilter] = useState<string>(
+    () => searchParams.get('location') ?? '',
+  );
   const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -639,9 +644,10 @@ export default function InventoryView() {
     if (search) q.set('search', search);
     if (typeFilter !== 'all') q.set('type', typeFilter);
     if (categoryFilter) q.set('category', categoryFilter);
+    if (locationFilter) q.set('location', locationFilter);
     if (showArchived) q.set('archived', 'all');
     return `/api/item/getInventory?${q.toString()}`;
-  }, [pagination, sortId, sortDir, search, typeFilter, categoryFilter, showArchived]);
+  }, [pagination, sortId, sortDir, search, typeFilter, categoryFilter, locationFilter, showArchived]);
 
   // The spreadsheet is the same view without the paging: whatever the filters,
   // the search box and the sort order are showing, all of it — not the fifty
@@ -651,9 +657,10 @@ export default function InventoryView() {
     if (search) q.set('search', search);
     if (typeFilter !== 'all') q.set('type', typeFilter);
     if (categoryFilter) q.set('category', categoryFilter);
+    if (locationFilter) q.set('location', locationFilter);
     if (showArchived) q.set('archived', 'all');
     return `/api/item/exportInventory?${q.toString()}`;
-  }, [sortId, sortDir, search, typeFilter, categoryFilter, showArchived]);
+  }, [sortId, sortDir, search, typeFilter, categoryFilter, locationFilter, showArchived]);
 
   // `history.replaceState`, not `router.replace`: the address bar is all that
   // needs to change. Routing to the same page would re-run the (force-dynamic)
@@ -664,6 +671,7 @@ export default function InventoryView() {
       value ? q.set(key, value) : q.delete(key);
     set('search', search || null);
     set('category', categoryFilter || null);
+    set('location', locationFilter || null);
     set('type', typeFilter === 'all' ? null : typeFilter);
     set('archived', showArchived ? 'all' : null);
     set('page', pagination.pageIndex > 0 ? String(pagination.pageIndex + 1) : null);
@@ -671,7 +679,7 @@ export default function InventoryView() {
     set('dir', sortDir === 'asc' ? null : sortDir);
     const query = q.toString();
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
-  }, [search, categoryFilter, typeFilter, showArchived, pagination.pageIndex, sortId, sortDir]);
+  }, [search, categoryFilter, locationFilter, typeFilter, showArchived, pagination.pageIndex, sortId, sortDir]);
 
   const { data, mutate: mutateItems, isLoading: itemsLoading } =
     useSWR<InventoryListResponse>(inventoryUrl, fetcher, { keepPreviousData: true });
@@ -985,6 +993,7 @@ export default function InventoryView() {
         >
           <ItemThumb
             itemId={row.original.id}
+            hasImage={row.original.hasImage}
             alt={row.original.name}
             className="h-9 w-9 rounded border border-border"
           />
@@ -1092,6 +1101,10 @@ export default function InventoryView() {
   const locationOptions = useMemo(
     () => locations.map((l) => ({ value: l.id, label: l.path ?? l.name })),
     [locations],
+  );
+  const locationFilterOptions = useMemo(
+    () => [{ value: '', label: 'Kaikki sijainnit' }, ...locationOptions],
+    [locationOptions],
   );
 
   // Sijainti and kategoriat go through `editItem` rather than `patchItem`: that
@@ -1263,6 +1276,18 @@ export default function InventoryView() {
               isClearable
             />
           </div>
+          <div className="w-52">
+            <CreatableSelect
+              options={locationFilterOptions}
+              value={locationFilterOptions.find((o) => o.value === locationFilter) ?? null}
+              onChange={(opt) => {
+                setLocationFilter((opt as { value: string } | null)?.value ?? '');
+                toFirstPage();
+              }}
+              placeholder="Sijainti"
+              isClearable
+            />
+          </div>
           <div className="flex gap-1">
             {TYPE_FILTERS.map(({ value, label }) => (
               <FilterChip
@@ -1312,8 +1337,10 @@ export default function InventoryView() {
 
         {/* Table */}
         <Card padding="none">
-          <Table>
-            <TableHeader>
+          {/* Header frozen under the app bar from md up; phones keep the
+              sideways-scrolling wrapper, which a sticky header can't escape. */}
+          <Table containerClassName="md:overflow-visible">
+            <TableHeader className="md:sticky md:top-16 md:z-10 md:bg-card md:shadow-[0_1px_0_var(--color-border)]">
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id}>
                   {hg.headers.map((header) => (

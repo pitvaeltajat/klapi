@@ -41,6 +41,7 @@ export const itemsWithRelationsInclude = {
  *   search    case-insensitive match on name/description
  *   type      'normal' | 'temporary' (omitted = both)
  *   category  category id to filter by
+ *   location  sijainti id to filter by (that sijainti only, not its children)
  *   archived  'all' to include soft-archived items (default: active only)
  *   sort      column id: name | description | amount | type | location
  *   dir       'asc' | 'desc' (default asc)
@@ -52,6 +53,7 @@ export function inventoryQuery(params: URLSearchParams): {
   const search = params.get('search')?.trim() ?? '';
   const typeParam = params.get('type');
   const category = params.get('category')?.trim() ?? '';
+  const location = params.get('location')?.trim() ?? '';
   const includeArchived = params.get('archived') === 'all';
   const sortDir: Prisma.SortOrder = params.get('dir') === 'desc' ? 'desc' : 'asc';
   const sortId = params.get('sort') ?? 'name';
@@ -60,6 +62,7 @@ export function inventoryQuery(params: URLSearchParams): {
     ...(includeArchived ? {} : { deletedAt: null }),
     ...(typeParam === 'normal' || typeParam === 'temporary' ? { type: typeParam } : {}),
     ...(category ? { categories: { some: { id: category } } } : {}),
+    ...(location ? { locationId: location } : {}),
     ...(search
       ? {
           OR: [

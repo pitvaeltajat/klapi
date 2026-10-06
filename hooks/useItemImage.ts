@@ -83,10 +83,17 @@ function useProbedImage(candidates: (string | null)[], placeholder: string): Ite
 /**
  * Thumbnail image probe state for an item: compressed → root → placeholder.
  * Use this on cards/grids that want a loading skeleton.
+ *
+ * Pass the row's `hasImage` where it is at hand: `false` means the kama is
+ * known to have no photo, so the placeholder shows at once and S3 is never
+ * asked. `null`/`undefined` (not known yet) probes as before.
  */
-export function useItemImageState(itemId: string): ItemImage {
+export function useItemImageState(itemId: string, hasImage?: boolean | null): ItemImage {
   const placeholder = getPlaceholderUrl(useIsDark());
-  return useProbedImage([getCompressedImageUrl(itemId), getRootImageUrl(itemId)], placeholder);
+  return useProbedImage(
+    hasImage === false ? [] : [getCompressedImageUrl(itemId), getRootImageUrl(itemId)],
+    placeholder,
+  );
 }
 
 /**

@@ -3,9 +3,16 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
+const Table = React.forwardRef<
+  HTMLTableElement,
+  React.HTMLAttributes<HTMLTableElement> & {
+    /** The scroll wrapper. Its `overflow-auto` traps a sticky header, so a
+     *  table whose header freezes to the page lifts it (`md:overflow-visible`). */
+    containerClassName?: string;
+  }
+>(
+  ({ className, containerClassName, ...props }, ref) => (
+    <div className={cn('relative w-full overflow-auto', containerClassName)}>
       <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   ),

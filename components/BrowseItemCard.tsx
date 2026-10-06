@@ -8,6 +8,7 @@ interface ItemWithCategories extends Item {
   categories: Category[];
   type: ItemType;
   announcements: Announcement[];
+  locationPath?: string | null;
 }
 
 interface BrowseItemCardProps {
@@ -15,7 +16,7 @@ interface BrowseItemCardProps {
 }
 
 export default function BrowseItemCard({ item }: BrowseItemCardProps) {
-  const image = useItemImageState(item.id);
+  const image = useItemImageState(item.id, item.hasImage);
 
   return (
     <ItemCardShell
@@ -25,6 +26,7 @@ export default function BrowseItemCard({ item }: BrowseItemCardProps) {
       loading={image.status === 'loading'}
       subtitle={`${item.amount} kpl`}
       categoryLine={item.categories.map((cat) => cat.name).join(', ')}
+      locationPath={item.locationPath}
       announcements={item.announcements}
       href={`/item/${item.id}`}
     />

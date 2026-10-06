@@ -27,7 +27,7 @@ const ItemCard = memo(function ItemCard({
     state: { items: cartItems },
   } = useCart();
   const router = useRouter();
-  const image = useItemImageState(item.id);
+  const image = useItemImageState(item.id, item.hasImage);
 
   const amountInCart = useMemo(
     () => cartItems.find((cartItem) => cartItem.id === item.id)?.amount ?? 0,
@@ -123,6 +123,7 @@ const ItemCard = memo(function ItemCard({
       loading={image.status === 'loading'}
       subtitle={subtitle}
       categoryLine={item.categories.map((cat) => cat.name).join(', ')}
+      locationPath={item.locationPath}
       announcements={item.announcements}
       onClick={handleCardClick}
       action={action}

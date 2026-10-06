@@ -229,9 +229,12 @@ export const getReportStatusColor = (status: ReportStatus | string): BadgeVarian
   }
 };
 
-/** When the loaner wrote it — at pickup, or when returning the gear. */
-export const getReportCreatedLabel = (created: ReportCreated | string): string =>
-  created === ReportCreated.AFTER_LOAN ? 'Palautettaessa' : 'Noudettaessa';
+/** When the loaner wrote it — at pickup, when returning, or a free-form admin note. */
+export const getReportCreatedLabel = (created: ReportCreated | string): string => {
+  if (created === ReportCreated.AFTER_LOAN) return 'Palautettaessa';
+  if (created === ReportCreated.OTHER) return 'Muu';
+  return 'Noudettaessa';
+};
 
 /**
  * A published huomio is either a fault (red, carries the fix-it lifecycle) or a

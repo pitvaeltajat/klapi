@@ -3,39 +3,8 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { requireUser } from '@/utils/apiAuth';
 import { isUploadableCustomItemId } from '@/utils/customItems';
-import {
-  getCompressedImageUrl,
-  getOriginalImageUrl,
-  getRootImageUrl,
-} from '@/utils/imageHelpers';
+import { photoExists } from '@/utils/itemPhotos';
 import prisma from '@/utils/prisma';
-
-/**
- * Does this kama already have a picture? Asked of the bucket over plain HTTP —
- * the photos are public, so this needs no extra IAM rights, and it covers all
- * three keys the browser probes: the Lambda's `original/` and `compressed/`
- * renditions plus the raw upload at the root.
- */
-async function hasPhoto(itemId: string): Promise<boolean> {
-  const urls = [
-    getOriginalImageUrl(itemId),
-    getCompressedImageUrl(itemId),
-    getRootImageUrl(itemId),
-  ].filter((url): url is string => Boolean(url));
-
-  const found = await Promise.all(
-    urls.map(async (url) => {
-      try {
-        const response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        return response.ok;
-      } catch {
-        // The bucket is unreachable — the upload itself would fail next anyway.
-        return false;
-      }
-    }),
-  );
-  return found.some(Boolean);
-}
 
 export async function POST(request: Request) {
   const { filename, contentType } = await request.json();
@@ -77,7 +46,7 @@ export async function POST(request: Request) {
       if (!item) {
         return NextResponse.json({ message: 'Kamaa ei löytynyt' }, { status: 404 });
       }
-      if (await hasPhoto(item.id)) {
+      if (await photoExists(item.id)) {
         return NextResponse.json(
           { message: 'Kamalla on jo kuva, vain ylläpitäjä voi vaihtaa sen' },
           { status: 403 },
@@ -106,6 +75,13 @@ export async function POST(request: Request) {
       },
       Expires: 600,
     });
+
+    // The photo is about to change, so what the lists know about it is stale:
+    // back to "unknown", which the browser probes and tonight's cron resolves.
+    // updateMany, because an oma kama's `custom-<uuid>` has no row yet.
+    if (typeof filename === 'string') {
+      await prisma.item.updateMany({ where: { id: filename }, data: { hasImage: null } });
+    }
 
     return NextResponse.json({ url, fields });
   } catch (error) {

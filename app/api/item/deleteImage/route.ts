@@ -64,6 +64,7 @@ export async function POST(request: Request) {
   }
 
   if (item) {
+    await prisma.item.update({ where: { id: item.id }, data: { hasImage: false } });
     await logItemHistory({
       itemId: item.id,
       action: 'UPDATED',

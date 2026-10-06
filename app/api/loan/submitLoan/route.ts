@@ -73,28 +73,6 @@ export async function POST(request: Request) {
       amount: r.amount,
     }));
 
-    // Find any IN_BOX reservations for the items being reserved
-    // These need to be marked as RETURNED since the items are being taken from the box
-    const itemIds = processedReservations.map((r) => r.itemId);
-    const inBoxReservations = await prisma.reservation.findMany({
-      where: {
-        itemId: { in: itemIds },
-        status: ReservationStatus.IN_BOX,
-      },
-    });
-
-    // Mark IN_BOX reservations as RETURNED (items are being picked up from box)
-    if (inBoxReservations.length > 0) {
-      await prisma.reservation.updateMany({
-        where: {
-          id: { in: inBoxReservations.map((r) => r.id) },
-        },
-        data: {
-          status: ReservationStatus.RETURNED,
-        },
-      });
-    }
-
     const createReservations = processedReservations.map((r) => ({
       amount: r.amount,
       item: { connect: { id: r.itemId } },

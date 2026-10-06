@@ -116,10 +116,12 @@ function useFitToScreen(
 
 const LoanReturnCard = ({
   loan,
+  isAdmin,
   onReturn,
   onReturnComplete,
 }: {
   loan: LoanType;
+  isAdmin: boolean;
   onReturn: (
     id: string,
     reservationIds: string[],
@@ -146,16 +148,17 @@ const LoanReturnCard = ({
     [loan.reservations],
   );
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(returnableReservations.map((r) => r.id)),
-  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // How many of each selected reservation to hand back. Defaults to the full
   // amount; a smaller number splits the reservation — the returned amount
   // becomes its own IN_BOX line while the rest stays out on the loan.
-  const [returnAmounts, setReturnAmounts] = useState<Record<string, number>>(() =>
-    Object.fromEntries(returnableReservations.map((r) => [r.id, r.amount])),
-  );
+  const [returnAmounts, setReturnAmounts] = useState<Record<string, number>>(() => ({}));
+
+  const selectAll = () => {
+    setSelectedIds(new Set(returnableReservations.map((r) => r.id)));
+    setReturnAmounts(Object.fromEntries(returnableReservations.map((r) => [r.id, r.amount])));
+  };
 
   // Which contents of which box were *not* found, keyed per reservation so two
   // boxes holding a kama of the same name can't tick each other's.
@@ -332,9 +335,22 @@ const LoanReturnCard = ({
             <div className="mx-auto grid min-h-full w-full max-w-[1600px] items-stretch gap-6 px-6 py-6 lg:grid-cols-[1.7fr_1fr]">
               {/* Left: item selection */}
               <div className="flex flex-col gap-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Palautettavat tavarat ({returnableReservations.length})
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Palautettavat tavarat ({returnableReservations.length})
+                  </p>
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={selectAll}
+                      disabled={allSelected}
+                    >
+                      Valitse kaikki
+                    </Button>
+                  )}
+                </div>
                 {/* `auto-rows-min` + `content-start`, not `auto-rows-fr`: the
                     column still claims the height (so the partial-return note
                     sits under the list rather than mid-panel), but the rows
@@ -577,6 +593,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
   // sees their own (the page query scopes them). Say which, so nobody wonders
   // why the list is 40 long — or why theirs is the only one.
   const seesAllLoans = session?.user?.group === 'ADMIN' || session?.user?.group === 'KIOSK';
+  const isAdmin = session?.user?.group === 'ADMIN';
 
   const handleReturn = async (
     loanId: string,
@@ -649,6 +666,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
                   <LoanReturnCard
                     key={loan.id}
                     loan={loan}
+                    isAdmin={isAdmin}
                     onReturn={handleReturn}
                     onReturnComplete={handleReturnComplete}
                   />

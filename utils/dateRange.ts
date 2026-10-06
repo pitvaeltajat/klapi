@@ -24,15 +24,12 @@ export const isSameCalendarDay = (a: Date, b: Date): boolean =>
   a.getDate() === b.getDate();
 
 /**
- * The loan window the kiosk starts people off with: pick up now, return at
- * 18:00 a week out. Used both by the kiosk's welcome screen and when leaving
- * browse mode on the kiosk, which must agree on the default.
+ * The loan window the kiosk starts people off with: pick up now, return by the
+ * end of today (the same-day rule) until a return day is picked. Used both by
+ * the kiosk's welcome screen and when leaving browse mode on the kiosk, which
+ * must agree on the default.
  */
-export const defaultKioskRange = (): [Date, Date] => {
-  const end = new Date();
-  end.setDate(end.getDate() + 7);
-  return [new Date(), setDefaultTime(end)];
-};
+export const defaultKioskRange = (): [Date, Date] => [new Date(), setEndOfDay(new Date())];
 
 /** A loan window being picked: the end is null between the two clicks. */
 export type DateRange = [Date | null, Date | null];

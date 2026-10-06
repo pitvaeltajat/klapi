@@ -84,9 +84,12 @@ describe('deleteImage — throwing away a kama photo', () => {
   });
 
   it('drops the upload and both renditions', async () => {
+    await prisma.item.update({ where: { id: itemId }, data: { hasImage: true } });
     const response = await post({ itemId });
     expect(response.status).toBe(200);
     expect(deletedKeys()).toEqual([itemId, `original/${itemId}`, `compressed/${itemId}`]);
+    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    expect(item?.hasImage).toBe(false);
   });
 
   it('records the removal in the kama history', async () => {

@@ -7,7 +7,7 @@ import '@/utils/datepickerLocale';
 import { History } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Item, Loan, LoanStatus, Reservation, ReservationStatus, User } from '@prisma/client';
+import { Item, Loan, LoanStatus, Reservation, ReservationStatus, ReportCreated, User } from '@prisma/client';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import ItemAmountCard from '@/components/ItemAmountCard';
 import LoanerAutocomplete from '@/components/LoanerAutocomplete';
@@ -36,6 +36,7 @@ import {
 } from '@/utils/loanHelpers';
 import { isCustomItemId } from '@/utils/customItems';
 import { isSameCalendarDay, setDefaultTime, setEndOfDay, type DateRange } from '@/utils/dateRange';
+import { getReportCreatedLabel } from '@/utils/loanHelpers';
 
 interface LoanWithRelations extends Loan {
   reservations: (Reservation & { item: Item })[];
@@ -60,6 +61,10 @@ export default function EditLoanView({
   const [status, setStatus] = useState(deriveLoanStatus(loan.reservations, loan.status));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [reportContent, setReportContent] = useState('');
+  const [reportCreated, setReportCreated] = useState<ReportCreated>(ReportCreated.AFTER_LOAN);
+  const [addingReport, setAddingReport] = useState(false);
 
   // The loaner picker (admin only). `loanerValue` is the free-text name or the
   // selected account's address; `loanerUserId` is the account the loan belongs
@@ -165,6 +170,28 @@ export default function EditLoanView({
     } finally {
       setSaving(false);
       setConfirmOpen(false);
+    }
+  }
+
+  async function addReport() {
+    setAddingReport(true);
+    try {
+      const response = await fetch('/api/loan/addReport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loanId: loan.id, content: reportContent, created: reportCreated }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.message || 'Virhe');
+        return;
+      }
+      toast.success('Huomio lisätty');
+      setReportContent('');
+    } catch {
+      toast.error('Virhe', { description: 'Yhteysvirhe, yritä uudelleen' });
+    } finally {
+      setAddingReport(false);
     }
   }
 
@@ -441,6 +468,50 @@ export default function EditLoanView({
           <CardTitle>Lisää kama</CardTitle>
           <AddLoanItemPicker editor={editor} items={items} />
         </Card>
+
+        {isAdmin && (
+          <Card>
+            <CardTitle>Lisää huomio</CardTitle>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="report-created">Kirjaushetki</Label>
+                <NativeSelect
+                  id="report-created"
+                  value={reportCreated}
+                  onChange={(e) => setReportCreated(e.target.value as ReportCreated)}
+                >
+                  <option value={ReportCreated.BEFORE_LOAN}>
+                    {getReportCreatedLabel(ReportCreated.BEFORE_LOAN)}
+                  </option>
+                  <option value={ReportCreated.AFTER_LOAN}>
+                    {getReportCreatedLabel(ReportCreated.AFTER_LOAN)}
+                  </option>
+                  <option value={ReportCreated.OTHER}>
+                    {getReportCreatedLabel(ReportCreated.OTHER)}
+                  </option>
+                </NativeSelect>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="report-content">Sisältö</Label>
+                <Textarea
+                  id="report-content"
+                  value={reportContent}
+                  onChange={(e) => setReportContent(e.target.value)}
+                  placeholder="Kirjaa huomio kamojen kunnosta…"
+                  rows={3}
+                />
+              </div>
+              <Button
+                variant="default"
+                className="self-start"
+                disabled={reportContent.trim() === '' || addingReport}
+                onClick={addReport}
+              >
+                Lisää huomio
+              </Button>
+            </div>
+          </Card>
+        )}
 
         <Button
           variant="success"
