@@ -602,10 +602,18 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
     reportContent: string,
   ): Promise<{ name: string; description: string | null } | null> => {
     try {
+      // The route wants `returns` as an array of { reservationId, amount } —
+      // the per-amount form that splits a multi-instance reservation. Sending
+      // the record as-is made `Array.isArray(returns)` fail on the route, so
+      // the whole reservation was returned instead of just the picked amount.
+      const returns = Object.entries(returnAmounts).map(([reservationId, amount]) => ({
+        reservationId,
+        amount,
+      }));
       const response = await fetch('/api/loan/loanReturned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loanId, reservationIds, returns: returnAmounts, reportContent }),
+        body: JSON.stringify({ id: loanId, reservationIds, returns, reportContent }),
       });
 
       if (response.ok) {
