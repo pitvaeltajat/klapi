@@ -28,6 +28,7 @@ interface LoanWithUser extends Loan {
   user: User;
   reservations: {
     status: ReservationStatus;
+    amount: number;
     item: {
       id: string;
       name: string;

@@ -11,6 +11,7 @@ import { recordEmailSent, shouldSendEmail } from '@/utils/emailLogHelpers';
 import { formatDateNumeric, helsinkiDayStart } from '@/utils/dateFormat';
 import prisma from '@/utils/prisma';
 import { activeLoansWhere } from '@/utils/loanQueries';
+import { inBoxSince } from '@/utils/loanHelpers';
 
 export async function GET(request: Request) {
   // Verify the request is from Vercel Cron or has authorization
@@ -162,13 +163,12 @@ export async function GET(request: Request) {
       );
     });
 
-    // Find loans that have IN_BOX reservations for over a week
-    const oldBoxLoans = await prisma.loan.findMany({
+    // Find loans that have had kamat sitting in the box for over a week. "Over a
+    // week" is measured from when they went in, not from when the loan started —
+    // a 10-day loan returned yesterday hasn't been waiting for anyone.
+    const boxLoans = await prisma.loan.findMany({
       where: {
         ...activeLoansWhere,
-        startTime: {
-          lte: oneWeekAgo,
-        },
         reservations: {
           some: {
             status: ReservationStatus.IN_BOX,
@@ -178,8 +178,15 @@ export async function GET(request: Request) {
       include: {
         user: true,
         box: true,
+        history: {
+          where: { action: { in: ['RETURNED_TO_BOX', 'PROCESSED_FROM_BOX'] } },
+          select: { action: true, createdAt: true },
+        },
       },
     });
+    const oldBoxLoans = boxLoans
+      .map((loan) => ({ ...loan, inBoxSince: inBoxSince(loan.history, loan.endTime) }))
+      .filter((loan) => loan.inBoxSince <= oneWeekAgo);
 
     console.log(`Found ${oldBoxLoans.length} loans in boxes over a week`);
 
@@ -200,7 +207,7 @@ export async function GET(request: Request) {
         id: loan.id,
         userName: loan.user.name || loan.user.email || 'Unknown',
         userEmail: loan.user.email,
-        startTime: formatDateNumeric(loan.startTime),
+        inBoxSince: formatDateNumeric(loan.inBoxSince),
         boxName: loan.box?.name,
       }));
 

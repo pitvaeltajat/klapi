@@ -14,6 +14,7 @@ import {
   getLoanStatusLabel,
   getLoanStatusColor,
   getLoanerName,
+  itemWithAmount,
 } from '@/utils/loanHelpers';
 import ItemThumb from '@/components/ItemThumb';
 import { Button } from '@/components/ui/button';
@@ -306,7 +307,7 @@ const LoanReturnCard = ({
             <div className="flex flex-wrap gap-2">
               {returnableReservations.slice(0, 5).map((reservation) => (
                 <Badge key={reservation.id} variant="default">
-                  {reservation.item.name} ({reservation.amount})
+                  {itemWithAmount(reservation.item.name, reservation.amount)}
                 </Badge>
               ))}
               {returnableReservations.length > 5 && (

@@ -48,6 +48,7 @@ export default async function LoanListPage() {
       reservations: {
         select: {
           status: true,
+          amount: true,
           item: { select: { id: true, name: true } },
         },
       },

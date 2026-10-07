@@ -9,7 +9,8 @@ export interface BoxLoanInfo {
   userName: string;
   /** The template asks admins to contact the loaner, so it lists the address. */
   userEmail: string | null;
-  startTime: string;
+  /** When the loan went into the box — what "yli viikon" is measured from. */
+  inBoxSince: string;
   boxName?: string;
 }
 
@@ -37,7 +38,7 @@ export function renderAdminReminderEmail(loans: BoxLoanCard[], publicUrl: string
           <div class="meta" style="font-size: 13px; color: #4b5563; margin: 6px 0 10px 0;">
             <div><strong>Sähköposti:</strong> ${loan.userEmail || 'Ei tiedossa'}</div>
             <div><strong>Boksi:</strong> ${loan.boxName || 'Tuntematon'}</div>
-            <div><strong>Laina alkoi:</strong> ${loan.startTime}</div>
+            <div><strong>Boksissa alkaen:</strong> ${loan.inBoxSince}</div>
             <div><strong>Tavarat:</strong> ${loan.itemsList}</div>
           </div>
           <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">Avaa laina →</a>

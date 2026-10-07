@@ -8,7 +8,47 @@ import {
 } from '@prisma/client';
 import { displayName } from '@/utils/userDisplay';
 
-export const getLoanHistoryActionLabel = (action: LoanHistoryAction): string => {
+/** "3× Trangia" — the amount only when there is more than one. */
+export const itemWithAmount = (name: string, amount: number): string =>
+  amount > 1 ? `${amount}× ${name}` : name;
+
+/**
+ * One tag per kama for a loan's reservation lines, amounts summed. A partial
+ * return splits a reservation in two (the returned part, the part still out),
+ * which would otherwise list the same kama twice.
+ */
+export function itemTags(
+  reservations: { amount: number; item: { id: string; name: string } }[],
+): { id: string; label: string }[] {
+  const byItem = new Map<string, { name: string; amount: number }>();
+  for (const { amount, item } of reservations) {
+    const entry = byItem.get(item.id);
+    if (entry) entry.amount += amount;
+    else byItem.set(item.id, { name: item.name, amount });
+  }
+  return [...byItem].map(([id, { name, amount }]) => ({ id, label: itemWithAmount(name, amount) }));
+}
+
+/**
+ * When a loan's kamat went into the box: the first return since the box was
+ * last cleared for it. Reservations carry no timestamp, so this reads the loan's
+ * history. A partial processing resets the clock — an admin just handled the
+ * loan, so it isn't forgotten. With no return on record (rows older than the
+ * history, or an admin setting IN_BOX by hand) the loan's end time stands in.
+ */
+export function inBoxSince(
+  history: { action: LoanHistoryAction; createdAt: Date }[],
+  endTime: Date,
+): Date {
+  const sorted = [...history].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const lastProcessed = sorted.findLastIndex((h) => h.action === 'PROCESSED_FROM_BOX');
+  const firstReturn = sorted
+    .slice(lastProcessed + 1)
+    .find((h) => h.action === 'RETURNED_TO_BOX');
+  return firstReturn?.createdAt ?? endTime;
+}
+
+export const getLoanHistoryActionLabel =(action: LoanHistoryAction): string => {
   switch (action) {
     case 'CREATED':
       return 'Laina luotu';

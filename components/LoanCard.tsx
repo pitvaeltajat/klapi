@@ -9,6 +9,7 @@ import {
   getLoanerName,
   isLoanOverdue,
   daysOverdue,
+  itemTags,
 } from '@/utils/loanHelpers';
 import { formatDateNumeric } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,7 @@ export interface LoanType {
   };
   reservations: {
     status: ReservationStatus;
+    amount: number;
     item: {
       id: string;
       name: string;
@@ -58,6 +60,7 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
       : loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).length;
   const isOverdue = isLoanOverdue(loan);
   const lateDays = isOverdue ? daysOverdue(loan.endTime) : 0;
+  const tags = itemTags(loan.reservations);
 
   return (
     <Card
@@ -113,18 +116,16 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
         </p>
       </div>
 
-      {loan.reservations.length > 0 && (
+      {tags.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-medium">Kamat ({loan.reservations.length}):</p>
+          <p className="mb-2 text-sm font-medium">Kamat ({tags.length}):</p>
           <div className="flex flex-wrap gap-2">
-            {loan.reservations.slice(0, 5).map((reservation) => (
-              <Badge key={reservation.item.id} variant="default">
-                {reservation.item.name}
+            {tags.slice(0, 5).map((tag) => (
+              <Badge key={tag.id} variant="default">
+                {tag.label}
               </Badge>
             ))}
-            {loan.reservations.length > 5 && (
-              <Badge variant="gray">+{loan.reservations.length - 5} lisää</Badge>
-            )}
+            {tags.length > 5 && <Badge variant="gray">+{tags.length - 5} lisää</Badge>}
           </div>
         </div>
       )}
