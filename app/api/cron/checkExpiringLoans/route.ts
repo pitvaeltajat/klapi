@@ -7,8 +7,8 @@ import {
   trySendEmail,
   type EmailOutcome,
 } from '@/utils/emails';
-import { shouldSendEmail } from '@/utils/emailLogHelpers';
-import { formatDateNumeric } from '@/utils/dateFormat';
+import { recordEmailSent, shouldSendEmail } from '@/utils/emailLogHelpers';
+import { formatDateNumeric, helsinkiDayStart } from '@/utils/dateFormat';
 import prisma from '@/utils/prisma';
 import { activeLoansWhere } from '@/utils/loanQueries';
 
@@ -20,20 +20,22 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get current time and 24 hours from now
     const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const dayAfterTomorrow = new Date(now.getTime() + 25 * 60 * 60 * 1000);
+    // "Tomorrow" is the whole Helsinki calendar day, not the 24–25 h slice after
+    // this run: the cron fires once a day, so a one-hour window only ever caught
+    // the loans that happened to start/end in the same hour the cron runs.
+    const tomorrow = helsinkiDayStart(now, 1);
+    const dayAfterTomorrow = helsinkiDayStart(now, 2);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Find loans that start in 24-25 hours and have ACCEPTED reservations (not picked up yet)
+    // Find loans that start tomorrow and have ACCEPTED reservations (not picked up yet)
     // A loan hasn't been picked up if all reservations are still ACCEPTED (none are INUSE)
     const allLoansStartingTomorrow = await prisma.loan.findMany({
       where: {
         ...activeLoansWhere,
         startTime: {
           gte: tomorrow,
-          lte: dayAfterTomorrow,
+          lt: dayAfterTomorrow,
         },
       },
       include: {
@@ -101,13 +103,13 @@ export async function GET(request: Request) {
     // does for them. Removed; `EmailType.PICKUP_OVERDUE_REMINDER` is kept in the
     // schema only so historical EmailLog rows still resolve.
 
-    // Find loans that expire in the next 24-25 hours and have INUSE reservations
+    // Find loans that end tomorrow and have INUSE reservations
     const expiringLoans = await prisma.loan.findMany({
       where: {
         ...activeLoansWhere,
         endTime: {
           gte: tomorrow,
-          lte: dayAfterTomorrow,
+          lt: dayAfterTomorrow,
         },
         reservations: {
           some: {
@@ -205,20 +207,26 @@ export async function GET(request: Request) {
       adminEmailPromises = admins.map(async (admin): Promise<EmailOutcome | null> => {
         if (!admin.email) return null;
 
-        // For admin notifications, use the first old box loan ID as a reference
-        const referenceLoanId = oldBoxLoans[0].id;
+        // A weekly digest, not a daily one: the same loans sit in the box for
+        // days, and a daily mail listing them again is noise. The dedup is per
+        // admin across all loans — keying it on one loan id let the digest go
+        // out again whenever the first loan in the list changed.
+        const sentThisWeek = await prisma.emailLog.findFirst({
+          where: {
+            userId: admin.id,
+            emailType: EmailType.OLD_BOX_ADMIN_NOTIFICATION,
+            sentAt: { gte: oneWeekAgo },
+          },
+          select: { id: true },
+        });
 
-        // Check if we already sent this admin notification recently
-        const canSend = await shouldSendEmail(
-          referenceLoanId,
-          admin.id,
-          EmailType.OLD_BOX_ADMIN_NOTIFICATION,
-        );
-
-        if (!canSend) {
-          console.log(`Skipping old box admin notification to ${admin.email} - already sent recently`);
+        if (sentThisWeek) {
+          console.log(`Skipping old box admin notification to ${admin.email} - sent this week`);
           return null;
         }
+
+        // EmailLog needs a loan; the first one in the digest stands in for it.
+        await recordEmailSent(oldBoxLoans[0].id, admin.id, EmailType.OLD_BOX_ADMIN_NOTIFICATION);
 
         const recipient = admin.email;
         return trySendEmail(`admin reminder email to ${recipient}`, () =>

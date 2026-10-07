@@ -53,7 +53,7 @@ export async function sendOverdueEmail(
   loanId: string,
   daysOverdue?: number,
 ) {
-  const loan = await getLoanEmailData(loanId);
+  const loan = await getLoanEmailData(loanId, { outstandingOnly: true });
   const { subject, html } = renderOverdueEmail(
     loan,
     `${getPublicUrl()}/loan/${loanId}`,

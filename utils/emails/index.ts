@@ -23,5 +23,5 @@ export { renderPickupReminderEmail, sendPickupReminderEmail } from './pickupRemi
 
 export { renderReminderEmail, sendReminderEmail } from './reminder';
 
-export { trySendEmail } from './shared';
+export { SETTLED_RESERVATION_STATUSES, trySendEmail } from './shared';
 export type { EmailContent, EmailOutcome, LoanEmailData } from './shared';

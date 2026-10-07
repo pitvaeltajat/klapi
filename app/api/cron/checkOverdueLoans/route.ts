@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { ReservationStatus, EmailType } from '@prisma/client';
+import { EmailType } from '@prisma/client';
 import {
+  SETTLED_RESERVATION_STATUSES,
   sendOverdueAdminEmail,
   sendOverdueEmail,
   trySendEmail,
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
         reservations: {
           some: {
             status: {
-              notIn: [ReservationStatus.IN_BOX, ReservationStatus.RETURNED, ReservationStatus.REJECTED],
+              notIn: [...SETTLED_RESERVATION_STATUSES],
             },
           },
         },

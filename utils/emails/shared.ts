@@ -1,4 +1,16 @@
+import { ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
+
+/**
+ * Reservation statuses that no longer owe the troop anything: back in the box,
+ * checked in, or never handed out. The overdue sweep and the overdue mail's
+ * item list both key on this, so they agree on what "still out" means.
+ */
+export const SETTLED_RESERVATION_STATUSES = [
+  ReservationStatus.IN_BOX,
+  ReservationStatus.RETURNED,
+  ReservationStatus.REJECTED,
+] as const;
 
 /** A rendered email, ready to hand to `sendEmail`. */
 export interface EmailContent {
@@ -44,8 +56,15 @@ export interface LoanEmailData {
 /**
  * Load the loan data the per-loan templates need. Throws if the loan is gone —
  * callers treat that as a send failure.
+ *
+ * `outstandingOnly` leaves out the kamat already back (or rejected), for the
+ * overdue mail: after a partial return it must list what is still missing,
+ * not tell the borrower to bring back what they already did.
  */
-export async function getLoanEmailData(loanId: string): Promise<LoanEmailData> {
+export async function getLoanEmailData(
+  loanId: string,
+  { outstandingOnly = false }: { outstandingOnly?: boolean } = {},
+): Promise<LoanEmailData> {
   const loan = await prisma.loan.findUnique({
     where: { id: loanId },
     select: {
@@ -53,6 +72,9 @@ export async function getLoanEmailData(loanId: string): Promise<LoanEmailData> {
       startTime: true,
       endTime: true,
       reservations: {
+        ...(outstandingOnly && {
+          where: { status: { notIn: [...SETTLED_RESERVATION_STATUSES] } },
+        }),
         include: {
           item: {
             select: {
