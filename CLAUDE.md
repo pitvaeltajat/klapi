@@ -21,6 +21,13 @@ main repo. Before `pnpm dev` will work in a fresh worktree you must:
 ```bash
 cp ../../../.env .env
 cp ../../../.env.local .env.local
+# A fresh worktree's node_modules may be a symlink to the primary's. Replace it
+# with a real install: Turbopack refuses to resolve through that link ("Symlink
+# … points out of the filesystem root" → `Can't resolve 'scheduler'`, every page
+# a 500), and the primary's packages lag the lockfile whenever main has bumped a
+# dependency the primary hasn't installed yet.
+[ -L node_modules ] && rm node_modules
+pnpm install --frozen-lockfile
 docker compose up -d
 pnpm prisma migrate deploy
 pnpm prisma db seed

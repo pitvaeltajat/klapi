@@ -3,7 +3,12 @@ import prisma from '@/utils/prisma';
 import { activeItemsWhere } from '@/utils/itemQueries';
 import { LoanStatus, ReservationStatus, Prisma } from '@prisma/client';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
-import { MANUAL_LOAN_STATUSES, isManualLoanStatus, deriveLoanStatus } from '@/utils/loanHelpers';
+import {
+  MANUAL_LOAN_STATUSES,
+  boxMovements,
+  isManualLoanStatus,
+  deriveLoanStatus,
+} from '@/utils/loanHelpers';
 import { requireUser } from '@/utils/apiAuth';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 import { isCustomItemId } from '@/utils/customItems';
@@ -407,6 +412,35 @@ export async function POST(request: Request) {
         ...(loanerChange ? { loaner: loanerChange } : {}),
       },
     });
+
+    // A return or a processing an admin sets by hand is still a return or a
+    // processing: log it as one, so the old-box sweep (`inBoxSince`) and anyone
+    // reading the history see when the kamat actually came back. Processing
+    // first — `inBoxSince` breaks a same-instant tie the same way.
+    const { toBox, processed } = boxMovements(
+      existingLoan.reservations,
+      reservationsWithStatus.map((r) => ({
+        itemId: r.item.connect.id,
+        status: r.status,
+        amount: r.amount,
+      })),
+    );
+    if (processed > 0) {
+      await logLoanHistory({
+        loanId: id,
+        action: 'PROCESSED_FROM_BOX',
+        ...resolveLoanActor(session),
+        details: { manual: true, count: processed },
+      });
+    }
+    if (toBox > 0) {
+      await logLoanHistory({
+        loanId: id,
+        action: 'RETURNED_TO_BOX',
+        ...resolveLoanActor(session),
+        details: { manual: true, count: toBox },
+      });
+    }
 
     // Dates, items and description all show in the event, so re-sync on any
     // edit rather than trying to work out whether this one mattered.

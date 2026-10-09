@@ -32,7 +32,9 @@ Tests create their own test data and clean up after themselves. Each test suite:
 The suites in this directory cover: loan submission and updates (including the
 before-start path), approve/reject, starting a loan, returns, availability
 calculation, inventory, the kiosk password, email-log dedup, the `startDueLoans`
-cron, the `checkExpiringLoans` / `checkOverdueLoans` email sweeps (SES stubbed), the Google Workspace user sync, duplicate-account merging, the
+cron, the `checkExpiringLoans` / `checkOverdueLoans` email sweeps (SES stubbed),
+cancelling a loan, processing returns out of the box, the box check-in lookup,
+the inventory bulk actions, user soft-delete, the Google Workspace user sync, duplicate-account merging, the
 email-preference route's own-vs-admin authorization, loan soft-delete/restore,
 the "omat kamat" an edit can add to a loan, and the kalusto .xlsx export (the
 workbook is unzipped and its XML read, so a file Excel would refuse fails the
@@ -42,8 +44,6 @@ elevation, loan status derivation, email helpers, serialization).
 Deliberately not enumerated per file — that list rots faster than it helps. Run
 `pnpm test` and read the reporter output for the current picture.
 
-Known gaps worth filling: user soft-delete (`user/[userId]` DELETE),
-`item/bulkItems`, `loan/cancelLoan`, `loan/loanProcessed`,
-and `reservation/checkInBox`. `utils/googleWorkspace` is untested on purpose — it is the Directory API
+`utils/googleWorkspace` is untested on purpose — it is the Directory API
 adapter, and the sync suite covers the decisions by handing `syncWorkspaceUsers`
 a roster directly.

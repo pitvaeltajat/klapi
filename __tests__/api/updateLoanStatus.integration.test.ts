@@ -134,6 +134,44 @@ describe('updateLoan — manual status', () => {
     expect(details.status).toEqual({ from: LoanStatus.INUSE, to: LoanStatus.ACCEPTED });
   });
 
+  it('logs a return to the box set by hand as a return, flagged manual', async () => {
+    const loan = await makeLoan(LoanStatus.INUSE, ReservationStatus.INUSE);
+
+    await edit({ id: loan.id, reservations: [keepExisting()], status: LoanStatus.IN_BOX });
+
+    const entries = await prisma.loanHistory.findMany({
+      where: { loanId: loan.id, action: { in: ['RETURNED_TO_BOX', 'PROCESSED_FROM_BOX'] } },
+    });
+    expect(entries.map((e) => [e.action, e.details])).toEqual([
+      ['RETURNED_TO_BOX', { manual: true, count: 1 }],
+    ]);
+    expect(entries[0].actedById).toBe(adminId);
+  });
+
+  it('logs a processing set by hand as a processing', async () => {
+    const loan = await makeLoan(LoanStatus.IN_BOX, ReservationStatus.IN_BOX);
+
+    await edit({ id: loan.id, reservations: [keepExisting()], status: LoanStatus.RETURNED });
+
+    const entries = await prisma.loanHistory.findMany({
+      where: { loanId: loan.id, action: { in: ['RETURNED_TO_BOX', 'PROCESSED_FROM_BOX'] } },
+    });
+    expect(entries.map((e) => [e.action, e.details])).toEqual([
+      ['PROCESSED_FROM_BOX', { manual: true, count: 1 }],
+    ]);
+  });
+
+  it('logs no return when the status moves away from the box', async () => {
+    const loan = await makeLoan(LoanStatus.IN_BOX, ReservationStatus.IN_BOX);
+
+    await edit({ id: loan.id, reservations: [keepExisting()], status: LoanStatus.INUSE });
+
+    const entries = await prisma.loanHistory.findMany({
+      where: { loanId: loan.id, action: { in: ['RETURNED_TO_BOX', 'PROCESSED_FROM_BOX'] } },
+    });
+    expect(entries).toEqual([]);
+  });
+
   it('leaves the status alone when the edit does not name one', async () => {
     const loan = await makeLoan(LoanStatus.INUSE, ReservationStatus.INUSE);
 

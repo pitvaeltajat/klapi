@@ -29,6 +29,48 @@ export function itemTags(
   return [...byItem].map(([id, { name, amount }]) => ({ id, label: itemWithAmount(name, amount) }));
 }
 
+type StatusLine = { itemId: string; status: ReservationStatus; amount: number };
+
+/**
+ * How many kamat an edit moved into the box, and how many it marked processed,
+ * when an admin sets statuses by hand in `updateLoan` instead of going through
+ * `loanReturned`/`loanProcessed`. Counted per kama and bounded by what left the
+ * earlier state, so adding or removing kamat in the same edit is never read as
+ * a return. Moves backwards (an admin undoing a return) count as nothing.
+ */
+export function boxMovements(
+  before: StatusLine[],
+  after: StatusLine[],
+): { toBox: number; processed: number } {
+  const OUT: ReservationStatus[] = [ReservationStatus.ACCEPTED, ReservationStatus.INUSE];
+  const tally = (lines: StatusLine[]) => {
+    const byItem = new Map<string, { out: number; box: number; done: number }>();
+    for (const { itemId, status, amount } of lines) {
+      const t = byItem.get(itemId) ?? { out: 0, box: 0, done: 0 };
+      if (OUT.includes(status)) t.out += amount;
+      else if (status === ReservationStatus.IN_BOX) t.box += amount;
+      else if (status === ReservationStatus.RETURNED) t.done += amount;
+      byItem.set(itemId, t);
+    }
+    return byItem;
+  };
+  const was = tally(before);
+  const now = tally(after);
+  const zero = { out: 0, box: 0, done: 0 };
+  let toBox = 0;
+  let processed = 0;
+  for (const [itemId, a] of now) {
+    const b = was.get(itemId) ?? zero;
+    const leftOut = Math.max(0, b.out - a.out);
+    const intoBox = Math.min(Math.max(0, a.box - b.box), leftOut);
+    toBox += intoBox;
+    // Processed kamat came either straight from out, or out of the box.
+    const leftOutOrBox = Math.max(0, b.out + b.box - (a.out + a.box));
+    processed += Math.min(Math.max(0, a.done - b.done), leftOutOrBox);
+  }
+  return { toBox, processed };
+}
+
 /**
  * When a loan's kamat went into the box: the first return since the box was
  * last cleared for it. Reservations carry no timestamp, so this reads the loan's
@@ -40,7 +82,14 @@ export function inBoxSince(
   history: { action: LoanHistoryAction; createdAt: Date }[],
   endTime: Date,
 ): Date {
-  const sorted = [...history].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  // At the same instant a processing sorts first: `updateLoan` logs a hand-set
+  // processing and a hand-set return from one edit back to back, and the kamat
+  // that went into the box are the ones still sitting there.
+  const sorted = [...history].sort(
+    (a, b) =>
+      a.createdAt.getTime() - b.createdAt.getTime() ||
+      Number(a.action === 'RETURNED_TO_BOX') - Number(b.action === 'RETURNED_TO_BOX'),
+  );
   const lastProcessed = sorted.findLastIndex((h) => h.action === 'PROCESSED_FROM_BOX');
   const firstReturn = sorted
     .slice(lastProcessed + 1)

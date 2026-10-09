@@ -53,11 +53,14 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
   // A partially returned loan has kamat waiting in the box that its status
   // badge doesn't mention — say how many, so the "Laatikossa" filter's results
   // all explain themselves. When the status already reads "Laatikossa" the
-  // whole loan is in there and the count would just repeat it.
+  // whole loan is in there and the count would just repeat it. Kamat, not
+  // reservation lines: returning 2 of 3 Trangias makes one IN_BOX line of 2.
   const inBoxCount =
     derivedStatus === LoanStatus.IN_BOX
       ? 0
-      : loan.reservations.filter((r) => r.status === ReservationStatus.IN_BOX).length;
+      : loan.reservations
+          .filter((r) => r.status === ReservationStatus.IN_BOX)
+          .reduce((sum, r) => sum + r.amount, 0);
   const isOverdue = isLoanOverdue(loan);
   const lateDays = isOverdue ? daysOverdue(loan.endTime) : 0;
   const tags = itemTags(loan.reservations);

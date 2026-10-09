@@ -577,6 +577,7 @@ export default function LoanView({
                 const who = displayName(entry.actedBy, 'Järjestelmä');
                 const viaKiosk = hasDetailFlag(entry.details, 'viaKiosk');
                 const auto = hasDetailFlag(entry.details, 'auto');
+                const manual = hasDetailFlag(entry.details, 'manual');
                 return (
                   <Card key={entry.id} variant="inset" padding="sm">
                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -591,6 +592,7 @@ export default function LoanView({
                       {who}
                       {viaKiosk && ' · kaluston koneella'}
                       {auto && ' · automaattisesti'}
+                      {manual && ' · merkitty käsin'}
                     </p>
                   </Card>
                 );
