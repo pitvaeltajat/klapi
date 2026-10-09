@@ -115,6 +115,12 @@ function styledProps<Option, IsMulti extends boolean, Group extends GroupBase<Op
     unstyled: true as const,
     // Flip the menu up when there's no room below it.
     menuPlacement: 'auto' as const,
+    // Measure that room against the viewport, not the page. Positioned
+    // `absolute`, react-select sees a tall page, decides the menu "fits if
+    // scrolled", and tries to scroll the page — which an open Dialog has
+    // locked, so the menu just hung off the bottom of the screen. `fixed`
+    // makes it shrink to the space below, or flip above, instead.
+    menuPosition: 'fixed' as const,
     classNamePrefix: 'shadcn-select',
     classNames: classNames as unknown as ClassNamesConfig<Option, IsMulti, Group>,
   };
