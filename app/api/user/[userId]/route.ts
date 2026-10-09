@@ -103,11 +103,17 @@ export async function DELETE(
     // `deletedBySync: false` marks this as a human's decision, which the nightly
     // Workspace sync (utils/userSync.ts) will not undo — deleting someone here
     // sticks even while they are still a Workspace member.
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing) {
+      return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
+    }
+    // Already gone: answer with the row as it stands rather than stamping a
+    // fresh time (or, as this once did, a 200 whose body was Prisma's error).
+    if (existing.deletedAt) {
+      return NextResponse.json(existing);
+    }
     const user = await prisma.user.update({
-      where: {
-        id: userId,
-        deletedAt: null,
-      },
+      where: { id: userId },
       data: {
         deletedAt: new Date(),
         deletedBySync: false,
@@ -115,6 +121,7 @@ export async function DELETE(
     });
     return NextResponse.json(user);
   } catch (err) {
-    return NextResponse.json(err);
+    console.error('Failed to delete user:', err);
+    return NextResponse.json({ message: 'Käyttäjän poisto epäonnistui' }, { status: 500 });
   }
 }

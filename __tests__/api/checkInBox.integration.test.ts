@@ -4,10 +4,20 @@
  * cart can warn that a kama has been returned but not yet checked back in.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { NextResponse } from 'next/server';
 import { PrismaClient, Group, LoanStatus, ReservationStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { POST } from '@/app/api/reservation/checkInBox/route';
+
+let signedIn = true;
+vi.mock('@/utils/apiAuth', () => ({
+  requireUser: async () =>
+    signedIn
+      ? { session: { user: { id: 'someone', group: 'USER' } }, denied: null }
+      : { session: null, denied: NextResponse.json({ message: 'Kirjaudu sisään' }, { status: 401 }) },
+}));
+
+const { POST } = await import('@/app/api/reservation/checkInBox/route');
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -67,6 +77,15 @@ afterAll(async () => {
 });
 
 describe('checkInBox', () => {
+  beforeEach(() => {
+    signedIn = true;
+  });
+
+  it('refuses a caller who is not signed in', async () => {
+    signedIn = false;
+    expect((await ask({ itemIds })).status).toBe(401);
+  });
+
   it('lists each kama in the box once, skipping deleted loans and kamat still out', async () => {
     const { status, body } = await ask({ itemIds });
     expect(status).toBe(200);

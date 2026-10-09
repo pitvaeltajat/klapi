@@ -2,8 +2,15 @@ import { NextResponse } from 'next/server';
 import prisma from '@/utils/prisma';
 import { ReservationStatus } from '@prisma/client';
 import { activeLoanReservationWhere } from '@/utils/loanQueries';
+import { requireUser } from '@/utils/apiAuth';
 
+// Which of these kamat are still in the box from an earlier loan — asked by the
+// cart's and the kiosk's confirmation dialogs (`useInBoxItems`), both of which
+// are signed-in screens. Was the one unguarded route; now like the rest.
 export async function POST(request: Request) {
+  const { denied } = await requireUser();
+  if (denied) return denied;
+
   const { itemIds } = await request.json();
 
   if (!itemIds || !Array.isArray(itemIds)) {

@@ -82,14 +82,22 @@ describe('DELETE user/[userId]', () => {
     expect(after.loans).toHaveLength(1);
   });
 
-  it('keeps the original timestamp when deleted again', async () => {
+  it('answers a repeat delete with the row as it stands, original timestamp kept', async () => {
     await remove(memberId);
     const first = (await prisma.user.findUniqueOrThrow({ where: { id: memberId } })).deletedAt;
 
-    await remove(memberId);
+    const response = await remove(memberId);
 
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { id: string; deletedAt: string };
+    expect(body.id).toBe(memberId);
+    expect(new Date(body.deletedAt)).toEqual(first);
     const second = (await prisma.user.findUniqueOrThrow({ where: { id: memberId } })).deletedAt;
     expect(second).toEqual(first);
+  });
+
+  it('answers 404 for a user that does not exist', async () => {
+    expect((await remove(`${prefix}-nobody`)).status).toBe(404);
   });
 
   it('is admin-only', async () => {
