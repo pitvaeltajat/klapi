@@ -65,6 +65,16 @@ export default function LoanerAutocomplete({
       .catch((err) => console.error('Failed to fetch users:', err));
   }, []);
 
+  // A picked account is stored by its address — `getLoanerName` reads a
+  // Lainaaja equal to the account's own address as "use the account's current
+  // name" — but the field shows the person, not the mailbox. Matching on the
+  // value rather than remembering the pick keeps the name after a remount
+  // (the cart drawer reopening, the kiosk flow moving on and back).
+  const pickedUser = value
+    ? users.find((user) => user.email?.toLowerCase() === value.trim().toLowerCase())
+    : undefined;
+  const shownValue = pickedUser ? loanerLabel(pickedUser) : value;
+
   const query = value.toLowerCase();
   const filteredUsers = users.filter(
     (user) =>
@@ -96,7 +106,7 @@ export default function LoanerAutocomplete({
       <div className="relative">
         <Input
           placeholder={placeholder}
-          value={value}
+          value={shownValue}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           onKeyDown={(e) => {
