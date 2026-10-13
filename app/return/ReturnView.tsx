@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { CircleAlert, Minus, Plus } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
@@ -79,56 +79,6 @@ interface LoanType {
   reservations: Reservation[];
 }
 
-/**
- * How small the kama grid may be squeezed before scrolling is the friendlier
- * answer. At 0.55 a card is still legible across the room from the kiosk.
- */
-const MIN_FIT = 0.55;
-
-/**
- * Keeps the palautus dialog on one screen: a loan of a dozen kamaa pushed the
- * "Vahvista palautus" button below the fold, so the palauttaja had to scroll a
- * full-screen dialog to finish. The kama grid is shrunk by exactly the overflow
- * instead — `zoom`, not `transform: scale`, because a scaled grid keeps its
- * full-size layout box and the hole underneath it stays. A zoomed block still
- * fills its column on its own — its width resolves in the zoomed coordinate
- * space — so only the height needs any help.
- *
- * Desktop only: on a phone the cards are already one per row and scrolling
- * through them is how a phone works.
- */
-function useFitToScreen(
-  area: HTMLDivElement | null,
-  /** Anything whose change resizes the dialog; `null` while it is closed. */
-  layout: string | null,
-) {
-  // The scroll area arrives through a callback ref rather than `useRef`: Radix
-  // mounts the dialog's contents in a commit of its own, *after* this
-  // component's layout effect has already run, so a plain ref is still null
-  // when it matters.
-  useLayoutEffect(() => {
-    const grid = area?.querySelector<HTMLElement>('[data-fit-grid]');
-    if (layout === null || !area || !grid) return;
-
-    const fit = () => {
-      // Measure unshrunken, or every pass would compound the last one.
-      grid.style.zoom = '1';
-      if (!window.matchMedia('(min-width: 1024px)').matches) return;
-      const overflow = area.scrollHeight - area.clientHeight;
-      if (overflow <= 0) return;
-      const natural = grid.getBoundingClientRect().height;
-      grid.style.zoom = String(Math.max(MIN_FIT, (natural - overflow) / natural));
-    };
-
-    fit();
-    // The dialog is the size of the window, so this fires on a resize, an
-    // orientation flip and the on-screen keyboard — not on our own zoom.
-    const observer = new ResizeObserver(fit);
-    observer.observe(area);
-    return () => observer.disconnect();
-  }, [area, layout]);
-}
-
 const LoanReturnCard = ({
   loan,
   isAdmin,
@@ -148,7 +98,6 @@ const LoanReturnCard = ({
 }) => {
   const [returnOpen, setReturnOpen] = useState(false);
   const [boxOpen, setBoxOpen] = useState(false);
-  const [scrollArea, setScrollArea] = useState<HTMLDivElement | null>(null);
   const [boxInfo, setBoxInfo] = useState<{ name: string; description: string | null } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [reportContent, setReportContent] = useState('');
@@ -353,12 +302,6 @@ const LoanReturnCard = ({
     onReturnComplete();
   };
 
-  useFitToScreen(
-    scrollArea,
-    // Re-fit whenever the dialog grows or shrinks under its own steam: the two
-    // alerts below the grid come and go as kamaa are ticked off.
-    returnOpen ? `${returnableReservations.length}|${isPartialReturn}|${missingNote}` : null,
-  );
   const derivedStatus = deriveLoanStatus(loan.reservations, loan.status);
 
   return (
@@ -416,10 +359,14 @@ const LoanReturnCard = ({
             </p>
           </DialogHeader>
 
-          <div ref={setScrollArea} className="overflow-y-auto">
-            <div className="mx-auto grid min-h-full w-full max-w-[1600px] items-stretch gap-6 px-6 py-6 lg:grid-cols-[1.7fr_1fr]">
-              {/* Left: item selection */}
-              <div className="flex flex-col gap-4">
+          {/* The body fills the space between header and footer. On desktop each
+              column scrolls on its own so the kama cards keep their full size and
+              the confirm button stays pinned; on a phone the whole thing is one
+              normal scroll. */}
+          <div className="min-h-0 overflow-y-auto px-6 py-6 lg:overflow-hidden">
+            <div className="mx-auto grid w-full max-w-[1600px] gap-6 lg:h-full lg:min-h-0 lg:grid-cols-[1.7fr_1fr]">
+              {/* Left: item selection — scrolls within the dialog on desktop. */}
+              <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium text-muted-foreground">
                     Palautettavat tavarat ({returnableReservations.length})
@@ -437,15 +384,10 @@ const LoanReturnCard = ({
                   )}
                 </div>
                 {/* `auto-rows-min` + `content-start`, not `auto-rows-fr`: the
-                    column still claims the height (so the partial-return note
-                    sits under the list rather than mid-panel), but the rows
-                    keep their own size and pack at the top. Equal-height rows
-                    read fine with a dozen kamaa and absurd with one, which
-                    stretched into a full-height empty box. */}
-                <div
-                  data-fit-grid
-                  className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-min lg:content-start xl:grid-cols-3"
-                >
+                    rows keep their own size and pack at the top rather than
+                    stretching equal-height, which read absurd with a single
+                    kama in a full-height box. */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:auto-rows-min lg:content-start xl:grid-cols-3">
                   {returnableReservations.map((reservation) => {
                     // A box is handed back per content, so it gets its own
                     // (always-included) card with a row per outstanding content —
@@ -592,7 +534,7 @@ const LoanReturnCard = ({
                   field sits *above* the checkbox on purpose — it used to be
                   below the thing that unlocks the confirm button, so on a phone
                   you had already committed before you saw it. */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
                 <Alert variant="info" title="💡 Vinkki: Ota kuva palautettavista kamoista">
                   Suosittelemme ottamaan kuvan palautettavista tavaroista puhelimellasi ennen kuin
                   laitat ne laatikkoon. Jos palautuksesta tulee myöhemmin hämminkiä, kuva
