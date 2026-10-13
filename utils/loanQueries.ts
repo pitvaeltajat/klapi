@@ -97,7 +97,16 @@ export const itemBoxContentsInclude = {
 
 export const loanWithReservationsInclude = {
   user: true,
-  reservations: { include: { item: { include: itemBoxContentsInclude } } },
+  reservations: {
+    include: {
+      item: { include: itemBoxContentsInclude },
+      // Per-content return progress for a box, so the return screen can show
+      // only what is still owed on it — see `utils/boxContents.ts`.
+      boxContentReturns: {
+        select: { itemId: true, returnedAmount: true, missingAmount: true },
+      },
+    },
+  },
 } as const satisfies Prisma.LoanInclude;
 
 /**

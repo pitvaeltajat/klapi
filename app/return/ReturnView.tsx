@@ -8,6 +8,7 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 import {
   deriveLoanStatus,
@@ -35,8 +36,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SelectableRow } from '@/components/ui/selectable-row';
-import BoxContents from '@/components/BoxContents';
-import { boxContents, flattenContents, type ContentLocation } from '@/utils/boxContents';
+import BoxReturnContents, { type ContentDisposition } from '@/components/BoxReturnContents';
+import {
+  outstandingBoxContents,
+  flattenContents,
+  type BoxContentReturnRow,
+  type ContentLocation,
+} from '@/utils/boxContents';
 
 interface Reservation {
   id: string;
@@ -48,6 +54,14 @@ interface Reservation {
     /** Set when the kama stands behind a lainattava sijainti — what should be back in the box. */
     asLocation: ContentLocation | null;
   };
+  /** Per-content return progress already recorded on this box, if it is one. */
+  boxContentReturns: BoxContentReturnRow[];
+}
+
+/** What the client sends the route for one box: the units handed back per content. */
+interface BoxReturnPayload {
+  reservationId: string;
+  contents: Array<{ itemId: string; returned: number; missing: number }>;
 }
 
 interface LoanType {
@@ -127,6 +141,7 @@ const LoanReturnCard = ({
     id: string,
     reservationIds: string[],
     returnAmounts: Record<string, number>,
+    boxReturns: BoxReturnPayload[],
     reportContent: string,
   ) => Promise<{ name: string; description: string | null } | null>;
   onReturnComplete: () => void;
@@ -149,6 +164,27 @@ const LoanReturnCard = ({
     [loan.reservations],
   );
 
+  // A box is a kama that stands behind a lainattava sijainti: it carries
+  // contents, and is handed back per content rather than as one tick. Everything
+  // else is a plain reservation, returned whole or split by amount as before.
+  const isBoxReservation = (r: Reservation) => flattenContents(r.item.asLocation).length > 0;
+  const plainReservations = React.useMemo(
+    () => returnableReservations.filter((r) => !isBoxReservation(r)),
+    [returnableReservations],
+  );
+  const boxReservations = React.useMemo(
+    () => returnableReservations.filter((r) => isBoxReservation(r)),
+    [returnableReservations],
+  );
+
+  // The contents each box still owes — what went in minus what has already been
+  // handed back or reported missing on an earlier return.
+  const outstandingFor = React.useCallback(
+    (r: Reservation) => outstandingBoxContents(r.item.asLocation, loan.id, r.boxContentReturns),
+    [loan.id],
+  );
+
+  // --- Plain (non-box) reservation selection, unchanged from before. ---
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // How many of each selected reservation to hand back. Defaults to the full
@@ -156,22 +192,41 @@ const LoanReturnCard = ({
   // becomes its own IN_BOX line while the rest stays out on the loan.
   const [returnAmounts, setReturnAmounts] = useState<Record<string, number>>(() => ({}));
 
-  const selectAll = () => {
-    setSelectedIds(new Set(returnableReservations.map((r) => r.id)));
-    setReturnAmounts(Object.fromEntries(returnableReservations.map((r) => [r.id, r.amount])));
+  // --- Box returns: how many units of each content, per reservation+content. ---
+  // A missing entry means "return all of it, nothing missing" — the default, so
+  // opening the dialog offers to put the whole box back, as it always did.
+  const [boxDispositions, setBoxDispositions] = useState<Record<string, ContentDisposition>>(
+    () => ({}),
+  );
+  const dispoKey = (reservationId: string, contentId: string) => `${reservationId}:${contentId}`;
+  const effectiveDispo = (
+    reservationId: string,
+    content: { id: string; remaining: number },
+  ): ContentDisposition =>
+    boxDispositions[dispoKey(reservationId, content.id)] ?? {
+      returned: content.remaining,
+      missing: 0,
+    };
+  const setBoxDisposition = (
+    reservationId: string,
+    contentId: string,
+    next: ContentDisposition,
+  ) => {
+    setBoxDispositions((prev) => ({ ...prev, [dispoKey(reservationId, contentId)]: next }));
   };
 
-  // Which contents of which box were *not* found, keyed per reservation so two
-  // boxes holding a kama of the same name can't tick each other's.
-  const [missingContents, setMissingContents] = useState<Set<string>>(new Set());
-  const missingKey = (reservationId: string, contentId: string) => `${reservationId}:${contentId}`;
-
-  const toggleMissing = (reservationId: string, contentId: string) => {
-    setMissingContents((prev) => {
-      const next = new Set(prev);
-      const key = missingKey(reservationId, contentId);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+  const selectAll = () => {
+    setSelectedIds(new Set(plainReservations.map((r) => r.id)));
+    setReturnAmounts(Object.fromEntries(plainReservations.map((r) => [r.id, r.amount])));
+    // Reset every box to "return all" (its default) so the checkbox reflects it.
+    setBoxDispositions((prev) => {
+      const next = { ...prev };
+      for (const r of boxReservations) {
+        for (const content of outstandingFor(r)) {
+          if (content.outOnLoan) continue;
+          next[dispoKey(r.id, content.id)] = { returned: content.remaining, missing: 0 };
+        }
+      }
       return next;
     });
   };
@@ -213,36 +268,64 @@ const LoanReturnCard = ({
     }
   };
 
-  // Anything left unticked inside a box that is being returned becomes a line
-  // of the huomio — the contents are not reservations, so this note is the only
-  // place a missing vasara can be recorded. Boxes that aren't being returned
-  // are left out: their contents are still out with them.
-  const missingNote = returnableReservations
-    .filter((reservation) => selectedIds.has(reservation.id))
+  // Units reported missing inside a box become a line of the huomio — the
+  // contents are not reservations, so this note is the only place a missing
+  // vasara is recorded. Shown before submit and prepended to the report.
+  const missingNote = boxReservations
     .map((reservation) => {
-      const gone = boxContents(reservation.item.asLocation, loan.id).filter(
-        (content) =>
-          !content.outOnLoan && missingContents.has(missingKey(reservation.id, content.id)),
-      );
+      const gone = outstandingFor(reservation)
+        .filter((content) => !content.outOnLoan)
+        .map((content) => ({ content, missing: effectiveDispo(reservation.id, content).missing }))
+        .filter(({ missing }) => missing > 0);
       if (gone.length === 0) return null;
       return `Puuttuu laatikosta "${reservation.item.name}": ${gone
-        .map((content) => content.name)
+        .map(({ content, missing }) => `${content.name} (${missing} kpl)`)
         .join(', ')}`;
     })
     .filter(Boolean)
     .join('\n');
 
-  // A reservation is returned in full when its amount is untouched; returning
-  // fewer than the full amount splits it. The count of "returned" lines is the
-  // sum of the amounts being handed back, so a 2-of-3 return reads as 2.
-  const returnedCount = returnableReservations
+  // Counts in units, folding plain reservations (amount) and box contents
+  // (remaining) into one tally so the partial-return banner stays honest.
+  // `returnedUnits` is what is physically handed back; `accountedUnits` also
+  // counts units reported missing — both are "dealt with this time".
+  const boxTotals = boxReservations.reduce(
+    (acc, r) => {
+      for (const content of outstandingFor(r)) {
+        if (content.outOnLoan) continue;
+        const d = effectiveDispo(r.id, content);
+        acc.total += content.remaining;
+        acc.returned += d.returned;
+        acc.accounted += d.returned + d.missing;
+      }
+      return acc;
+    },
+    { total: 0, returned: 0, accounted: 0 },
+  );
+  const plainReturned = plainReservations
     .filter((r) => selectedIds.has(r.id))
     .reduce((sum, r) => sum + (returnAmounts[r.id] ?? r.amount), 0);
-  const totalCount = returnableReservations.reduce((sum, r) => sum + r.amount, 0);
-  const allSelected =
-    selectedIds.size === returnableReservations.length &&
-    returnableReservations.every((r) => (returnAmounts[r.id] ?? r.amount) === r.amount);
-  const isPartialReturn = returnedCount > 0 && returnedCount < totalCount;
+  const plainTotal = plainReservations.reduce((sum, r) => sum + r.amount, 0);
+
+  const returnedCount = plainReturned + boxTotals.returned;
+  const accountedCount = plainReturned + boxTotals.accounted;
+  const totalCount = plainTotal + boxTotals.total;
+  const allSelected = totalCount > 0 && accountedCount === totalCount;
+  const isPartialReturn = accountedCount > 0 && accountedCount < totalCount;
+
+  const buildBoxReturns = (): BoxReturnPayload[] =>
+    boxReservations
+      .map((reservation) => ({
+        reservationId: reservation.id,
+        contents: outstandingFor(reservation)
+          .filter((content) => !content.outOnLoan)
+          .map((content) => {
+            const d = effectiveDispo(reservation.id, content);
+            return { itemId: content.id, returned: d.returned, missing: d.missing };
+          })
+          .filter((c) => c.returned > 0 || c.missing > 0),
+      }))
+      .filter((entry) => entry.contents.length > 0);
 
   const handleConfirmReturn = async () => {
     if (isLoading) return;
@@ -252,6 +335,7 @@ const LoanReturnCard = ({
         loan.id,
         Array.from(selectedIds),
         returnAmounts,
+        buildBoxReturns(),
         [missingNote, reportContent.trim()].filter(Boolean).join('\n\n'),
       );
       if (box) {
@@ -363,6 +447,57 @@ const LoanReturnCard = ({
                   className="grid gap-3 sm:grid-cols-2 lg:flex-1 lg:auto-rows-min lg:content-start xl:grid-cols-3"
                 >
                   {returnableReservations.map((reservation) => {
+                    // A box is handed back per content, so it gets its own
+                    // (always-included) card with a row per outstanding content —
+                    // not one tick for the whole thing. Plain reservations keep
+                    // the tickable row + amount stepper below.
+                    if (isBoxReservation(reservation)) {
+                      const contents = outstandingFor(reservation);
+                      const dispositions = Object.fromEntries(
+                        contents
+                          .filter((content) => !content.outOnLoan)
+                          .map((content) => [
+                            content.id,
+                            effectiveDispo(reservation.id, content),
+                          ]),
+                      );
+                      const active = Object.values(dispositions).some(
+                        (d) => d.returned > 0 || d.missing > 0,
+                      );
+                      return (
+                        <div
+                          key={reservation.id}
+                          className={cn(
+                            'flex flex-col gap-3 rounded-md border bg-muted p-4 transition-colors sm:col-span-2 xl:col-span-3',
+                            active ? 'border-success' : 'border-border',
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <ItemThumb
+                              itemId={reservation.item.id}
+                              alt={reservation.item.name}
+                              className="h-20 w-20 rounded-md"
+                            />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <p className="truncate text-base font-bold">
+                                {reservation.item.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Määrä: {reservation.amount} kpl
+                              </p>
+                            </div>
+                          </div>
+                          <BoxReturnContents
+                            contents={contents}
+                            dispositions={dispositions}
+                            onChange={(itemId, next) =>
+                              setBoxDisposition(reservation.id, itemId, next)
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
                     const checked = selectedIds.has(reservation.id);
                     const amount = returnAmounts[reservation.id] ?? reservation.amount;
                     const multi = reservation.amount > 1;
@@ -437,23 +572,6 @@ const LoanReturnCard = ({
                               </span>
                             </div>
                           )}
-                          {/* Checking a box back in is checking its contents. */}
-                          <BoxContents
-                            defaultOpen
-                            contents={boxContents(reservation.item.asLocation, loan.id)}
-                            checklist={{
-                              // The component speaks content ids; the keys are
-                              // per reservation, so narrow to this box's own.
-                              missing: new Set(
-                                flattenContents(reservation.item.asLocation)
-                                  .filter((content) =>
-                                    missingContents.has(missingKey(reservation.id, content.id)),
-                                  )
-                                  .map((content) => content.id),
-                              ),
-                              onToggle: (contentId) => toggleMissing(reservation.id, contentId),
-                            }}
-                          />
                         </div>
                       </SelectableRow>
                     );
@@ -542,7 +660,7 @@ const LoanReturnCard = ({
               onClick={handleConfirmReturn}
               className="h-[60px] w-full max-w-md text-xl"
               isLoading={isLoading}
-              disabled={!termsAccepted || selectedIds.size === 0}
+              disabled={!termsAccepted || accountedCount === 0}
             >
               {isPartialReturn
                 ? `Vahvista osittainen palautus (${returnedCount} kpl)`
@@ -600,6 +718,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
     loanId: string,
     reservationIds: string[],
     returnAmounts: Record<string, number>,
+    boxReturns: BoxReturnPayload[],
     reportContent: string,
   ): Promise<{ name: string; description: string | null } | null> => {
     try {
@@ -614,7 +733,7 @@ export default function ReturnView({ loans }: { loans: LoanType[] }) {
       const response = await fetch('/api/loan/loanReturned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loanId, reservationIds, returns, reportContent }),
+        body: JSON.stringify({ id: loanId, reservationIds, returns, boxReturns, reportContent }),
       });
 
       if (response.ok) {

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import { LoanStatus, ReservationStatus } from '@prisma/client';
+import { LoanStatus, Prisma, ReservationStatus } from '@prisma/client';
 import prisma from '@/utils/prisma';
 import { deriveLoanStatus } from '@/utils/loanHelpers';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { requireUser } from '@/utils/apiAuth';
-import { activeLoanReservationWhere, activeLoansWhere } from '@/utils/loanQueries';
+import {
+  activeLoanReservationWhere,
+  activeLoansWhere,
+  itemBoxContentsInclude,
+} from '@/utils/loanQueries';
+import { boxContents } from '@/utils/boxContents';
 
 // Marks loan items as returned to a box.
 // Can be called by:
@@ -15,7 +20,7 @@ export async function POST(request: Request) {
   const { session, denied } = await requireUser();
   if (denied) return denied;
 
-  const { id, reservationIds, returns, reportContent } = (await request.json()) as {
+  const { id, reservationIds, returns, boxReturns, reportContent } = (await request.json()) as {
     id: string;
     reservationIds?: string[];
     /**
@@ -25,10 +30,22 @@ export async function POST(request: Request) {
      * stays out. `reservationIds` (whole reservations) is the older form.
      */
     returns?: Array<{ reservationId: string; amount: number }>;
+    /**
+     * Per-content returns for a box reservation: how many units of each content
+     * are back in the box and how many were reported missing this time. The box
+     * flips to IN_BOX only once every content is fully accounted for; until then
+     * it stays out and the loan is PARTIALLY_RETURNED. See `BoxContentReturn`.
+     */
+    boxReturns?: Array<{
+      reservationId: string;
+      contents: Array<{ itemId: string; returned: number; missing: number }>;
+    }>;
     reportContent?: string;
   };
 
-  // Get the loan with its reservations
+  // Get the loan with its reservations. The box reservations carry their current
+  // contents (`asLocation`) and the per-content return progress so far, so we
+  // can tell how much of each box is still owed.
   const loan = await prisma.loan.findUnique({
     where: { id },
     include: {
@@ -38,6 +55,10 @@ export async function POST(request: Request) {
           itemId: true,
           status: true,
           amount: true,
+          item: { include: itemBoxContentsInclude },
+          boxContentReturns: {
+            select: { itemId: true, returnedAmount: true, missingAmount: true },
+          },
         },
       },
     },
@@ -71,10 +92,21 @@ export async function POST(request: Request) {
 
   // The whole-reservation form: every eligible reservation named is returned
   // in full. Kept for the older callers (the loan page's check-in flow).
+  // Default to returning every eligible reservation ONLY for the bare old
+  // caller that names nothing at all. Once any explicit selector is present —
+  // even an empty `reservationIds: []` sent alongside a `boxReturns` — an empty
+  // list means "none of the whole reservations", not "all of them": a box-only
+  // return must not sweep the rest of the loan into the box.
+  const hasExplicitSelection =
+    Array.isArray(reservationIds) ||
+    (Array.isArray(returns) && returns.length > 0) ||
+    (Array.isArray(boxReturns) && boxReturns.length > 0);
   const targetIds =
     Array.isArray(reservationIds) && reservationIds.length > 0
       ? eligible.filter((r) => reservationIds.includes(r.id)).map((r) => r.id)
-      : eligible.map((r) => r.id);
+      : hasExplicitSelection
+        ? []
+        : eligible.map((r) => r.id);
 
   // The per-amount form: `{ reservationId, amount }` — how many of each
   // reservation to hand back. A reservation returned in full is just a whole
@@ -110,7 +142,87 @@ export async function POST(request: Request) {
     })
     .map((r) => ({ reservation: r, amount: returnAmounts.get(r.id)! }));
 
-  if (fullReturnIds.size === 0 && splitReturns.length === 0) {
+  // Per-content returns for a box. Each content's returned/missing is clamped to
+  // what is still owed on it (amount − already accounted), the increment queued
+  // as a BoxContentReturn upsert, and the box flipped to IN_BOX only once every
+  // content it still carries is fully accounted for. Contents out on another
+  // loan were never in this box, so they neither block the flip nor take a tick.
+  const boxUpserts: Prisma.PrismaPromise<unknown>[] = [];
+  const boxTouchedIds = new Set<string>();
+  const boxContentBreakdown: Array<{
+    reservationId: string;
+    itemId: string;
+    returned: number;
+    missing: number;
+  }> = [];
+
+  for (const entry of Array.isArray(boxReturns) ? boxReturns : []) {
+    const reservation = eligible.find((r) => r.id === entry.reservationId);
+    if (!reservation) continue;
+    const contents = boxContents(reservation.item.asLocation, loan.id);
+    if (contents.length === 0) continue; // not a box
+
+    const priorById = new Map(reservation.boxContentReturns.map((p) => [p.itemId, p]));
+    const addById = new Map<string, { returned: number; missing: number }>();
+
+    for (const requested of Array.isArray(entry.contents) ? entry.contents : []) {
+      const content = contents.find((c) => c.id === requested.itemId);
+      if (!content || content.outOnLoan) continue;
+      const prior = priorById.get(requested.itemId);
+      const already = (prior?.returnedAmount ?? 0) + (prior?.missingAmount ?? 0);
+      const remaining = Math.max(0, content.amount - already);
+      const addReturned = Math.max(0, Math.min(Math.floor(requested.returned ?? 0), remaining));
+      const addMissing = Math.max(
+        0,
+        Math.min(Math.floor(requested.missing ?? 0), remaining - addReturned),
+      );
+      if (addReturned === 0 && addMissing === 0) continue;
+      addById.set(requested.itemId, { returned: addReturned, missing: addMissing });
+    }
+
+    if (addById.size === 0) continue;
+    boxTouchedIds.add(reservation.id);
+
+    for (const [itemId, add] of addById) {
+      boxUpserts.push(
+        prisma.boxContentReturn.upsert({
+          where: { reservationId_itemId: { reservationId: reservation.id, itemId } },
+          create: {
+            reservationId: reservation.id,
+            itemId,
+            returnedAmount: add.returned,
+            missingAmount: add.missing,
+          },
+          update: {
+            returnedAmount: { increment: add.returned },
+            missingAmount: { increment: add.missing },
+          },
+        }),
+      );
+      boxContentBreakdown.push({
+        reservationId: reservation.id,
+        itemId,
+        returned: add.returned,
+        missing: add.missing,
+      });
+    }
+
+    // Fully accounted for when nothing this box still carries is left owing.
+    const allAccounted = contents.every((content) => {
+      if (content.outOnLoan) return true;
+      const prior = priorById.get(content.id);
+      const add = addById.get(content.id);
+      const total =
+        (prior?.returnedAmount ?? 0) +
+        (prior?.missingAmount ?? 0) +
+        (add?.returned ?? 0) +
+        (add?.missing ?? 0);
+      return total >= content.amount;
+    });
+    if (allAccounted) fullReturnIds.add(reservation.id);
+  }
+
+  if (fullReturnIds.size === 0 && splitReturns.length === 0 && boxUpserts.length === 0) {
     return NextResponse.json({ message: 'Ei palautettavia tavaroita' }, { status: 400 });
   }
 
@@ -126,8 +238,11 @@ export async function POST(request: Request) {
   }
 
   if (!selectedBox) {
+    // A partly-returned box also needs a physical box picked — its returned
+    // contents have to land somewhere — so count the box reservations touched
+    // this time even when they are not yet flipped to IN_BOX.
     const returningReservations = [
-      ...loan.reservations.filter((r) => fullReturnIds.has(r.id)),
+      ...loan.reservations.filter((r) => fullReturnIds.has(r.id) || boxTouchedIds.has(r.id)),
       ...splitReturns.map((s) => s.reservation),
     ];
     const loanItemIds = Array.from(new Set(returningReservations.map((r) => r.itemId)));
@@ -207,7 +322,10 @@ export async function POST(request: Request) {
   ];
   const newLoanStatus = deriveLoanStatus(updatedReservationStates, loan.status);
 
-  const result = await prisma.loan.update({
+  // The box-content writes and the loan/reservation update land together: a
+  // half-applied return would leave a box flipped to IN_BOX without its content
+  // progress, or vice versa.
+  const loanUpdate = prisma.loan.update({
     where: { id },
     data: {
       status: newLoanStatus,
@@ -240,6 +358,8 @@ export async function POST(request: Request) {
       reservations: true,
     },
   });
+
+  const [result] = await prisma.$transaction([loanUpdate, ...boxUpserts]);
 
   const trimmedReport = reportContent?.trim() ?? '';
   if (trimmedReport !== '') {
@@ -277,6 +397,8 @@ export async function POST(request: Request) {
             })),
           }
         : {}),
+      // Per-content box progress recorded this time, for the audit trail.
+      ...(boxContentBreakdown.length > 0 ? { boxContents: boxContentBreakdown } : {}),
     },
   });
 

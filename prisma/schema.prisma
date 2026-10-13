@@ -118,6 +118,7 @@ model Item {
   /// kamat point at. Loaning this kama takes everything inside it with it.
   asLocation          Location?            @relation("ItemAsLocation")
   reservations        Reservation[]
+  boxContentReturns   BoxContentReturn[]
   categories          Category[]           @relation("CategoryToItem")
   announcements       Announcement[]
   reportAffectedItems ReportAffectedItem[]
@@ -233,13 +234,39 @@ model Category {
 }
 
 model Reservation {
-  id     String            @id @default(cuid())
-  amount Int
-  itemId String
-  loanId String
-  status ReservationStatus @default(ACCEPTED)
-  item   Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  loan   Loan              @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  id                String             @id @default(cuid())
+  amount            Int
+  itemId            String
+  loanId            String
+  status            ReservationStatus  @default(ACCEPTED)
+  item              Item               @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  /// Per-content return progress — only set when this reservation is a box (a
+  /// kama that stands behind a lainattava sijainti). See `BoxContentReturn`.
+  boxContentReturns BoxContentReturn[]
+}
+
+/// How much of a box's content has been handed back under one box reservation.
+/// A box's contents are not reservations of their own (see `utils/boxContents.ts`),
+/// so a borrower returning a box a few tools at a time has nowhere to record the
+/// progress — this is that record. Scoped to the box `Reservation` (which is
+/// already per loan); one row per content kama, carrying how many units are back
+/// in the box and how many were reported missing. A box reservation flips to
+/// IN_BOX only once every content is fully accounted for (returned + missing ==
+/// the content's amount). The missing units also become a huomio, as before.
+model BoxContentReturn {
+  id             String      @id @default(cuid())
+  reservationId  String
+  itemId         String
+  returnedAmount Int         @default(0)
+  missingAmount  Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  item           Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([reservationId, itemId])
+  @@index([reservationId])
 }
 
 model Loan {

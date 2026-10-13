@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { boxContents, type ContentLocation, type ContentRow } from '../utils/boxContents';
+import {
+  boxContents,
+  outstandingBoxContents,
+  type ContentLocation,
+  type ContentRow,
+} from '../utils/boxContents';
 
 const NOW = new Date('2026-03-10T12:00:00Z');
 const day = (offset: number) => new Date(NOW.getTime() + offset * 86_400_000);
@@ -116,5 +121,60 @@ describe('boxContents', () => {
       name: 'Vasara',
       amount: 666,
     });
+  });
+});
+
+describe('outstandingBoxContents', () => {
+  const meisselit = box(content({ id: 'meisseli', name: 'Ristipäämeisseli', amount: 3 }));
+
+  it('leaves the remainder after a part is returned and a part reported missing', () => {
+    const [row] = outstandingBoxContents(
+      meisselit,
+      'box-loan',
+      [{ itemId: 'meisseli', returnedAmount: 1, missingAmount: 1 }],
+      NOW,
+    );
+    expect(row).toMatchObject({ id: 'meisseli', remaining: 1, returnedAmount: 1, missingAmount: 1 });
+  });
+
+  it('drops a content once every unit is accounted for', () => {
+    expect(
+      outstandingBoxContents(
+        meisselit,
+        'box-loan',
+        [{ itemId: 'meisseli', returnedAmount: 2, missingAmount: 1 }],
+        NOW,
+      ),
+    ).toEqual([]);
+  });
+
+  it('asks about the whole amount when nothing has been handed back yet', () => {
+    const [row] = outstandingBoxContents(meisselit, 'box-loan', [], NOW);
+    expect(row.remaining).toBe(3);
+  });
+
+  it('keeps a content out on another loan, greyed, with no remaining of its own', () => {
+    const [row] = outstandingBoxContents(
+      box(
+        content({
+          reservations: [{ loan: { id: 'other-loan', startTime: day(-2), endTime: day(2) } }],
+        }),
+      ),
+      'box-loan',
+      [],
+      NOW,
+    );
+    expect(row).toMatchObject({ outOnLoan: true, remaining: 1 });
+  });
+
+  it('never goes negative on a stale over-count', () => {
+    const [row] = outstandingBoxContents(
+      box(content({ amount: 1 })),
+      'box-loan',
+      [{ itemId: 'vasara', returnedAmount: 5, missingAmount: 0 }],
+      NOW,
+    );
+    // Fully accounted → filtered out; the floor keeps it from re-appearing.
+    expect(row).toBeUndefined();
   });
 });

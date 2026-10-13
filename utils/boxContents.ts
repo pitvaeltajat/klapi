@@ -55,3 +55,48 @@ export function boxContents(
     ),
   }));
 }
+
+/** One content's return progress so far under a box reservation. */
+export interface BoxContentReturnRow {
+  itemId: string;
+  returnedAmount: number;
+  missingAmount: number;
+}
+
+/** A content still owed on the box, with how much of it is left to account for. */
+export interface OutstandingBoxContent extends BoxContent {
+  /** Units neither returned nor reported missing yet — what the screen still asks about. */
+  remaining: number;
+  returnedAmount: number;
+  missingAmount: number;
+}
+
+/**
+ * The box contents the return screen still needs an answer about: everything in
+ * the box minus what has already been handed back or reported missing in an
+ * earlier partial return (`BoxContentReturn`). A content whose whole amount is
+ * accounted for drops off the list; one out on another loan stays, greyed, as it
+ * does in `boxContents` — it was never this borrower's to bring back.
+ *
+ * `remaining = amount − returned − missing`, floored at 0 so a stale over-count
+ * can't make a row negative.
+ */
+export function outstandingBoxContents(
+  location: ContentLocation | undefined | null,
+  loanId: string,
+  returns: BoxContentReturnRow[],
+  at: Date = new Date(),
+): OutstandingBoxContent[] {
+  const progress = new Map(returns.map((r) => [r.itemId, r]));
+  return boxContents(location, loanId, at)
+    .map((content) => {
+      const p = progress.get(content.id);
+      const returnedAmount = p?.returnedAmount ?? 0;
+      const missingAmount = p?.missingAmount ?? 0;
+      const remaining = Math.max(0, content.amount - returnedAmount - missingAmount);
+      return { ...content, remaining, returnedAmount, missingAmount };
+    })
+    // A fully accounted-for content is done; one out elsewhere is shown regardless
+    // (it carries no remaining of its own — the greyed row is informational).
+    .filter((content) => content.outOnLoan || content.remaining > 0);
+}
