@@ -27,7 +27,16 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
       include: {
         user: true,
         box: true,
-        reservations: { include: { item: { include: itemBoxContentsInclude } } },
+        reservations: {
+          include: {
+            item: { include: itemBoxContentsInclude },
+            // Per-content return progress, so a returned box can show which of
+            // its contents actually came back and which were reported missing.
+            boxContentReturns: {
+              select: { itemId: true, returnedAmount: true, missingAmount: true },
+            },
+          },
+        },
       },
     }),
     prisma.report.findMany({

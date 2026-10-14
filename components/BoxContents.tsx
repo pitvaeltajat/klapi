@@ -12,6 +12,10 @@ export interface BoxContent {
   amount: number;
   /** Out on a loan of its own, so it was never in the box — see utils/boxContents. */
   outOnLoan?: boolean;
+  /** Units reported missing when the box was returned — not in the box. */
+  missingAmount?: number;
+  /** Units handed back when the box was returned. */
+  returnedAmount?: number;
 }
 
 export interface BoxChecklist {
@@ -69,6 +73,11 @@ export default function BoxContents({
     ? sorted.filter((content) => !content.outOnLoan && checklist.missing.has(content.id)).length
     : 0;
   const elsewhereCount = sorted.filter((content) => content.outOnLoan).length;
+  // Contents the borrower reported missing when the box came back — they are not
+  // in the box, however full "Sisältää N kamaa" makes it sound.
+  const reportedMissingCount = sorted.filter(
+    (content) => !content.outOnLoan && (content.missingAmount ?? 0) > 0,
+  ).length;
 
   return (
     <Card as="details" variant="inset" padding="sm" open={defaultOpen} className={className}>
@@ -84,22 +93,39 @@ export default function BoxContents({
         {elsewhereCount > 0 && (
           <span className="whitespace-nowrap">· {elsewhereCount} lainassa muualla</span>
         )}
-        {missingCount > 0 && (
+        {(missingCount || reportedMissingCount) > 0 && (
           <span className="whitespace-nowrap font-semibold text-destructive">
-            · {missingCount} puuttuu
+            · {missingCount || reportedMissingCount} puuttuu
           </span>
         )}
       </summary>
       <ul className="mt-2 flex flex-col gap-1 text-sm">
         {sorted.map((content) => {
-          const isMissing = !content.outOnLoan && (checklist?.missing.has(content.id) ?? false);
+          const uncheckedMissing =
+            !content.outOnLoan && (checklist?.missing.has(content.id) ?? false);
+          // Reported missing on the return: how many of this content never came
+          // back, and how many did (the rest of its amount).
+          const reportedMissing = content.outOnLoan ? 0 : content.missingAmount ?? 0;
+          const inBox = content.amount - reportedMissing;
+          const isMissing = uncheckedMissing || (reportedMissing > 0 && inBox <= 0);
           const row = (
             <>
               <span className={cn('min-w-0 break-words', isMissing && 'line-through')}>
                 {content.name}
               </span>
-              <span className="shrink-0 text-muted-foreground">
-                {content.outOnLoan ? 'lainassa muualla' : `${content.amount} kpl`}
+              <span className="shrink-0 text-right text-muted-foreground">
+                {content.outOnLoan ? (
+                  'lainassa muualla'
+                ) : reportedMissing > 0 ? (
+                  <>
+                    {inBox > 0 && `${inBox} kpl · `}
+                    <span className="font-semibold text-destructive">
+                      {reportedMissing} puuttuu
+                    </span>
+                  </>
+                ) : (
+                  `${content.amount} kpl`
+                )}
               </span>
             </>
           );

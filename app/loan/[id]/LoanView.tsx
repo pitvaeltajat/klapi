@@ -6,7 +6,11 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import NextLink from 'next/link';
 import { CalendarRange, Inbox, MoveRight, PenLine, UserRound } from 'lucide-react';
 import LoanItemList from '@/components/LoanItemList';
-import { boxContents, type ContentLocation } from '@/utils/boxContents';
+import {
+  boxContents,
+  type ContentLocation,
+  type BoxContentReturnRow,
+} from '@/utils/boxContents';
 import LoanNotices from '@/components/LoanNotices';
 import { type NoticeReport } from '@/components/HandleNoticeDialog';
 import StartLoanConfirmation from '@/components/StartLoanConfirmation';
@@ -49,6 +53,7 @@ interface LoanWithRelations extends Loan {
   reservations: (Reservation & {
     item: Item & { asLocation: ContentLocation | null };
     status: ReservationStatus;
+    boxContentReturns: BoxContentReturnRow[];
   })[];
 }
 
@@ -443,7 +448,7 @@ export default function LoanView({
               amount: r.amount,
               status: r.status,
               item: { name: r.item.name },
-              contents: boxContents(r.item.asLocation, loan.id),
+              contents: boxContents(r.item.asLocation, loan.id, r.boxContentReturns),
             }))}
             selection={
               canMarkReturned

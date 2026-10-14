@@ -40,13 +40,24 @@ export function boxContents(
   location: ContentLocation | undefined | null,
   /** The loan being handed over or taken back — its own lines are not "elsewhere". */
   loanId: string,
+  /**
+   * Per-content return progress on this box, when there is any. A box flips to
+   * IN_BOX only once every content is accounted for, and "accounted" counts
+   * units the borrower reported *missing* — so without this a returned box reads
+   * as if all its contents are inside. Pass it and each row carries how much of
+   * it actually came back versus went missing.
+   */
+  returns: BoxContentReturnRow[] = [],
   at: Date = new Date(),
 ): BoxContent[] {
   const now = at.getTime();
+  const progress = new Map(returns.map((r) => [r.itemId, r]));
   return flattenContents(location).map((item) => ({
     id: item.id,
     name: item.name,
     amount: item.amount,
+    returnedAmount: progress.get(item.id)?.returnedAmount ?? 0,
+    missingAmount: progress.get(item.id)?.missingAmount ?? 0,
     outOnLoan: item.reservations.some(
       ({ loan }) =>
         loan.id !== loanId &&
@@ -88,7 +99,7 @@ export function outstandingBoxContents(
   at: Date = new Date(),
 ): OutstandingBoxContent[] {
   const progress = new Map(returns.map((r) => [r.itemId, r]));
-  return boxContents(location, loanId, at)
+  return boxContents(location, loanId, [], at)
     .map((content) => {
       const p = progress.get(content.id);
       const returnedAmount = p?.returnedAmount ?? 0;

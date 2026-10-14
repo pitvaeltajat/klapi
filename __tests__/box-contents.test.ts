@@ -33,11 +33,11 @@ describe('boxContents', () => {
       items: [content({ id: 'vasara' })],
       children: [{ items: [content({ id: 'ruuvi', name: 'Ruuvi' })], children: [] }],
     };
-    expect(boxContents(pakki, 'box-loan', NOW).map((c) => c.id)).toEqual(['vasara', 'ruuvi']);
+    expect(boxContents(pakki, 'box-loan', [], NOW).map((c) => c.id)).toEqual(['vasara', 'ruuvi']);
   });
 
   it('expects a content nobody has borrowed', () => {
-    const [vasara] = boxContents(box(content()), 'box-loan', NOW);
+    const [vasara] = boxContents(box(content()), 'box-loan', [], NOW);
     expect(vasara.outOnLoan).toBe(false);
   });
 
@@ -49,6 +49,7 @@ describe('boxContents', () => {
         }),
       ),
       'box-loan',
+      [],
       NOW,
     );
     expect(vasara.outOnLoan).toBe(true);
@@ -64,6 +65,7 @@ describe('boxContents', () => {
         }),
       ),
       'box-loan',
+      [],
       NOW,
     );
     expect(vasara.outOnLoan).toBe(false);
@@ -77,6 +79,7 @@ describe('boxContents', () => {
         }),
       ),
       'box-loan',
+      [],
       NOW,
     );
     expect(future.outOnLoan).toBe(false);
@@ -88,6 +91,7 @@ describe('boxContents', () => {
         }),
       ),
       'box-loan',
+      [],
       NOW,
     );
     expect(past.outOnLoan).toBe(false);
@@ -109,14 +113,28 @@ describe('boxContents', () => {
         }),
       ),
       'box-loan',
+      [],
       NOW,
     );
     expect(vasara.outOnLoan).toBe(true);
   });
 
+  it('carries per-content return progress through when given it', () => {
+    const pakki = box(content({ id: 'vasara', amount: 3 }));
+    const [vasara] = boxContents(pakki, 'box-loan', [
+      { itemId: 'vasara', returnedAmount: 1, missingAmount: 2 },
+    ]);
+    expect(vasara).toMatchObject({ returnedAmount: 1, missingAmount: 2 });
+  });
+
+  it('defaults progress to zero for a box that was never partially returned', () => {
+    const [vasara] = boxContents(box(content()), 'box-loan');
+    expect(vasara).toMatchObject({ returnedAmount: 0, missingAmount: 0 });
+  });
+
   it('carries the name and amount through, and copes with no box at all', () => {
-    expect(boxContents(undefined, 'box-loan', NOW)).toEqual([]);
-    expect(boxContents(box(content({ amount: 666 })), 'box-loan', NOW)[0]).toMatchObject({
+    expect(boxContents(undefined, 'box-loan', [], NOW)).toEqual([]);
+    expect(boxContents(box(content({ amount: 666 })), 'box-loan', [], NOW)[0]).toMatchObject({
       id: 'vasara',
       name: 'Vasara',
       amount: 666,
