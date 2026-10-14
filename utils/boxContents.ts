@@ -114,13 +114,13 @@ export function outstandingBoxContents(
 
 /**
  * The whole box, for the admin's shelving check. The borrower's return has
- * flipped the box to IN_BOX; now the admin opens it and confirms what is really
- * there — so they need to see *everything that belongs in it*, not only what was
- * handed back. `remaining` carries the units the borrower returned — the pool
- * the admin verifies, moving any that are not really in the box over to missing.
- * A content the borrower reported missing (`remaining` 0, `missingAmount` set),
- * or one out on another loan, carries no pool to verify but stays on the list so
- * the admin knows it belongs here and why it is not expected inside.
+ * flipped the box to IN_BOX; now the admin opens it and states what is really
+ * there — so the pool to verify is the content's *whole* amount, pre-set to the
+ * borrower's split (`missingAmount` reported missing, the rest returned). The
+ * admin confirms it, flags more as missing, or marks some found, as the box
+ * actually shows. `remaining` carries that full amount; a content out on another
+ * loan was never this borrower's to account for, so it has no pool and stays on
+ * the list only so the admin knows it belongs here.
  */
 export function inBoxContents(
   location: ContentLocation | undefined | null,
@@ -130,7 +130,7 @@ export function inBoxContents(
 ): OutstandingBoxContent[] {
   return boxContents(location, loanId, returns, at).map((content) => ({
     ...content,
-    remaining: content.outOnLoan ? 0 : content.returnedAmount ?? 0,
+    remaining: content.outOnLoan ? 0 : content.amount,
     returnedAmount: content.returnedAmount ?? 0,
     missingAmount: content.missingAmount ?? 0,
   }));

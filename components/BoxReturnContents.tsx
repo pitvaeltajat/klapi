@@ -118,14 +118,14 @@ function BoxContentCard({
       subtitle={
         <span className="font-normal text-muted-foreground">
           {verify
-            ? `${content.remaining} kpl laatikossa`
+            ? `${content.remaining - disposition.missing} / ${content.remaining} laatikossa`
             : `${content.remaining} kpl${later > 0 ? ` · ${later} jää lainaan` : ''}`}
         </span>
       }
       action={
-        // Verifying from the box: the units are already recorded back, so the
-        // only question is how many are *not* really there. One "Puuttuu"
-        // stepper; the rest stay counted as present.
+        // Verifying from the box: the pool is the whole amount, pre-set to the
+        // borrower's report. One "Puuttuu" stepper — bump it up for anything
+        // gone, down for anything that turned up; the rest count as present.
         verify ? (
           <Stepper
             label="Puuttuu"

@@ -15,14 +15,15 @@ export async function POST(request: Request) {
     id: string;
     reservationIds?: string[];
     /**
-     * The admin's shelving check for each box being returned: units of a content
-     * that are not actually in the box. They get reclassified from returned to
-     * missing on the `BoxContentReturn` and logged as a huomio — the box is still
-     * shelved (RETURNED) either way.
+     * The admin's shelving check for each box being returned: the final count of
+     * how many of each content are missing, as the box actually shows. The route
+     * compares it to the borrower's record and moves units either way on the
+     * `BoxContentReturn` — more missing, or some found again — logging the change
+     * as a huomio. The box is shelved (RETURNED) regardless.
      */
     boxVerifications?: Array<{
       reservationId: string;
-      missing: Array<{ itemId: string; amount: number }>;
+      contents: Array<{ itemId: string; missing: number }>;
     }>;
   };
 
@@ -58,12 +59,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Ei käsiteltäviä tavaroita laatikossa' }, { status: 400 });
   }
 
-  // Apply the admin's per-content missing flags for the boxes being shelved. A
-  // flagged unit moves from returnedAmount to missingAmount on its
-  // BoxContentReturn, clamped to what is still counted as returned.
+  // Apply the admin's final per-content counts for the boxes being shelved. Each
+  // content's BoxContentReturn is set to that count (missing = the admin's
+  // number, returned = the rest of its amount); only contents whose missing
+  // actually changed are written and logged, either as newly missing or found.
   const boxReturnUpdates: Prisma.PrismaPromise<unknown>[] = [];
-  const missingNotes: string[] = [];
-  const missingBreakdown: Array<{ reservationId: string; itemId: string; amount: number }> = [];
+  const notes: string[] = [];
+  const changeBreakdown: Array<{
+    reservationId: string;
+    itemId: string;
+    missing: number;
+    delta: number;
+  }> = [];
 
   for (const entry of Array.isArray(boxVerifications) ? boxVerifications : []) {
     if (!targetIds.includes(entry.reservationId)) continue;
@@ -74,26 +81,38 @@ export async function POST(request: Request) {
     const priorById = new Map(reservation.boxContentReturns.map((p) => [p.itemId, p]));
 
     const gone: string[] = [];
-    for (const { itemId, amount } of Array.isArray(entry.missing) ? entry.missing : []) {
-      const prior = priorById.get(itemId);
+    const found: string[] = [];
+    for (const { itemId, missing } of Array.isArray(entry.contents) ? entry.contents : []) {
       const content = contents.find((c) => c.id === itemId);
-      if (!prior || !content) continue;
-      const move = Math.max(0, Math.min(Math.floor(amount), prior.returnedAmount));
-      if (move === 0) continue;
+      if (!content || content.outOnLoan) continue;
+      const finalMissing = Math.max(0, Math.min(Math.floor(missing ?? 0), content.amount));
+      const priorMissing = priorById.get(itemId)?.missingAmount ?? 0;
+      if (finalMissing === priorMissing) continue; // unchanged
       boxReturnUpdates.push(
-        prisma.boxContentReturn.update({
+        prisma.boxContentReturn.upsert({
           where: { reservationId_itemId: { reservationId: reservation.id, itemId } },
-          data: {
-            returnedAmount: { decrement: move },
-            missingAmount: { increment: move },
+          create: {
+            reservationId: reservation.id,
+            itemId,
+            returnedAmount: content.amount - finalMissing,
+            missingAmount: finalMissing,
+          },
+          update: {
+            returnedAmount: content.amount - finalMissing,
+            missingAmount: finalMissing,
           },
         }),
       );
-      missingBreakdown.push({ reservationId: reservation.id, itemId, amount: move });
-      gone.push(`${content.name} (${move} kpl)`);
+      const delta = finalMissing - priorMissing;
+      changeBreakdown.push({ reservationId: reservation.id, itemId, missing: finalMissing, delta });
+      if (delta > 0) gone.push(`${content.name} (${delta} kpl)`);
+      else found.push(`${content.name} (${-delta} kpl)`);
     }
     if (gone.length > 0) {
-      missingNotes.push(`Puuttui tarkistuksessa laatikosta "${reservation.item.name}": ${gone.join(', ')}`);
+      notes.push(`Puuttui tarkistuksessa laatikosta "${reservation.item.name}": ${gone.join(', ')}`);
+    }
+    if (found.length > 0) {
+      notes.push(`Löytyi tarkistuksessa laatikosta "${reservation.item.name}": ${found.join(', ')}`);
     }
   }
 
@@ -126,11 +145,11 @@ export async function POST(request: Request) {
 
   const [result] = await prisma.$transaction([loanUpdate, ...boxReturnUpdates]);
 
-  if (missingNotes.length > 0) {
+  if (notes.length > 0) {
     await prisma.report.create({
       data: {
         loanId: id,
-        content: missingNotes.join('\n'),
+        content: notes.join('\n'),
         created: 'AFTER_LOAN',
       },
     });
@@ -144,8 +163,8 @@ export async function POST(request: Request) {
       reservationIds: targetIds,
       count: targetIds.length,
       newStatus: newLoanStatus,
-      // Units flagged missing during the shelving check, for the audit trail.
-      ...(missingBreakdown.length > 0 ? { missing: missingBreakdown } : {}),
+      // Per-content changes made during the shelving check, for the audit trail.
+      ...(changeBreakdown.length > 0 ? { boxChanges: changeBreakdown } : {}),
     },
   });
 

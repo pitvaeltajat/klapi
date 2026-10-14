@@ -201,25 +201,25 @@ describe('outstandingBoxContents', () => {
 describe('inBoxContents', () => {
   const meisselit = box(content({ id: 'meisseli', name: 'Ristipäämeisseli', amount: 3 }));
 
-  it('offers the returned units as the pool to verify', () => {
+  it('offers the whole amount as the pool, carrying the borrower’s split', () => {
     const [row] = inBoxContents(
       meisselit,
       'box-loan',
       [{ itemId: 'meisseli', returnedAmount: 2, missingAmount: 1 }],
       NOW,
     );
-    expect(row).toMatchObject({ id: 'meisseli', remaining: 2, returnedAmount: 2, missingAmount: 1 });
+    expect(row).toMatchObject({ id: 'meisseli', remaining: 3, returnedAmount: 2, missingAmount: 1 });
   });
 
-  it('still lists a content the borrower reported missing, with no pool to verify', () => {
+  it('keeps a content the borrower reported missing in the pool, so it can be found', () => {
     const [row] = inBoxContents(
       meisselit,
       'box-loan',
       [{ itemId: 'meisseli', returnedAmount: 0, missingAmount: 3 }],
       NOW,
     );
-    // Shown so the admin knows it belongs in the box, but carries nothing to tick.
-    expect(row).toMatchObject({ id: 'meisseli', remaining: 0, missingAmount: 3 });
+    // Whole amount is verifiable; its missing is pre-set so the admin can correct it.
+    expect(row).toMatchObject({ id: 'meisseli', remaining: 3, missingAmount: 3 });
   });
 
   it('still lists a content out on another loan, with no pool to verify', () => {

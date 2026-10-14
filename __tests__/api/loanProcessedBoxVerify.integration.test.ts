@@ -137,7 +137,7 @@ describe('loanProcessed — admin shelving verification', () => {
     expect(await prisma.report.findMany({ where: { loanId: loan.id } })).toHaveLength(0);
   });
 
-  it('moves flagged units from returned to missing and logs a huomio', async () => {
+  it('moves units to missing and logs a huomio when the admin finds fewer', async () => {
     const { loan, reservationId } = await makeInBoxLoan(`${prefix}-flag`, [
       { itemId: vasaraId, returnedAmount: 1, missingAmount: 0 },
       { itemId: meisseliId, returnedAmount: 3, missingAmount: 0 },
@@ -146,7 +146,7 @@ describe('loanProcessed — admin shelving verification', () => {
     const response = await post({
       id: loan.id,
       reservationIds: [reservationId],
-      boxVerifications: [{ reservationId, missing: [{ itemId: meisseliId, amount: 1 }] }],
+      boxVerifications: [{ reservationId, contents: [{ itemId: meisseliId, missing: 1 }] }],
     });
     expect(response.status).toBe(200);
 
@@ -167,7 +167,31 @@ describe('loanProcessed — admin shelving verification', () => {
     expect(reports[0].content).toContain('Ristipäämeisseli (1 kpl)');
   });
 
-  it('clamps a flagged amount to what is still recorded as returned', async () => {
+  it('marks units found, moving missing back to returned and logging it', async () => {
+    const { loan, reservationId } = await makeInBoxLoan(`${prefix}-found`, [
+      { itemId: meisseliId, returnedAmount: 0, missingAmount: 3 },
+    ]);
+
+    const response = await post({
+      id: loan.id,
+      reservationIds: [reservationId],
+      boxVerifications: [{ reservationId, contents: [{ itemId: meisseliId, missing: 1 }] }],
+    });
+    expect(response.status).toBe(200);
+
+    const meisseli = await prisma.boxContentReturn.findUniqueOrThrow({
+      where: { reservationId_itemId: { reservationId, itemId: meisseliId } },
+    });
+    // 3 reported missing, admin finds 2 of them → 1 missing, 2 returned.
+    expect(meisseli).toMatchObject({ returnedAmount: 2, missingAmount: 1 });
+
+    const reports = await prisma.report.findMany({ where: { loanId: loan.id } });
+    expect(reports).toHaveLength(1);
+    expect(reports[0].content).toContain('Löytyi tarkistuksessa laatikosta');
+    expect(reports[0].content).toContain('Ristipäämeisseli (2 kpl)');
+  });
+
+  it('clamps the final missing count to the content amount', async () => {
     const { loan, reservationId } = await makeInBoxLoan(`${prefix}-clamp`, [
       { itemId: meisseliId, returnedAmount: 2, missingAmount: 1 },
     ]);
@@ -175,13 +199,32 @@ describe('loanProcessed — admin shelving verification', () => {
     await post({
       id: loan.id,
       reservationIds: [reservationId],
-      boxVerifications: [{ reservationId, missing: [{ itemId: meisseliId, amount: 9 }] }],
+      boxVerifications: [{ reservationId, contents: [{ itemId: meisseliId, missing: 9 }] }],
     });
 
     const meisseli = await prisma.boxContentReturn.findUniqueOrThrow({
       where: { reservationId_itemId: { reservationId, itemId: meisseliId } },
     });
-    // Only 2 were recorded returned, so at most 2 can move to missing: 1 + 2 = 3.
+    // 9 clamps to the amount (3): all missing, nothing returned.
     expect(meisseli).toMatchObject({ returnedAmount: 0, missingAmount: 3 });
+  });
+
+  it('leaves a content untouched and files no huomio when the admin confirms the report', async () => {
+    const { loan, reservationId } = await makeInBoxLoan(`${prefix}-confirm`, [
+      { itemId: meisseliId, returnedAmount: 2, missingAmount: 1 },
+    ]);
+
+    await post({
+      id: loan.id,
+      reservationIds: [reservationId],
+      // Admin re-states the same missing count the borrower reported.
+      boxVerifications: [{ reservationId, contents: [{ itemId: meisseliId, missing: 1 }] }],
+    });
+
+    const meisseli = await prisma.boxContentReturn.findUniqueOrThrow({
+      where: { reservationId_itemId: { reservationId, itemId: meisseliId } },
+    });
+    expect(meisseli).toMatchObject({ returnedAmount: 2, missingAmount: 1 });
+    expect(await prisma.report.findMany({ where: { loanId: loan.id } })).toHaveLength(0);
   });
 });

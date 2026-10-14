@@ -16,6 +16,7 @@ import {
   flattenContents,
   type ContentLocation,
   type BoxContentReturnRow,
+  type OutstandingBoxContent,
 } from '@/utils/boxContents';
 import LoanNotices from '@/components/LoanNotices';
 import { type NoticeReport } from '@/components/HandleNoticeDialog';
@@ -212,13 +213,16 @@ export default function LoanView({
   >(() => ({}));
   const dispoKey = (reservationId: string, contentId: string) =>
     `${reservationId}:${contentId}`;
+  // Default to the borrower's own split — missing what they reported missing,
+  // the rest present — so the admin is confirming their report, not re-counting
+  // from scratch.
   const effectiveDispo = (
     reservationId: string,
-    content: { id: string; remaining: number },
+    content: OutstandingBoxContent,
   ): ContentDisposition =>
     boxDispositions[dispoKey(reservationId, content.id)] ?? {
-      returned: content.remaining,
-      missing: 0,
+      returned: content.remaining - content.missingAmount,
+      missing: content.missingAmount,
     };
   const setBoxDisposition = (
     reservationId: string,
@@ -231,20 +235,21 @@ export default function LoanView({
   const loanProcessed = () =>
     guard(async () => {
       const reservationIds = Array.from(processingIds);
-      // For each selected box, the units the admin flagged as not actually in
-      // the box — those get reclassified from returned to missing and logged.
+      // For each selected box, the admin's final count of what is missing per
+      // content — the route compares it to the borrower's record and moves
+      // units either way (newly missing, or found), logging the change.
       const boxVerifications = loan.reservations
         .filter((r) => processingIds.has(r.id) && flattenContents(r.item.asLocation).length > 0)
         .map((r) => ({
           reservationId: r.id,
-          missing: inBoxContents(r.item.asLocation, loan.id, r.boxContentReturns)
+          contents: inBoxContents(r.item.asLocation, loan.id, r.boxContentReturns)
+            .filter((content) => !content.outOnLoan)
             .map((content) => ({
               itemId: content.id,
-              amount: boxDispositions[dispoKey(r.id, content.id)]?.missing ?? 0,
-            }))
-            .filter((m) => m.amount > 0),
+              missing: effectiveDispo(r.id, content).missing,
+            })),
         }))
-        .filter((v) => v.missing.length > 0);
+        .filter((v) => v.contents.length > 0);
       await fetch('/api/loan/loanProcessed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
