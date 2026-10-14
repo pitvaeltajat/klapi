@@ -111,3 +111,29 @@ export function outstandingBoxContents(
     // (it carries no remaining of its own — the greyed row is informational).
     .filter((content) => content.outOnLoan || content.remaining > 0);
 }
+
+/**
+ * The contents recorded as back inside a box, for the admin's shelving check.
+ * The borrower's return has flipped the box to IN_BOX; now the admin opens it
+ * and confirms what is actually there. `remaining` carries the units the
+ * borrower handed back — the pool the admin verifies, moving any that are not
+ * really in the box over to missing.
+ *
+ * A content nobody returned (already all missing, or out on another loan)
+ * carries nothing to verify and is left off.
+ */
+export function inBoxContents(
+  location: ContentLocation | undefined | null,
+  loanId: string,
+  returns: BoxContentReturnRow[],
+  at: Date = new Date(),
+): OutstandingBoxContent[] {
+  return boxContents(location, loanId, returns, at)
+    .filter((content) => !content.outOnLoan && (content.returnedAmount ?? 0) > 0)
+    .map((content) => ({
+      ...content,
+      remaining: content.returnedAmount ?? 0,
+      returnedAmount: content.returnedAmount ?? 0,
+      missingAmount: content.missingAmount ?? 0,
+    }));
+}

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   boxContents,
   outstandingBoxContents,
+  inBoxContents,
   type ContentLocation,
   type ContentRow,
 } from '../utils/boxContents';
@@ -194,5 +195,45 @@ describe('outstandingBoxContents', () => {
     );
     // Fully accounted → filtered out; the floor keeps it from re-appearing.
     expect(row).toBeUndefined();
+  });
+});
+
+describe('inBoxContents', () => {
+  const meisselit = box(content({ id: 'meisseli', name: 'Ristipäämeisseli', amount: 3 }));
+
+  it('offers the returned units as the pool to verify', () => {
+    const [row] = inBoxContents(
+      meisselit,
+      'box-loan',
+      [{ itemId: 'meisseli', returnedAmount: 2, missingAmount: 1 }],
+      NOW,
+    );
+    expect(row).toMatchObject({ id: 'meisseli', remaining: 2, returnedAmount: 2, missingAmount: 1 });
+  });
+
+  it('leaves out a content nothing came back for', () => {
+    expect(
+      inBoxContents(
+        meisselit,
+        'box-loan',
+        [{ itemId: 'meisseli', returnedAmount: 0, missingAmount: 3 }],
+        NOW,
+      ),
+    ).toEqual([]);
+  });
+
+  it('leaves out a content out on another loan', () => {
+    expect(
+      inBoxContents(
+        box(
+          content({
+            reservations: [{ loan: { id: 'other-loan', startTime: day(-2), endTime: day(2) } }],
+          }),
+        ),
+        'box-loan',
+        [{ itemId: 'vasara', returnedAmount: 1, missingAmount: 0 }],
+        NOW,
+      ),
+    ).toEqual([]);
   });
 });

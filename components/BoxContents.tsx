@@ -3,7 +3,6 @@
 import React from 'react';
 import { Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { CheckboxIndicator } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 export interface BoxContent {
@@ -18,47 +17,34 @@ export interface BoxContent {
   returnedAmount?: number;
 }
 
-export interface BoxChecklist {
-  /** Contents that were *not* found — everything starts present. */
-  missing: Set<string>;
-  onToggle: (contentId: string) => void;
-}
-
 const fiCollator = new Intl.Collator('fi');
 
 /**
- * What is inside a kama that stands behind a lainattava sijainti, folded away until asked for.
+ * What is inside a kama that stands behind a lainattava sijainti, folded away
+ * until asked for — a read-only list.
  *
- * It earns its place at the two moments the loan is physically in someone's
- * hands: handing "Sininen työkalupakki" over, and checking it back in. The
- * question both times is the same — is everything that belongs in this box
- * actually in it — and the answer is otherwise a trip to the box's own page.
- *
- * With a `checklist` it becomes tickable, which is what the return screen wants:
- * the contents are not reservations of their own, so unticking one records
- * nothing by itself — the caller turns what is left unticked into the huomio
- * the return already collects.
+ * It earns its place at the moments the loan is physically in someone's hands:
+ * handing "Sininen työkalupakki" over at the counter, and reading back what a
+ * returned box is recorded to hold. The question is the same — what belongs in
+ * this box, and what is actually in it — and the answer is otherwise a trip to
+ * the box's own page. Where the contents are *acted on* (the borrower's return,
+ * the admin's shelving check) the stepper cards in `BoxReturnContents` take over.
  *
  * A native `<details>`, so it needs no state, no library and no JavaScript to
- * open. Inside a tickable row every click is a click on that row's `<label>`,
- * so the summary stops propagation and each content is a `<button>` — clicking
- * interactive content doesn't activate a label, which a nested `<input>` under
- * one wouldn't manage.
+ * open.
  */
 export default function BoxContents({
   contents,
-  checklist,
   defaultOpen = false,
   className,
 }: {
   contents: BoxContent[];
-  checklist?: BoxChecklist;
   /**
    * Start unfolded. The screens where the box is physically in someone's hands
-   * pass this: at the counter and at the palautus the list is the job, and one
-   * more tap before you can start counting is one too many. Elsewhere it stays
-   * folded — the loan page is for reading, and several boxes' worth of contents
-   * would bury the loan itself.
+   * pass this: at the counter the list is the job, and one more tap before you
+   * can start counting is one too many. Elsewhere it stays folded — the loan
+   * page is for reading, and several boxes' worth of contents would bury the
+   * loan itself.
    *
    * Only the initial state: `<details>` owns it after that, so opening or
    * closing one sticks while the rest of the screen re-renders.
@@ -69,9 +55,6 @@ export default function BoxContents({
   if (contents.length === 0) return null;
 
   const sorted = [...contents].sort((a, b) => fiCollator.compare(a.name, b.name));
-  const missingCount = checklist
-    ? sorted.filter((content) => !content.outOnLoan && checklist.missing.has(content.id)).length
-    : 0;
   const elsewhereCount = sorted.filter((content) => content.outOnLoan).length;
   // Contents the borrower reported missing when the box came back — they are not
   // in the box, however full "Sisältää N kamaa" makes it sound.
@@ -93,24 +76,25 @@ export default function BoxContents({
         {elsewhereCount > 0 && (
           <span className="whitespace-nowrap">· {elsewhereCount} lainassa muualla</span>
         )}
-        {(missingCount || reportedMissingCount) > 0 && (
+        {reportedMissingCount > 0 && (
           <span className="whitespace-nowrap font-semibold text-destructive">
-            · {missingCount || reportedMissingCount} puuttuu
+            · {reportedMissingCount} puuttuu
           </span>
         )}
       </summary>
       <ul className="mt-2 flex flex-col gap-1 text-sm">
         {sorted.map((content) => {
-          const uncheckedMissing =
-            !content.outOnLoan && (checklist?.missing.has(content.id) ?? false);
           // Reported missing on the return: how many of this content never came
           // back, and how many did (the rest of its amount).
           const reportedMissing = content.outOnLoan ? 0 : content.missingAmount ?? 0;
           const inBox = content.amount - reportedMissing;
-          const isMissing = uncheckedMissing || (reportedMissing > 0 && inBox <= 0);
-          const row = (
-            <>
-              <span className={cn('min-w-0 break-words', isMissing && 'line-through')}>
+          const fullyMissing = reportedMissing > 0 && inBox <= 0;
+          return (
+            <li
+              key={content.id}
+              className={cn('flex justify-between gap-2', content.outOnLoan && 'opacity-60')}
+            >
+              <span className={cn('min-w-0 break-words', fullyMissing && 'line-through')}>
                 {content.name}
               </span>
               <span className="shrink-0 text-right text-muted-foreground">
@@ -127,40 +111,6 @@ export default function BoxContents({
                   `${content.amount} kpl`
                 )}
               </span>
-            </>
-          );
-
-          // Somebody else has it, so it never went out in the box. It stays on
-          // the list — the kiosk should know not to look for it — but it is not
-          // the palauttaja's to bring back, so it can't be ticked or missed.
-          if (!checklist || content.outOnLoan) {
-            return (
-              <li
-                key={content.id}
-                className={cn('flex justify-between gap-2', content.outOnLoan && 'opacity-60')}
-              >
-                {row}
-              </li>
-            );
-          }
-
-          return (
-            <li key={content.id}>
-              <button
-                type="button"
-                aria-pressed={!isMissing}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  checklist.onToggle(content.id);
-                }}
-                className={cn(
-                  'flex w-full items-center gap-2 rounded px-1 py-1 text-left transition-colors hover:bg-muted',
-                  isMissing && 'text-destructive',
-                )}
-              >
-                <CheckboxIndicator checked={!isMissing} />
-                <span className="flex min-w-0 flex-1 justify-between gap-2">{row}</span>
-              </button>
             </li>
           );
         })}

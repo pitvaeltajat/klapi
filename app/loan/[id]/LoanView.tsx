@@ -6,8 +6,14 @@ import NotAuthenticated from '@/components/NotAuthenticated';
 import NextLink from 'next/link';
 import { CalendarRange, Inbox, MoveRight, PenLine, UserRound } from 'lucide-react';
 import LoanItemList from '@/components/LoanItemList';
+import ItemThumb from '@/components/ItemThumb';
+import BoxReturnContents, { type ContentDisposition } from '@/components/BoxReturnContents';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import {
   boxContents,
+  inBoxContents,
+  flattenContents,
   type ContentLocation,
   type BoxContentReturnRow,
 } from '@/utils/boxContents';
@@ -197,13 +203,52 @@ export default function LoanView({
 
   const [processingIds, setProcessingIds] = React.useState<Set<string>>(() => new Set());
 
+  // The admin's per-content shelving check for each box, keyed
+  // `${reservationId}:${contentId}`. A missing entry means "all present,
+  // nothing missing" — the default, so a box the admin just ticks is shelved
+  // whole, as it always was.
+  const [boxDispositions, setBoxDispositions] = React.useState<
+    Record<string, ContentDisposition>
+  >(() => ({}));
+  const dispoKey = (reservationId: string, contentId: string) =>
+    `${reservationId}:${contentId}`;
+  const effectiveDispo = (
+    reservationId: string,
+    content: { id: string; remaining: number },
+  ): ContentDisposition =>
+    boxDispositions[dispoKey(reservationId, content.id)] ?? {
+      returned: content.remaining,
+      missing: 0,
+    };
+  const setBoxDisposition = (
+    reservationId: string,
+    contentId: string,
+    next: ContentDisposition,
+  ) => {
+    setBoxDispositions((prev) => ({ ...prev, [dispoKey(reservationId, contentId)]: next }));
+  };
+
   const loanProcessed = () =>
     guard(async () => {
       const reservationIds = Array.from(processingIds);
+      // For each selected box, the units the admin flagged as not actually in
+      // the box — those get reclassified from returned to missing and logged.
+      const boxVerifications = loan.reservations
+        .filter((r) => processingIds.has(r.id) && flattenContents(r.item.asLocation).length > 0)
+        .map((r) => ({
+          reservationId: r.id,
+          missing: inBoxContents(r.item.asLocation, loan.id, r.boxContentReturns)
+            .map((content) => ({
+              itemId: content.id,
+              amount: boxDispositions[dispoKey(r.id, content.id)]?.missing ?? 0,
+            }))
+            .filter((m) => m.amount > 0),
+        }))
+        .filter((v) => v.missing.length > 0);
       await fetch('/api/loan/loanProcessed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: loan.id, reservationIds }),
+        body: JSON.stringify({ id: loan.id, reservationIds, boxVerifications }),
       });
       toast.success('Kamat palautettu');
       router.push('/loan');
@@ -281,6 +326,15 @@ export default function LoanView({
     (r) => r.status === ReservationStatus.IN_BOX,
   );
   const canMarkReturned = !isDeleted && isAdmin && inBoxReservations.length > 0;
+
+  // A box reservation that is back in a box gets the per-content shelving check
+  // (stepper cards) rather than a single tick; everything else — plain items,
+  // and boxes not yet in a box — stays in the read list, tickable when IN_BOX.
+  const isBox = (r: LoanWithRelations['reservations'][number]) =>
+    flattenContents(r.item.asLocation).length > 0;
+  const verifiableBoxes = canMarkReturned ? inBoxReservations.filter(isBox) : [];
+  const verifiableBoxIds = new Set(verifiableBoxes.map((r) => r.id));
+  const listedReservations = loan.reservations.filter((r) => !verifiableBoxIds.has(r.id));
 
   // Deleting is the admin's "this loan should never have existed" — a duplicate,
   // a test, one entered on the wrong account. Unlike hylkääminen and peruminen
@@ -441,25 +495,70 @@ export default function LoanView({
               </Button>
             </div>
           )}
-          <LoanItemList
-            reservations={loan.reservations.map((r) => ({
-              id: r.id,
-              itemId: r.itemId,
-              amount: r.amount,
-              status: r.status,
-              item: { name: r.item.name },
-              contents: boxContents(r.item.asLocation, loan.id, r.boxContentReturns),
-            }))}
-            selection={
-              canMarkReturned
-                ? {
-                    isSelectable: (r) => r.status === ReservationStatus.IN_BOX,
-                    selected: processingIds,
-                    onToggle: toggleProcessing,
-                  }
-                : undefined
-            }
-          />
+          <div className="flex flex-col gap-4">
+            {/* Only render the list when it has rows of its own — with the verify
+                cards below it, an empty list would print "Ei tavaroita." above a
+                box that is plainly there. */}
+            {listedReservations.length > 0 && (
+              <LoanItemList
+                reservations={listedReservations.map((r) => ({
+                  id: r.id,
+                  itemId: r.itemId,
+                  amount: r.amount,
+                  status: r.status,
+                  item: { name: r.item.name },
+                  contents: boxContents(r.item.asLocation, loan.id, r.boxContentReturns),
+                }))}
+                selection={
+                  canMarkReturned
+                    ? {
+                        isSelectable: (r) => r.status === ReservationStatus.IN_BOX,
+                        selected: processingIds,
+                        onToggle: toggleProcessing,
+                      }
+                    : undefined
+                }
+              />
+            )}
+
+            {/* Each returned box: tick it once checked, and flag per content
+                anything that is not actually in the box. */}
+            {verifiableBoxes.map((r) => {
+              const contents = inBoxContents(r.item.asLocation, loan.id, r.boxContentReturns);
+              const selected = processingIds.has(r.id);
+              const dispositions = Object.fromEntries(
+                contents.map((content) => [content.id, effectiveDispo(r.id, content)]),
+              );
+              return (
+                <div
+                  key={r.id}
+                  className={cn(
+                    'flex flex-col gap-3 rounded-md border bg-muted p-4 transition-colors',
+                    selected ? 'border-success' : 'border-border',
+                  )}
+                >
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <Checkbox checked={selected} onChange={() => toggleProcessing(r.id)} />
+                    <ItemThumb
+                      itemId={r.itemId}
+                      alt={r.item.name}
+                      className="h-16 w-16 rounded-md"
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <p className="truncate text-base font-bold">{r.item.name}</p>
+                      <p className="text-sm text-muted-foreground">Laatikossa · {r.amount} kpl</p>
+                    </div>
+                  </label>
+                  <BoxReturnContents
+                    mode="verify"
+                    contents={contents}
+                    dispositions={dispositions}
+                    onChange={(itemId, next) => setBoxDisposition(r.id, itemId, next)}
+                  />
+                </div>
+              );
+            })}
+          </div>
           {canMarkReturned && (
             <Button
               onClick={loanProcessed}

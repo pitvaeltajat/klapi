@@ -14,6 +14,14 @@ export interface ContentDisposition {
   missing: number;
 }
 
+/**
+ * `return` — the borrower hands contents back (how many returned, how many
+ * missing; the rest stays on loan). `verify` — the admin opens the box at
+ * shelving and confirms what the borrower returned is really there, flagging any
+ * that are not. Same card either way; only the steppers and wording differ.
+ */
+export type BoxReturnMode = 'return' | 'verify';
+
 /** Keep `returned + missing` within what is still owed; floor at 0. */
 export function clampDisposition(d: ContentDisposition, remaining: number): ContentDisposition {
   const returned = Math.max(0, Math.min(Math.floor(d.returned), remaining));
@@ -89,12 +97,15 @@ function BoxContentCard({
   content,
   disposition,
   onChange,
+  mode = 'return',
 }: {
   content: OutstandingBoxContent;
   disposition: ContentDisposition;
   onChange: (next: ContentDisposition) => void;
+  mode?: BoxReturnMode;
 }) {
   const image = useItemImageState(content.id);
+  const verify = mode === 'verify';
   const later = content.remaining - disposition.returned - disposition.missing;
 
   return (
@@ -106,30 +117,49 @@ function BoxContentCard({
       loading={image.status === 'loading'}
       subtitle={
         <span className="font-normal text-muted-foreground">
-          {content.remaining} kpl{later > 0 ? ` · ${later} jää lainaan` : ''}
+          {verify
+            ? `${content.remaining} kpl laatikossa`
+            : `${content.remaining} kpl${later > 0 ? ` · ${later} jää lainaan` : ''}`}
         </span>
       }
       action={
-        <div className="flex flex-col gap-1.5">
-          <Stepper
-            label="Palautan"
-            value={disposition.returned}
-            max={content.remaining}
-            suffix={`/ ${content.remaining}`}
-            onChange={(v) =>
-              onChange(clampDisposition({ returned: v, missing: disposition.missing }, content.remaining))
-            }
-          />
+        // Verifying from the box: the units are already recorded back, so the
+        // only question is how many are *not* really there. One "Puuttuu"
+        // stepper; the rest stay counted as present.
+        verify ? (
           <Stepper
             label="Puuttuu"
             value={disposition.missing}
-            max={content.remaining - disposition.returned}
+            max={content.remaining}
+            suffix={`/ ${content.remaining}`}
             valueClassName={disposition.missing > 0 ? 'text-destructive' : undefined}
-            onChange={(v) =>
-              onChange(clampDisposition({ returned: disposition.returned, missing: v }, content.remaining))
-            }
+            onChange={(v) => {
+              const missing = Math.max(0, Math.min(Math.floor(v), content.remaining));
+              onChange({ returned: content.remaining - missing, missing });
+            }}
           />
-        </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <Stepper
+              label="Palautan"
+              value={disposition.returned}
+              max={content.remaining}
+              suffix={`/ ${content.remaining}`}
+              onChange={(v) =>
+                onChange(clampDisposition({ returned: v, missing: disposition.missing }, content.remaining))
+              }
+            />
+            <Stepper
+              label="Puuttuu"
+              value={disposition.missing}
+              max={content.remaining - disposition.returned}
+              valueClassName={disposition.missing > 0 ? 'text-destructive' : undefined}
+              onChange={(v) =>
+                onChange(clampDisposition({ returned: disposition.returned, missing: v }, content.remaining))
+              }
+            />
+          </div>
+        )
       }
     />
   );
@@ -150,11 +180,13 @@ export default function BoxReturnContents({
   contents,
   dispositions,
   onChange,
+  mode = 'return',
 }: {
   contents: OutstandingBoxContent[];
   /** By content id; a missing entry means "return all, nothing missing" (the default). */
   dispositions: Record<string, ContentDisposition>;
   onChange: (itemId: string, next: ContentDisposition) => void;
+  mode?: BoxReturnMode;
 }) {
   const actionable = contents.filter((c) => !c.outOnLoan);
   const elsewhere = contents.filter((c) => c.outOnLoan);
@@ -174,6 +206,7 @@ export default function BoxReturnContents({
             <BoxContentCard
               key={content.id}
               content={content}
+              mode={mode}
               disposition={dispositions[content.id] ?? { returned: content.remaining, missing: 0 }}
               onChange={(next) => onChange(content.id, next)}
             />
