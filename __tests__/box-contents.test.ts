@@ -211,29 +211,28 @@ describe('inBoxContents', () => {
     expect(row).toMatchObject({ id: 'meisseli', remaining: 2, returnedAmount: 2, missingAmount: 1 });
   });
 
-  it('leaves out a content nothing came back for', () => {
-    expect(
-      inBoxContents(
-        meisselit,
-        'box-loan',
-        [{ itemId: 'meisseli', returnedAmount: 0, missingAmount: 3 }],
-        NOW,
-      ),
-    ).toEqual([]);
+  it('still lists a content the borrower reported missing, with no pool to verify', () => {
+    const [row] = inBoxContents(
+      meisselit,
+      'box-loan',
+      [{ itemId: 'meisseli', returnedAmount: 0, missingAmount: 3 }],
+      NOW,
+    );
+    // Shown so the admin knows it belongs in the box, but carries nothing to tick.
+    expect(row).toMatchObject({ id: 'meisseli', remaining: 0, missingAmount: 3 });
   });
 
-  it('leaves out a content out on another loan', () => {
-    expect(
-      inBoxContents(
-        box(
-          content({
-            reservations: [{ loan: { id: 'other-loan', startTime: day(-2), endTime: day(2) } }],
-          }),
-        ),
-        'box-loan',
-        [{ itemId: 'vasara', returnedAmount: 1, missingAmount: 0 }],
-        NOW,
+  it('still lists a content out on another loan, with no pool to verify', () => {
+    const [row] = inBoxContents(
+      box(
+        content({
+          reservations: [{ loan: { id: 'other-loan', startTime: day(-2), endTime: day(2) } }],
+        }),
       ),
-    ).toEqual([]);
+      'box-loan',
+      [{ itemId: 'vasara', returnedAmount: 1, missingAmount: 0 }],
+      NOW,
+    );
+    expect(row).toMatchObject({ id: 'vasara', outOnLoan: true, remaining: 0 });
   });
 });

@@ -188,16 +188,20 @@ export default function BoxReturnContents({
   onChange: (itemId: string, next: ContentDisposition) => void;
   mode?: BoxReturnMode;
 }) {
-  const actionable = contents.filter((c) => !c.outOnLoan);
-  const elsewhere = contents.filter((c) => c.outOnLoan);
+  // A content gets a stepper card only when there is a pool to act on: units
+  // owed (return) or recorded back in the box (verify). The rest still show —
+  // out on another loan, or already reported missing — so the whole box is
+  // visible and the admin knows what belongs in it, just without a control.
+  const actionable = contents.filter((c) => !c.outOnLoan && c.remaining > 0);
+  const info = contents.filter((c) => c.outOnLoan || c.remaining <= 0);
 
-  if (actionable.length === 0 && elsewhere.length === 0) return null;
+  if (contents.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
         <Package className="h-4 w-4 shrink-0" aria-hidden />
-        <span>Sisältö · {actionable.length} kamaa</span>
+        <span>Sisältö · {contents.length} kamaa</span>
       </div>
 
       {actionable.length > 0 && (
@@ -214,12 +218,20 @@ export default function BoxReturnContents({
         </div>
       )}
 
-      {elsewhere.length > 0 && (
+      {info.length > 0 && (
         <ul className="flex flex-col gap-1 border-t pt-2 text-sm">
-          {elsewhere.map((content) => (
+          {info.map((content) => (
             <li key={content.id} className="flex justify-between gap-2 opacity-60">
-              <span className="min-w-0 break-words">{content.name}</span>
-              <span className="shrink-0 text-muted-foreground">lainassa muualla</span>
+              <span
+                className={cn('min-w-0 break-words', !content.outOnLoan && 'line-through')}
+              >
+                {content.name}
+              </span>
+              <span className="shrink-0 text-muted-foreground">
+                {content.outOnLoan
+                  ? 'lainassa muualla'
+                  : `${content.missingAmount} puuttuu`}
+              </span>
             </li>
           ))}
         </ul>

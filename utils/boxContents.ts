@@ -113,14 +113,14 @@ export function outstandingBoxContents(
 }
 
 /**
- * The contents recorded as back inside a box, for the admin's shelving check.
- * The borrower's return has flipped the box to IN_BOX; now the admin opens it
- * and confirms what is actually there. `remaining` carries the units the
- * borrower handed back — the pool the admin verifies, moving any that are not
- * really in the box over to missing.
- *
- * A content nobody returned (already all missing, or out on another loan)
- * carries nothing to verify and is left off.
+ * The whole box, for the admin's shelving check. The borrower's return has
+ * flipped the box to IN_BOX; now the admin opens it and confirms what is really
+ * there — so they need to see *everything that belongs in it*, not only what was
+ * handed back. `remaining` carries the units the borrower returned — the pool
+ * the admin verifies, moving any that are not really in the box over to missing.
+ * A content the borrower reported missing (`remaining` 0, `missingAmount` set),
+ * or one out on another loan, carries no pool to verify but stays on the list so
+ * the admin knows it belongs here and why it is not expected inside.
  */
 export function inBoxContents(
   location: ContentLocation | undefined | null,
@@ -128,12 +128,10 @@ export function inBoxContents(
   returns: BoxContentReturnRow[],
   at: Date = new Date(),
 ): OutstandingBoxContent[] {
-  return boxContents(location, loanId, returns, at)
-    .filter((content) => !content.outOnLoan && (content.returnedAmount ?? 0) > 0)
-    .map((content) => ({
-      ...content,
-      remaining: content.returnedAmount ?? 0,
-      returnedAmount: content.returnedAmount ?? 0,
-      missingAmount: content.missingAmount ?? 0,
-    }));
+  return boxContents(location, loanId, returns, at).map((content) => ({
+    ...content,
+    remaining: content.outOnLoan ? 0 : content.returnedAmount ?? 0,
+    returnedAmount: content.returnedAmount ?? 0,
+    missingAmount: content.missingAmount ?? 0,
+  }));
 }
