@@ -21,14 +21,13 @@ export function renderCreatedEmail(
   const intro = alreadyInUse
     ? `
     <p>Lainasi on luotu ja merkitty käyttöön kaluston koneella. Tavarat ovat nyt lainassa nimissäsi.</p>
-    <p>Muistathan palauttaa tavarat viimeistään palautuspäivänä. Näet lainasi ja voit palauttaa sen omalta tililtäsi.</p>
+    <p>Muistathan palauttaa tavarat viimeistään palautuspäivänä.</p>
     `
     : `
     <p>Lainasi on luotu ja automaattisesti hyväksytty. Voit noutaa tavarat ilmoittamanasi ajankohtana.</p>
     <p>
       Kun olet hakenut tavarat varastosta, avaa laina ja paina <strong>”Aloita lainaus”</strong>,
-      niin varasto pysyy ajan tasalla. Jos unohdat, laina merkitään käyttöön automaattisesti
-      noutopäivän iltana.
+      niin varasto pysyy ajan tasalla.
     </p>
     `;
 

@@ -13,7 +13,7 @@ export function renderPickupReminderEmail(loan: LoanEmailData, loanUrl: string):
   const html = renderEmail(`
     <h1>Lainasi nouto on huomenna</h1>
     <p>Hei!</p>
-    <p>Voit noutaa tavarat <strong>${formatDate(loan.startTime)}</strong> alkaen. Muistathan noutaa ne ajoissa.</p>
+    <p>Voit noutaa tavarat <strong>${formatDate(loan.startTime)}</strong> alkaen.</p>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 

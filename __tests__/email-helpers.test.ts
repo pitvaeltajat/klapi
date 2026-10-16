@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { formatDate, formatDateShort, renderItemCard, renderLoanDetails } from '../utils/emailHelpers';
+import { shouldSendLoanConfirmation } from '../utils/emails/shared';
 
 describe('formatDate', () => {
   it('should format a Date object in Finnish locale with timezone', () => {
@@ -131,5 +132,55 @@ describe('renderLoanDetails', () => {
     const html = renderLoanDetails('2026-06-01T18:00:00.000Z', '2026-06-07T18:00:00.000Z');
     expect(html).toContain('Nouto:');
     expect(html).toContain('Palautus:');
+  });
+});
+
+describe('shouldSendLoanConfirmation', () => {
+  const base = {
+    email: 'borrower@pitva.fi',
+    group: 'USER',
+    emailLoanConfirmation: true,
+    emailNewLoanNotification: true,
+  };
+
+  it('sends to a normal borrower who has it on', () => {
+    expect(shouldSendLoanConfirmation(base)).toBe(true);
+  });
+
+  it('skips a borrower who turned it off', () => {
+    expect(shouldSendLoanConfirmation({ ...base, emailLoanConfirmation: false })).toBe(false);
+  });
+
+  it('never sends to the shared kiosk account', () => {
+    expect(shouldSendLoanConfirmation({ ...base, group: 'KIOSK' })).toBe(false);
+  });
+
+  it('never sends without an address', () => {
+    expect(shouldSendLoanConfirmation({ ...base, email: null })).toBe(false);
+  });
+
+  // One email per loan: an admin with the fleet-wide "Uudet lainat" mail on
+  // already hears about their own loan through it, so the confirmation is skipped.
+  it('skips an admin who gets the fleet-wide mail', () => {
+    expect(
+      shouldSendLoanConfirmation({ ...base, group: 'ADMIN', emailNewLoanNotification: true }),
+    ).toBe(false);
+  });
+
+  it('sends to an admin who turned the fleet-wide mail off but kept confirmations', () => {
+    expect(
+      shouldSendLoanConfirmation({ ...base, group: 'ADMIN', emailNewLoanNotification: false }),
+    ).toBe(true);
+  });
+
+  it('sends nothing to an admin with both off', () => {
+    expect(
+      shouldSendLoanConfirmation({
+        ...base,
+        group: 'ADMIN',
+        emailNewLoanNotification: false,
+        emailLoanConfirmation: false,
+      }),
+    ).toBe(false);
   });
 });

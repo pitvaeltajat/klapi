@@ -14,10 +14,9 @@ import { getPublicUrl } from '@/utils/urlHelpers';
  * Mirrors loans onto the troop's shared Google Calendar.
  *
  * One event per loan, on one shared calendar (`GOOGLE_CALENDAR_ID`) that the
- * whole troop can subscribe to — "what is out, and until when". The borrower is
- * added as a **guest**, which is what puts the loan in their own calendar too;
- * that half is opt-out per person (`User.calendarLoanEvents`), and only ever
- * applies to a real Workspace account. The fleet-wide record stays either way.
+ * whole troop can subscribe to — "what is out, and until when". Events are
+ * guestless: the borrower is not invited to the event, so nothing lands in
+ * their personal calendar.
  *
  * `syncLoanCalendar` is the only entry point, and it reconciles rather than
  * commands: it looks at the loan as it is now and makes the calendar agree.
@@ -53,31 +52,9 @@ type LoanForCalendar = {
   user: {
     name: string | null;
     email: string | null;
-    group: string;
-    deletedAt: Date | null;
-    calendarLoanEvents: boolean;
   };
   reservations: { amount: number; item: { name: string } }[];
 };
-
-/**
- * Whether this person's own calendar may be invited: a live Workspace account
- * that hasn't opted out. Personal Gmail logins and the shared kiosk terminal
- * are out — the kiosk's calendar is nobody's, and inviting a stranger's private
- * Gmail to a troop event is not ours to do.
- */
-function attendeeFor(user: LoanForCalendar['user']): { email: string }[] | undefined {
-  const domain = process.env.GOOGLE_WORKSPACE_DOMAIN?.toLowerCase();
-  const email = user.email?.toLowerCase();
-
-  if (!domain || !email || user.group === 'KIOSK' || !user.calendarLoanEvents) return undefined;
-  // A soft-deleted account is a departed member: their old loans stay on the
-  // shared calendar, but nothing new goes to a mailbox that may be gone.
-  if (user.deletedAt) return undefined;
-  if (!email.endsWith(`@${domain}`)) return undefined;
-
-  return [{ email }];
-}
 
 /** "1 kama" / "3 kamaa" — the fallback title when a loan has no description. */
 function itemCountLabel(count: number): string {
@@ -119,19 +96,14 @@ export function buildLoanEvent(loan: LoanForCalendar): CalendarEventInput {
   const loanUrl = `${getPublicUrl()}/loan/${loan.id}`;
 
   const items = loan.reservations.map((r) => `• ${r.amount} × ${r.item.name}`).join('\n');
-  const attendees = attendeeFor(loan.user);
 
   return {
     summary: `${who}: ${what}`,
     description: [items, '', `Avaa laina Klapissa: ${loanUrl}`].join('\n'),
     start: { dateTime: loan.startTime.toISOString(), timeZone: TIME_ZONE },
     end: { dateTime: loan.endTime.toISOString(), timeZone: TIME_ZONE },
-    ...(attendees ? { attendees } : {}),
-    // A loan is not a meeting: it must not block the borrower's free/busy, and
-    // a guest has no reason to edit it or invite anyone else to it.
+    // A loan is not a meeting — it should show as free on the shared calendar.
     transparency: 'transparent',
-    guestsCanInviteOthers: false,
-    guestsCanModify: false,
     source: { title: 'Klapi', url: loanUrl },
   };
 }
@@ -162,15 +134,7 @@ export async function syncLoanCalendar(
       description: true,
       loaner: true,
       calendarEventId: true,
-      user: {
-        select: {
-          name: true,
-          email: true,
-          group: true,
-          deletedAt: true,
-          calendarLoanEvents: true,
-        },
-      },
+      user: { select: { name: true, email: true } },
       reservations: { select: { amount: true, item: { select: { name: true } } } },
     },
   });
@@ -216,17 +180,4 @@ export function syncLoanCalendarInBackground(loanId: string): void {
       console.error(`Failed to sync loan ${loanId} to the calendar:`, error);
     }
   });
-}
-
-/**
- * Whether it is worth showing this person the "lainat kalenteriisi" toggle —
- * i.e. whether the mirror is configured at all and their account is one the
- * calendar can invite. Keeps `/account` from offering a switch that does
- * nothing for a Gmail login.
- */
-export function canReceiveLoanCalendarEvents(email: string | null, group: string): boolean {
-  if (!isCalendarConfigured()) return false;
-  return Boolean(
-    attendeeFor({ name: null, email, group, deletedAt: null, calendarLoanEvents: true }),
-  );
 }

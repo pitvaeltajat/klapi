@@ -19,6 +19,7 @@ import {
   type EmailContent,
   type LoanEmailData,
 } from '../utils/emails';
+import { SUBJECT_PREFIX } from '../utils/emails/ses-client';
 
 const OUT = '/tmp/klapi-emails';
 mkdirSync(OUT, { recursive: true });
@@ -39,7 +40,8 @@ const sampleLoan: LoanEmailData = {
 const loanUrl = `${publicUrl}/loan/LOAN123`;
 
 function writeFile(name: string, { subject, html }: EmailContent) {
-  const wrapped = `<!-- SUBJECT: ${subject} -->\n${html}`;
+  // Match what sendEmail actually puts on the wire (the [Klapi] tag).
+  const wrapped = `<!-- SUBJECT: ${SUBJECT_PREFIX}${subject} -->\n${html}`;
   writeFileSync(join(OUT, `${name}.html`), wrapped, 'utf8');
   console.log(`  ${name.padEnd(28)}  subject: ${subject}`);
 }

@@ -3,9 +3,9 @@
  * (utils/loanCalendar).
  *
  * The calendar itself is a fake `CalendarClient`, so these exercise the
- * reconciliation — create vs. patch vs. delete, who gets invited, what the
- * event says — without a service-account key or a network call. What Google
- * does with the request is `utils/googleCalendar`'s problem.
+ * reconciliation — create vs. patch vs. delete, what the event says — without a
+ * service-account key or a network call. What Google does with the request is
+ * `utils/googleCalendar`'s problem.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
@@ -19,9 +19,8 @@ import {
 } from '@/utils/googleCalendar';
 import { buildLoanEvent, syncLoanCalendar } from '@/utils/loanCalendar';
 
-// Both are read at call time by the code under test: the domain decides who may
-// be invited, and the public URL goes in the event description.
-process.env.GOOGLE_WORKSPACE_DOMAIN = 'pitva.test';
+// Read at call time by the code under test: the public URL goes in the event
+// description.
 process.env.NEXT_PUBLIC_VERCEL_URL = 'https://klapi.test';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -56,7 +55,7 @@ function fakeCalendar(overrides: Partial<CalendarClient> = {}) {
 }
 
 async function createUser(
-  overrides: Partial<{ email: string; name: string; group: Group; calendarLoanEvents: boolean }> = {},
+  overrides: Partial<{ email: string; name: string; group: Group }> = {},
 ) {
   return prisma.user.create({
     data: {
@@ -64,7 +63,6 @@ async function createUser(
       name: overrides.name ?? 'Testi Lainaaja',
       email: overrides.email ?? `${testPrefix}-${Math.random()}@pitva.test`,
       group: overrides.group ?? Group.USER,
-      calendarLoanEvents: overrides.calendarLoanEvents ?? true,
     },
   });
 }
@@ -115,7 +113,6 @@ describe('syncLoanCalendar', () => {
 
     expect(created).toHaveLength(1);
     expect(created[0].summary).toBe('Eero: Vartioretki');
-    expect(created[0].attendees).toEqual([{ email: `${testPrefix}-eero@pitva.test` }]);
     expect(created[0].description).toContain('2 × Teltta');
     expect(created[0].description).toContain(`https://klapi.test/loan/${loan.id}`);
 
@@ -212,9 +209,8 @@ describe('syncLoanCalendar', () => {
     expect(stored?.calendarEventId).toBeNull();
   });
 
-  // The calendar client impersonates the calendar's owner, because a service
-  // account acting as itself cannot invite attendees. A half-set environment
-  // must therefore skip rather than mint a token that Google will refuse.
+  // The calendar client impersonates the calendar's owner to write to it. A
+  // half-set environment must skip rather than mint a token Google will refuse.
   it('is a no-op when the impersonation subject is missing', async () => {
     const user = await createUser();
     const loan = await createLoan(user.id);
@@ -252,9 +248,6 @@ describe('buildLoanEvent', () => {
     user: {
       name: 'Eero',
       email: 'eero@pitva.test',
-      group: 'USER',
-      deletedAt: null,
-      calendarLoanEvents: true,
     },
     reservations: [{ amount: 1, item: { name: 'Teltta' } }],
   };
@@ -300,31 +293,7 @@ describe('buildLoanEvent', () => {
     expect(buildLoanEvent({ ...nameless, loaner: null }).summary).toBe('eero@pitva.test: 1 kama');
   });
 
-  it('leaves the loan free rather than busy in the borrower’s calendar', () => {
+  it('marks the event as free rather than a busy block', () => {
     expect(buildLoanEvent(base).transparency).toBe('transparent');
-  });
-
-  it('invites nobody when the borrower has opted out', () => {
-    expect(
-      buildLoanEvent({ ...base, user: { ...base.user, calendarLoanEvents: false } }).attendees,
-    ).toBeUndefined();
-  });
-
-  it('invites nobody outside the Workspace domain', () => {
-    expect(
-      buildLoanEvent({ ...base, user: { ...base.user, email: 'eero@gmail.com' } }).attendees,
-    ).toBeUndefined();
-  });
-
-  it('never invites the shared kiosk terminal', () => {
-    expect(
-      buildLoanEvent({ ...base, user: { ...base.user, group: 'KIOSK' } }).attendees,
-    ).toBeUndefined();
-  });
-
-  it('never invites a member who has left', () => {
-    expect(
-      buildLoanEvent({ ...base, user: { ...base.user, deletedAt: new Date() } }).attendees,
-    ).toBeUndefined();
   });
 });

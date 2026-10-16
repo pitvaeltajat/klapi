@@ -6,11 +6,8 @@ import { getGoogleAccessToken, requireEnv } from '@/utils/googleAuth';
  *
  * The service account impersonates `GOOGLE_WORKSPACE_SUBJECT` (admin@, who
  * owns the calendar), so the calendar scope has to be authorised for the SA's
- * client id in the Admin console alongside the directory ones. Sharing the
- * calendar with the SA's own address is *not* enough, however much it looks
- * like it should be: a service account acting as itself may write events, but
- * an `insert` carrying `attendees` comes back `403 forbiddenForServiceAccounts`
- * — and every loan by a troop member carries one. Setup is in `README.md`
+ * client id in the Admin console alongside the directory ones — the same
+ * delegation the nightly directory sync already needs. Setup is in `README.md`
  * (§ Loans on the shared calendar).
  *
  * Everything above this file lives in `utils/loanCalendar`, which decides
@@ -26,11 +23,8 @@ export type CalendarEventInput = {
   description?: string;
   start: { dateTime: string; timeZone: string };
   end: { dateTime: string; timeZone: string };
-  attendees?: { email: string }[];
-  /** 'transparent' = "free": a loan should not make the borrower look busy. */
+  /** 'transparent' = "free": a loan should not read as a busy block. */
   transparency?: 'opaque' | 'transparent';
-  guestsCanInviteOthers?: boolean;
-  guestsCanModify?: boolean;
   source?: { title: string; url: string };
 };
 

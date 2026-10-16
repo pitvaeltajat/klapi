@@ -211,7 +211,7 @@ hidden for every other status (`app/loan/[id]/LoanView.tsx`, `canApprove`).
 | `user/getUsers`                                                                 | GET                  | list **all** live users, full records (admin only); excludes `deletedAt`                                                                                                                                                                                       |
 | `users/getUsers`                                                                | GET                  | list non-KIOSK live users (id/email/name only, admin/kiosk gated) — for `LoanerAutocomplete`; excludes `deletedAt`; raw SQL, ordered by name (email as fallback) with the `fi-FI-x-icu` collation                                                              |
 | `user/kioskPassword`                                                            | GET/POST             | read / rotate the reusable static kiosk password                                                                                                                                                                                                               |
-| `user/updateEmailPreferences`                                                   | POST                 | notification prefs (the `email*` toggles **and** `calendarLoanEvents`) — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
+| `user/updateEmailPreferences`                                                   | POST                 | notification prefs (the `email*` toggles) — own by default; an ADMIN may pass `userId` to edit someone else's (for `/admin/user/[userId]`). Anyone else naming another `userId` gets a 401, never a silent write to their own row |
 | `auth/createPin`                                                                | POST                 | set the admin kiosk-elevation PIN                                                                                                                                                                                                                              |
 | `auth/elevatableAdmins`                                                         | GET                  | admins a kiosk session may elevate to (used by `TopBar`)                                                                                                                                                                                                       |
 | `auth/[...nextauth]`                                                            | —                    | Auth.js handler (`export const { GET, POST } = handlers`)                                                                                                                                                                                                      |
@@ -269,15 +269,15 @@ soft-deletes a user must set it.
 
 ## Loans on the shared calendar
 
-One event per loan on one shared Google Calendar, with the borrower invited as a
-guest so it lands in their own calendar too — README § _Loans on the shared
-calendar_ has the setup. Unset `GOOGLE_CALENDAR_ID` and the whole thing is a
-no-op, which is what local dev and the tests run with.
+One **guestless** event per loan on one shared Google Calendar — nobody is
+invited, so it only ever lives on the shared calendar the troop subscribes to;
+README § _Loans on the shared calendar_ has the setup. Unset `GOOGLE_CALENDAR_ID`
+and the whole thing is a no-op, which is what local dev and the tests run with.
 
 |                                                                                            | Where                                            |
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
 | Calendar API client (SA **impersonates** `GOOGLE_WORKSPACE_SUBJECT`, the calendar's owner) | `utils/googleCalendar.ts`                        |
-| Which loans get an event, what it says, who is invited                                     | `utils/loanCalendar.ts`                          |
+| Which loans get an event and what it says                                                  | `utils/loanCalendar.ts`                          |
 | Tests (fake `CalendarClient`, no key, no network)                                          | `__tests__/api/loanCalendar.integration.test.ts` |
 
 `syncLoanCalendarInBackground(loanId)` is the whole API for routes, and it
@@ -290,17 +290,14 @@ must never fail the request that saved it.
 
 `Loan.calendarEventId` links the two (null = no event). A patch that comes back
 `CalendarEventGone` (somebody deleted the event by hand) falls through to a
-fresh create. Guests are only ever live `@$GOOGLE_WORKSPACE_DOMAIN` accounts
-that haven't turned `User.calendarLoanEvents` off — never a Gmail login, never
-the kiosk; the shared calendar gets the event either way.
+fresh create.
 
-Those guests are also why the client impersonates instead of acting as the
-service account itself. Sharing the calendar with the SA's own address is
-enough to write events with no guests, and _only_ those: an `insert` carrying
-`attendees` is refused with `403 forbiddenForServiceAccounts`. The mirror
-shipped that way and silently wrote nothing for nine days, so
-`GOOGLE_WORKSPACE_SUBJECT` is now part of `isCalendarConfigured()` — a
-half-configured calendar skips rather than minting a token Google will refuse.
+The client impersonates the calendar's owner rather than acting as the service
+account itself, so the calendar scope rides on the same domain-wide delegation
+the directory sync already needs — no extra calendar-sharing step. Because that
+makes `GOOGLE_WORKSPACE_SUBJECT` mandatory, it is part of
+`isCalendarConfigured()`: a half-configured calendar skips rather than minting a
+token Google will refuse.
 
 ## Pages (`app/**/page.tsx`)
 
@@ -339,7 +336,8 @@ and `/loan/[id]` shows its name. Only the page is gone.
 
 `User` (group enum, soft-delete via `deletedAt` — filtered out of auth, listings,
 elevation, and email recipients so `Loan.user` history survives; the
-`email*Notification` toggles plus `calendarLoanEvents`) ·
+`email*` notification toggles, incl. `emailLoanConfirmation` for the borrower's
+own-loan receipt) ·
 `Account`/`Session` (Auth.js) · `Item` (soft-delete via
 `deletedAt`, m2m `Category`, optional `Location`) · `Reservation` (Item↔Loan
 line) · `Loan` (status enum, soft-delete via `deletedAt`, optional `Box`,

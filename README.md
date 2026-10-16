@@ -564,10 +564,11 @@ than silently creating a third account) and the merge stays reversible.
 ### Loans on the shared calendar
 
 Every loan is mirrored onto one shared Google Calendar — "what is out of the
-varasto, and until when" — as a single event per loan, and the borrower is
-invited as a guest so the loan also shows up in their own calendar. The event
+varasto, and until when" — as a single **guestless** event per loan. The event
 carries the item list and a link back to the loan in Klapi, and is marked *free*
-rather than *busy*: a loan is not a meeting.
+rather than *busy*: a loan is not a meeting. Nobody is invited to it, so nothing
+lands in anyone's personal calendar — the shared calendar is the whole feature,
+and the troop subscribes to it to see what is out.
 
 `utils/loanCalendar` owns it. Every route that creates, edits, cancels, rejects
 or un-rejects a loan calls the same `syncLoanCalendarInBackground(loanId)`,
@@ -577,28 +578,12 @@ makes the calendar agree, creating, updating or removing the event as needed.
 slow or broken Google never delays or fails the request that saved the loan; a
 failure is logged and healed by the next edit.
 
-Who gets invited as a guest:
-
-- a live **Workspace** address (`@$GOOGLE_WORKSPACE_DOMAIN`) — a personal Gmail
-  login is never invited to a troop event, and the shared kiosk terminal's
-  calendar is nobody's;
-- who hasn't turned **"Lainat kalenteriisi"** off on `/account` (an admin can
-  flip it for them on `/admin/user/[userId]`). That switch is only about the
-  personal copy — the loan is on the shared calendar either way.
-
 **Setup.** The service account **impersonates `GOOGLE_WORKSPACE_SUBJECT`** —
 `admin@`, who owns the calendar — exactly as the user sync does, so the calendar
-scope needs a domain-wide delegation grant too.
-
-It is tempting to skip that: share the calendar with the SA's own address, let
-it act as itself, and no Admin console trip is needed. That is how the mirror
-first shipped, and it wrote nothing at all for nine days. A service account
-acting as itself may create events, but not events *with guests* — Calendar
-answers `403 forbiddenForServiceAccounts`, "Service accounts cannot invite
-attendees without Domain-Wide Delegation of Authority", and since a loan by any
-troop member carries the borrower as a guest, every single insert failed.
-`syncLoanCalendarInBackground` swallowed the error into a log line nobody was
-reading, so the feature looked configured and did nothing.
+scope rides on the same domain-wide delegation grant the directory sync already
+needs. (Sharing the calendar with the SA's own address would also let it write
+these guestless events, but impersonating the owner keeps the setup identical to
+the sync and needs no extra sharing step.)
 
 The calendar already exists — **"PitVa – Klapin lainat"**, owned by `admin@`,
 `Europe/Helsinki`:

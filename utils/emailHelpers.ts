@@ -51,7 +51,7 @@ function getEmailStyles(): string {
          blows each card up to full width. Inline-block cards wrap and centre in
          every client, and stack cleanly on a phone. */
       .item-grid {
-        text-align: center;
+        text-align: left;
         font-size: 0;
         margin: 16px 0;
       }
@@ -190,7 +190,7 @@ export function renderItemCard(item: { id: string; name: string; amount: number 
 /** The full block of item cards, wrapped in an inline-styled centred grid. */
 export function renderItemGrid(items: { id: string; name: string; amount: number }[]): string {
   const cards = items.map(renderItemCard).join('');
-  return `<div class="item-grid" style="text-align: center; font-size: 0; margin: 16px 0;">${cards}</div>`;
+  return `<div class="item-grid" style="text-align: left; font-size: 0; margin: 16px 0;">${cards}</div>`;
 }
 
 export function renderLoanDetails(startTime: Date | string, endTime: Date | string, description?: string | null): string {

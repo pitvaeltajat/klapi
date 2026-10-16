@@ -33,9 +33,9 @@ const INTERVAL_CLASS: Record<number, string> = {
 // Same colours as the .loan-card.overdue-* CSS, inlined so the severity stripe
 // survives clients that drop the <style> block.
 const INTERVAL_BORDER: Record<number, string> = {
-  1: '#f59e0b',
-  3: '#dc2626',
-  7: '#7f1d1d',
+  1: '#82593E',
+  3: '#A23936',
+  7: '#6B2523',
 };
 
 export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: string): EmailContent {
@@ -56,17 +56,17 @@ export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: str
           if (loan.itemsList === null) return '';
 
           const loanUrl = `${publicUrl}/loan/${loan.id}`;
-          const cardStyle = `border: 1px solid #e5e7eb; border-left: 4px solid ${INTERVAL_BORDER[interval]}; border-radius: 6px; padding: 14px 16px; margin-bottom: 12px; background-color: #ffffff;`;
+          const cardStyle = `border: 1px solid #DDD9D7; border-left: 4px solid ${INTERVAL_BORDER[interval]}; border-radius: 6px; padding: 14px 16px; margin-bottom: 12px; background-color: #ffffff;`;
 
           return `
             <div class="loan-card ${INTERVAL_CLASS[interval]}" style="${cardStyle}">
-              <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;"><a href="${loanUrl}" style="color: inherit; text-decoration: none;">${loan.userName}</a></h3>
-              <div class="meta" style="font-size: 13px; color: #4b5563; margin: 6px 0 10px 0;">
+              <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #221E5D;"><a href="${loanUrl}" style="color: inherit; text-decoration: none;">${loan.userName}</a></h3>
+              <div class="meta" style="font-size: 13px; color: #4A4864; margin: 6px 0 10px 0;">
                 <div><strong>Sähköposti:</strong> ${loan.userEmail || 'Ei tiedossa'}</div>
                 <div><strong>Palautus oli:</strong> ${loan.endTime}</div>
                 <div><strong>Tavarat:</strong> ${loan.itemsList}</div>
               </div>
-              <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">Avaa laina →</a>
+              <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #221E5D; text-decoration: none; font-weight: 600;">Avaa laina →</a>
             </div>
           `;
         })
@@ -81,7 +81,7 @@ export function renderOverdueAdminEmail(loans: OverdueLoanCard[], publicUrl: str
     .join('');
 
   const warningBoxStyle =
-    'background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
+    'background-color: #F7ECEB; border-left: 4px solid #A23936; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
 
   const single = loans.length === 1;
 

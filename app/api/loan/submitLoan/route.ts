@@ -6,6 +6,7 @@ import { createTemporaryItems } from '@/utils/temporaryItems';
 import { isKioskMachine, loanStartsNow } from '@/utils/kioskSession';
 import { logLoanHistory, resolveLoanActor } from '@/utils/loanHistory';
 import { sendCreatedEmail, sendNewLoanEmail } from '@/utils/emails';
+import { shouldSendLoanConfirmation } from '@/utils/emails/shared';
 import { syncLoanCalendarInBackground } from '@/utils/loanCalendar';
 
 export const maxDuration = 60;
@@ -22,7 +23,13 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true, group: true, emailNewLoanNotification: true },
+      select: {
+        name: true,
+        email: true,
+        group: true,
+        emailLoanConfirmation: true,
+        emailNewLoanNotification: true,
+      },
     });
     if (!user) {
       return NextResponse.json({ message: 'Käyttäjää ei löytynyt' }, { status: 404 });
@@ -118,8 +125,13 @@ export async function POST(request: Request) {
 
     // Emails are sent after the response is returned so a slow SES call
     // can't time out the request. Failures are logged; the loan is already committed.
+
+    // One confirmation per loan, with the fleet-wide admin mail taking
+    // precedence — see `shouldSendLoanConfirmation`.
+    const confirmBorrower = shouldSendLoanConfirmation(user);
+
     if (loanStatus === 'ACCEPTED') {
-      if (user.email && user.group !== 'ADMIN' && user.emailNewLoanNotification !== false) {
+      if (user.email && confirmBorrower) {
         const recipient = user.email;
         after(async () => {
           try {
@@ -145,13 +157,9 @@ export async function POST(request: Request) {
       // "Lainaaja" field. When that's a real user account (not a free-text name,
       // which falls back to the kiosk's own account), the loan lands in their
       // account and they should hear about it — the loan is already INUSE, so the
-      // email uses the "already in use" wording.
-      if (
-        user.email &&
-        user.group !== 'ADMIN' &&
-        user.group !== 'KIOSK' &&
-        user.emailNewLoanNotification !== false
-      ) {
+      // email uses the "already in use" wording. The same one-email-per-loan rule
+      // as above applies (see `confirmBorrower`).
+      if (user.email && confirmBorrower) {
         const recipient = user.email;
         after(async () => {
           try {

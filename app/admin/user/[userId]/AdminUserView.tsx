@@ -33,16 +33,14 @@ export interface AdminUserViewProps {
     hasElevatePin: boolean;
     emailWeeklyReminder: boolean;
     emailNewLoanNotification: boolean;
+    emailLoanConfirmation: boolean;
     emailExpiringReminder: boolean;
     emailOldBoxNotification: boolean;
     emailOverdueNotification: boolean;
-    calendarLoanEvents: boolean;
     mergedInto: MergeRef | null;
     mergedFrom: MergeRef[];
   };
   loans: LoanType[];
-  /** Whether the loan calendar can invite this account at all — see `/account`. */
-  calendarAvailable: boolean;
   /** The signed-in admin, so the page can refuse to let them delete themselves. */
   viewerId: string;
 }
@@ -65,27 +63,22 @@ const GROUP_VARIANT: Record<Group, 'secondary' | 'default' | 'warning'> = {
 type PrefKey =
   | 'emailWeeklyReminder'
   | 'emailNewLoanNotification'
+  | 'emailLoanConfirmation'
   | 'emailExpiringReminder'
   | 'emailOldBoxNotification'
-  | 'emailOverdueNotification'
-  | 'calendarLoanEvents';
+  | 'emailOverdueNotification';
 
-export default function AdminUserView({
-  user,
-  loans,
-  calendarAvailable,
-  viewerId,
-}: AdminUserViewProps) {
+export default function AdminUserView({ user, loans, viewerId }: AdminUserViewProps) {
   const router = useRouter();
 
   const [group, setGroup] = useState<Group>(user.group);
   const [prefs, setPrefs] = useState<Record<PrefKey, boolean>>({
     emailWeeklyReminder: user.emailWeeklyReminder,
     emailNewLoanNotification: user.emailNewLoanNotification,
+    emailLoanConfirmation: user.emailLoanConfirmation,
     emailExpiringReminder: user.emailExpiringReminder,
     emailOldBoxNotification: user.emailOldBoxNotification,
     emailOverdueNotification: user.emailOverdueNotification,
-    calendarLoanEvents: user.calendarLoanEvents,
   });
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -294,15 +287,13 @@ export default function AdminUserView({
             {group === 'ADMIN' && (
               <h3 className="text-sm font-semibold text-muted-foreground">Omat lainat</h3>
             )}
-            {group !== 'ADMIN' && (
-              <PrefRow
-                title="Ilmoitukset uusista lainoista"
-                description="Sähköpostit kun käyttäjälle luodaan uusi laina"
-                checked={prefs.emailNewLoanNotification}
-                disabled={isDeleted}
-                onCheckedChange={(v) => updatePreference('emailNewLoanNotification', v)}
-              />
-            )}
+            <PrefRow
+              title="Vahvistus lainasta"
+              description="Sähköposti käyttäjän omista lainoista: mitä lainattiin ja milloin palautetaan"
+              checked={prefs.emailLoanConfirmation}
+              disabled={isDeleted}
+              onCheckedChange={(v) => updatePreference('emailLoanConfirmation', v)}
+            />
             <PrefRow
               title="Muistutukset lainoista"
               description="Muistutus noutopäivästä ja myöhässä olevista lainoista"
@@ -317,15 +308,6 @@ export default function AdminUserView({
               disabled={isDeleted}
               onCheckedChange={(v) => updatePreference('emailExpiringReminder', v)}
             />
-            {calendarAvailable && (
-              <PrefRow
-                title="Lainat kalenteriin"
-                description="Lisää käyttäjän lainat hänen Google-kalenteriinsa. Kaluston yhteiseen kalenteriin ne tulevat tästä riippumatta."
-                checked={prefs.calendarLoanEvents}
-                disabled={isDeleted}
-                onCheckedChange={(v) => updatePreference('calendarLoanEvents', v)}
-              />
-            )}
           </div>
         </Card>
         ) : null}

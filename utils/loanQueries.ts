@@ -109,15 +109,12 @@ export const loanWithReservationsInclude = {
   },
 } as const satisfies Prisma.LoanInclude;
 
-/**
- * The per-user notification toggles, as shown on the account page — the email
- * ones plus the calendar invite, which sits in the same section of `/account`.
- */
+/** The per-user notification toggles, as shown on the account page. */
 export const notificationPreferenceSelect = {
   emailWeeklyReminder: true,
   emailNewLoanNotification: true,
+  emailLoanConfirmation: true,
   emailExpiringReminder: true,
   emailOldBoxNotification: true,
   emailOverdueNotification: true,
-  calendarLoanEvents: true,
 } as const satisfies Prisma.UserSelect;

@@ -27,7 +27,7 @@ export function renderOverdueEmail(
     <h1>Lainasi on myöhässä</h1>
     <p>Hei!</p>
     <p>Lainasi palautuspäivä oli <strong>${formatDate(loan.endTime)}</strong>${lateness}.</p>
-    <p>Palauta tavarat mahdollisimman pian. Jos tarvitset lisäaikaa, ota yhteyttä ylläpitoon.</p>
+    <p>Palauta tavarat mahdollisimman pian. Jos tarvitset lisäaikaa, ota yhteyttä kalustonhoitajaan.</p>
 
     ${renderLoanDetails(loan.startTime, loan.endTime, loan.description)}
 
@@ -36,7 +36,7 @@ export function renderOverdueEmail(
 
     ${renderButton(loanUrl, 'Avaa laina')}
 
-    <p style="font-size: 12px; color: #6b7280; margin-top: 20px;">
+    <p style="font-size: 12px; color: #5A5874; margin-top: 20px;">
       Jos olet jo palauttanut tavarat, voit jättää tämän viestin huomiotta.
     </p>
   `);

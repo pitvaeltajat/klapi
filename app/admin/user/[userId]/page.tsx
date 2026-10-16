@@ -10,7 +10,6 @@ import {
   notificationPreferenceSelect,
   reportSummarySelect,
 } from '@/utils/loanQueries';
-import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 import AdminUserView from './AdminUserView';
 
@@ -82,7 +81,6 @@ export default async function AdminUserPage({
       // is set.
       user={serialize({ ...rest, hasElevatePin: Boolean(kioskElevatePin) })}
       loans={serialize(loans)}
-      calendarAvailable={canReceiveLoanCalendarEvents(user.email, user.group)}
       viewerId={session.user.id}
     />
   );

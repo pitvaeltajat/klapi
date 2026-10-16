@@ -75,7 +75,13 @@ model User {
   kioskPasswordEnc         String?
   kioskElevatePin          String?
   username                 String?       @unique
+  // Fleet-wide "a new loan was created" mail, for admins only. The borrower's
+  // own "here is what you loaned" confirmation is `emailLoanConfirmation`.
   emailNewLoanNotification Boolean       @default(true)
+  // The borrower's own confirmation when a loan is created in their name — what
+  // they loaned and when it is due. Everyone gets it (admins borrow too); only
+  // the shared kiosk account is skipped.
+  emailLoanConfirmation    Boolean       @default(true)
   emailWeeklyReminder      Boolean       @default(true)
   // Opt-in, unlike the others: the "lainasi päättyy pian" mail is off unless the
   // borrower asks for it. Most people know when their loan ends, and the overdue
@@ -83,12 +89,6 @@ model User {
   emailExpiringReminder    Boolean       @default(false)
   emailOldBoxNotification  Boolean       @default(true)
   emailOverdueNotification Boolean       @default(true)
-  // Whether this person is invited as a guest to the calendar event mirroring
-  // their loans (`utils/loanCalendar`), which is what puts a loan in their own
-  // Google Calendar. Off only turns the personal copy off — the loan still
-  // appears on the troop's shared calendar. Inert for anyone without a
-  // Workspace account, so `/account` hides the toggle for them.
-  calendarLoanEvents       Boolean       @default(true)
   accounts                 Account[]
   loans                    Loan[]
   sessions                 Session[]

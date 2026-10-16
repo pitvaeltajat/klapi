@@ -9,7 +9,6 @@ import {
   notificationPreferenceSelect,
   reportSummarySelect,
 } from '@/utils/loanQueries';
-import { canReceiveLoanCalendarEvents } from '@/utils/loanCalendar';
 import type { ReportCreated, ReportStatus } from '@prisma/client';
 
 export const metadata = { title: 'Oma tili | Klapi' };
@@ -24,12 +23,11 @@ export default async function AccountPage() {
         notificationPreferences={{
           emailWeeklyReminder: true,
           emailNewLoanNotification: true,
+          emailLoanConfirmation: true,
           emailExpiringReminder: false,
           emailOldBoxNotification: true,
           emailOverdueNotification: true,
-          calendarLoanEvents: true,
         }}
-        calendarAvailable={false}
       />
     );
   }
@@ -52,7 +50,7 @@ export default async function AccountPage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { ...notificationPreferenceSelect, email: true, group: true },
+      select: notificationPreferenceSelect,
     }),
   ]);
 
@@ -71,12 +69,11 @@ export default async function AccountPage() {
       notificationPreferences={{
         emailWeeklyReminder: user?.emailWeeklyReminder ?? true,
         emailNewLoanNotification: user?.emailNewLoanNotification ?? true,
+        emailLoanConfirmation: user?.emailLoanConfirmation ?? true,
         emailExpiringReminder: user?.emailExpiringReminder ?? false,
         emailOldBoxNotification: user?.emailOldBoxNotification ?? true,
         emailOverdueNotification: user?.emailOverdueNotification ?? true,
-        calendarLoanEvents: user?.calendarLoanEvents ?? true,
       }}
-      calendarAvailable={canReceiveLoanCalendarEvents(user?.email ?? null, user?.group ?? 'USER')}
     />
   );
 }

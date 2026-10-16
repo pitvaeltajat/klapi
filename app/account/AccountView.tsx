@@ -42,27 +42,17 @@ interface AccountViewProps {
   notificationPreferences: {
     emailWeeklyReminder: boolean;
     emailNewLoanNotification: boolean;
+    emailLoanConfirmation: boolean;
     emailExpiringReminder: boolean;
     emailOldBoxNotification: boolean;
     emailOverdueNotification: boolean;
-    calendarLoanEvents: boolean;
   };
-  /**
-   * Whether the loan calendar is configured *and* this account is one it can
-   * invite — a Workspace address, not a Gmail login or the kiosk. The toggle is
-   * hidden otherwise rather than shown doing nothing.
-   */
-  calendarAvailable: boolean;
 }
 
 /** How many loan cards to render at once — the rest are a click away. */
 const PAGE_SIZE = 10;
 
-export default function AccountView({
-  loans,
-  notificationPreferences,
-  calendarAvailable,
-}: AccountViewProps) {
+export default function AccountView({ loans, notificationPreferences }: AccountViewProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
 
@@ -81,8 +71,8 @@ export default function AccountView({
   const [emailOverdueNotification, setEmailOverdueNotification] = useState(
     notificationPreferences.emailOverdueNotification,
   );
-  const [calendarLoanEvents, setCalendarLoanEvents] = useState(
-    notificationPreferences.calendarLoanEvents,
+  const [emailLoanConfirmation, setEmailLoanConfirmation] = useState(
+    notificationPreferences.emailLoanConfirmation,
   );
 
   const [signOutOpen, setSignOutOpen] = useState(false);
@@ -95,24 +85,24 @@ export default function AccountView({
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleEmailPreferenceChange = async (
-    preference: 'weekly' | 'newLoan' | 'expiring' | 'oldBox' | 'overdue' | 'calendar',
+    preference: 'weekly' | 'newLoan' | 'loanConfirmation' | 'expiring' | 'oldBox' | 'overdue',
     value: boolean,
   ) => {
     const setters = {
       weekly: setEmailWeeklyReminder,
       newLoan: setEmailNewLoanNotification,
+      loanConfirmation: setEmailLoanConfirmation,
       expiring: setEmailExpiringReminder,
       oldBox: setEmailOldBoxNotification,
       overdue: setEmailOverdueNotification,
-      calendar: setCalendarLoanEvents,
     } as const;
     const previous = {
       weekly: emailWeeklyReminder,
       newLoan: emailNewLoanNotification,
+      loanConfirmation: emailLoanConfirmation,
       expiring: emailExpiringReminder,
       oldBox: emailOldBoxNotification,
       overdue: emailOverdueNotification,
-      calendar: calendarLoanEvents,
     }[preference];
 
     setters[preference](value);
@@ -124,10 +114,11 @@ export default function AccountView({
         body: JSON.stringify({
           emailWeeklyReminder: preference === 'weekly' ? value : emailWeeklyReminder,
           emailNewLoanNotification: preference === 'newLoan' ? value : emailNewLoanNotification,
+          emailLoanConfirmation:
+            preference === 'loanConfirmation' ? value : emailLoanConfirmation,
           emailExpiringReminder: preference === 'expiring' ? value : emailExpiringReminder,
           emailOldBoxNotification: preference === 'oldBox' ? value : emailOldBoxNotification,
           emailOverdueNotification: preference === 'overdue' ? value : emailOverdueNotification,
-          calendarLoanEvents: preference === 'calendar' ? value : calendarLoanEvents,
         }),
       });
 
@@ -209,12 +200,9 @@ export default function AccountView({
 
         <Card>
           <CardTitle>Sähköposti-ilmoitukset</CardTitle>
-          {/* Admins are borrowers too: they get the same pickup/overdue reminders for
-              their own loans as everyone else, so they need the "Omat lainat" toggles
-              as well as the fleet-wide ones — not instead of them. The one exception is
-              the new-loan mail, which is a single stored setting doing double duty
-              (fleet-wide for admins, own-loan confirmation for users), so admins see
-              only the ylläpito row for it. */}
+          {/* Admins are borrowers too: they get the same "Omat lainat" toggles as
+              everyone else (confirmation of their own loans, pickup/overdue reminders),
+              plus the fleet-wide "Ylläpito" ones on top — not instead of them. */}
           {isAdmin && (
             <div className="mb-6 flex flex-col items-start gap-4">
               <h3 className="text-sm font-semibold text-muted-foreground">Ylläpito</h3>
@@ -242,14 +230,12 @@ export default function AccountView({
             {isAdmin && (
               <h3 className="text-sm font-semibold text-muted-foreground">Omat lainat</h3>
             )}
-            {!isAdmin && (
-              <PrefRow
-                title="Ilmoitukset uusista lainoista"
-                description="Sähköpostit kun sinulle luodaan uusi laina"
-                checked={emailNewLoanNotification}
-                onCheckedChange={(v) => handleEmailPreferenceChange('newLoan', v)}
-              />
-            )}
+            <PrefRow
+              title="Vahvistus lainasta"
+              description="Sähköposti tekemistäsi lainoista: mitä lainasit ja milloin palautat"
+              checked={emailLoanConfirmation}
+              onCheckedChange={(v) => handleEmailPreferenceChange('loanConfirmation', v)}
+            />
             <PrefRow
               title="Muistutukset lainoista"
               description="Muistutus noutopäivästä ja myöhässä olevista lainoista"
@@ -264,20 +250,6 @@ export default function AccountView({
             />
           </div>
         </Card>
-
-        {calendarAvailable && (
-          <Card>
-            <CardTitle>Kalenteri</CardTitle>
-            <div className="flex flex-col items-start gap-4">
-              <PrefRow
-                title="Lainat kalenteriisi"
-                description="Lisää lainasi Google-kalenteriisi. Lainat näkyvät kaluston yhteisessä kalenterissa tästä riippumatta."
-                checked={calendarLoanEvents}
-                onCheckedChange={(v) => handleEmailPreferenceChange('calendar', v)}
-              />
-            </div>
-          </Card>
-        )}
 
         <Card>
           <CardTitle>Ulkoasu</CardTitle>

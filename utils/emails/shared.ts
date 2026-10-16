@@ -18,6 +18,25 @@ export interface EmailContent {
   html: string;
 }
 
+/**
+ * Whether the borrower gets a personal "here is what you loaned" confirmation
+ * when a loan is created in their name. One email per loan:
+ *  - the shared kiosk account never does (no mailbox, never its own loan);
+ *  - an admin who will already receive the fleet-wide "Uudet lainat" mail about
+ *    this loan gets that instead — not both. The admin mail takes precedence, so
+ *    an admin with it off still gets the confirmation (if that is on).
+ */
+export function shouldSendLoanConfirmation(user: {
+  email: string | null;
+  group: string;
+  emailLoanConfirmation: boolean;
+  emailNewLoanNotification: boolean;
+}): boolean {
+  if (!user.email || user.group === 'KIOSK' || !user.emailLoanConfirmation) return false;
+  const getsFleetMail = user.group === 'ADMIN' && user.emailNewLoanNotification;
+  return !getsFleetMail;
+}
+
 /** Outcome of a single send, tallied into the cron routes' JSON response. */
 export type EmailOutcome = 'sent' | 'failed';
 

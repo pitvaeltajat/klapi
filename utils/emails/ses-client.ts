@@ -20,8 +20,12 @@ const ses = new SESClient({
       }),
 });
 
+/** Every Klapi mail subject carries this tag, so it's applied in one place. */
+export const SUBJECT_PREFIX = '[Klapi] ';
+
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   const toAddresses = Array.isArray(to) ? to : [to];
+  const taggedSubject = subject.startsWith(SUBJECT_PREFIX) ? subject : `${SUBJECT_PREFIX}${subject}`;
 
   const params = {
     Destination: {
@@ -36,7 +40,7 @@ export async function sendEmail(to: string | string[], subject: string, html: st
       },
       Subject: {
         Charset: 'UTF-8',
-        Data: subject,
+        Data: taggedSubject,
       },
     },
     Source: process.env.AWS_SES_FROM_EMAIL,

@@ -10,17 +10,9 @@ import { createSign } from 'node:crypto';
  *
  * Every token is **impersonating**: `subject` names a person in the domain and
  * the SA acts as them, which is domain-wide delegation and requires the scopes
- * to be authorised for the SA's client id in the Admin console.
- *
- * A service account can also act **as itself**, reaching only what has been
- * shared with its own email address, and `utils/googleCalendar` used to. That
- * is deliberately no longer an option here, because Calendar forbids the one
- * thing the loan mirror exists to do: an event `insert` carrying `attendees`
- * is refused with `403 forbiddenForServiceAccounts` — "Service accounts cannot
- * invite attendees without Domain-Wide Delegation of Authority" — unless the
- * SA is impersonating a real user. Sharing the calendar with the SA is enough
- * to write *guestless* events and nothing more, which is why the mirror looked
- * configured and quietly wrote nothing.
+ * to be authorised for the SA's client id in the Admin console. The directory
+ * sync impersonates an admin to read the directory; the calendar mirror
+ * impersonates the calendar's owner to write to it.
  *
  * Hand-rolled rather than via `google-auth-library`: the whole flow is one
  * signed JWT and one form POST, and the library would pull half a dozen

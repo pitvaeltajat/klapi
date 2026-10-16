@@ -22,9 +22,9 @@ export interface BoxLoanCard extends BoxLoanInfo {
 
 export function renderAdminReminderEmail(loans: BoxLoanCard[], publicUrl: string): EmailContent {
   const cardStyle =
-    'border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px 16px; margin-bottom: 12px; background-color: #ffffff;';
+    'border: 1px solid #DDD9D7; border-radius: 6px; padding: 14px 16px; margin-bottom: 12px; background-color: #ffffff;';
   const infoBoxStyle =
-    'background-color: #f9fafb; border-left: 4px solid #2563eb; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
+    'background-color: #F1F5FE; border-left: 4px solid #221E5D; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
 
   const loansListHtml = loans
     .map((loan) => {
@@ -34,14 +34,14 @@ export function renderAdminReminderEmail(loans: BoxLoanCard[], publicUrl: string
 
       return `
         <div class="loan-card" style="${cardStyle}">
-          <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;"><a href="${loanUrl}" style="color: inherit; text-decoration: none;">${loan.userName}</a></h3>
-          <div class="meta" style="font-size: 13px; color: #4b5563; margin: 6px 0 10px 0;">
+          <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #221E5D;"><a href="${loanUrl}" style="color: inherit; text-decoration: none;">${loan.userName}</a></h3>
+          <div class="meta" style="font-size: 13px; color: #4A4864; margin: 6px 0 10px 0;">
             <div><strong>Sähköposti:</strong> ${loan.userEmail || 'Ei tiedossa'}</div>
             <div><strong>Boksi:</strong> ${loan.boxName || 'Tuntematon'}</div>
             <div><strong>Boksissa alkaen:</strong> ${loan.inBoxSince}</div>
             <div><strong>Tavarat:</strong> ${loan.itemsList}</div>
           </div>
-          <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">Avaa laina →</a>
+          <a href="${loanUrl}" class="open-link" style="font-size: 13px; color: #221E5D; text-decoration: none; font-weight: 600;">Avaa laina →</a>
         </div>
       `;
     })
@@ -61,7 +61,7 @@ export function renderAdminReminderEmail(loans: BoxLoanCard[], publicUrl: string
     ${loansListHtml}
 
     <div class="info-box" style="${infoBoxStyle}">
-      ${single ? 'Muistuta lainaajaa palauttamaan tavarat.' : 'Muistuta lainaajia palauttamaan tavarat.'}
+      ${single ? 'Käy tyhjentämässä boksi ja hyllytä tavarat.' : 'Käy tyhjentämässä boksit ja hyllytä tavarat.'}
     </div>
 
     ${renderButton(`${publicUrl}/admin`, 'Avaa admin-paneeli')}

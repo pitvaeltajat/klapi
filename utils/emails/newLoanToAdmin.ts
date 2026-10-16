@@ -20,7 +20,7 @@ export function renderNewLoanEmail(loan: NewLoanAdminEmailData, loanUrl: string)
   const { isKioskLoan, creator } = loan;
 
   const infoBoxStyle =
-    'background-color: #f9fafb; border-left: 4px solid #2563eb; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
+    'background-color: #F1F5FE; border-left: 4px solid #221E5D; padding: 12px 15px; margin: 16px 0; border-radius: 4px;';
 
   const html = renderEmail(`
     <h1>Uusi laina: ${creator}</h1>
