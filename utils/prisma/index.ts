@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { X509Certificate } from 'node:crypto';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -14,12 +15,22 @@ function createPrismaClient() {
   // pg's ConnectionParameters does `Object.assign({}, config, parse(connectionString))`,
   // so a `sslmode=` in the URL overwrites the explicit `ssl` below — turning into
   // verify-full with no CA, which rejects the self-signed Lightsail cert. Strip the
-  // sslmode params so TLS is driven solely by the pinned CA (verifies by the cert's
-  // IP SAN, which is the host the URL dials).
+  // sslmode params so TLS is driven solely by the pinned CA.
   const url = new URL(process.env.DATABASE_URL ?? '');
   url.searchParams.delete('sslmode');
   url.searchParams.delete('sslrootcert');
-  const adapter = new PrismaPg({ connectionString: url.toString(), ssl: { ca } });
+  // Verify the cert against the pinned CA AND against its own declared identity.
+  // The URL dials the box as `localhost`/an internal name that wouldn't match the
+  // cert, so set `servername` to the name the pinned cert is actually issued for
+  // (its SAN, else CN — the box's IP). The hostname check stays on and now passes
+  // legitimately instead of being bypassed.
+  const cert = new X509Certificate(ca);
+  const san = cert.subjectAltName ?? '';
+  const servername =
+    san.match(/IP Address:([^,\s]+)/)?.[1] ??
+    san.match(/DNS:([^,\s]+)/)?.[1] ??
+    cert.subject.match(/CN=([^\n,]+)/)?.[1];
+  const adapter = new PrismaPg({ connectionString: url.toString(), ssl: { ca, servername } });
   return new PrismaClient({ adapter });
 }
 
