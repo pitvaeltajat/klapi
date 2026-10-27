@@ -240,7 +240,7 @@ export const getLoanStatusColor = (status: LoanStatus): BadgeVariant => {
     case LoanStatus.IN_BOX:
       return 'secondary';
     case LoanStatus.PARTIALLY_RETURNED:
-      return 'warning';
+      return 'gray';
     case LoanStatus.RETURNED:
       return 'gray';
     default:
