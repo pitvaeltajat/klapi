@@ -15,7 +15,7 @@ import { formatDateRange } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, User } from 'lucide-react';
 
 export interface LoanType {
   id: string;
@@ -86,8 +86,9 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
               {loan.description || getLoanerName(loan)}
             </NextLink>
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Lainaaja: {getLoanerName(loan)}
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <User className="h-4 w-4 shrink-0" aria-label="Lainaaja" />
+            {getLoanerName(loan)}
           </p>
         </div>
         {loan.deletedAt ? (
@@ -122,16 +123,13 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
       </div>
 
       {tags.length > 0 && (
-        <div>
-          <p className="mb-2 text-sm font-medium">Kamat ({tags.length}):</p>
-          <div className="flex flex-wrap gap-2">
-            {tags.slice(0, 5).map((tag) => (
-              <Badge key={tag.id} variant="default">
-                {tag.label}
-              </Badge>
-            ))}
-            {tags.length > 5 && <Badge variant="gray">+{tags.length - 5} lisää</Badge>}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {tags.slice(0, 5).map((tag) => (
+            <Badge key={tag.id} variant="default">
+              {tag.label}
+            </Badge>
+          ))}
+          {tags.length > 5 && <Badge variant="gray">+{tags.length - 5} lisää</Badge>}
         </div>
       )}
     </Card>
