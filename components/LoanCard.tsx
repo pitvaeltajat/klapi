@@ -11,10 +11,11 @@ import {
   daysOverdue,
   itemTags,
 } from '@/utils/loanHelpers';
-import { formatDateNumeric } from '@/utils/dateFormat';
+import { formatDateRange } from '@/utils/dateFormat';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { CalendarDays } from 'lucide-react';
 
 export interface LoanType {
   id: string;
@@ -110,13 +111,9 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-        <p>
-          <span className="font-medium">Alku:</span> {formatDateNumeric(loan.startTime)}
-        </p>
-        <p>
-          <span className="font-medium">Loppu:</span> {formatDateNumeric(loan.endTime)}
-        </p>
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <CalendarDays className="h-4 w-4 shrink-0" />
+        <span>{formatDateRange(loan.startTime, loan.endTime)}</span>
       </div>
 
       {tags.length > 0 && (

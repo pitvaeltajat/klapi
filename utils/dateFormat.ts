@@ -63,6 +63,21 @@ export function formatDateLongShort(date: Date | string): string {
   });
 }
 
+/**
+ * "19.10.–26.10.2026" — a loan's span with no labels, year shown once. When the
+ * span crosses a New Year the start carries its own year too ("31.12.2026–2.1.2027").
+ */
+export function formatDateRange(start: Date | string, end: Date | string): string {
+  const s = new Date(start);
+  const e = new Date(end);
+  const year = (d: Date) =>
+    d.toLocaleDateString('fi-FI', { year: 'numeric', timeZone: 'Europe/Helsinki' });
+  const dayMonth = (d: Date) =>
+    d.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric', timeZone: 'Europe/Helsinki' });
+  const startStr = year(s) === year(e) ? dayMonth(s) : formatDateOnly(s);
+  return `${startStr}–${formatDateOnly(e)}`;
+}
+
 /** "1.1.2025 klo 09.30" — the compact everyday form: numeric date + "klo" + time */
 export function formatDateKlo(date: Date | string): string {
   return `${formatDateOnly(date)} klo ${formatTimeOnly(date)}`;
