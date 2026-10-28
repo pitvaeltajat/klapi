@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { CircleAlert, History } from 'lucide-react';
+import { CalendarDays, CircleAlert, History, User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Item, LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '@/utils/datepickerLocale';
-import { formatDateOnly } from '@/utils/dateFormat';
+import { formatDateRange } from '@/utils/dateFormat';
 import { isSameCalendarDay, setDefaultTime, setEndOfDay } from '@/utils/dateRange';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -176,10 +176,13 @@ const LoanStartCard = ({
           <Badge variant={getLoanStatusColor(derivedStatus)} className="w-fit">
             {getLoanStatusLabel(derivedStatus)}
           </Badge>
-          <p>Lainaaja: {getLoanerName(loan)}</p>
-          <p>
-            Laina-aika: {formatDateOnly(loan.startTime)} -{' '}
-            {formatDateOnly(endDate)}
+          <p className="flex items-center gap-1.5">
+            <User className="h-4 w-4 shrink-0" aria-label="Lainaaja" />
+            {getLoanerName(loan)}
+          </p>
+          <p className="flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 shrink-0" aria-label="Laina-aika" />
+            {formatDateRange(loan.startTime, endDate)}
           </p>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">

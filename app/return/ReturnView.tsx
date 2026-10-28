@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CircleAlert, Minus, Plus } from 'lucide-react';
+import { CalendarDays, CircleAlert, Minus, Plus, User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { LoanStatus, ReservationStatus } from '@prisma/client';
 import NotAuthenticated from '@/components/NotAuthenticated';
@@ -20,7 +20,7 @@ import {
 import ItemThumb from '@/components/ItemThumb';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatDateOnly } from '@/utils/dateFormat';
+import { formatDateRange } from '@/utils/dateFormat';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
@@ -317,12 +317,13 @@ const LoanReturnCard = ({
         </div>
 
         <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-          <p>
-            <span className="font-medium">Lainaaja:</span> {getLoanerName(loan)}
+          <p className="flex items-center gap-1.5">
+            <User className="h-4 w-4 shrink-0" aria-label="Lainaaja" />
+            {getLoanerName(loan)}
           </p>
-          <p>
-            <span className="font-medium">Laina-aika:</span> {formatDateOnly(loan.startTime)} –{' '}
-            {formatDateOnly(loan.endTime)}
+          <p className="flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 shrink-0" aria-label="Laina-aika" />
+            {formatDateRange(loan.startTime, loan.endTime)}
           </p>
         </div>
 
