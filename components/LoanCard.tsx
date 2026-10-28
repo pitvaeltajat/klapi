@@ -66,13 +66,18 @@ export default function LoanCard({ loan }: { loan: LoanType }) {
   const lateDays = isOverdue ? daysOverdue(loan.endTime) : 0;
   const tags = itemTags(loan.reservations);
 
+  // Overdue tints red; a partial return tints grey (its kamat are split between
+  // the box and still out — an unsettled state, not an alarm). Overdue wins.
+  const tint = isOverdue
+    ? 'border-destructive/40 bg-destructive/10'
+    : derivedStatus === LoanStatus.PARTIALLY_RETURNED
+      ? 'border-muted-foreground/25 bg-muted'
+      : undefined;
+
   return (
     <Card
       padding="md"
-      className={cn(
-        'flex h-full flex-col gap-3 overflow-hidden',
-        isOverdue && 'border-destructive/40 bg-destructive/10',
-      )}
+      className={cn('flex h-full flex-col gap-3 overflow-hidden', tint)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
