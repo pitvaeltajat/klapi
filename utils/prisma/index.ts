@@ -11,7 +11,17 @@ function createPrismaClient() {
   // skip verification, so a missing CA is a loud boot error, not an
   // unverified prod connection nobody notices.
   const ca = process.env.DATABASE_CA?.trim();
-  if (!ca) throw new Error('DATABASE_CA is required (PEM for the Postgres server CA)');
+  if (!ca) {
+    // Production fails closed: a missing CA must be a loud boot error, never an
+    // unverified prod connection. Local dev and CI run a plain non-TLS Postgres
+    // with no CA — connect without SSL instead.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('DATABASE_CA is required (PEM for the Postgres server CA)');
+    }
+    return new PrismaClient({
+      adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' }),
+    });
+  }
   // pg's ConnectionParameters does `Object.assign({}, config, parse(connectionString))`,
   // so a `sslmode=` in the URL overwrites the explicit `ssl` below — turning into
   // verify-full with no CA, which rejects the self-signed Lightsail cert. Strip the

@@ -33,8 +33,12 @@ vi.mock('@/utils/loanCalendar', () => ({ syncLoanCalendarInBackground: () => {} 
 
 const { POST: updateLoan } = await import('@/app/api/loan/updateLoan/route');
 
-const start = new Date('2026-11-01T09:00:00Z');
-const end = new Date('2026-11-05T09:00:00Z');
+// Relative to now, not a fixed date: the loan must be future-dated so it counts
+// as "not started", or an admin edit skips the availability check and these
+// rejection tests stop testing anything. A hardcoded date silently rots into the
+// past and does exactly that.
+const start = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+const end = new Date(Date.now() + 11 * 24 * 60 * 60 * 1000);
 
 /** The shape `utils/customItems.newCustomItemId()` mints in the browser. */
 const customId = () => `custom-${crypto.randomUUID()}`;
