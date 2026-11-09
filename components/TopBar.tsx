@@ -56,7 +56,7 @@ export default function TopBar({ children }: { children: ReactNode }) {
    * The kiosk is a shared screen bolted to the store room wall, and the point
    * of it is that it goes nowhere: no way out to a signed-in front door that
    * would hand the next person in the queue somebody else's session. So it gets
-   * no link back to ATK.
+   * no link back to Kompassi.
    *
    * `group` flips to ADMIN while an admin is elevated, so checking it alone
    * would put the link back on the kiosk for those fifteen minutes;
@@ -268,12 +268,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
                   against the cart — the drawer carries it there instead. */}
               {!isKiosk && (
                 <a
-                  href="https://atk.pitva.fi"
+                  href="https://kompassi.pitva.fi"
                   title="Kaikki PitVan palvelut"
                   className="hidden h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-header-foreground/20 px-[11px] text-[13px] font-medium tracking-[0.02em] opacity-90 transition hover:border-header-foreground/40 hover:bg-header-foreground/10 hover:opacity-100 sm:inline-flex"
                 >
                   <LayoutGrid className="h-[13px] w-[13px] shrink-0" strokeWidth={2.25} aria-hidden />
-                  ATK
+                  Kompassi
                 </a>
               )}
               {session && isKiosk && (
@@ -474,12 +474,12 @@ export default function TopBar({ children }: { children: ReactNode }) {
             </NextLink>
             {!isKiosk && (
               <a
-                href="https://atk.pitva.fi"
+                href="https://kompassi.pitva.fi"
                 onClick={onClose}
                 className="flex items-center gap-2 px-6 py-4"
               >
                 <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
-                ATK
+                Kompassi
               </a>
             )}
           </nav>
