@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
@@ -269,11 +269,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
               {!isKiosk && (
                 <a
                   href="https://kompassi.pitva.fi"
-                  title="Kaikki PitVan palvelut"
-                  className="hidden h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-header-foreground/20 px-[11px] text-[13px] font-medium tracking-[0.02em] opacity-90 transition hover:border-header-foreground/40 hover:bg-header-foreground/10 hover:opacity-100 sm:inline-flex"
+                  title="Kompassi – PitVan palvelut"
+                  aria-label="Kompassi – PitVan palvelut"
+                  className="hidden h-7 w-7 items-center justify-center rounded-full border border-header-foreground/20 p-1 opacity-90 transition hover:border-header-foreground/40 hover:bg-header-foreground/10 hover:opacity-100 sm:inline-flex"
                 >
-                  <LayoutGrid className="h-[13px] w-[13px] shrink-0" strokeWidth={2.25} aria-hidden />
-                  Kompassi
+                  <img src="https://kompassi.pitva.fi/favicon-32x32.png" alt="" width="16" height="16" />
                 </a>
               )}
               {session && isKiosk && (
@@ -476,10 +476,11 @@ export default function TopBar({ children }: { children: ReactNode }) {
               <a
                 href="https://kompassi.pitva.fi"
                 onClick={onClose}
-                className="flex items-center gap-2 px-6 py-4"
+                title="Kompassi – PitVan palvelut"
+                aria-label="Kompassi – PitVan palvelut"
+                className="flex items-center px-6 py-4"
               >
-                <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
-                Kompassi
+                <img src="https://kompassi.pitva.fi/favicon-32x32.png" alt="" width="18" height="18" />
               </a>
             )}
           </nav>
