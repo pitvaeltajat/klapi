@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { X509Certificate } from 'node:crypto';
+import { isIP } from 'node:net';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -30,17 +31,16 @@ function createPrismaClient() {
   url.searchParams.delete('sslmode');
   url.searchParams.delete('sslrootcert');
   // Verify the cert against the pinned CA AND against its own declared identity.
-  // The URL dials the box as `localhost`/an internal name that wouldn't match the
-  // cert, so set `servername` to the name the pinned cert is actually issued for
-  // (its SAN, else CN — the box's IP). The hostname check stays on and now passes
-  // legitimately instead of being bypassed.
+  // Node 26 rejects an IP address in TLS's `servername` (SNI) option. A DNS name
+  // can be used there, but an IP SAN must be validated by Node's normal hostname
+  // check with no explicit SNI name.
   const cert = new X509Certificate(ca);
   const san = cert.subjectAltName ?? '';
-  const servername =
-    san.match(/IP Address:([^,\s]+)/)?.[1] ??
-    san.match(/DNS:([^,\s]+)/)?.[1] ??
-    cert.subject.match(/CN=([^\n,]+)/)?.[1];
-  const adapter = new PrismaPg({ connectionString: url.toString(), ssl: { ca, servername } });
+  const dnsName =
+    san.match(/DNS:([^,\s]+)/)?.[1] ?? cert.subject.match(/CN=([^\n,]+)/)?.[1];
+  const servername = dnsName && !isIP(dnsName) ? dnsName : undefined;
+  const ssl = servername ? { ca, servername } : { ca };
+  const adapter = new PrismaPg({ connectionString: url.toString(), ssl });
   return new PrismaClient({ adapter });
 }
 
