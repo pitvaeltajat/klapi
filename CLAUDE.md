@@ -255,8 +255,8 @@ run the real `pnpm build`.
 When running a dependency update sweep, leave these on their current major and
 revisit deliberately:
 
-- **@types/node**: track the runtime (currently Node 24 LTS — CI/deploy pin
-  `node-version: 24`) — don't jump to `^25` until we're actually running Node 25.
+- **@types/node**: track the runtime (currently Node 26 LTS — CI/deploy pin
+  `node-version: 26`).
 - **next-auth** and **@auth/core**: pinned to *exact* versions (`5.0.0-beta.32`
   / `0.41.3`), no caret. v5 has been a beta since October 2023 — npm's `latest`
   tag still points at the v4 line — and each beta has been free to move the API,

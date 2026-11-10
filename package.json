@@ -1,5 +1,8 @@
 {
   "private": true,
+  "engines": {
+    "node": "26.x"
+  },
   "scripts": {
     "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",
     "build": "prisma migrate deploy && DISABLE_ERD=true prisma generate && next build",
